@@ -3,6 +3,10 @@ Procedure Occurrence SQL Builder.
 
 This module contains the SQL builder for procedure occurrence criteria,
 mirroring the Java CIRCE-BE ProcedureOccurrenceSqlBuilder.
+
+GUARD RAIL: This module implements Java CIRCE-BE functionality.
+Any changes must maintain 1:1 compatibility with Java classes.
+Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional, Set
@@ -87,7 +91,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         # For now, return empty codeset clause
         return query.replace("@codesetClause", "")
     
-    def resolve_select_clauses(self, criteria: Criteria) -> List[str]:
+    def resolve_select_clauses(self, criteria: Criteria, options: Optional[BuilderOptions] = None) -> List[str]:
         """Resolve select clauses for criteria.
         
         Java equivalent: ProcedureOccurrenceSqlBuilder.resolveSelectClauses()
@@ -96,7 +100,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         # For now, return default select columns
         return self.DEFAULT_SELECT_COLUMNS.copy()
     
-    def resolve_join_clauses(self, criteria: Criteria) -> List[str]:
+    def resolve_join_clauses(self, criteria: Criteria, options: Optional[BuilderOptions] = None) -> List[str]:
         """Resolve join clauses for criteria.
         
         Java equivalent: ProcedureOccurrenceSqlBuilder.resolveJoinClauses()
@@ -104,7 +108,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         # This would need to be implemented based on the Java logic
         return []
     
-    def resolve_where_clauses(self, criteria: Criteria) -> List[str]:
+    def resolve_where_clauses(self, criteria: Criteria, options: Optional[BuilderOptions] = None) -> List[str]:
         """Resolve where clauses for criteria.
         
         Java equivalent: ProcedureOccurrenceSqlBuilder.resolveWhereClauses()

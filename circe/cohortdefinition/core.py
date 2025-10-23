@@ -2,6 +2,10 @@
 Core cohort definition classes.
 
 This module contains the fundamental classes for defining cohort expressions and their components.
+
+GUARD RAIL: This module implements Java CIRCE-BE functionality.
+Any changes must maintain 1:1 compatibility with Java classes.
+Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional, Union, Any
@@ -125,6 +129,16 @@ class CriteriaGroup(BaseModel):
     type: Optional[str] = None
 
     model_config = ConfigDict(populate_by_name=True)
+    
+    def is_empty(self) -> bool:
+        """Check if the criteria group is empty."""
+        return (
+            not self.criteria_list or len(self.criteria_list) == 0
+        ) and (
+            not self.groups or len(self.groups) == 0
+        ) and (
+            not self.demographic_criteria_list or len(self.demographic_criteria_list) == 0
+        )
 
 
 class ConceptSetSelection(BaseModel):
@@ -136,3 +150,80 @@ class ConceptSetSelection(BaseModel):
     is_exclusion: bool = Field(alias="isExclusion")
 
     model_config = ConfigDict(populate_by_name=True)
+
+
+class TextFilter(BaseModel):
+    """Represents text filtering capabilities.
+    
+    Java equivalent: org.ohdsi.circe.cohortdefinition.TextFilter
+    """
+    text: Optional[str] = None
+    op: Optional[str] = None
+
+
+class WindowBound(BaseModel):
+    """Represents a window bound for time windows.
+    
+    Java equivalent: org.ohdsi.circe.cohortdefinition.WindowBound
+    """
+    coeff: int
+    days: Optional[int] = None
+
+
+class Window(BaseModel):
+    """Represents a time window for criteria.
+    
+    Java equivalent: org.ohdsi.circe.cohortdefinition.Window
+    """
+    use_event_end: bool = Field(alias="useEventEnd")
+    start: Optional[WindowBound] = None
+    coeff: int
+    days: Optional[int] = None
+    end: Optional[WindowBound] = None
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class WindowedCriteria(BaseModel):
+    """Base class for windowed criteria.
+    
+    Java equivalent: org.ohdsi.circe.cohortdefinition.WindowedCriteria
+    """
+    criteria: Any  # Will be specific criteria type
+    window_start: Optional[Window] = Field(default=None, alias="windowStart")
+    window_end: Optional[Window] = Field(default=None, alias="windowEnd")
+    restrict_visit: bool = Field(default=False, alias="RestrictVisit")
+    ignore_observation_period: bool = Field(default=False, alias="IgnoreObservationPeriod")
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class DateOffsetStrategy(BaseModel):
+    """Date offset end strategy.
+    
+    Java equivalent: org.ohdsi.circe.cohortdefinition.DateOffsetStrategy
+    """
+    offset: int
+    date_field: str = Field(alias="dateField")
+
+    model_config = ConfigDict(populate_by_name=True)
+    
+    def accept(self, dispatcher: Any, event_table: str) -> str:
+        """Accept method for visitor pattern."""
+        return dispatcher.get_strategy_sql(self, event_table)
+
+
+class CustomEraStrategy(BaseModel):
+    """Custom era end strategy.
+    
+    Java equivalent: org.ohdsi.circe.cohortdefinition.CustomEraStrategy
+    """
+    drug_codeset_id: Optional[int] = Field(default=None, alias="drugCodesetId")
+    gap_days: int = Field(alias="gapDays")
+    offset: int
+
+    model_config = ConfigDict(populate_by_name=True)
+    
+    def accept(self, dispatcher: Any, event_table: str) -> str:
+        """Accept method for visitor pattern."""
+        return dispatcher.get_strategy_sql(self, event_table)

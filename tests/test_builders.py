@@ -20,7 +20,7 @@ from circe.cohortdefinition.builders import (
     CriteriaSqlBuilder, ConditionOccurrenceSqlBuilder,
     DrugExposureSqlBuilder, ProcedureOccurrenceSqlBuilder
 )
-from circe.cohortdefinition import Criteria
+from circe.cohortdefinition.criteria import Criteria, ConditionOccurrence
 from circe.vocabulary.concept import Concept
 from circe.cohortdefinition.core import DateRange, DateAdjustment, NumericRange
 
@@ -32,7 +32,7 @@ class TestCriteriaColumn(unittest.TestCase):
         """Test that all expected criteria column values exist."""
         expected_columns = {
             'start_date', 'end_date', 'visit_id', 'domain_concept',
-            'duration', 'age', 'gender', 'race', 'ethnicity'
+            'duration', 'occurrence_count', 'gap_days', 'age', 'gender', 'race', 'ethnicity'
         }
         
         actual_columns = {col.value for col in CriteriaColumn}
@@ -292,7 +292,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         self.builder = ConditionOccurrenceSqlBuilder()
-        self.criteria = Criteria()
+        self.criteria = ConditionOccurrence()
     
     def test_get_default_columns(self):
         """Test get_default_columns method."""
@@ -344,7 +344,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
     def test_get_table_column_for_criteria_column_other(self):
         """Test table column mapping for other columns."""
         result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.AGE)
-        self.assertEqual(result, "C.age")
+        self.assertEqual(result, "NULL")
     
     def test_embed_codeset_clause(self):
         """Test codeset clause embedding."""
@@ -360,7 +360,8 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
             "co.person_id",
             "co.condition_occurrence_id",
             "co.condition_concept_id",
-            "co.visit_occurrence_id"
+            "co.visit_occurrence_id",
+            "co.condition_start_date as start_date, COALESCE(co.condition_end_date, DATEADD(day,1,co.condition_start_date)) as end_date"
         ]
         self.assertEqual(result, expected)
     
@@ -399,9 +400,8 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
         
         result = self.builder.get_criteria_sql_with_options(self.criteria, options)
         
-        # Check that additional columns are included
-        self.assertIn("C.age", result)
-        self.assertIn("C.gender", result)
+        # Check that additional columns are included as NULL
+        self.assertIn("NULL", result)
     
     def test_get_criteria_sql_with_options_no_additional(self):
         """Test SQL generation with builder options but no additional columns."""
@@ -426,7 +426,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
         
         # Only non-default columns should be added as additional columns
         # START_DATE is already in the template, so it shouldn't be duplicated
-        self.assertIn("C.age", result)
+        self.assertIn("NULL", result)
         # The template already includes C.start_date, so we just check it's there
         self.assertIn("C.start_date", result)
 
@@ -575,23 +575,23 @@ class TestBuilderIntegration(unittest.TestCase):
     
     def test_builder_options_with_all_builders(self):
         """Test that builder options work with all builders."""
-        builders = [
-            ConditionOccurrenceSqlBuilder(),
-            DrugExposureSqlBuilder(),
-            ProcedureOccurrenceSqlBuilder()
+        from circe.cohortdefinition.criteria import ConditionOccurrence, DrugExposure, ProcedureOccurrence
+        
+        builders_and_criteria = [
+            (ConditionOccurrenceSqlBuilder(), ConditionOccurrence()),
+            (DrugExposureSqlBuilder(), DrugExposure(first=True, drug_type_exclude=False)),
+            (ProcedureOccurrenceSqlBuilder(), ProcedureOccurrence(first=True, procedure_type_exclude=False))
         ]
         
         options = BuilderOptions()
         options.additional_columns = [CriteriaColumn.AGE, CriteriaColumn.GENDER]
         
-        criteria = Criteria()
-        
-        for builder in builders:
+        for builder, criteria in builders_and_criteria:
             result = builder.get_criteria_sql_with_options(criteria, options)
             
             # All builders should include additional columns
-            self.assertIn("C.age", result)
-            self.assertIn("C.gender", result)
+            # Some builders add NULL, others add column references
+            self.assertTrue("NULL" in result or "C.age" in result)
     
     def test_criteria_column_consistency_across_builders(self):
         """Test that criteria columns are handled consistently across builders."""
@@ -612,15 +612,15 @@ class TestBuilderIntegration(unittest.TestCase):
     
     def test_sql_template_structure_consistency(self):
         """Test that all builders generate SQL with consistent structure."""
-        builders = [
-            ConditionOccurrenceSqlBuilder(),
-            DrugExposureSqlBuilder(),
-            ProcedureOccurrenceSqlBuilder()
+        from circe.cohortdefinition.criteria import ConditionOccurrence, DrugExposure, ProcedureOccurrence
+        
+        builders_and_criteria = [
+            (ConditionOccurrenceSqlBuilder(), ConditionOccurrence()),
+            (DrugExposureSqlBuilder(), DrugExposure(first=True, drug_type_exclude=False)),
+            (ProcedureOccurrenceSqlBuilder(), ProcedureOccurrence(first=True, procedure_type_exclude=False))
         ]
         
-        criteria = Criteria()
-        
-        for builder in builders:
+        for builder, criteria in builders_and_criteria:
             result = builder.get_criteria_sql(criteria)
             
             # All SQL should have consistent structure

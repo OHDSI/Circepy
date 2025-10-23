@@ -3,6 +3,10 @@ Base SQL builder for criteria.
 
 This module contains the abstract base class for building SQL queries from criteria,
 mirroring the Java CIRCE-BE CriteriaSqlBuilder.
+
+GUARD RAIL: This module implements Java CIRCE-BE functionality.
+Any changes must maintain 1:1 compatibility with Java classes.
+Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional, Set, TypeVar, Generic
@@ -35,9 +39,9 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         
         query = self.embed_codeset_clause(query, criteria)
         
-        select_clauses = self.resolve_select_clauses(criteria)
-        join_clauses = self.resolve_join_clauses(criteria)
-        where_clauses = self.resolve_where_clauses(criteria)
+        select_clauses = self.resolve_select_clauses(criteria, options)
+        join_clauses = self.resolve_join_clauses(criteria, options)
+        where_clauses = self.resolve_where_clauses(criteria, options)
         
         query = self.embed_ordinal_expression(query, criteria, where_clauses)
         

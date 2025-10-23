@@ -2,12 +2,16 @@
 Main cohort definition classes.
 
 This module contains the main CohortExpression class and related components.
+
+GUARD RAIL: This module implements Java CIRCE-BE functionality.
+Any changes must maintain 1:1 compatibility with Java classes.
+Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Union
 from pydantic import BaseModel, Field, ConfigDict
 from .core import (
-    ResultLimit, Period, CollapseSettings, EndStrategy, 
+    ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy, CustomEraStrategy,
     PrimaryCriteria, CriteriaGroup, ObservationFilter
 )
 
@@ -20,7 +24,7 @@ class CohortExpression(BaseModel):
     concept_sets: Optional[List[Any]] = Field(default=None, alias="conceptSets")
     qualified_limit: Optional[ResultLimit] = Field(default=None, alias="qualifiedLimit")
     additional_criteria: Optional[CriteriaGroup] = Field(default=None, alias="additionalCriteria")
-    end_strategy: Optional[EndStrategy] = Field(default=None, alias="endStrategy")
+    end_strategy: Optional[Union[EndStrategy, DateOffsetStrategy, CustomEraStrategy]] = Field(default=None, alias="endStrategy")
     cdm_version_range: Optional[Period] = Field(default=None, alias="cdmVersionRange")
     primary_criteria: Optional[PrimaryCriteria] = Field(default=None, alias="primaryCriteria")
     expression_limit: Optional[ResultLimit] = Field(default=None, alias="expressionLimit")

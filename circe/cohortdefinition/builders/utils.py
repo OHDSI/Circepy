@@ -3,6 +3,10 @@ Builder utilities for SQL query generation.
 
 This module contains utility classes and functions for building SQL queries
 from cohort definition criteria, mirroring the Java CIRCE-BE builder utilities.
+
+GUARD RAIL: This module implements Java CIRCE-BE functionality.
+Any changes must maintain 1:1 compatibility with Java classes.
+Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional, Set, Dict, Any
@@ -20,8 +24,14 @@ class CriteriaColumn(str, Enum):
     START_DATE = "start_date"
     END_DATE = "end_date"
     VISIT_ID = "visit_id"
+    VISIT_DETAIL_ID = "visit_detail_id"
     DOMAIN_CONCEPT = "domain_concept"
     DURATION = "duration"
+    OCCURRENCE_COUNT = "occurrence_count"
+    ERA_OCCURRENCES = "era_occurrences"
+    GAP_DAYS = "gap_days"
+    UNIT = "unit"
+    VALUE_AS_NUMBER = "value_as_number"
     AGE = "age"
     GENDER = "gender"
     RACE = "race"
@@ -158,3 +168,32 @@ class BuilderUtils:
             return None
         
         return f"{column_name} LIKE '%{text_filter}%'"
+    
+    @staticmethod
+    def split_in_clause(column_name: str, values: List[int], max_length: int = 1000) -> str:
+        """Split IN clause for large value lists.
+        
+        Java equivalent: BuilderUtils.splitInClause()
+        """
+        if not values:
+            return "NULL"
+        
+        if len(values) <= max_length:
+            return ",".join(map(str, values))
+        
+        # Split into chunks
+        chunks = []
+        for i in range(0, len(values), max_length):
+            chunk_values = values[i:i + max_length]
+            chunk_clause = f"{column_name} IN ({','.join(map(str, chunk_values))})"
+            chunks.append(chunk_clause)
+        
+        return " OR ".join(chunks)
+    
+    @staticmethod
+    def date_string_to_sql(date_string: str) -> str:
+        """Convert date string to SQL format.
+        
+        Java equivalent: BuilderUtils.dateStringToSql()
+        """
+        return f"'{date_string}'"

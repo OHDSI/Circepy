@@ -2,6 +2,10 @@
 Vocabulary classes for concept management.
 
 This module contains classes for managing concepts, concept sets, and concept set expressions.
+
+GUARD RAIL: This module implements Java CIRCE-BE functionality.
+Any changes must maintain 1:1 compatibility with Java classes.
+Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional, Any
@@ -13,7 +17,7 @@ class Concept(BaseModel):
     
     Java equivalent: org.ohdsi.circe.vocabulary.Concept
     """
-    concept_id: int = Field(alias="conceptId")
+    concept_id: Optional[int] = Field(default=None, alias="conceptId")
     concept_name: Optional[str] = Field(default=None, alias="conceptName")
     concept_code: Optional[str] = Field(default=None, alias="conceptCode")
     concept_class_id: Optional[str] = Field(default=None, alias="conceptClassId")

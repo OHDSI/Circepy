@@ -1,0 +1,845 @@
+"""
+Cohort Expression Query Builder
+
+This module contains the main SQL query builder for cohort expressions.
+
+GUARD RAIL: This module implements Java CIRCE-BE functionality.
+Any changes must maintain 1:1 compatibility with Java classes.
+Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
+"""
+
+import json
+from typing import List, Optional, Dict, Any, Union
+from .cohort import CohortExpression
+from .criteria import (
+    Criteria, CorelatedCriteria, DemographicCriteria, CriteriaGroup,
+    LocationRegion, ConditionEra, ConditionOccurrence, Death, DeviceExposure,
+    DoseEra, DrugEra, DrugExposure, Measurement, Observation, ObservationPeriod,
+    PayerPlanPeriod, ProcedureOccurrence, Specimen, VisitOccurrence, VisitDetail,
+    Occurrence
+)
+from .core import (
+    PrimaryCriteria, Period, DateOffsetStrategy, CustomEraStrategy
+)
+from .builders.utils import BuilderOptions, BuilderUtils, CriteriaColumn
+from .builders import (
+    ConditionOccurrenceSqlBuilder, DeathSqlBuilder, DeviceExposureSqlBuilder,
+    MeasurementSqlBuilder, ObservationSqlBuilder, SpecimenSqlBuilder,
+    VisitOccurrenceSqlBuilder, DrugExposureSqlBuilder, ProcedureOccurrenceSqlBuilder
+)
+from .interfaces import IGetCriteriaSqlDispatcher, IGetEndStrategySqlDispatcher
+from .concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
+
+
+class BuildExpressionQueryOptions:
+    """Options for building expression queries.
+    
+    Java equivalent: org.ohdsi.circe.cohortdefinition.CohortExpressionQueryBuilder.BuildExpressionQueryOptions
+    """
+    
+    def __init__(self):
+        self.cohort_id_field_name: Optional[str] = None
+        self.cohort_id: Optional[int] = None
+        self.cdm_schema: Optional[str] = None
+        self.target_table: Optional[str] = None
+        self.result_schema: Optional[str] = None
+        self.vocabulary_schema: Optional[str] = None
+        self.generate_stats: bool = False
+    
+    @classmethod
+    def from_json(cls, json_str: str) -> 'BuildExpressionQueryOptions':
+        """Create options from JSON string.
+        
+        Java equivalent: fromJson()
+        """
+        try:
+            data = json.loads(json_str)
+            options = cls()
+            options.cohort_id_field_name = data.get('cohortIdFieldName')
+            options.cohort_id = data.get('cohortId')
+            options.cdm_schema = data.get('cdmSchema')
+            options.target_table = data.get('targetTable')
+            options.result_schema = data.get('resultSchema')
+            options.vocabulary_schema = data.get('vocabularySchema')
+            options.generate_stats = data.get('generateStats', False)
+            return options
+        except Exception as e:
+            raise RuntimeError("Error parsing expression query options", e)
+
+
+class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySqlDispatcher):
+    """Main SQL query builder for cohort expressions.
+    
+    Java equivalent: org.ohdsi.circe.cohortdefinition.CohortExpressionQueryBuilder
+    """
+    
+    # SQL templates - equivalent to Java ResourceHelper.GetResourceAsString
+    CODESET_QUERY_TEMPLATE = """
+    IF OBJECT_ID('tempdb..#Codesets', 'U') IS NOT NULL
+    DROP TABLE #Codesets;
+
+    CREATE TABLE #Codesets (
+      codeset_id int NOT NULL,
+      concept_id bigint NOT NULL
+    );
+
+    @codesetInserts
+    """
+    
+    COHORT_QUERY_TEMPLATE = """
+    @codesetQuery
+
+    @primaryEventsQuery
+
+    @additionalCriteriaQuery
+
+    @inclusionRuleTable
+
+    @inclusionCohortInserts
+
+    @strategy_ends_temp_tables
+
+    @cohort_end_unions
+
+    @finalCohortQuery
+
+    @strategy_ends_cleanup
+
+    @cohortCensoredStatsQuery
+    """
+    
+    PRIMARY_EVENTS_TEMPLATE = """
+    SELECT E.person_id, E.event_id, E.start_date, E.end_date, E.visit_occurrence_id, E.sort_date
+    FROM (
+        @criteriaQueries
+    ) E
+    INNER JOIN @cdm_database_schema.OBSERVATION_PERIOD OP ON E.person_id = OP.person_id
+    WHERE @primaryEventsFilter
+    ORDER BY E.sort_date @EventSort
+    @primaryEventLimit
+    """
+    
+    WINDOWED_CRITERIA_TEMPLATE = """
+    SELECT @indexId as index_id, A.person_id, A.event_id
+    FROM (@eventTable) P
+    INNER JOIN (@criteriaQuery) A ON A.person_id = P.person_id
+    WHERE @windowCriteria@additionalColumns
+    """
+    
+    ADDITIONAL_CRITERIA_INNER_TEMPLATE = """
+    SELECT @indexId as index_id, person_id, event_id
+    FROM (@eventTable) P
+    INNER JOIN (@criteriaQuery) A ON A.person_id = P.person_id
+    GROUP BY person_id, event_id
+    @occurrenceCriteria
+    """
+    
+    ADDITIONAL_CRITERIA_LEFT_TEMPLATE = """
+    SELECT @indexId as index_id, person_id, event_id
+    FROM (@eventTable) P
+    LEFT JOIN (@criteriaQuery) A ON A.person_id = P.person_id
+    GROUP BY person_id, event_id
+    @occurrenceCriteria
+    """
+    
+    GROUP_QUERY_TEMPLATE = """
+    SELECT @indexId as index_id, person_id, event_id
+    FROM (@eventTable) P
+    @joinType JOIN (
+        @criteriaQueries
+    ) A ON A.person_id = P.person_id
+    GROUP BY person_id, event_id
+    @occurrenceCountClause
+    """
+    
+    INCLUSION_RULE_QUERY_TEMPLATE = """
+    SELECT @inclusion_rule_id as inclusion_rule_id, person_id, event_id
+    FROM (@eventTable) pe
+    @additionalCriteriaQuery
+    """
+    
+    INCLUSION_RULE_TEMP_TABLE_TEMPLATE = """
+    CREATE TABLE #inclusion_rules (rule_sequence int);
+    INSERT INTO #inclusion_rules (rule_sequence)
+    @inclusionRuleUnions;
+    """
+    
+    CENSORING_QUERY_TEMPLATE = """
+    SELECT person_id, event_id, start_date as end_date
+    FROM (@criteriaQuery) C
+    """
+    
+    EVENT_TABLE_EXPRESSION_TEMPLATE = """
+    SELECT person_id, event_id, start_date, end_date, visit_occurrence_id, sort_date
+    FROM (@eventQuery) E
+    """
+    
+    DEMOGRAPHIC_CRITERIA_QUERY_TEMPLATE = """
+    SELECT @indexId as index_id, person_id, event_id
+    FROM (@eventTable) E
+    INNER JOIN @cdm_database_schema.PERSON P ON E.person_id = P.person_id
+    @whereClause
+    """
+    
+    COHORT_INCLUSION_ANALYSIS_TEMPLATE = """
+    SELECT @inclusionImpactMode as inclusion_rule_id, person_id, event_id
+    FROM (@eventTable) E
+    """
+    
+    COHORT_CENSORED_STATS_TEMPLATE = """
+    SELECT person_id, event_id, start_date, end_date
+    FROM #final_cohort
+    """
+    
+    # Strategy templates
+    DATE_OFFSET_STRATEGY_TEMPLATE = """
+    CREATE TABLE #strategy_ends (event_id bigint, person_id bigint, end_date date);
+    INSERT INTO #strategy_ends (event_id, person_id, end_date)
+    SELECT event_id, person_id, DATEADD(day, @offset, @dateField) as end_date
+    FROM (@eventTable) E;
+    """
+    
+    CUSTOM_ERA_STRATEGY_TEMPLATE = """
+    CREATE TABLE #strategy_ends (event_id bigint, person_id bigint, end_date date);
+    INSERT INTO #strategy_ends (event_id, person_id, end_date)
+    SELECT E.event_id, E.person_id, DATEADD(day, @offset, @drugExposureEndDateExpression) as end_date
+    FROM (@eventTable) E
+    INNER JOIN @cdm_database_schema.DRUG_EXPOSURE DE ON E.person_id = DE.person_id
+    WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id = @drugCodesetId)
+        AND DE.drug_exposure_start_date <= E.end_date
+        AND DATEADD(day, @gapDays, DE.drug_exposure_end_date) >= E.start_date;
+    """
+    
+    DEFAULT_DRUG_EXPOSURE_END_DATE_EXPRESSION = "COALESCE(DRUG_EXPOSURE_END_DATE, DATEADD(day,DAYS_SUPPLY,DRUG_EXPOSURE_START_DATE), DATEADD(day,1,DRUG_EXPOSURE_START_DATE))"
+    DEFAULT_COHORT_ID_FIELD_NAME = "cohort_definition_id"
+    
+    def __init__(self):
+        """Initialize the query builder."""
+        self.concept_set_query_builder = ConceptSetExpressionQueryBuilder()
+        
+        # Initialize builders
+        self.condition_occurrence_sql_builder = ConditionOccurrenceSqlBuilder()
+        self.death_sql_builder = DeathSqlBuilder()
+        self.device_exposure_sql_builder = DeviceExposureSqlBuilder()
+        self.measurement_sql_builder = MeasurementSqlBuilder()
+        self.observation_sql_builder = ObservationSqlBuilder()
+        self.specimen_sql_builder = SpecimenSqlBuilder()
+        self.visit_occurrence_sql_builder = VisitOccurrenceSqlBuilder()
+        self.drug_exposure_sql_builder = DrugExposureSqlBuilder()
+        self.procedure_occurrence_sql_builder = ProcedureOccurrenceSqlBuilder()
+    
+    def get_occurrence_operator(self, occurrence_type: int) -> str:
+        """Get occurrence operator string.
+        
+        Java equivalent: getOccurrenceOperator()
+        """
+        # Occurrence check { id: 0, name: 'Exactly', id: 1, name: 'At Most' }, { id: 2, name: 'At Least' }
+        if occurrence_type == 0:
+            return "="
+        elif occurrence_type == 1:
+            return "<="
+        elif occurrence_type == 2:
+            return ">="
+        else:
+            raise RuntimeError(f"Invalid occurrence operator received: type={occurrence_type}")
+    
+    def get_additional_columns(self, columns: List[CriteriaColumn], prefix: str) -> str:
+        """Get additional columns string.
+        
+        Java equivalent: getAdditionalColumns()
+        """
+        return ",".join([f"{prefix}{column.value}" for column in columns])
+    
+    def wrap_criteria_query(self, query: str, group: CriteriaGroup) -> str:
+        """Wrap criteria query with group logic.
+        
+        Java equivalent: wrapCriteriaQuery()
+        """
+        event_query = self.EVENT_TABLE_EXPRESSION_TEMPLATE.replace("@eventQuery", query)
+        group_query = self.get_criteria_group_query(group, f"({event_query})")
+        group_query = group_query.replace("@indexId", "0")
+        wrapped_query = f"""
+        SELECT PE.person_id, PE.event_id, PE.start_date, PE.end_date, PE.visit_occurrence_id, PE.sort_date 
+        FROM ({query}) PE
+        JOIN ({group_query}) AC ON AC.person_id = PE.person_id AND AC.event_id = PE.event_id
+        """
+        return wrapped_query
+    
+    def get_codeset_query(self, concept_sets: List[Any]) -> str:
+        """Get codeset query.
+        
+        Java equivalent: getCodesetQuery()
+        """
+        if not concept_sets:
+            return self.CODESET_QUERY_TEMPLATE.replace("@codesetInserts", "")
+        
+        union_selects = []
+        for cs in concept_sets:
+            if hasattr(cs, 'id') and hasattr(cs, 'expression'):
+                expression_query = self.concept_set_query_builder.build_expression_query(cs.expression)
+                union_select = f"SELECT {cs.id} as codeset_id, c.concept_id FROM ({expression_query}) C"
+                union_selects.append(union_select)
+        
+        union_query = " UNION ALL ".join(union_selects)
+        codeset_inserts = f"INSERT INTO #Codesets (codeset_id, concept_id)\n{union_query};"
+        
+        return self.CODESET_QUERY_TEMPLATE.replace("@codesetInserts", codeset_inserts)
+    
+    def get_censoring_events_query(self, censoring_criteria: List[Criteria]) -> str:
+        """Get censoring events query.
+        
+        Java equivalent: getCensoringEventsQuery()
+        """
+        criteria_queries = []
+        for criteria in censoring_criteria:
+            criteria_query = self.get_criteria_sql(criteria)
+            censoring_query = self.CENSORING_QUERY_TEMPLATE.replace("@criteriaQuery", criteria_query)
+            criteria_queries.append(censoring_query)
+        
+        return " UNION ALL ".join(criteria_queries)
+    
+    def get_primary_events_query(self, primary_criteria: PrimaryCriteria) -> str:
+        """Get primary events query.
+        
+        Java equivalent: getPrimaryEventsQuery()
+        """
+        query = self.PRIMARY_EVENTS_TEMPLATE
+        
+        criteria_queries = []
+        for criteria in primary_criteria.criteria_list:
+            criteria_queries.append(self.get_criteria_sql(criteria))
+        
+        query = query.replace("@criteriaQueries", " UNION ALL ".join(criteria_queries))
+        
+        # Primary events filters
+        primary_events_filters = [
+            f"DATEADD(day,{primary_criteria.observation_window.prior_days},OP.OBSERVATION_PERIOD_START_DATE) <= E.START_DATE AND DATEADD(day,{primary_criteria.observation_window.post_days},E.START_DATE) <= OP.OBSERVATION_PERIOD_END_DATE"
+        ]
+        
+        query = query.replace("@primaryEventsFilter", " AND ".join(primary_events_filters))
+        
+        # Event sort
+        event_sort = "DESC" if primary_criteria.primary_limit.type and primary_criteria.primary_limit.type.upper() == "LAST" else "ASC"
+        query = query.replace("@EventSort", event_sort)
+        
+        # Primary event limit
+        primary_event_limit = "" if primary_criteria.primary_limit.type.upper() == "ALL" else "WHERE P.ordinal = 1"
+        query = query.replace("@primaryEventLimit", primary_event_limit)
+        
+        return query
+    
+    def get_final_cohort_query(self, censor_window: Optional[Period]) -> str:
+        """Get final cohort query.
+        
+        Java equivalent: getFinalCohortQuery()
+        """
+        query = "SELECT @target_cohort_id as @cohort_id_field_name, person_id, @start_date, @end_date\nFROM #final_cohort CO"
+        
+        start_date = "start_date"
+        end_date = "end_date"
+        
+        if censor_window and (censor_window.start_date or censor_window.end_date):
+            if censor_window.start_date:
+                censor_start_date = BuilderUtils.date_string_to_sql(censor_window.start_date)
+                start_date = f"CASE WHEN start_date > {censor_start_date} THEN start_date ELSE {censor_start_date} END"
+            if censor_window.end_date:
+                censor_end_date = BuilderUtils.date_string_to_sql(censor_window.end_date)
+                end_date = f"CASE WHEN end_date < {censor_end_date} THEN end_date ELSE {censor_end_date} END"
+            query += "\nWHERE @start_date <= @end_date"
+        
+        query = query.replace("@start_date", start_date)
+        query = query.replace("@end_date", end_date)
+        
+        return query
+    
+    def get_inclusion_rule_table_sql(self, expression: CohortExpression) -> str:
+        """Get inclusion rule table SQL.
+        
+        Java equivalent: getInclusionRuleTableSql()
+        """
+        empty_table = "CREATE TABLE #inclusion_rules (rule_sequence int);"
+        if not expression.inclusion_rules:
+            return empty_table
+        
+        union_template = "SELECT CAST({} as int) as rule_sequence"
+        union_list = [union_template.format(i) for i in range(len(expression.inclusion_rules))]
+        
+        return self.INCLUSION_RULE_TEMP_TABLE_TEMPLATE.replace("@inclusionRuleUnions", " UNION ALL ".join(union_list))
+    
+    def get_inclusion_analysis_query(self, event_table: str, mode_id: int) -> str:
+        """Get inclusion analysis query.
+        
+        Java equivalent: getInclusionAnalysisQuery()
+        """
+        result_sql = self.COHORT_INCLUSION_ANALYSIS_TEMPLATE
+        result_sql = result_sql.replace("@inclusionImpactMode", str(mode_id))
+        result_sql = result_sql.replace("@eventTable", event_table)
+        return result_sql
+    
+    def build_expression_query(self, expression: str, options: BuildExpressionQueryOptions) -> str:
+        """Build expression query from JSON string.
+        
+        Java equivalent: buildExpressionQuery(String, BuildExpressionQueryOptions)
+        """
+        cohort_expression = CohortExpression.model_validate_json(expression)
+        return self.build_expression_query(cohort_expression, options)
+    
+    def build_expression_query(self, expression: CohortExpression, options: BuildExpressionQueryOptions) -> str:
+        """Build expression query from CohortExpression object.
+        
+        Java equivalent: buildExpressionQuery(CohortExpression, BuildExpressionQueryOptions)
+        """
+        result_sql = self.COHORT_QUERY_TEMPLATE
+        
+        # Codeset query
+        codeset_query = self.get_codeset_query(expression.concept_sets)
+        result_sql = result_sql.replace("@codesetQuery", codeset_query)
+        
+        # Primary events query
+        primary_events_query = self.get_primary_events_query(expression.primary_criteria)
+        result_sql = result_sql.replace("@primaryEventsQuery", primary_events_query)
+        
+        # Additional criteria query
+        additional_criteria_query = ""
+        if expression.additional_criteria:
+            ac_group = expression.additional_criteria
+            ac_group_query = self.get_criteria_group_query(ac_group, f"({primary_events_query})")
+            ac_group_query = ac_group_query.replace("@indexId", "0")
+            additional_criteria_query = f"\nJOIN (\n{ac_group_query}) AC ON AC.person_id = PE.person_id AND AC.event_id = PE.event_id\n"
+        result_sql = result_sql.replace("@additionalCriteriaQuery", additional_criteria_query)
+        
+        # Qualified event sort
+        qualified_event_sort = "DESC" if expression.qualified_limit and expression.qualified_limit.type and expression.qualified_limit.type.upper() == "LAST" else "ASC"
+        result_sql = result_sql.replace("@QualifiedEventSort", qualified_event_sort)
+        
+        # Qualified limit filter
+        if expression.additional_criteria and expression.qualified_limit and expression.qualified_limit.type and expression.qualified_limit.type.upper() != "ALL":
+            result_sql = result_sql.replace("@QualifiedLimitFilter", "WHERE QE.ordinal = 1")
+        else:
+            result_sql = result_sql.replace("@QualifiedLimitFilter", "")
+        
+        # Inclusion rules
+        if expression.inclusion_rules:
+            inclusion_rule_inserts = []
+            inclusion_rule_temp_tables = []
+            
+            for i, inclusion_rule in enumerate(expression.inclusion_rules):
+                cg = inclusion_rule.expression
+                inclusion_rule_insert = self.get_inclusion_rule_query(cg)
+                inclusion_rule_insert = inclusion_rule_insert.replace("@inclusion_rule_id", str(i))
+                inclusion_rule_inserts.append(inclusion_rule_insert)
+                inclusion_rule_temp_tables.append(f"#Inclusion_{i}")
+            
+            ir_temp_union = " UNION ALL ".join([
+                f"SELECT inclusion_rule_id, person_id, event_id FROM {table}" 
+                for table in inclusion_rule_temp_tables
+            ])
+            
+            inclusion_rule_inserts.append(f"SELECT inclusion_rule_id, person_id, event_id\nINTO #inclusion_events\nFROM ({ir_temp_union}) I;")
+            
+            inclusion_rule_inserts.extend([
+                f"TRUNCATE TABLE {table};\nDROP TABLE {table};\n" 
+                for table in inclusion_rule_temp_tables
+            ])
+            
+            result_sql = result_sql.replace("@inclusionCohortInserts", "\n".join(inclusion_rule_inserts))
+        else:
+            result_sql = result_sql.replace("@inclusionCohortInserts", "CREATE TABLE #inclusion_events (inclusion_rule_id bigint,\n\tperson_id bigint,\n\tevent_id bigint\n);")
+        
+        # Included event sort
+        included_event_sort = "DESC" if expression.expression_limit and expression.expression_limit.type and expression.expression_limit.type.upper() == "LAST" else "ASC"
+        result_sql = result_sql.replace("@IncludedEventSort", included_event_sort)
+        
+        # Result limit filter
+        if expression.expression_limit and expression.expression_limit.type and expression.expression_limit.type.upper() != "ALL":
+            result_sql = result_sql.replace("@ResultLimitFilter", "WHERE Results.ordinal = 1")
+        else:
+            result_sql = result_sql.replace("@ResultLimitFilter", "")
+        
+        result_sql = result_sql.replace("@ruleTotal", str(len(expression.inclusion_rules) if expression.inclusion_rules else 0))
+        
+        # End date selects
+        end_date_selects = []
+        
+        if not isinstance(expression.end_strategy, DateOffsetStrategy):
+            end_date_selects.append("-- By default, cohort exit at the event's op end date\nSELECT event_id, person_id, op_end_date as end_date FROM #included_events")
+        
+        if expression.end_strategy:
+            result_sql = result_sql.replace("@strategy_ends_temp_tables", expression.end_strategy.accept(self, "#included_events"))
+            result_sql = result_sql.replace("@strategy_ends_cleanup", "TRUNCATE TABLE #strategy_ends;\nDROP TABLE #strategy_ends;\n")
+            end_date_selects.append("-- End Date Strategy\nSELECT event_id, person_id, end_date FROM #strategy_ends")
+        else:
+            result_sql = result_sql.replace("@strategy_ends_temp_tables", "")
+            result_sql = result_sql.replace("@strategy_ends_cleanup", "")
+        
+        if expression.censoring_criteria:
+            end_date_selects.append(f"-- Censor Events\n{self.get_censoring_events_query(expression.censoring_criteria)}")
+        
+        result_sql = result_sql.replace("@finalCohortQuery", self.get_final_cohort_query(expression.censor_window))
+        result_sql = result_sql.replace("@cohort_end_unions", " UNION ALL ".join(end_date_selects))
+        result_sql = result_sql.replace("@eraconstructorpad", str(expression.collapse_settings.era_pad))
+        result_sql = result_sql.replace("@inclusionRuleTable", self.get_inclusion_rule_table_sql(expression))
+        result_sql = result_sql.replace("@inclusionImpactAnalysisByEventQuery", self.get_inclusion_analysis_query("#qualified_events", 0))
+        result_sql = result_sql.replace("@inclusionImpactAnalysisByPersonQuery", self.get_inclusion_analysis_query("#best_events", 1))
+        
+        # Cohort censored stats query
+        cohort_censored_stats_query = ""
+        if expression.censor_window and (expression.censor_window.start_date or expression.censor_window.end_date):
+            cohort_censored_stats_query = self.COHORT_CENSORED_STATS_TEMPLATE
+        result_sql = result_sql.replace("@cohortCensoredStatsQuery", cohort_censored_stats_query)
+        
+        # Replace query parameters with tokens
+        if options:
+            if options.cdm_schema:
+                result_sql = result_sql.replace("@cdm_database_schema", options.cdm_schema)
+            if options.target_table:
+                result_sql = result_sql.replace("@target_database_schema.@target_cohort_table", options.target_table)
+            if options.result_schema:
+                result_sql = result_sql.replace("@results_database_schema", options.result_schema)
+            if options.vocabulary_schema:
+                result_sql = result_sql.replace("@vocabulary_database_schema", options.vocabulary_schema)
+            elif options.cdm_schema:
+                result_sql = result_sql.replace("@vocabulary_database_schema", options.cdm_schema)
+            if options.cohort_id is not None:
+                result_sql = result_sql.replace("@target_cohort_id", str(options.cohort_id))
+            
+            result_sql = result_sql.replace("@generateStats", "1" if options.generate_stats else "0")
+            
+            if options.cohort_id_field_name:
+                result_sql = result_sql.replace("@cohort_id_field_name", options.cohort_id_field_name)
+            else:
+                result_sql = result_sql.replace("@cohort_id_field_name", self.DEFAULT_COHORT_ID_FIELD_NAME)
+        else:
+            result_sql = result_sql.replace("@cohort_id_field_name", self.DEFAULT_COHORT_ID_FIELD_NAME)
+        
+        return result_sql
+    
+    def get_criteria_group_query(self, group: CriteriaGroup, event_table: str) -> str:
+        """Get criteria group query.
+        
+        Java equivalent: getCriteriaGroupQuery()
+        """
+        query = self.GROUP_QUERY_TEMPLATE
+        additional_criteria_queries = []
+        join_type = "INNER"
+        
+        index_id = 0
+        if group.criteria_list:
+            for cc in group.criteria_list:
+                ac_query = self.get_corelated_criteria_query(cc, event_table)
+                ac_query = ac_query.replace("@indexId", str(index_id))
+                additional_criteria_queries.append(ac_query)
+                index_id += 1
+        
+        if group.demographic_criteria_list:
+            for dc in group.demographic_criteria_list:
+                dc_query = self.get_demographic_criteria_query(dc, event_table)
+                dc_query = dc_query.replace("@indexId", str(index_id))
+                additional_criteria_queries.append(dc_query)
+                index_id += 1
+        
+        if group.groups:
+            for g in group.groups:
+                g_query = self.get_criteria_group_query(g, event_table)
+                g_query = g_query.replace("@indexId", str(index_id))
+                additional_criteria_queries.append(g_query)
+                index_id += 1
+        
+        if not group.is_empty():
+            query = query.replace("@criteriaQueries", " UNION ALL ".join(additional_criteria_queries))
+            
+            occurrence_count_clause = "HAVING COUNT(index_id) "
+            if group.type.upper() == "ALL":
+                occurrence_count_clause += f"= {index_id}"
+            elif group.type.upper() == "ANY":
+                occurrence_count_clause += "> 0"
+            elif group.type.upper().startswith("AT_"):
+                if group.type.upper().endswith("LEAST"):
+                    occurrence_count_clause += f">= {group.count}"
+                else:  # AT_MOST
+                    occurrence_count_clause += f"<= {group.count}"
+                    join_type = "LEFT"
+                
+                if group.count == 0:
+                    join_type = "LEFT"
+            
+            query = query.replace("@occurrenceCountClause", occurrence_count_clause)
+            query = query.replace("@joinType", join_type)
+        else:
+            query = f"-- Begin Criteria Group\nSELECT @indexId as index_id, person_id, event_id FROM {event_table}\n-- End Criteria Group\n"
+        
+        query = query.replace("@eventTable", event_table)
+        return query
+    
+    def get_inclusion_rule_query(self, inclusion_rule: CriteriaGroup) -> str:
+        """Get inclusion rule query.
+        
+        Java equivalent: getInclusionRuleQuery()
+        """
+        result_sql = self.INCLUSION_RULE_QUERY_TEMPLATE
+        additional_criteria_query = f"\nJOIN (\n{self.get_criteria_group_query(inclusion_rule, '#qualified_events')}) AC ON AC.person_id = PE.person_id AND AC.event_id = PE.event_id"
+        additional_criteria_query = additional_criteria_query.replace("@indexId", "0")
+        result_sql = result_sql.replace("@additionalCriteriaQuery", additional_criteria_query)
+        return result_sql
+    
+    def get_demographic_criteria_query(self, criteria: DemographicCriteria, event_table: str) -> str:
+        """Get demographic criteria query.
+        
+        Java equivalent: getDemographicCriteriaQuery()
+        """
+        query = self.DEMOGRAPHIC_CRITERIA_QUERY_TEMPLATE
+        query = query.replace("@eventTable", event_table)
+        
+        where_clauses = []
+        
+        # Age
+        if criteria.age:
+                where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.age, "YEAR(E.start_date) - P.year_of_birth"))
+        
+        # Gender
+        if criteria.gender:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.gender)
+            where_clauses.append(f"P.gender_concept_id IN ({','.join(map(str, concept_ids))})")
+        
+        # GenderCS
+        if criteria.gender_cs:
+            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.gender_cs.codeset_id, "P.gender_concept_id", criteria.gender_cs.is_exclusion))
+        
+        # Race
+        if criteria.race:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.race)
+            where_clauses.append(f"P.race_concept_id IN ({','.join(map(str, concept_ids))})")
+        
+        # RaceCS
+        if criteria.race_cs:
+            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.race_cs.codeset_id, "P.race_concept_id", criteria.race_cs.is_exclusion))
+        
+        # Ethnicity
+        if criteria.ethnicity:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.ethnicity)
+            where_clauses.append(f"P.ethnicity_concept_id IN ({','.join(map(str, concept_ids))})")
+        
+        # EthnicityCS
+        if criteria.ethnicity_cs:
+            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.ethnicity_cs.codeset_id, "P.ethnicity_concept_id", criteria.ethnicity_cs.is_exclusion))
+        
+        # OccurrenceStartDate
+        if criteria.occurrence_start_date:
+            where_clauses.append(BuilderUtils.build_date_range_clause("E.start_date", criteria.occurrence_start_date))
+        
+        # OccurrenceEndDate
+        if criteria.occurrence_end_date:
+            where_clauses.append(BuilderUtils.build_date_range_clause("E.end_date", criteria.occurrence_end_date))
+        
+        if where_clauses:
+            query = query.replace("@whereClause", "WHERE " + " AND ".join(where_clauses))
+        else:
+            query = query.replace("@whereClause", "")
+        
+        return query
+    
+    def _get_windowed_criteria_query_internal(self, sql_template: str, criteria: Any, event_table: str, options: Optional[BuilderOptions]) -> str:
+        """Get windowed criteria query (internal method with all parameters).
+        
+        Java equivalent: getWindowedCriteriaQuery(String, WindowedCriteria, String, BuilderOptions)
+        """
+        query = sql_template
+        check_observation_period = not criteria.ignore_observation_period
+        
+        criteria_query = criteria.criteria.accept(self, options)
+        query = query.replace("@criteriaQuery", criteria_query)
+        query = query.replace("@eventTable", event_table)
+        
+        if options and options.additional_columns:
+            query = query.replace("@additionalColumns", ", " + self.get_additional_columns(options.additional_columns, "A."))
+        else:
+            query = query.replace("@additionalColumns", "")
+        
+        # Build index date window expression
+        clauses = []
+        if check_observation_period:
+            clauses.append("A.START_DATE >= P.OP_START_DATE AND A.START_DATE <= P.OP_END_DATE")
+        
+        # StartWindow
+        start_window = criteria.start_window
+        if start_window:
+            start_index_date_expression = "P.END_DATE" if start_window.use_index_end else "P.START_DATE"
+            start_event_date_expression = "A.END_DATE" if start_window.use_event_end else "A.START_DATE"
+            
+            if start_window.start and start_window.start.days is not None:
+                start_expression = f"DATEADD(day,{start_window.start.coeff * start_window.start.days},{start_index_date_expression})"
+            else:
+                start_expression = "P.OP_START_DATE" if start_window.start and start_window.start.coeff == -1 else "P.OP_END_DATE" if check_observation_period else None
+            
+            if start_expression:
+                clauses.append(f"{start_event_date_expression} >= {start_expression}")
+            
+            if start_window.end and start_window.end.days is not None:
+                end_expression = f"DATEADD(day,{start_window.end.coeff * start_window.end.days},{start_index_date_expression})"
+            else:
+                end_expression = "P.OP_START_DATE" if start_window.end and start_window.end.coeff == -1 else "P.OP_END_DATE" if check_observation_period else None
+            
+            if end_expression:
+                clauses.append(f"{start_event_date_expression} <= {end_expression}")
+        
+        # EndWindow
+        end_window = criteria.end_window
+        if end_window:
+            end_index_date_expression = "P.END_DATE" if end_window.use_index_end else "P.START_DATE"
+            end_event_date_expression = "A.END_DATE" if end_window.use_event_end else "A.START_DATE"
+            
+            if end_window.start.days is not None:
+                start_expression = f"DATEADD(day,{end_window.start.coeff * end_window.start.days},{end_index_date_expression})"
+            else:
+                start_expression = "P.OP_START_DATE" if end_window.start.coeff == -1 else "P.OP_END_DATE" if check_observation_period else None
+            
+            if start_expression:
+                clauses.append(f"{end_event_date_expression} >= {start_expression}")
+            
+            if end_window.end.days is not None:
+                end_expression = f"DATEADD(day,{end_window.end.coeff * end_window.end.days},{end_index_date_expression})"
+            else:
+                end_expression = "P.OP_START_DATE" if end_window.end.coeff == -1 else "P.OP_END_DATE" if check_observation_period else None
+            
+            if end_expression:
+                clauses.append(f"{end_event_date_expression} <= {end_expression}")
+        
+        # RestrictVisit
+        if criteria.restrict_visit:
+            clauses.append("A.visit_occurrence_id = P.visit_occurrence_id")
+        
+        query = query.replace("@windowCriteria", " AND " + " AND ".join(clauses) if clauses else "")
+        
+        return query
+    
+    def get_windowed_criteria_query(self, criteria: Any, event_table: str, options: Optional[BuilderOptions] = None) -> str:
+        """Get windowed criteria query.
+        
+        Java equivalent: getWindowedCriteriaQuery(WindowedCriteria, String) and getWindowedCriteriaQuery(WindowedCriteria, String, BuilderOptions)
+        """
+        return self._get_windowed_criteria_query_internal(self.WINDOWED_CRITERIA_TEMPLATE, criteria, event_table, options)
+    
+    def get_corelated_criteria_query(self, corelated_criteria: CorelatedCriteria, event_table: str) -> str:
+        """Get corelated criteria query.
+        
+        Java equivalent: getCorelatedlCriteriaQuery()
+        """
+        # Pick the appropriate query template
+        query = self.ADDITIONAL_CRITERIA_LEFT_TEMPLATE if corelated_criteria.occurrence.type == Occurrence.AT_MOST or corelated_criteria.occurrence.count == 0 else self.ADDITIONAL_CRITERIA_INNER_TEMPLATE
+        
+        count_column_expression = "cc.event_id"
+        
+        builder_options = BuilderOptions()
+        if corelated_criteria.occurrence.is_distinct:
+            if corelated_criteria.occurrence.count_column is None:
+                builder_options.additional_columns.append(CriteriaColumn.DOMAIN_CONCEPT)
+                count_column_expression = f"cc.{CriteriaColumn.DOMAIN_CONCEPT.value}"
+            else:
+                builder_options.additional_columns.append(corelated_criteria.occurrence.count_column)
+                count_column_expression = f"cc.{corelated_criteria.occurrence.count_column.value}"
+        
+        query = self._get_windowed_criteria_query_internal(query, corelated_criteria, event_table, builder_options)
+        
+        # Occurrence criteria
+        occurrence_criteria = f"HAVING COUNT({'DISTINCT ' if corelated_criteria.occurrence.is_distinct else ''}{count_column_expression}) {self.get_occurrence_operator(corelated_criteria.occurrence.type)} {corelated_criteria.occurrence.count}"
+        
+        query = query.replace("@occurrenceCriteria", occurrence_criteria)
+        
+        return query
+    
+    def get_criteria_sql(self, criteria: Criteria, options: Optional[BuilderOptions] = None) -> str:
+        """Get criteria SQL for any criteria type.
+        
+        Java equivalent: Various getCriteriaSql methods
+        """
+        if isinstance(criteria, ConditionOccurrence):
+            return self._get_criteria_sql_from_builder(self.condition_occurrence_sql_builder, criteria, options)
+        elif isinstance(criteria, Death):
+            return self._get_criteria_sql_from_builder(self.death_sql_builder, criteria, options)
+        elif isinstance(criteria, DeviceExposure):
+            return self._get_criteria_sql_from_builder(self.device_exposure_sql_builder, criteria, options)
+        elif isinstance(criteria, Measurement):
+            return self._get_criteria_sql_from_builder(self.measurement_sql_builder, criteria, options)
+        elif isinstance(criteria, Observation):
+            return self._get_criteria_sql_from_builder(self.observation_sql_builder, criteria, options)
+        elif isinstance(criteria, Specimen):
+            return self._get_criteria_sql_from_builder(self.specimen_sql_builder, criteria, options)
+        elif isinstance(criteria, VisitOccurrence):
+            return self._get_criteria_sql_from_builder(self.visit_occurrence_sql_builder, criteria, options)
+        elif isinstance(criteria, DrugExposure):
+            return self._get_criteria_sql_from_builder(self.drug_exposure_sql_builder, criteria, options)
+        elif isinstance(criteria, ProcedureOccurrence):
+            return self._get_criteria_sql_from_builder(self.procedure_occurrence_sql_builder, criteria, options)
+        else:
+            raise ValueError(f"Unsupported criteria type: {type(criteria)}")
+    
+    def _get_criteria_sql_from_builder(self, builder: Any, criteria: Criteria, options: Optional[BuilderOptions]) -> str:
+        """Generic method to get criteria SQL from builder."""
+        query = builder.get_criteria_sql_with_options(criteria, options)
+        return self.process_correlated_criteria(query, criteria)
+    
+    def process_correlated_criteria(self, query: str, criteria: Criteria) -> str:
+        """Process correlated criteria."""
+        if hasattr(criteria, 'correlated_criteria') and criteria.correlated_criteria:
+            query = self.wrap_criteria_query(query, criteria.correlated_criteria)
+        return query
+    
+    # IGetEndStrategySqlDispatcher implementation
+    def get_date_field_for_offset_strategy(self, date_field: str) -> str:
+        """Get date field for offset strategy."""
+        if date_field == "StartDate":
+            return "start_date"
+        elif date_field == "EndDate":
+            return "end_date"
+        return "start_date"
+    
+    def get_strategy_sql(self, strategy: Union[DateOffsetStrategy, CustomEraStrategy], event_table: str) -> str:
+        """Get strategy SQL for date offset or custom era strategy."""
+        if isinstance(strategy, DateOffsetStrategy):
+            return self._get_date_offset_strategy_sql(strategy, event_table)
+        elif isinstance(strategy, CustomEraStrategy):
+            return self._get_custom_era_strategy_sql(strategy, event_table)
+        else:
+            raise ValueError(f"Unsupported strategy type: {type(strategy)}")
+    
+    def _get_date_offset_strategy_sql(self, strategy: DateOffsetStrategy, event_table: str) -> str:
+        """Get strategy SQL for date offset strategy."""
+        strategy_sql = self.DATE_OFFSET_STRATEGY_TEMPLATE.replace("@eventTable", event_table)
+        strategy_sql = strategy_sql.replace("@offset", str(strategy.offset))
+        strategy_sql = strategy_sql.replace("@dateField", self.get_date_field_for_offset_strategy(strategy.date_field))
+        return strategy_sql
+    
+    def _get_custom_era_strategy_sql(self, strategy: CustomEraStrategy, event_table: str) -> str:
+        """Get strategy SQL for custom era strategy."""
+        if strategy.drug_codeset_id is None:
+            raise RuntimeError("Drug Codeset ID cannot be NULL.")
+        
+        drug_exposure_end_date_expression = self.DEFAULT_DRUG_EXPOSURE_END_DATE_EXPRESSION
+        
+        strategy_sql = self.CUSTOM_ERA_STRATEGY_TEMPLATE.replace("@eventTable", event_table)
+        strategy_sql = strategy_sql.replace("@drugCodesetId", str(strategy.drug_codeset_id))
+        strategy_sql = strategy_sql.replace("@gapDays", str(strategy.gap_days))
+        strategy_sql = strategy_sql.replace("@offset", str(strategy.offset))
+        strategy_sql = strategy_sql.replace("@drugExposureEndDateExpression", drug_exposure_end_date_expression)
+        
+        return strategy_sql
+    
+    def _get_additional_columns(self, columns: List[CriteriaColumn], table_alias: str) -> str:
+        """Get additional columns for SQL query."""
+        if not columns:
+            return ""
+        
+        column_mappings = {
+            CriteriaColumn.AGE: "age",
+            CriteriaColumn.GENDER: "gender", 
+            CriteriaColumn.RACE: "race",
+            CriteriaColumn.ETHNICITY: "ethnicity",
+            CriteriaColumn.DOMAIN_CONCEPT: "domain_concept"
+        }
+        
+        column_clauses = []
+        for column in columns:
+            if column in column_mappings:
+                column_clauses.append(f"{table_alias}{column_mappings[column]}")
+        
+        return ", ".join(column_clauses)

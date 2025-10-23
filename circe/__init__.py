@@ -11,6 +11,10 @@ This package provides:
 - Print-friendly output generation
 - Comprehensive checking and validation
 
+GUARD RAIL: This package implements Java CIRCE-BE functionality.
+Any changes must maintain 1:1 compatibility with Java classes.
+Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
+
 Version: 1.0.0
 Author: CIRCE Python Implementation Team
 License: Apache License 2.0
