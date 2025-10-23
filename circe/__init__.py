@@ -21,13 +21,17 @@ __author__ = "CIRCE Python Implementation Team"
 __email__ = "circe-python@ohdsi.org"
 __license__ = "Apache License 2.0"
 
-# Main exports will be added as classes are implemented
-# from .cohortdefinition import CohortExpression
-# from .vocabulary import Concept, ConceptSet, ConceptSetExpression
+# Main exports
+from .cohortdefinition import CohortExpression
+from .vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 __all__ = [
     "__version__",
     "__author__",
     "__email__",
-    "__license__"
+    "__license__",
+    # Main cohort class
+    "CohortExpression",
+    # Vocabulary classes
+    "Concept", "ConceptSet", "ConceptSetExpression", "ConceptSetItem"
 ]

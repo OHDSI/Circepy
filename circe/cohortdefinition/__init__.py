@@ -5,10 +5,29 @@ This module contains classes for defining cohort expressions, criteria, and rela
 It mirrors the Java CIRCE-BE cohortdefinition package structure.
 """
 
-# Placeholder for future imports
-# from .cohort import CohortExpression
-# from .criteria import *
-# from .interfaces import *
-# from .core import *
+from .cohort import CohortExpression
+from .criteria import (
+    Criteria, CorelatedCriteria, DemographicCriteria, 
+    Occurrence, CriteriaColumn, InclusionRule
+)
+from .core import (
+    CollapseType, DateType, ResultLimit, Period, DateRange, 
+    NumericRange, DateAdjustment, ObservationFilter, 
+    CollapseSettings, EndStrategy, PrimaryCriteria, 
+    CriteriaGroup, ConceptSetSelection
+)
 
-__all__ = []
+__all__ = [
+    # Main cohort class
+    "CohortExpression",
+    
+    # Criteria classes
+    "Criteria", "CorelatedCriteria", "DemographicCriteria", 
+    "Occurrence", "CriteriaColumn", "InclusionRule",
+    
+    # Core classes
+    "CollapseType", "DateType", "ResultLimit", "Period", "DateRange", 
+    "NumericRange", "DateAdjustment", "ObservationFilter", 
+    "CollapseSettings", "EndStrategy", "PrimaryCriteria", 
+    "CriteriaGroup", "ConceptSetSelection"
+]

@@ -1,12 +1,14 @@
 """
 Vocabulary Module
 
-This module contains classes for managing concepts and concept sets.
+This module contains classes for managing concepts, concept sets, and concept set expressions.
 It mirrors the Java CIRCE-BE vocabulary package structure.
 """
 
-# Placeholder for future imports
-# from .concept import Concept
-# from .concept_set import ConceptSet, ConceptSetExpression
+from .concept import (
+    Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
+)
 
-__all__ = []
+__all__ = [
+    "Concept", "ConceptSet", "ConceptSetExpression", "ConceptSetItem"
+]

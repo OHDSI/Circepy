@@ -50,13 +50,36 @@ class TestPackageStructure:
         for attr in expected_attrs:
             assert hasattr(circe, attr), f"Missing attribute: {attr}"
     
-    def test_placeholder_exports(self):
-        """Test that placeholder exports are working."""
-        # These will be updated as classes are implemented
+    def test_main_exports(self):
+        """Test that main classes are properly exported."""
+        # These should be available at the package level
         assert hasattr(circe, '__all__')
         assert isinstance(circe.__all__, list)
-        # For now, only metadata should be exported
-        assert len(circe.__all__) == 4  # __version__, __author__, __email__, __license__
+        
+        # Should include metadata and main classes
+        expected_exports = [
+            "__version__", "__author__", "__email__", "__license__",
+            "CohortExpression", "Concept", "ConceptSet", 
+            "ConceptSetExpression", "ConceptSetItem"
+        ]
+        
+        for export in expected_exports:
+            assert export in circe.__all__, f"Missing export: {export}"
+        
+    def test_main_class_imports(self):
+        """Test that main classes can be imported and instantiated."""
+        # Test that classes are available at package level
+        from circe import CohortExpression, Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
+        
+        # Test basic instantiation
+        concept = Concept(conceptId=12345)
+        assert concept.concept_id == 12345
+        
+        concept_set = ConceptSet(id=1)
+        assert concept_set.id == 1
+        
+        cohort_expr = CohortExpression(title="Test")
+        assert cohort_expr.title == "Test"
 
 
 class TestModuleStructure:
