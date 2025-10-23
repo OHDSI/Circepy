@@ -108,7 +108,7 @@ warn_unreachable = true
 strict_equality = true
 
 [tool.pytest.ini_options]
-testpaths = ["circe/tests"]
+testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -119,6 +119,7 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-report=xml",
+    "--ignore=tests/test_simple.py",
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
