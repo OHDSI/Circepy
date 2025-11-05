@@ -419,6 +419,8 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
 
     def test_get_inclusion_rule_table_sql_with_rules(self):
         """Test get_inclusion_rule_table_sql with inclusion rules."""
+        from circe.cohortdefinition.criteria import InclusionRule
+        
         expression = CohortExpression(
             primary_criteria=PrimaryCriteria(
                 criteria_list=[],
@@ -426,9 +428,10 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
                 primary_limit=ResultLimit(type="ALL")
             ),
             inclusion_rules=[
-                type('InclusionRule', (), {
-                    'expression': CriteriaGroup(type="ALL", criteria_list=[])
-                })()
+                InclusionRule(
+                    name="Test Rule",
+                    expression=CriteriaGroup(type="ALL", criteria_list=[])
+                )
             ]
         )
         
