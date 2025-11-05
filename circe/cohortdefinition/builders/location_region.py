@@ -79,6 +79,30 @@ class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
         """Embed ordinal expression in query."""
         return query.replace("@ordinalExpression", "")
     
+    def resolve_select_clauses(self, criteria: LocationRegion, options: Optional[BuilderOptions] = None) -> List[str]:
+        """Resolve select clauses for location region criteria.
+        
+        Java equivalent: LocationRegionSqlBuilder.resolveSelectClauses()
+        """
+        # Default select columns that are always returned
+        select_cols = [
+            "C.person_id",
+            "C.location_id", 
+            "C.region_concept_id"
+        ]
+        
+        # Add date columns (start_date and end_date) - location region doesn't have dates, so use NULL
+        select_cols.append("NULL as start_date")
+        select_cols.append("NULL as end_date")
+        
+        # Add domain concept column
+        select_cols.append("C.region_concept_id as domain_concept")
+        
+        # Add visit_id column (location region doesn't have visit_id, so use NULL)
+        select_cols.append("NULL as visit_id")
+        
+        return select_cols
+    
     def resolve_join_clauses(self, criteria: LocationRegion, options: Optional[BuilderOptions] = None) -> List[str]:
         """Resolve join clauses for location region criteria."""
         return []

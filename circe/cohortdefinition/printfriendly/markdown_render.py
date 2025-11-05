@@ -391,3 +391,4 @@ class MarkdownRender:
             item_parts.append("(Excluded)")
         
         return " ".join(item_parts) if item_parts else "No concept set item details"
+

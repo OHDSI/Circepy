@@ -14,41 +14,66 @@ from enum import Enum
 from ..vocabulary.concept import Concept
 from .core import (
     DateAdjustment, CriteriaGroup, DateRange, NumericRange, ConceptSetSelection,
-    TextFilter, Window, WindowedCriteria
+    TextFilter, Window, WindowedCriteria, Period
 )
 
 
 class CriteriaColumn(str, Enum):
     """Represents a criteria column.
     
-    Java equivalent: org.ohdsi.circe.cohortdefinition.CriteriaColumn
+    Java equivalent: org.ohdsi.circe.cohortdefinition.builders.CriteriaColumn
     """
+    DAYS_SUPPLY = "days_supply"
+    DOMAIN_CONCEPT = "domain_concept"
+    DOMAIN_SOURCE_CONCEPT = "domain_source_concept"
+    DURATION = "duration"
+    END_DATE = "end_date"
+    ERA_OCCURRENCES = "occurrence_count"
+    GAP_DAYS = "gap_days"
+    QUANTITY = "quantity"
+    RANGE_HIGH = "range_high"
+    RANGE_LOW = "range_low"
+    REFILLS = "refills"
+    START_DATE = "start_date"
+    UNIT = "unit_concept_id"
+    VALUE_AS_NUMBER = "value_as_number"
+    VISIT_ID = "visit_occurrence_id"
+    VISIT_DETAIL_ID = "visit_detail_id"
     AGE = "age"
     GENDER = "gender"
     RACE = "race"
     ETHNICITY = "ethnicity"
-    DOMAIN_CONCEPT = "domain_concept"
 
 
 class Occurrence(BaseModel):
     """Represents occurrence settings for criteria.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.Occurrence
-    """
-    # Constants
-    AT_MOST: ClassVar[int] = 0
-    AT_LEAST: ClassVar[int] = 1
-    EXACTLY: ClassVar[int] = 2
     
-    at_most: int = Field(alias="AT_MOST")
-    at_least: int = Field(alias="AT_LEAST")
-    count_column: Optional[CriteriaColumn] = Field(default=None, alias="countColumn")
-    is_distinct: bool = Field(alias="isDistinct")
-    type: int
-    exactly: int = Field(alias="EXACTLY")
-    count: int
+    Note: In Java, EXACTLY, AT_MOST, AT_LEAST are static final constants.
+    The JSON schema extraction treats them as required fields, so we include
+    them as required instance fields. They should always be set to their constant values.
+    For class-level access, use the _EXACTLY, _AT_MOST, _AT_LEAST constants.
+    """
+    # Instance fields required by JSON schema (required fields)
+    # These are required by schema - they represent constants but are fields in JSON
+    # Default values are set to match the constant values for runtime convenience
+    AT_MOST: int = Field(default=1, alias="AT_MOST")
+    AT_LEAST: int = Field(default=2, alias="AT_LEAST")
+    EXACTLY: int = Field(default=0, alias="EXACTLY")
+    
+    type: int = Field(alias="Type")
+    count: int = Field(alias="Count")
+    is_distinct: bool = Field(alias="IsDistinct")
+    count_column: Optional[CriteriaColumn] = Field(default=None, alias="CountColumn")
 
     model_config = ConfigDict(populate_by_name=True)
+
+# Class-level constants for code access (matching Java static final)
+# These are separate from instance fields to avoid shadowing
+Occurrence._EXACTLY = 0
+Occurrence._AT_MOST = 1
+Occurrence._AT_LEAST = 2
 
 
 class CorelatedCriteria(WindowedCriteria):
@@ -191,14 +216,21 @@ class VisitOccurrence(Criteria):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.VisitOccurrence
     """
+    codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
+    first: Optional[bool] = Field(default=None, alias="First")
     gender: Optional[List[Concept]] = None
     occurrence_end_date: Optional[DateRange] = Field(default=None, alias="occurrenceEndDate")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="genderCS")
     visit_type: Optional[List[Concept]] = Field(default=None, alias="visitType")
     visit_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="visitTypeCS")
     visit_type_exclude: bool = Field(alias="visitTypeExclude")
+    visit_source_concept: Optional[int] = Field(default=None, alias="VisitSourceConcept")
+    visit_length: Optional[NumericRange] = Field(default=None, alias="VisitLength")
     provider_specialty_cs: Optional[ConceptSetSelection] = Field(default=None, alias="providerSpecialtyCS")
     provider_specialty: Optional[List[Concept]] = Field(default=None, alias="providerSpecialty")
+    place_of_service: Optional[List[Concept]] = Field(default=None, alias="PlaceOfService")
+    place_of_service_cs: Optional[ConceptSetSelection] = Field(default=None, alias="PlaceOfServiceCS")
+    place_of_service_location: Optional[int] = Field(default=None, alias="PlaceOfServiceLocation")
     age: Optional[NumericRange] = None
     occurrence_start_date: Optional[DateRange] = Field(default=None, alias="occurrenceStartDate")
 
@@ -342,16 +374,20 @@ class VisitDetail(Criteria):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.VisitDetail
     """
+    codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
+    first: Optional[bool] = Field(default=None, alias="First")
+    visit_detail_start_date: Optional[DateRange] = Field(default=None, alias="VisitDetailStartDate")
+    visit_detail_end_date: Optional[DateRange] = Field(default=None, alias="VisitDetailEndDate")
+    visit_detail_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitDetailTypeCS")
+    visit_detail_type_exclude: bool = Field(default=False, alias="visitDetailTypeExclude")
+    visit_detail_source_concept: Optional[int] = Field(default=None, alias="VisitDetailSourceConcept")
+    visit_detail_length: Optional[NumericRange] = Field(default=None, alias="VisitDetailLength")
+    age: Optional[NumericRange] = Field(default=None, alias="Age")
     gender: Optional[List[Concept]] = None
-    occurrence_end_date: Optional[DateRange] = Field(default=None, alias="occurrenceEndDate")
-    gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="genderCS")
-    visit_detail_type: Optional[List[Concept]] = Field(default=None, alias="visitDetailType")
-    visit_detail_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="visitDetailTypeCS")
-    visit_detail_type_exclude: bool = Field(alias="visitDetailTypeExclude")
-    provider_specialty_cs: Optional[ConceptSetSelection] = Field(default=None, alias="providerSpecialtyCS")
-    provider_specialty: Optional[List[Concept]] = Field(default=None, alias="providerSpecialty")
-    age: Optional[NumericRange] = None
-    occurrence_start_date: Optional[DateRange] = Field(default=None, alias="occurrenceStartDate")
+    gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
+    provider_specialty_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ProviderSpecialtyCS")
+    place_of_service_cs: Optional[ConceptSetSelection] = Field(default=None, alias="PlaceOfServiceCS")
+    place_of_service_location: Optional[int] = Field(default=None, alias="PlaceOfServiceLocation")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -361,11 +397,15 @@ class ObservationPeriod(Criteria):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.ObservationPeriod
     """
-    gender: Optional[List[Concept]] = None
-    occurrence_end_date: Optional[DateRange] = Field(default=None, alias="occurrenceEndDate")
-    gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="genderCS")
-    age: Optional[NumericRange] = None
-    occurrence_start_date: Optional[DateRange] = Field(default=None, alias="occurrenceStartDate")
+    first: Optional[bool] = Field(default=None, alias="First")
+    period_start_date: Optional[DateRange] = Field(default=None, alias="PeriodStartDate")
+    period_end_date: Optional[DateRange] = Field(default=None, alias="PeriodEndDate")
+    user_defined_period: Optional[Period] = Field(default=None, alias="UserDefinedPeriod")
+    period_type: Optional[List[Concept]] = Field(default=None, alias="PeriodType")
+    period_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="PeriodTypeCS")
+    period_length: Optional[NumericRange] = Field(default=None, alias="PeriodLength")
+    age_at_start: Optional[NumericRange] = Field(default=None, alias="AgeAtStart")
+    age_at_end: Optional[NumericRange] = Field(default=None, alias="AgeAtEnd")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -375,19 +415,23 @@ class PayerPlanPeriod(Criteria):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.PayerPlanPeriod
     """
-    gender: Optional[List[Concept]] = None
-    occurrence_end_date: Optional[DateRange] = Field(default=None, alias="occurrenceEndDate")
-    gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="genderCS")
-    payer_source_concept: Optional[int] = Field(default=None, alias="payerSourceConcept")
-    payer_source_concept_cs: Optional[ConceptSetSelection] = Field(default=None, alias="payerSourceConceptCS")
-    plan_source_concept: Optional[int] = Field(default=None, alias="planSourceConcept")
-    plan_source_concept_cs: Optional[ConceptSetSelection] = Field(default=None, alias="planSourceConceptCS")
-    sponsor_source_concept: Optional[int] = Field(default=None, alias="sponsorSourceConcept")
-    sponsor_source_concept_cs: Optional[ConceptSetSelection] = Field(default=None, alias="sponsorSourceConceptCS")
-    stop_reason_source_concept: Optional[int] = Field(default=None, alias="stopReasonSourceConcept")
-    stop_reason_source_concept_cs: Optional[ConceptSetSelection] = Field(default=None, alias="stopReasonSourceConceptCS")
-    age: Optional[NumericRange] = None
-    occurrence_start_date: Optional[DateRange] = Field(default=None, alias="occurrenceStartDate")
+    first: Optional[bool] = Field(default=None, alias="First")
+    period_start_date: Optional[DateRange] = Field(default=None, alias="PeriodStartDate")
+    period_end_date: Optional[DateRange] = Field(default=None, alias="PeriodEndDate")
+    user_defined_period: Optional[Period] = Field(default=None, alias="UserDefinedPeriod")
+    period_length: Optional[NumericRange] = Field(default=None, alias="PeriodLength")
+    age_at_start: Optional[NumericRange] = Field(default=None, alias="AgeAtStart")
+    age_at_end: Optional[NumericRange] = Field(default=None, alias="AgeAtEnd")
+    gender: Optional[List[Concept]] = Field(default=None, alias="Gender")
+    gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
+    payer_concept: Optional[int] = Field(default=None, alias="PayerConcept")
+    plan_concept: Optional[int] = Field(default=None, alias="PlanConcept")
+    sponsor_concept: Optional[int] = Field(default=None, alias="SponsorConcept")
+    stop_reason_concept: Optional[int] = Field(default=None, alias="StopReasonConcept")
+    payer_source_concept: Optional[int] = Field(default=None, alias="PayerSourceConcept")
+    plan_source_concept: Optional[int] = Field(default=None, alias="PlanSourceConcept")
+    sponsor_source_concept: Optional[int] = Field(default=None, alias="SponsorSourceConcept")
+    stop_reason_source_concept: Optional[int] = Field(default=None, alias="StopReasonSourceConcept")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -397,11 +441,7 @@ class LocationRegion(Criteria):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.LocationRegion
     """
-    gender: Optional[List[Concept]] = None
-    occurrence_end_date: Optional[DateRange] = Field(default=None, alias="occurrenceEndDate")
-    gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="genderCS")
-    age: Optional[NumericRange] = None
-    occurrence_start_date: Optional[DateRange] = Field(default=None, alias="occurrenceStartDate")
+    codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -456,17 +496,18 @@ class DoseEra(Criteria):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.DoseEra
     """
-    gender: Optional[List[Concept]] = None
-    occurrence_end_date: Optional[DateRange] = Field(default=None, alias="occurrenceEndDate")
-    gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="genderCS")
-    era_length: Optional[NumericRange] = Field(default=None, alias="eraLength")
-    dose_value: Optional[NumericRange] = Field(default=None, alias="doseValue")
-    unit: Optional[List[Concept]] = None
-    unit_cs: Optional[ConceptSetSelection] = Field(default=None, alias="unitCS")
-    codeset_id: Optional[int] = Field(default=None, alias="codesetId")
-    first: bool
-    age: Optional[NumericRange] = None
-    occurrence_start_date: Optional[DateRange] = Field(default=None, alias="occurrenceStartDate")
+    codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
+    first: Optional[bool] = Field(default=None, alias="First")
+    era_start_date: Optional[DateRange] = Field(default=None, alias="EraStartDate")
+    era_end_date: Optional[DateRange] = Field(default=None, alias="EraEndDate")
+    unit: Optional[List[Concept]] = Field(default=None, alias="Unit")
+    unit_cs: Optional[ConceptSetSelection] = Field(default=None, alias="UnitCS")
+    dose_value: Optional[NumericRange] = Field(default=None, alias="DoseValue")
+    era_length: Optional[NumericRange] = Field(default=None, alias="EraLength")
+    age_at_start: Optional[NumericRange] = Field(default=None, alias="AgeAtStart")
+    age_at_end: Optional[NumericRange] = Field(default=None, alias="AgeAtEnd")
+    gender: Optional[List[Concept]] = Field(default=None, alias="Gender")
+    gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
 
     model_config = ConfigDict(populate_by_name=True)
 

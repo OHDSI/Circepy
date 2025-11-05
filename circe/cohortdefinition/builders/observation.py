@@ -25,7 +25,7 @@ class ObservationSqlBuilder(CriteriaSqlBuilder[Observation]):
         """Get the SQL query template for observation criteria."""
         return """
         SELECT 
-            @selectClause
+            @selectClause@additionalColumns
         FROM @cdm_database_schema.OBSERVATION C
         @joinClause
         WHERE @whereClause
@@ -91,34 +91,64 @@ class ObservationSqlBuilder(CriteriaSqlBuilder[Observation]):
         )
         return query.replace("@codesetClause", codeset_clause)
     
-    def resolve_select_clauses(self, criteria: Observation, options: BuilderOptions) -> str:
-        """Resolve select clauses for observation criteria."""
-        columns = list(self.get_default_columns())
-        if options.additional_columns:
-            columns.extend(options.additional_columns)
+    def resolve_select_clauses(self, criteria: Observation, options: Optional[BuilderOptions] = None) -> List[str]:
+        """Resolve select clauses for observation criteria.
         
-        select_parts = []
-        for column in columns:
-            table_column = self.get_table_column_for_criteria_column(column)
-            select_parts.append(f"{table_column} as {column.value}")
+        Java equivalent: ObservationSqlBuilder.resolveSelectClauses()
+        """
+        # Default select columns that are always returned
+        select_cols = [
+            "C.person_id",
+            "C.observation_id", 
+            "C.observation_concept_id"
+        ]
         
-        return ", ".join(select_parts)
+        # Add date columns (start_date and end_date)
+        select_cols.append("C.observation_date as start_date")
+        select_cols.append("C.observation_date as end_date")
+        
+        # Add domain concept column
+        select_cols.append("C.observation_concept_id as domain_concept")
+        
+        # Add visit_id column
+        select_cols.append("C.visit_occurrence_id as visit_id")
+        
+        # Add additional columns from options if provided
+        if options and options.additional_columns:
+            filtered_columns = [
+                column for column in options.additional_columns 
+                if column not in self.get_default_columns()
+            ]
+            for col in filtered_columns:
+                select_cols.append(f"{self.get_table_column_for_criteria_column(col)} as {col.value}")
+        
+        return select_cols
     
-    def resolve_join_clauses(self, criteria: Observation, options: BuilderOptions) -> List[str]:
-        """Resolve join clauses for observation criteria."""
-        joins = []
+    def resolve_join_clauses(self, criteria: Observation, options: Optional[BuilderOptions] = None) -> List[str]:
+        """Resolve join clauses for observation criteria.
         
-        # Add provider specialty join if needed
+        Java equivalent: ObservationSqlBuilder.resolveJoinClauses()
+        """
+        join_clauses = []
+        
+        # Join to PERSON if age or gender conditions are present
+        if criteria.age or (criteria.gender_cs and criteria.gender_cs.codeset_id):
+            join_clauses.append("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id")
+        
+        # Join to PROVIDER if provider specialty conditions are present
+        # Always use PR alias for PROVIDER to match Java implementation
         if criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id:
-            joins.append(f"""
-            JOIN @cdm_database_schema.PROVIDER P ON C.provider_id = P.provider_id
-            """)
+            join_clauses.append("LEFT JOIN @cdm_database_schema.PROVIDER PR on C.provider_id = PR.provider_id")
         
-        return joins
+        # Join to VISIT_OCCURRENCE if visit type conditions are present
+        if criteria.visit_type_cs and criteria.visit_type_cs.codeset_id:
+            join_clauses.append("JOIN @cdm_database_schema.VISIT_OCCURRENCE VO on C.visit_occurrence_id = VO.visit_occurrence_id")
+        
+        return join_clauses
     
     def resolve_where_clauses(self, criteria: Observation, options: BuilderOptions) -> List[str]:
         """Resolve where clauses for observation criteria."""
-        conditions = []
+        where_clauses = []
         
         # Add codeset condition
         if criteria.codeset_id is not None:
@@ -127,7 +157,7 @@ class ObservationSqlBuilder(CriteriaSqlBuilder[Observation]):
                 "C.observation_concept_id",
                 criteria.observation_type_exclude
             )
-            conditions.append(codeset_clause)
+            where_clauses.append(codeset_clause)
         
         # Add date range conditions
         if criteria.occurrence_start_date:
@@ -135,22 +165,24 @@ class ObservationSqlBuilder(CriteriaSqlBuilder[Observation]):
                 criteria.occurrence_start_date, "C.observation_date"
             )
             if date_clause:
-                conditions.append(date_clause)
+                where_clauses.append(date_clause)
         
         if criteria.occurrence_end_date:
             date_clause = BuilderUtils.build_date_range_clause(
                 criteria.occurrence_end_date, "C.observation_date"
             )
             if date_clause:
-                conditions.append(date_clause)
+                where_clauses.append(date_clause)
         
         # Add age condition
         if criteria.age:
             age_clause = BuilderUtils.build_numeric_range_clause(
-                criteria.age, "C.person_id"  # Would need age calculation
+                criteria.age, "YEAR(C.observation_date) - P.year_of_birth"
             )
             if age_clause:
-                conditions.append(age_clause)
+                where_clauses.append(age_clause)
+                # Add person_id check for join requirement
+                where_clauses.append("C.person_id = P.person_id")
         
         # Add value as string condition
         if criteria.value_as_string:
@@ -158,19 +190,26 @@ class ObservationSqlBuilder(CriteriaSqlBuilder[Observation]):
                 criteria.value_as_string, "C.value_as_string"
             )
             if value_clause:
-                conditions.append(value_clause)
+                where_clauses.append(value_clause)
         
         # Add provider specialty condition
         if criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id:
             provider_clause = BuilderUtils.get_codeset_in_expression(
                 criteria.provider_specialty_cs.codeset_id,
-                "P.specialty_concept_id",
+                "PR.specialty_concept_id",
                 criteria.provider_specialty_cs.is_exclusion
             )
             if provider_clause:
-                conditions.append(provider_clause)
+                where_clauses.append(provider_clause)
         
-        return conditions if conditions else ["1=1"]
+        return where_clauses if where_clauses else ["1=1"]
+    
+    def get_additional_columns(self, columns: List[CriteriaColumn]) -> str:
+        """Get additional columns string with proper aliases.
+        
+        Java equivalent: ObservationSqlBuilder.getAdditionalColumns()
+        """
+        return ", ".join([f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns])
     
     def resolve_ordinal_expression(self, criteria: Observation, options: BuilderOptions) -> str:
         """Resolve ordinal expression for observation criteria."""

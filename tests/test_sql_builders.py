@@ -1,25 +1,33 @@
 """
-Tests for New SQL Builders
+Tests for SQL Builders
 
-This module contains comprehensive tests for all the new SQL builders
-that were recently implemented.
+This module contains comprehensive tests for all SQL builders
+that generate SQL queries from cohort definition criteria.
+
+GUARD RAIL: These tests ensure 1:1 compatibility with Java CIRCE-BE functionality.
+Any changes must maintain compatibility with Java classes.
+Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 import unittest
 import sys
 import os
 from typing import Set, List, Optional
+from unittest.mock import Mock
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from circe.cohortdefinition.builders import (
     DeathSqlBuilder, VisitOccurrenceSqlBuilder, ObservationSqlBuilder,
-    MeasurementSqlBuilder, DeviceExposureSqlBuilder, SpecimenSqlBuilder
+    MeasurementSqlBuilder, DeviceExposureSqlBuilder, SpecimenSqlBuilder,
+    DoseEraSqlBuilder, ObservationPeriodSqlBuilder, PayerPlanPeriodSqlBuilder,
+    VisitDetailSqlBuilder, LocationRegionSqlBuilder
 )
 from circe.cohortdefinition.builders.utils import BuilderOptions, CriteriaColumn
 from circe.cohortdefinition.criteria import (
-    Death, VisitOccurrence, Observation, Measurement, DeviceExposure, Specimen
+    Death, VisitOccurrence, Observation, Measurement, DeviceExposure, Specimen,
+    DoseEra, ObservationPeriod, PayerPlanPeriod, VisitDetail, LocationRegion
 )
 from circe.cohortdefinition.core import DateRange, NumericRange, TextFilter, ConceptSetSelection
 from circe.vocabulary.concept import Concept
@@ -365,7 +373,7 @@ class TestVisitOccurrenceSqlBuilder(unittest.TestCase):
         
         join_clause = builder.resolve_join_clauses(criteria, options)
         
-        self.assertEqual(join_clause, "")
+        self.assertEqual(join_clause, [])
 
     def test_resolve_join_clauses_with_provider_specialty(self):
         """Test resolve_join_clauses with provider specialty join."""
@@ -392,7 +400,7 @@ class TestVisitOccurrenceSqlBuilder(unittest.TestCase):
         
         join_clause = builder.resolve_join_clauses(criteria, options)
         
-        self.assertEqual(join_clause, "")
+        self.assertEqual(join_clause, [])
 
     def test_resolve_where_clauses_basic(self):
         """Test resolve_where_clauses with basic criteria."""
@@ -402,7 +410,7 @@ class TestVisitOccurrenceSqlBuilder(unittest.TestCase):
         
         where_clause = builder.resolve_where_clauses(criteria, options)
         
-        self.assertEqual(where_clause, "1=1")
+        self.assertEqual(where_clause, ["1=1"])
 
     def test_resolve_where_clauses_with_date_ranges(self):
         """Test resolve_where_clauses with date range conditions."""
@@ -416,8 +424,9 @@ class TestVisitOccurrenceSqlBuilder(unittest.TestCase):
         
         where_clause = builder.resolve_where_clauses(criteria, options)
         
-        self.assertIn("C.visit_start_date", where_clause)
-        self.assertIn("C.visit_end_date", where_clause)
+        # Check that the clauses contain the expected column references
+        self.assertTrue(any("C.visit_start_date" in clause for clause in where_clause))
+        self.assertTrue(any("C.visit_end_date" in clause for clause in where_clause))
         # Should have multiple conditions
         self.assertGreater(len(where_clause), 1)
 
@@ -476,12 +485,13 @@ class TestVisitOccurrenceSqlBuilder(unittest.TestCase):
         
         where_clause = builder.resolve_where_clauses(criteria, options)
         
-        self.assertIn("C.visit_start_date", where_clause)
-        self.assertIn("C.visit_end_date", where_clause)
+        # Check that the clauses contain the expected column references
+        self.assertTrue(any("C.visit_start_date" in clause for clause in where_clause))
+        self.assertTrue(any("C.visit_end_date" in clause for clause in where_clause))
         self.assertTrue(any("C.person_id" in clause for clause in where_clause))
         self.assertTrue(any("P.specialty_concept_id" in clause for clause in where_clause))
-        # Should have multiple AND conditions
-        self.assertGreater(where_clause.count("AND"), 2)
+        # Should have multiple conditions
+        self.assertGreater(len(where_clause), 2)
 
     def test_resolve_ordinal_expression(self):
         """Test resolve_ordinal_expression method."""
@@ -716,8 +726,9 @@ class TestObservationSqlBuilder(unittest.TestCase):
         self.assertIn("SELECT", sql)
         self.assertIn("FROM @cdm_database_schema.OBSERVATION C", sql)
         self.assertIn("WHERE", sql)
-        self.assertIn("JOIN @cdm_database_schema.PROVIDER P", sql)
-        self.assertIn("P.specialty_concept_id", sql)
+        # ObservationSqlBuilder uses PR alias for PROVIDER (to avoid conflict with PERSON alias P)
+        self.assertIn("JOIN @cdm_database_schema.PROVIDER PR", sql)
+        self.assertIn("PR.specialty_concept_id", sql)
         self.assertIn("12345", sql)
 
     def test_get_criteria_sql_with_provider_specialty_exclusion(self):
@@ -734,7 +745,9 @@ class TestObservationSqlBuilder(unittest.TestCase):
         self.assertIn("SELECT", sql)
         self.assertIn("FROM @cdm_database_schema.OBSERVATION C", sql)
         self.assertIn("WHERE", sql)
-        self.assertIn("JOIN @cdm_database_schema.PROVIDER P", sql)
+        # ObservationSqlBuilder uses PR alias for PROVIDER (to avoid conflict with PERSON alias P)
+        self.assertIn("JOIN @cdm_database_schema.PROVIDER PR", sql)
+        self.assertIn("PR.specialty_concept_id", sql)
         self.assertIn("not", sql)  # Should have 'not' for exclusion
 
     def test_get_criteria_sql_with_codeset_id(self):
@@ -834,7 +847,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
         
         join_clause = builder.resolve_join_clauses(criteria, options)
         
-        self.assertEqual(join_clause, "")
+        self.assertEqual(join_clause, [])
 
     def test_resolve_join_clauses_with_provider_specialty(self):
         """Test resolve_join_clauses with provider specialty join."""
@@ -848,8 +861,8 @@ class TestObservationSqlBuilder(unittest.TestCase):
         
         join_clause = builder.resolve_join_clauses(criteria, options)
         
-        self.assertTrue(any("JOIN @cdm_database_schema.PROVIDER P" in clause for clause in join_clause))
-        self.assertTrue(any("C.provider_id = P.provider_id" in clause for clause in join_clause))
+        self.assertTrue(any("JOIN @cdm_database_schema.PROVIDER PR" in clause for clause in join_clause))
+        self.assertTrue(any("C.provider_id = PR.provider_id" in clause for clause in join_clause))
 
     def test_resolve_join_clauses_with_provider_specialty_no_codeset_id(self):
         """Test resolve_join_clauses with provider specialty but no codeset_id."""
@@ -932,7 +945,8 @@ class TestObservationSqlBuilder(unittest.TestCase):
         
         where_clause = builder.resolve_where_clauses(criteria, options)
         
-        self.assertTrue(any("P.specialty_concept_id" in clause for clause in where_clause))
+        # ObservationSqlBuilder uses PR alias for PROVIDER (to avoid conflict with PERSON alias P)
+        self.assertTrue(any("PR.specialty_concept_id" in clause for clause in where_clause))
         self.assertTrue(any("12345" in clause for clause in where_clause))
 
     def test_resolve_where_clauses_with_provider_specialty_exclusion(self):
@@ -947,7 +961,8 @@ class TestObservationSqlBuilder(unittest.TestCase):
         
         where_clause = builder.resolve_where_clauses(criteria, options)
         
-        self.assertTrue(any("P.specialty_concept_id" in clause for clause in where_clause))
+        # ObservationSqlBuilder uses PR alias for PROVIDER (to avoid conflict with PERSON alias P)
+        self.assertTrue(any("PR.specialty_concept_id" in clause for clause in where_clause))
         self.assertTrue(any("not" in clause for clause in where_clause))
 
     def test_resolve_where_clauses_with_codeset_id(self):
@@ -985,10 +1000,11 @@ class TestObservationSqlBuilder(unittest.TestCase):
         self.assertTrue(any("C.observation_date" in clause for clause in where_clause))
         self.assertTrue(any("C.person_id" in clause for clause in where_clause))
         self.assertTrue(any("C.value_as_string" in clause for clause in where_clause))
-        self.assertTrue(any("P.specialty_concept_id" in clause for clause in where_clause))
+        # ObservationSqlBuilder uses PR alias for PROVIDER (to avoid conflict with PERSON alias P)
+        self.assertTrue(any("PR.specialty_concept_id" in clause for clause in where_clause))
         self.assertTrue(any("C.observation_concept_id" in clause for clause in where_clause))
-        # Should have multiple AND conditions
-        self.assertGreater(where_clause.count("AND"), 4)
+        # Should have multiple conditions (where_clause is a list of strings)
+        self.assertGreater(len(where_clause), 4)
 
     def test_resolve_ordinal_expression_with_first(self):
         """Test resolve_ordinal_expression with first=True."""
@@ -1976,6 +1992,636 @@ class TestNewSqlBuildersIntegration(unittest.TestCase):
                 table_column = builder.get_table_column_for_criteria_column(column)
                 self.assertIsNotNone(table_column)
                 self.assertIsInstance(table_column, str)
+
+
+class TestDoseEraSqlBuilder(unittest.TestCase):
+    """Test DoseEraSqlBuilder class."""
+    
+    def test_get_query_template(self):
+        """Test query template generation."""
+        builder = DoseEraSqlBuilder()
+        template = builder.get_query_template()
+        
+        self.assertIn("@selectClause", template)
+        self.assertIn("@codesetClause", template)
+        self.assertIn("@joinClause", template)
+        self.assertIn("@whereClause", template)
+        self.assertIn("@ordinalExpression", template)
+        self.assertIn("@additionalColumns", template)
+        self.assertIn("DOSE_ERA", template)
+    
+    def test_get_default_columns(self):
+        """Test default columns."""
+        builder = DoseEraSqlBuilder()
+        default_cols = builder.get_default_columns()
+        
+        expected_cols = {CriteriaColumn.START_DATE, CriteriaColumn.END_DATE, CriteriaColumn.VISIT_ID}
+        self.assertEqual(default_cols, expected_cols)
+    
+    def test_get_table_column_for_criteria_column(self):
+        """Test criteria column mapping."""
+        builder = DoseEraSqlBuilder()
+        
+        self.assertEqual(builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT), "C.drug_concept_id")
+        self.assertEqual(builder.get_table_column_for_criteria_column(CriteriaColumn.DURATION), "DATEDIFF(d, C.start_date, C.end_date)")
+        self.assertEqual(builder.get_table_column_for_criteria_column(CriteriaColumn.UNIT), "C.unit_concept_id")
+        self.assertEqual(builder.get_table_column_for_criteria_column(CriteriaColumn.VALUE_AS_NUMBER), "C.dose_value")
+    
+    def test_embed_codeset_clause(self):
+        """Test codeset clause embedding."""
+        builder = DoseEraSqlBuilder()
+        criteria = DoseEra(first=False, codeset_id=123)
+        
+        query = "SELECT * FROM table @codesetClause"
+        result = builder.embed_codeset_clause(query, criteria)
+        
+        self.assertNotIn("@codesetClause", result)
+        self.assertIn("codeset_id = 123", result)
+    
+    def test_embed_codeset_clause_no_codeset(self):
+        """Test codeset clause embedding with no codeset."""
+        builder = DoseEraSqlBuilder()
+        criteria = DoseEra(first=False)
+        
+        query = "SELECT * FROM table @codesetClause"
+        result = builder.embed_codeset_clause(query, criteria)
+        
+        self.assertNotIn("@codesetClause", result)
+        self.assertEqual(result, "SELECT * FROM table ")
+    
+    def test_embed_ordinal_expression_first(self):
+        """Test ordinal expression with first=True."""
+        builder = DoseEraSqlBuilder()
+        criteria = DoseEra(first=True)
+        where_clauses = []
+        
+        query = "SELECT * FROM table @ordinalExpression"
+        result = builder.embed_ordinal_expression(query, criteria, where_clauses)
+        
+        self.assertNotIn("@ordinalExpression", result)
+        self.assertIn("row_number()", result)
+        self.assertIn("C.ordinal = 1", where_clauses)
+    
+    def test_embed_ordinal_expression_not_first(self):
+        """Test ordinal expression with first=False."""
+        builder = DoseEraSqlBuilder()
+        criteria = DoseEra(first=False)
+        where_clauses = []
+        
+        query = "SELECT * FROM table @ordinalExpression"
+        result = builder.embed_ordinal_expression(query, criteria, where_clauses)
+        
+        self.assertNotIn("@ordinalExpression", result)
+        self.assertNotIn("row_number()", result)
+        self.assertEqual(len(where_clauses), 0)
+    
+    def test_resolve_select_clauses(self):
+        """Test select clauses resolution."""
+        builder = DoseEraSqlBuilder()
+        criteria = DoseEra(first=False)
+        
+        select_clauses = builder.resolve_select_clauses(criteria)
+        
+        self.assertIn("de.person_id", select_clauses)
+        self.assertIn("de.dose_era_id", select_clauses)
+        self.assertIn("de.drug_concept_id", select_clauses)
+        self.assertIn("de.unit_concept_id", select_clauses)
+        self.assertIn("de.dose_value", select_clauses)
+        self.assertIn("de.dose_era_start_date as start_date", " ".join(select_clauses))
+        self.assertIn("de.dose_era_end_date as end_date", " ".join(select_clauses))
+    
+    def test_resolve_join_clauses(self):
+        """Test join clauses resolution."""
+        builder = DoseEraSqlBuilder()
+        criteria = DoseEra(first=False)
+        
+        join_clauses = builder.resolve_join_clauses(criteria)
+        
+        self.assertEqual(len(join_clauses), 0)
+    
+    def test_resolve_join_clauses_with_person(self):
+        """Test join clauses resolution with person join."""
+        builder = DoseEraSqlBuilder()
+        criteria = DoseEra(first=False, age_at_start=NumericRange(op=">=", value=18))
+        
+        join_clauses = builder.resolve_join_clauses(criteria)
+        
+        self.assertEqual(len(join_clauses), 1)
+        self.assertIn("PERSON P", join_clauses[0])
+    
+    def test_resolve_where_clauses(self):
+        """Test where clauses resolution."""
+        builder = DoseEraSqlBuilder()
+        criteria = DoseEra(first=False)
+        
+        where_clauses = builder.resolve_where_clauses(criteria)
+        
+        self.assertEqual(len(where_clauses), 0)
+    
+    def test_resolve_where_clauses_with_filters(self):
+        """Test where clauses resolution with filters."""
+        builder = DoseEraSqlBuilder()
+        criteria = DoseEra(
+            first=False,
+            era_start_date=DateRange(op=">=", value="2020-01-01"),
+            dose_value=NumericRange(op=">", value=100)
+        )
+        
+        where_clauses = builder.resolve_where_clauses(criteria)
+        
+        self.assertGreaterEqual(len(where_clauses), 2)
+        self.assertTrue(any("C.start_date" in clause for clause in where_clauses))
+        self.assertTrue(any("C.dose_value" in clause for clause in where_clauses))
+
+
+class TestObservationPeriodSqlBuilder(unittest.TestCase):
+    """Test ObservationPeriodSqlBuilder class."""
+    
+    def test_get_query_template(self):
+        """Test query template generation."""
+        builder = ObservationPeriodSqlBuilder()
+        template = builder.get_query_template()
+        
+        self.assertIn("@selectClause", template)
+        self.assertIn("@codesetClause", template)
+        self.assertIn("@joinClause", template)
+        self.assertIn("@whereClause", template)
+        self.assertIn("@ordinalExpression", template)
+        self.assertIn("@additionalColumns", template)
+        self.assertIn("OBSERVATION_PERIOD", template)
+    
+    def test_get_default_columns(self):
+        """Test default columns."""
+        builder = ObservationPeriodSqlBuilder()
+        default_cols = builder.get_default_columns()
+        
+        expected_cols = {CriteriaColumn.START_DATE, CriteriaColumn.END_DATE, CriteriaColumn.VISIT_ID}
+        self.assertEqual(default_cols, expected_cols)
+    
+    def test_get_table_column_for_criteria_column(self):
+        """Test criteria column mapping."""
+        builder = ObservationPeriodSqlBuilder()
+        
+        self.assertEqual(builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT), "C.period_type_concept_id")
+        self.assertEqual(builder.get_table_column_for_criteria_column(CriteriaColumn.DURATION), "DATEDIFF(d, @startDateExpression, @endDateExpression)")
+    
+    def test_embed_codeset_clause(self):
+        """Test codeset clause embedding."""
+        builder = ObservationPeriodSqlBuilder()
+        criteria = ObservationPeriod()
+        
+        query = "SELECT * FROM table @codesetClause"
+        result = builder.embed_codeset_clause(query, criteria)
+        
+        self.assertNotIn("@codesetClause", result)
+        self.assertEqual(result, "SELECT * FROM table ")
+    
+    def test_embed_ordinal_expression(self):
+        """Test ordinal expression embedding."""
+        builder = ObservationPeriodSqlBuilder()
+        criteria = ObservationPeriod()
+        where_clauses = []
+        
+        query = "SELECT * FROM table @ordinalExpression"
+        result = builder.embed_ordinal_expression(query, criteria, where_clauses)
+        
+        self.assertNotIn("@ordinalExpression", result)
+        self.assertEqual(len(where_clauses), 0)
+    
+    def test_resolve_select_clauses(self):
+        """Test select clauses resolution."""
+        builder = ObservationPeriodSqlBuilder()
+        criteria = ObservationPeriod()
+        
+        select_clauses = builder.resolve_select_clauses(criteria)
+        
+        self.assertIn("op.person_id", select_clauses)
+        self.assertIn("op.observation_period_id", select_clauses)
+        self.assertIn("op.period_type_concept_id", select_clauses)
+        self.assertIn("op.observation_period_start_date as start_date", " ".join(select_clauses))
+        self.assertIn("op.observation_period_end_date as end_date", " ".join(select_clauses))
+    
+    def test_resolve_join_clauses(self):
+        """Test join clauses resolution."""
+        builder = ObservationPeriodSqlBuilder()
+        criteria = ObservationPeriod()
+        
+        join_clauses = builder.resolve_join_clauses(criteria)
+        
+        self.assertEqual(len(join_clauses), 0)
+    
+    def test_resolve_join_clauses_with_person(self):
+        """Test join clauses resolution with person join."""
+        builder = ObservationPeriodSqlBuilder()
+        criteria = ObservationPeriod(age_at_start=NumericRange(op=">=", value=18))
+        
+        join_clauses = builder.resolve_join_clauses(criteria)
+        
+        self.assertEqual(len(join_clauses), 1)
+        self.assertIn("PERSON P", join_clauses[0])
+    
+    def test_resolve_where_clauses(self):
+        """Test where clauses resolution."""
+        builder = ObservationPeriodSqlBuilder()
+        criteria = ObservationPeriod()
+        
+        where_clauses = builder.resolve_where_clauses(criteria)
+        
+        self.assertEqual(len(where_clauses), 0)
+    
+    def test_resolve_where_clauses_with_filters(self):
+        """Test where clauses resolution with filters."""
+        builder = ObservationPeriodSqlBuilder()
+        criteria = ObservationPeriod(
+            period_start_date=DateRange(op=">=", value="2020-01-01"),
+            age_at_start=NumericRange(op=">", value=30)
+        )
+        
+        where_clauses = builder.resolve_where_clauses(criteria)
+        
+        self.assertGreaterEqual(len(where_clauses), 1)
+        self.assertTrue(any("C.start_date" in clause for clause in where_clauses))
+
+
+class TestPayerPlanPeriodSqlBuilder(unittest.TestCase):
+    """Test PayerPlanPeriodSqlBuilder class."""
+    
+    def test_get_query_template(self):
+        """Test query template generation."""
+        builder = PayerPlanPeriodSqlBuilder()
+        template = builder.get_query_template()
+        
+        self.assertIn("@selectClause", template)
+        self.assertIn("@codesetClause", template)
+        self.assertIn("@joinClause", template)
+        self.assertIn("@whereClause", template)
+        self.assertIn("@ordinalExpression", template)
+        self.assertIn("@additionalColumns", template)
+        self.assertIn("PAYER_PLAN_PERIOD", template)
+    
+    def test_get_default_columns(self):
+        """Test default columns."""
+        builder = PayerPlanPeriodSqlBuilder()
+        default_cols = builder.get_default_columns()
+        
+        expected_cols = {CriteriaColumn.START_DATE, CriteriaColumn.END_DATE, CriteriaColumn.VISIT_ID}
+        self.assertEqual(default_cols, expected_cols)
+    
+    def test_get_table_column_for_criteria_column(self):
+        """Test criteria column mapping."""
+        builder = PayerPlanPeriodSqlBuilder()
+        
+        self.assertEqual(builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT), "C.payer_concept_id")
+    
+    def test_embed_codeset_clause(self):
+        """Test codeset clause embedding."""
+        builder = PayerPlanPeriodSqlBuilder()
+        criteria = PayerPlanPeriod()
+        
+        query = "SELECT * FROM table @codesetClause"
+        result = builder.embed_codeset_clause(query, criteria)
+        
+        self.assertNotIn("@codesetClause", result)
+        self.assertEqual(result, "SELECT * FROM table ")
+    
+    def test_embed_ordinal_expression(self):
+        """Test ordinal expression embedding."""
+        builder = PayerPlanPeriodSqlBuilder()
+        criteria = PayerPlanPeriod()
+        where_clauses = []
+        
+        query = "SELECT * FROM table @ordinalExpression"
+        result = builder.embed_ordinal_expression(query, criteria, where_clauses)
+        
+        self.assertNotIn("@ordinalExpression", result)
+        self.assertEqual(len(where_clauses), 0)
+    
+    def test_resolve_select_clauses(self):
+        """Test select clauses resolution."""
+        builder = PayerPlanPeriodSqlBuilder()
+        criteria = PayerPlanPeriod()
+        
+        select_clauses = builder.resolve_select_clauses(criteria)
+        
+        self.assertIn("ppp.person_id", select_clauses)
+        self.assertIn("ppp.payer_plan_period_id", select_clauses)
+        self.assertIn("ppp.payer_plan_period_start_date as start_date", " ".join(select_clauses))
+        self.assertIn("ppp.payer_plan_period_end_date as end_date", " ".join(select_clauses))
+    
+    def test_resolve_select_clauses_with_concepts(self):
+        """Test select clauses resolution with concept fields."""
+        builder = PayerPlanPeriodSqlBuilder()
+        criteria = PayerPlanPeriod(
+            payer_source_concept=123,
+            plan_source_concept=456,
+            sponsor_source_concept=789
+        )
+        
+        select_clauses = builder.resolve_select_clauses(criteria)
+        
+        self.assertIn("ppp.payer_source_concept_id", select_clauses)
+        self.assertIn("ppp.plan_source_concept_id", select_clauses)
+        self.assertIn("ppp.sponsor_source_concept_id", select_clauses)
+    
+    def test_resolve_join_clauses(self):
+        """Test join clauses resolution."""
+        builder = PayerPlanPeriodSqlBuilder()
+        criteria = PayerPlanPeriod()
+        
+        join_clauses = builder.resolve_join_clauses(criteria)
+        
+        self.assertEqual(len(join_clauses), 0)
+    
+    def test_resolve_join_clauses_with_person(self):
+        """Test join clauses resolution with person join."""
+        builder = PayerPlanPeriodSqlBuilder()
+        criteria = PayerPlanPeriod(age_at_start=NumericRange(op=">=", value=18))
+        
+        join_clauses = builder.resolve_join_clauses(criteria)
+        
+        self.assertEqual(len(join_clauses), 1)
+        self.assertIn("PERSON P", join_clauses[0])
+    
+    def test_resolve_where_clauses(self):
+        """Test where clauses resolution."""
+        builder = PayerPlanPeriodSqlBuilder()
+        criteria = PayerPlanPeriod()
+        
+        where_clauses = builder.resolve_where_clauses(criteria)
+        
+        self.assertEqual(len(where_clauses), 1)
+        self.assertEqual(where_clauses[0], "1=1")
+    
+    def test_resolve_where_clauses_with_filters(self):
+        """Test where clauses resolution with filters."""
+        builder = PayerPlanPeriodSqlBuilder()
+        criteria = PayerPlanPeriod(
+            period_start_date=DateRange(op=">=", value="2020-01-01"),
+            payer_source_concept=123
+        )
+        
+        where_clauses = builder.resolve_where_clauses(criteria)
+        
+        self.assertGreaterEqual(len(where_clauses), 2)
+        self.assertTrue(any("C.start_date" in clause for clause in where_clauses))
+        self.assertTrue(any("payer_source_concept_id" in clause for clause in where_clauses))
+
+
+class TestVisitDetailSqlBuilder(unittest.TestCase):
+    """Test VisitDetailSqlBuilder class."""
+    
+    def test_get_query_template(self):
+        """Test query template generation."""
+        builder = VisitDetailSqlBuilder()
+        template = builder.get_query_template()
+        
+        self.assertIn("@selectClause", template)
+        self.assertIn("@codesetClause", template)
+        self.assertIn("@joinClause", template)
+        self.assertIn("@whereClause", template)
+        self.assertIn("@ordinalExpression", template)
+        self.assertIn("@additionalColumns", template)
+        self.assertIn("VISIT_DETAIL", template)
+    
+    def test_get_default_columns(self):
+        """Test default columns."""
+        builder = VisitDetailSqlBuilder()
+        default_cols = builder.get_default_columns()
+        
+        expected_cols = {CriteriaColumn.START_DATE, CriteriaColumn.END_DATE, CriteriaColumn.VISIT_DETAIL_ID}
+        self.assertEqual(default_cols, expected_cols)
+    
+    def test_get_table_column_for_criteria_column(self):
+        """Test criteria column mapping."""
+        builder = VisitDetailSqlBuilder()
+        
+        self.assertEqual(builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT), "C.visit_detail_concept_id")
+        self.assertEqual(builder.get_table_column_for_criteria_column(CriteriaColumn.DURATION), "DATEDIFF(d, C.start_date, C.end_date)")
+        self.assertEqual(builder.get_table_column_for_criteria_column(CriteriaColumn.VISIT_DETAIL_ID), "C.visit_detail_id")
+    
+    def test_embed_codeset_clause(self):
+        """Test codeset clause embedding."""
+        builder = VisitDetailSqlBuilder()
+        criteria = VisitDetail(visit_detail_type_exclude=False, codeset_id=123)
+        
+        query = "SELECT * FROM table @codesetClause"
+        result = builder.embed_codeset_clause(query, criteria)
+        
+        self.assertNotIn("@codesetClause", result)
+        self.assertIn("Codesets", result)
+    
+    def test_embed_ordinal_expression_first(self):
+        """Test ordinal expression with first=True."""
+        builder = VisitDetailSqlBuilder()
+        criteria = VisitDetail(visit_detail_type_exclude=False, first=True)
+        where_clauses = []
+        
+        query = "SELECT * FROM table @ordinalExpression"
+        result = builder.embed_ordinal_expression(query, criteria, where_clauses)
+        
+        self.assertNotIn("@ordinalExpression", result)
+        self.assertIn("row_number()", result)
+        self.assertIn("C.ordinal = 1", where_clauses)
+    
+    def test_resolve_select_clauses(self):
+        """Test select clauses resolution."""
+        builder = VisitDetailSqlBuilder()
+        criteria = VisitDetail(visit_detail_type_exclude=False)
+        
+        select_clauses = builder.resolve_select_clauses(criteria)
+        
+        self.assertIn("vd.person_id", select_clauses)
+        self.assertIn("vd.visit_detail_id", select_clauses)
+        self.assertIn("vd.visit_detail_concept_id", select_clauses)
+        self.assertIn("vd.visit_occurrence_id", select_clauses)
+        self.assertIn("vd.visit_detail_start_date as start_date", " ".join(select_clauses))
+        self.assertIn("vd.visit_detail_end_date as end_date", " ".join(select_clauses))
+    
+    def test_resolve_join_clauses(self):
+        """Test join clauses resolution."""
+        builder = VisitDetailSqlBuilder()
+        criteria = VisitDetail(visit_detail_type_exclude=False)
+        
+        join_clauses = builder.resolve_join_clauses(criteria)
+        
+        self.assertEqual(len(join_clauses), 0)
+    
+    def test_resolve_join_clauses_with_person(self):
+        """Test join clauses resolution with person join."""
+        builder = VisitDetailSqlBuilder()
+        criteria = VisitDetail(visit_detail_type_exclude=False, age=NumericRange(op=">=", value=18))
+        
+        join_clauses = builder.resolve_join_clauses(criteria)
+        
+        self.assertEqual(len(join_clauses), 1)
+        self.assertIn("PERSON P", join_clauses[0])
+    
+    def test_resolve_join_clauses_with_care_site(self):
+        """Test join clauses resolution with care site join."""
+        builder = VisitDetailSqlBuilder()
+        criteria = VisitDetail(
+            visit_detail_type_exclude=False, 
+            place_of_service_cs=ConceptSetSelection(codeset_id=123, is_exclusion=False)
+        )
+        
+        join_clauses = builder.resolve_join_clauses(criteria)
+        
+        self.assertEqual(len(join_clauses), 1)
+        self.assertIn("CARE_SITE CS", join_clauses[0])
+    
+    def test_resolve_where_clauses(self):
+        """Test where clauses resolution."""
+        builder = VisitDetailSqlBuilder()
+        criteria = VisitDetail(visit_detail_type_exclude=False)
+        
+        where_clauses = builder.resolve_where_clauses(criteria)
+        
+        self.assertEqual(len(where_clauses), 0)
+    
+    def test_resolve_where_clauses_with_filters(self):
+        """Test where clauses resolution with filters."""
+        builder = VisitDetailSqlBuilder()
+        criteria = VisitDetail(
+            visit_detail_type_exclude=False,
+            visit_detail_start_date=DateRange(op=">=", value="2020-01-01"),
+            age=NumericRange(op=">", value=1)
+        )
+        
+        where_clauses = builder.resolve_where_clauses(criteria)
+        
+        self.assertGreaterEqual(len(where_clauses), 2)
+        self.assertTrue(any("C.start_date" in clause for clause in where_clauses))
+        self.assertTrue(any("P.year_of_birth" in clause for clause in where_clauses))
+
+
+class TestLocationRegionSqlBuilder(unittest.TestCase):
+    """Test LocationRegionSqlBuilder class."""
+    
+    def test_get_query_template(self):
+        """Test query template generation."""
+        builder = LocationRegionSqlBuilder()
+        template = builder.get_query_template()
+        
+        self.assertIn("@selectClause", template)
+        self.assertIn("@codesetClause", template)
+        self.assertIn("@joinClause", template)
+        self.assertIn("@whereClause", template)
+        self.assertIn("@ordinalExpression", template)
+        self.assertIn("@additionalColumns", template)
+        self.assertIn("LOCATION", template)
+    
+    def test_get_default_columns(self):
+        """Test default columns."""
+        builder = LocationRegionSqlBuilder()
+        default_cols = builder.get_default_columns()
+        
+        expected_cols = {CriteriaColumn.START_DATE, CriteriaColumn.END_DATE, CriteriaColumn.VISIT_ID}
+        self.assertEqual(default_cols, expected_cols)
+    
+    def test_get_table_column_for_criteria_column(self):
+        """Test criteria column mapping."""
+        builder = LocationRegionSqlBuilder()
+        
+        self.assertEqual(builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT), "C.region_concept_id")
+    
+    def test_embed_codeset_clause(self):
+        """Test codeset clause embedding."""
+        builder = LocationRegionSqlBuilder()
+        criteria = LocationRegion()
+        
+        query = "SELECT * FROM table @codesetClause"
+        result = builder.embed_codeset_clause(query, criteria)
+        
+        self.assertNotIn("@codesetClause", result)
+        self.assertEqual(result, "SELECT * FROM table ")
+    
+    def test_embed_ordinal_expression(self):
+        """Test ordinal expression embedding."""
+        builder = LocationRegionSqlBuilder()
+        criteria = LocationRegion()
+        where_clauses = []
+        
+        query = "SELECT * FROM table @ordinalExpression"
+        result = builder.embed_ordinal_expression(query, criteria, where_clauses)
+        
+        self.assertNotIn("@ordinalExpression", result)
+        self.assertEqual(len(where_clauses), 0)
+    
+    def test_resolve_join_clauses(self):
+        """Test join clauses resolution."""
+        builder = LocationRegionSqlBuilder()
+        criteria = LocationRegion()
+        
+        join_clauses = builder.resolve_join_clauses(criteria)
+        
+        self.assertEqual(len(join_clauses), 0)
+    
+    def test_resolve_where_clauses(self):
+        """Test where clauses resolution."""
+        builder = LocationRegionSqlBuilder()
+        criteria = LocationRegion()
+        
+        where_clauses = builder.resolve_where_clauses(criteria)
+        
+        self.assertEqual(len(where_clauses), 0)
+
+
+class TestBuilderIntegration(unittest.TestCase):
+    """Integration tests for all builders."""
+    
+    def test_all_builders_have_required_methods(self):
+        """Test that all builders implement required methods."""
+        builders = [
+            DoseEraSqlBuilder(),
+            ObservationPeriodSqlBuilder(),
+            PayerPlanPeriodSqlBuilder(),
+            VisitDetailSqlBuilder(),
+            LocationRegionSqlBuilder()
+        ]
+        
+        for builder in builders:
+            # Test required abstract methods
+            self.assertTrue(hasattr(builder, 'get_query_template'))
+            self.assertTrue(hasattr(builder, 'get_default_columns'))
+            self.assertTrue(hasattr(builder, 'get_table_column_for_criteria_column'))
+            self.assertTrue(hasattr(builder, 'embed_codeset_clause'))
+            self.assertTrue(hasattr(builder, 'embed_ordinal_expression'))
+            self.assertTrue(hasattr(builder, 'resolve_select_clauses'))
+            self.assertTrue(hasattr(builder, 'resolve_join_clauses'))
+            self.assertTrue(hasattr(builder, 'resolve_where_clauses'))
+            
+            # Test that methods are callable
+            self.assertTrue(callable(builder.get_query_template))
+            self.assertTrue(callable(builder.get_default_columns))
+            self.assertTrue(callable(builder.get_table_column_for_criteria_column))
+    
+    def test_builder_options_integration(self):
+        """Test builders work with BuilderOptions."""
+        options = BuilderOptions()
+        options.additional_columns = [CriteriaColumn.AGE, CriteriaColumn.GENDER]
+        
+        builders = [
+            DoseEraSqlBuilder(),
+            ObservationPeriodSqlBuilder(),
+            PayerPlanPeriodSqlBuilder(),
+            VisitDetailSqlBuilder(),
+            LocationRegionSqlBuilder()
+        ]
+        
+        for builder in builders:
+            # Test that builders can handle options
+            self.assertIsInstance(builder.get_default_columns(), set)
+            # Create mock criteria with required fields
+            if builder.__class__.__name__ == "DoseEraSqlBuilder":
+                mock_criteria = DoseEra(first=False)
+            elif builder.__class__.__name__ == "VisitDetailSqlBuilder":
+                mock_criteria = VisitDetail(visit_detail_type_exclude=False)
+            else:
+                mock_criteria = Mock()
+            
+            self.assertIsInstance(builder.resolve_select_clauses(mock_criteria, options), list)
+            self.assertIsInstance(builder.resolve_join_clauses(mock_criteria, options), list)
+            self.assertIsInstance(builder.resolve_where_clauses(mock_criteria, options), list)
 
 
 if __name__ == '__main__':

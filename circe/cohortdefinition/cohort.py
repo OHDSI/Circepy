@@ -24,7 +24,7 @@ class CohortExpression(BaseModel):
     concept_sets: Optional[List[Any]] = Field(default=None, alias="conceptSets")
     qualified_limit: Optional[ResultLimit] = Field(default=None, alias="qualifiedLimit")
     additional_criteria: Optional[CriteriaGroup] = Field(default=None, alias="additionalCriteria")
-    end_strategy: Optional[Union[EndStrategy, DateOffsetStrategy, CustomEraStrategy]] = Field(default=None, alias="endStrategy")
+    end_strategy: Optional[EndStrategy] = Field(default=None, alias="endStrategy")
     cdm_version_range: Optional[Period] = Field(default=None, alias="cdmVersionRange")
     primary_criteria: Optional[PrimaryCriteria] = Field(default=None, alias="primaryCriteria")
     expression_limit: Optional[ResultLimit] = Field(default=None, alias="expressionLimit")

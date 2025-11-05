@@ -38,7 +38,7 @@ class ObservationPeriodSqlBuilder(CriteriaSqlBuilder[ObservationPeriod]):
         """Get the SQL query template for observation period criteria."""
         return """
         SELECT 
-            @selectClause
+            @selectClause@additionalColumns
         FROM (
             SELECT 
                 op.person_id,
@@ -109,7 +109,14 @@ class ObservationPeriodSqlBuilder(CriteriaSqlBuilder[ObservationPeriod]):
             end_column = "op.observation_period_start_date" if criteria.date_adjustment.end_with == "start_date" else "op.observation_period_end_date"
             select_cols.append(BuilderUtils.get_date_adjustment_expression(criteria.date_adjustment, start_column, end_column))
         else:
-            select_cols.append("op.observation_period_start_date as start_date, op.observation_period_end_date as end_date")
+            select_cols.append("op.observation_period_start_date as start_date")
+            select_cols.append("op.observation_period_end_date as end_date")
+        
+        # Add domain concept column
+        select_cols.append("op.period_type_concept_id as domain_concept")
+        
+        # Add visit_id column (observation period doesn't have visit_id, so use NULL)
+        select_cols.append("NULL as visit_id")
         
         return select_cols
     
@@ -155,7 +162,7 @@ class ObservationPeriodSqlBuilder(CriteriaSqlBuilder[ObservationPeriod]):
                 where_clauses.append(date_clause)
         
         # periodType
-        if criteria.period_type is not None and len(criteria.period_type) > 0:
+        if criteria.period_type is not None and hasattr(criteria.period_type, '__len__') and len(criteria.period_type) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.period_type)
             if concept_ids:
                 where_clauses.append(f"C.period_type_concept_id in ({','.join(map(str, concept_ids))})")
@@ -185,3 +192,10 @@ class ObservationPeriodSqlBuilder(CriteriaSqlBuilder[ObservationPeriod]):
                 where_clauses.append(numeric_clause)
         
         return where_clauses
+    
+    def get_additional_columns(self, columns: List[CriteriaColumn]) -> str:
+        """Get additional columns string with proper aliases.
+        
+        Java equivalent: ObservationPeriodSqlBuilder.getAdditionalColumns()
+        """
+        return ", ".join([f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns])

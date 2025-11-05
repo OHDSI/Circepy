@@ -31,8 +31,10 @@ class TestCriteriaColumn(unittest.TestCase):
     def test_criteria_column_values(self):
         """Test that all expected criteria column values exist."""
         expected_columns = {
-            'start_date', 'end_date', 'visit_id', 'domain_concept',
-            'duration', 'occurrence_count', 'gap_days', 'age', 'gender', 'race', 'ethnicity'
+            'days_supply', 'domain_concept', 'domain_source_concept', 'duration', 'end_date',
+            'occurrence_count', 'gap_days', 'quantity', 'range_high', 'range_low', 'refills',
+            'start_date', 'unit_concept_id', 'value_as_number', 'visit_occurrence_id',
+            'visit_detail_id', 'age', 'gender', 'race', 'ethnicity'
         }
         
         actual_columns = {col.value for col in CriteriaColumn}
@@ -42,13 +44,18 @@ class TestCriteriaColumn(unittest.TestCase):
         """Test that criteria columns have correct string values."""
         self.assertEqual(CriteriaColumn.START_DATE.value, "start_date")
         self.assertEqual(CriteriaColumn.END_DATE.value, "end_date")
-        self.assertEqual(CriteriaColumn.VISIT_ID.value, "visit_id")
+        self.assertEqual(CriteriaColumn.VISIT_ID.value, "visit_occurrence_id")
         self.assertEqual(CriteriaColumn.DOMAIN_CONCEPT.value, "domain_concept")
         self.assertEqual(CriteriaColumn.DURATION.value, "duration")
         self.assertEqual(CriteriaColumn.AGE.value, "age")
         self.assertEqual(CriteriaColumn.GENDER.value, "gender")
         self.assertEqual(CriteriaColumn.RACE.value, "race")
         self.assertEqual(CriteriaColumn.ETHNICITY.value, "ethnicity")
+        self.assertEqual(CriteriaColumn.ERA_OCCURRENCES.value, "occurrence_count")
+        self.assertEqual(CriteriaColumn.GAP_DAYS.value, "gap_days")
+        self.assertEqual(CriteriaColumn.UNIT.value, "unit_concept_id")
+        self.assertEqual(CriteriaColumn.VALUE_AS_NUMBER.value, "value_as_number")
+        self.assertEqual(CriteriaColumn.VISIT_DETAIL_ID.value, "visit_detail_id")
     
     def test_criteria_column_enum_inheritance(self):
         """Test that CriteriaColumn inherits from both str and Enum."""

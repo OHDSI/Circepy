@@ -504,7 +504,9 @@ class TestOtherCriteria(unittest.TestCase):
     def test_observation_period_initialization(self):
         """Test basic initialization of ObservationPeriod."""
         obs_period = ObservationPeriod()
-        self.assertIsNone(obs_period.gender)
+        # ObservationPeriod does NOT have a gender field in Java - it only has age_at_start and age_at_end
+        self.assertIsNone(obs_period.age_at_start)
+        self.assertIsNone(obs_period.age_at_end)
 
     def test_payer_plan_period_initialization(self):
         """Test basic initialization of PayerPlanPeriod."""
@@ -514,7 +516,7 @@ class TestOtherCriteria(unittest.TestCase):
     def test_location_region_initialization(self):
         """Test basic initialization of LocationRegion."""
         location = LocationRegion()
-        self.assertIsNone(location.gender)
+        self.assertIsNone(location.codeset_id)
 
     def test_geo_criteria_initialization(self):
         """Test basic initialization of GeoCriteria."""

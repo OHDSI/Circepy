@@ -190,15 +190,15 @@ class WindowedCriteria(BaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.WindowedCriteria
     """
     criteria: Any  # Will be specific criteria type
-    window_start: Optional[Window] = Field(default=None, alias="windowStart")
-    window_end: Optional[Window] = Field(default=None, alias="windowEnd")
+    start_window: Optional[Window] = Field(default=None, alias="StartWindow")
+    end_window: Optional[Window] = Field(default=None, alias="EndWindow")
     restrict_visit: bool = Field(default=False, alias="RestrictVisit")
     ignore_observation_period: bool = Field(default=False, alias="IgnoreObservationPeriod")
 
     model_config = ConfigDict(populate_by_name=True)
 
 
-class DateOffsetStrategy(BaseModel):
+class DateOffsetStrategy(EndStrategy):
     """Date offset end strategy.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.DateOffsetStrategy
@@ -213,7 +213,7 @@ class DateOffsetStrategy(BaseModel):
         return dispatcher.get_strategy_sql(self, event_table)
 
 
-class CustomEraStrategy(BaseModel):
+class CustomEraStrategy(EndStrategy):
     """Custom era end strategy.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.CustomEraStrategy

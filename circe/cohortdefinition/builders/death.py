@@ -33,7 +33,7 @@ class DeathSqlBuilder(CriteriaSqlBuilder[Death]):
           @codesetClause
         ) C
         @joinClause
-        @whereClause
+        WHERE @whereClause
         @ordinalExpression
         """
     

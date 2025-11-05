@@ -37,7 +37,7 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
         """Get the SQL query template for payer plan period criteria."""
         return """
         SELECT 
-            @selectClause
+            @selectClause@additionalColumns
         FROM (
             SELECT 
                 ppp.person_id,
@@ -145,7 +145,14 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
             end_column = "ppp.payer_plan_period_start_date" if criteria.date_adjustment.end_with == "start_date" else "ppp.payer_plan_period_end_date"
             select_cols.append(BuilderUtils.get_date_adjustment_expression(criteria.date_adjustment, start_column, end_column))
         else:
-            select_cols.append("ppp.payer_plan_period_start_date as start_date, ppp.payer_plan_period_end_date as end_date")
+            select_cols.append("ppp.payer_plan_period_start_date as start_date")
+            select_cols.append("ppp.payer_plan_period_end_date as end_date")
+        
+        # Add domain concept column
+        select_cols.append("ppp.payer_concept_id as domain_concept")
+        
+        # Add visit_id column (payer plan period doesn't have visit_id, so use NULL)
+        select_cols.append("NULL as visit_id")
         
         return select_cols
     
@@ -212,7 +219,7 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
                 where_clauses.append(numeric_clause)
         
         # gender
-        if criteria.gender is not None and len(criteria.gender) > 0:
+        if criteria.gender is not None and hasattr(criteria.gender, '__len__') and len(criteria.gender) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.gender)
             if concept_ids:
                 where_clauses.append(f"P.gender_concept_id in ({','.join(map(str, concept_ids))})")
@@ -255,4 +262,11 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
         if criteria.stop_reason_source_concept is not None:
             where_clauses.append(f"C.stop_reason_source_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.stop_reason_source_concept})")
         
-        return where_clauses
+        return where_clauses if where_clauses else ["1=1"]
+    
+    def get_additional_columns(self, columns: List[CriteriaColumn]) -> str:
+        """Get additional columns string with proper aliases.
+        
+        Java equivalent: PayerPlanPeriodSqlBuilder.getAdditionalColumns()
+        """
+        return ", ".join([f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns])

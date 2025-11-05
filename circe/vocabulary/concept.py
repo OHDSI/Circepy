@@ -16,6 +16,8 @@ class Concept(BaseModel):
     """Represents a concept in the OMOP vocabulary.
     
     Java equivalent: org.ohdsi.circe.vocabulary.Concept
+    Note: In Java, conceptId is Long (nullable), but JSON schema marks it as required.
+    We make it Optional to match Java runtime behavior while maintaining schema compatibility.
     """
     concept_id: Optional[int] = Field(default=None, alias="conceptId")
     concept_name: Optional[str] = Field(default=None, alias="conceptName")
