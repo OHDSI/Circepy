@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional, Any, Union, TYPE_CHECKING
-from pydantic import BaseModel, Field, ConfigDict, model_validator
+from pydantic import BaseModel, Field, ConfigDict, model_validator, AliasChoices
 from .core import (
     ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy, CustomEraStrategy,
     PrimaryCriteria, CriteriaGroup, ObservationFilter
@@ -42,18 +42,62 @@ class CohortExpression(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.CohortExpression
     """
-    concept_sets: Optional[List['ConceptSet']] = Field(default=None, alias="ConceptSets")
-    qualified_limit: Optional[ResultLimit] = Field(default=None, alias="QualifiedLimit")
-    additional_criteria: Optional[CriteriaGroup] = Field(default=None, alias="AdditionalCriteria")
-    end_strategy: Optional[EndStrategy] = Field(default=None, alias="EndStrategy")
-    cdm_version_range: Optional[Period] = Field(default=None, alias="CdmVersionRange")
-    primary_criteria: Optional[PrimaryCriteria] = Field(default=None, alias="PrimaryCriteria")
-    expression_limit: Optional[ResultLimit] = Field(default=None, alias="ExpressionLimit")
-    collapse_settings: Optional[CollapseSettings] = Field(default=None, alias="CollapseSettings")
+    concept_sets: Optional[List['ConceptSet']] = Field(
+        default=None, 
+        validation_alias=AliasChoices("ConceptSets", "conceptSets"),
+        serialization_alias="ConceptSets"
+    )
+    qualified_limit: Optional[ResultLimit] = Field(
+        default=None,
+        validation_alias=AliasChoices("QualifiedLimit", "qualifiedLimit"),
+        serialization_alias="QualifiedLimit"
+    )
+    additional_criteria: Optional[CriteriaGroup] = Field(
+        default=None,
+        validation_alias=AliasChoices("AdditionalCriteria", "additionalCriteria"),
+        serialization_alias="AdditionalCriteria"
+    )
+    end_strategy: Optional[EndStrategy] = Field(
+        default=None,
+        validation_alias=AliasChoices("EndStrategy", "endStrategy"),
+        serialization_alias="EndStrategy"
+    )
+    cdm_version_range: Optional[Period] = Field(
+        default=None,
+        validation_alias=AliasChoices("CdmVersionRange", "cdmVersionRange"),
+        serialization_alias="CdmVersionRange"
+    )
+    primary_criteria: Optional[PrimaryCriteria] = Field(
+        default=None,
+        validation_alias=AliasChoices("PrimaryCriteria", "primaryCriteria"),
+        serialization_alias="PrimaryCriteria"
+    )
+    expression_limit: Optional[ResultLimit] = Field(
+        default=None,
+        validation_alias=AliasChoices("ExpressionLimit", "expressionLimit"),
+        serialization_alias="ExpressionLimit"
+    )
+    collapse_settings: Optional[CollapseSettings] = Field(
+        default=None,
+        validation_alias=AliasChoices("CollapseSettings", "collapseSettings"),
+        serialization_alias="CollapseSettings"
+    )
     title: Optional[str] = None
-    inclusion_rules: Optional[List['InclusionRule']] = Field(default=None, alias="InclusionRules")
-    censor_window: Optional[Period] = Field(default=None, alias="CensorWindow")
-    censoring_criteria: Optional[List[Any]] = Field(default=None, alias="CensoringCriteria")
+    inclusion_rules: Optional[List['InclusionRule']] = Field(
+        default=None,
+        validation_alias=AliasChoices("InclusionRules", "inclusionRules"),
+        serialization_alias="InclusionRules"
+    )
+    censor_window: Optional[Period] = Field(
+        default=None,
+        validation_alias=AliasChoices("CensorWindow", "censorWindow"),
+        serialization_alias="CensorWindow"
+    )
+    censoring_criteria: Optional[List[Any]] = Field(
+        default=None,
+        validation_alias=AliasChoices("CensoringCriteria", "censoringCriteria"),
+        serialization_alias="CensoringCriteria"
+    )
 
     model_config = ConfigDict(populate_by_name=True)
     

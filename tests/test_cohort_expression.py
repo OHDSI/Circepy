@@ -319,7 +319,7 @@ class TestCohortExpressionComplexScenarios(unittest.TestCase):
         self.assertIn("primary_criteria", result)
     
     def test_cohort_expression_to_dict_with_aliases(self):
-        """Test CohortExpression serialization with camelCase aliases."""
+        """Test CohortExpression serialization with PascalCase aliases for Java compatibility."""
         cohort = CohortExpression(
             title="Test Cohort",
             primary_criteria=PrimaryCriteria(),
@@ -330,8 +330,9 @@ class TestCohortExpressionComplexScenarios(unittest.TestCase):
         
         self.assertIsInstance(result, dict)
         self.assertEqual(result["title"], "Test Cohort")
-        self.assertIn("primaryCriteria", result)
-        self.assertIn("qualifiedLimit", result)
+        # Java uses PascalCase for top-level fields
+        self.assertIn("PrimaryCriteria", result)
+        self.assertIn("QualifiedLimit", result)
     
     def test_cohort_expression_copy(self):
         """Test CohortExpression copying."""

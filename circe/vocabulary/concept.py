@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional, Any
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, AliasChoices
 
 
 class Concept(BaseModel):
@@ -19,14 +19,46 @@ class Concept(BaseModel):
     Note: In Java, conceptId is Long (nullable), but JSON schema marks it as required.
     We make it Optional to match Java runtime behavior while maintaining schema compatibility.
     """
-    concept_id: Optional[int] = Field(default=None, alias="ConceptId")
-    concept_name: Optional[str] = Field(default=None, alias="ConceptName")
-    concept_code: Optional[str] = Field(default=None, alias="ConceptCode")
-    concept_class_id: Optional[str] = Field(default=None, alias="ConceptClassId")
-    standard_concept: Optional[str] = Field(default=None, alias="StandardConcept")
-    invalid_reason: Optional[str] = Field(default=None, alias="InvalidReason")
-    domain_id: Optional[str] = Field(default=None, alias="DomainId")
-    vocabulary_id: Optional[str] = Field(default=None, alias="VocabularyId")
+    concept_id: Optional[int] = Field(
+        default=None,
+        validation_alias=AliasChoices("CONCEPT_ID", "conceptId"),
+        serialization_alias="CONCEPT_ID"
+    )
+    concept_name: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("CONCEPT_NAME", "conceptName"),
+        serialization_alias="CONCEPT_NAME"
+    )
+    concept_code: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("CONCEPT_CODE", "conceptCode"),
+        serialization_alias="CONCEPT_CODE"
+    )
+    concept_class_id: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("CONCEPT_CLASS_ID", "conceptClassId"),
+        serialization_alias="CONCEPT_CLASS_ID"
+    )
+    standard_concept: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("STANDARD_CONCEPT", "standardConcept"),
+        serialization_alias="STANDARD_CONCEPT"
+    )
+    invalid_reason: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("INVALID_REASON", "invalidReason"),
+        serialization_alias="INVALID_REASON"
+    )
+    domain_id: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("DOMAIN_ID", "domainId"),
+        serialization_alias="DOMAIN_ID"
+    )
+    vocabulary_id: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("VOCABULARY_ID", "vocabularyId"),
+        serialization_alias="VOCABULARY_ID"
+    )
     # Java-specific fields for 1:1 compatibility
     false: Optional[Any] = None  # return type
     other: Optional['Concept'] = None
@@ -41,9 +73,9 @@ class ConceptSetItem(BaseModel):
     Java equivalent: org.ohdsi.circe.vocabulary.ConceptSetItem
     """
     concept: Optional[Concept] = None
-    is_excluded: Optional[bool] = Field(default=None, alias="IsExcluded")
-    include_mapped: Optional[bool] = Field(default=None, alias="IncludeMapped")
-    include_descendants: Optional[bool] = Field(default=None, alias="IncludeDescendants")
+    is_excluded: Optional[bool] = Field(default=None, alias="isExcluded")
+    include_mapped: Optional[bool] = Field(default=None, alias="includeMapped")
+    include_descendants: Optional[bool] = Field(default=None, alias="includeDescendants")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -52,13 +84,16 @@ class ConceptSetExpression(BaseModel):
     """Represents a concept set expression.
     
     Java equivalent: org.ohdsi.circe.vocabulary.ConceptSetExpression
+    
+    Note: isExcluded, includeMapped, includeDescendants may not be present in all Java JSONs
+    (they're sometimes only on the items), so we provide defaults.
     """
     concept: Optional[Concept] = None
-    is_excluded: bool = Field(alias="IsExcluded")
+    is_excluded: bool = Field(default=False, alias="isExcluded")
     other: Optional[ConceptSetItem] = None
-    include_mapped: bool = Field(alias="IncludeMapped")
+    include_mapped: bool = Field(default=False, alias="includeMapped")
     json_mapper: Optional[Any] = Field(default=None, alias="JSON_MAPPER")
-    include_descendants: bool = Field(alias="IncludeDescendants")
+    include_descendants: bool = Field(default=False, alias="includeDescendants")
     items: Optional[List[ConceptSetItem]] = None
     # Java-specific fields for 1:1 compatibility
     true: Optional[Any] = None  # return type

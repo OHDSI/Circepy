@@ -167,6 +167,15 @@ class SchemaValidator:
                         )
                 continue
             
+            # Special case: Boolean fields with sensible defaults for backward compatibility
+            # These fields are often missing in older Java JSON files
+            if (java_class_name == "ConceptSetExpression" and 
+                required_field in ["isExcluded", "includeMapped", "includeDescendants"]):
+                continue  # Allow defaults for backward compatibility
+            
+            if java_class_name == "Occurrence" and required_field == "isDistinct":
+                continue  # Allow default for backward compatibility
+            
             # First check if field exists with exact name (for fields like AT_MOST that don't convert well)
             if required_field in python_fields:
                 field_info = python_fields[required_field]

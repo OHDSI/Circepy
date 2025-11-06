@@ -77,3 +77,6 @@ __all__ = [
     # Print-Friendly
     "MarkdownRender"
 ]
+
+# Rebuild models with forward references after all imports are complete
+CriteriaGroup.model_rebuild()

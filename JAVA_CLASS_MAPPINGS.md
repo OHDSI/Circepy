@@ -78,17 +78,27 @@ circe.vocabulary.*
 - **Aliases**: Python classes support both formats through Pydantic aliases
 
 ### Example Field Mappings
-| Java Field | Python Field | Python Alias |
-|------------|--------------|--------------|
-| `conceptId` | `concept_id` | `conceptId` |
-| `conceptName` | `concept_name` | `conceptName` |
-| `conceptCode` | `concept_code` | `conceptCode` |
-| `isExcluded` | `is_excluded` | `isExcluded` |
-| `includeMapped` | `include_mapped` | `includeMapped` |
-| `includeDescendants` | `include_descendants` | `includeDescendants` |
-| `expression` | `expression` | `expression` |
-| `description` | `description` | `description` |
-| `name` | `name` | `name` |
+
+**Note**: Java JSON uses different casing conventions for different field types:
+- **Criteria fields**: PascalCase (e.g., `CodesetId`, `ConditionTypeExclude`)
+- **ConceptSet simple fields**: lowercase (e.g., `id`, `name`, `expression`, `items`)
+- **Boolean/option fields**: camelCase (e.g., `isExcluded`, `includeMapped`, `includeDescendants`)
+- **Concept fields**: ALL_CAPS (e.g., `CONCEPT_ID`, `CONCEPT_NAME`)
+
+| Java Field | Python Field | Python Alias | Notes |
+|------------|--------------|--------------|-------|
+| `CodesetId` | `codeset_id` | `CodesetId` | Criteria field - PascalCase |
+| `ConditionTypeExclude` | `condition_type_exclude` | `ConditionTypeExclude` | Criteria field - PascalCase |
+| `ConceptSets` | `concept_sets` | `ConceptSets` | Top-level field - PascalCase |
+| `PrimaryCriteria` | `primary_criteria` | `PrimaryCriteria` | Top-level field - PascalCase |
+| `id` | `id` | (no alias) | ConceptSet field - lowercase |
+| `name` | `name` | (no alias) | ConceptSet field - lowercase |
+| `expression` | `expression` | (no alias) | ConceptSet field - lowercase |
+| `isExcluded` | `is_excluded` | `isExcluded` | Boolean field - camelCase |
+| `includeMapped` | `include_mapped` | `includeMapped` | Boolean field - camelCase |
+| `includeDescendants` | `include_descendants` | `includeDescendants` | Boolean field - camelCase |
+| `CONCEPT_ID` | `concept_id` | `CONCEPT_ID` | Concept field - ALL_CAPS |
+| `CONCEPT_NAME` | `concept_name` | `CONCEPT_NAME` | Concept field - ALL_CAPS |
 
 ## Usage Examples
 
@@ -113,6 +123,44 @@ assert concept.concept_id == concept.conceptId
 assert cohort.concept_sets == cohort.conceptSets
 ```
 
+## JSON Export Format
+
+When exporting Python cohort definitions to JSON for use with Java tools, use:
+
+```python
+# Export with Java-compatible field names
+json_str = cohort.model_dump_json(by_alias=True, exclude_none=True)
+
+# Or as a dictionary
+json_dict = cohort.model_dump(by_alias=True, exclude_none=True)
+```
+
+### Polymorphic Criteria Wrapping
+
+Criteria objects are automatically wrapped in their type names for Java compatibility:
+
+```python
+# Python object
+condition = ConditionOccurrence(codeset_id=6, condition_type_exclude=False)
+
+# Exported JSON (automatically wrapped)
+{
+  "ConditionOccurrence": {
+    "CodesetId": 6,
+    "ConditionTypeExclude": false
+  }
+}
+```
+
+### Field Name Casing
+
+The export uses Java's mixed casing convention:
+- **Top-level fields**: PascalCase (`ConceptSets`, `PrimaryCriteria`)
+- **Criteria fields**: PascalCase (`CodesetId`, `ConditionTypeExclude`)
+- **ConceptSet simple fields**: lowercase (`id`, `name`, `expression`, `items`)
+- **Boolean fields**: camelCase (`isExcluded`, `includeMapped`)
+- **Concept fields**: ALL_CAPS (`CONCEPT_ID`, `CONCEPT_NAME`)
+
 ## Validation and Compatibility
 
 All Python classes have been validated against the Java JSON schema to ensure:
@@ -120,7 +168,8 @@ All Python classes have been validated against the Java JSON schema to ensure:
 - ✅ Type compatibility
 - ✅ Required field enforcement
 - ✅ Nested structure compatibility
-- ✅ CamelCase/snake_case field support
+- ✅ Java JSON export compatibility
+- ✅ Polymorphic criteria serialization
 
 The Python implementation serves as a true 1:1 replacement for the Java version with
 guaranteed schema compatibility and comprehensive validation testing.

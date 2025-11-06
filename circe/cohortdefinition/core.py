@@ -8,10 +8,16 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Union, Any
-from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator, Discriminator
+from typing import List, Optional, Union, Any, TYPE_CHECKING
+from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator, Discriminator, AliasChoices
 from enum import Enum
 from .utils import to_pascal_alias
+
+if TYPE_CHECKING:
+    from .criteria import DemographicCriteria
+else:
+    # Import at runtime to avoid circular imports
+    DemographicCriteria = 'DemographicCriteria'
 
 
 class CollapseType(str, Enum):
@@ -41,7 +47,11 @@ class ResultLimit(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.ResultLimit
     """
-    type: Optional[str] = None
+    type: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("Type", "type"),
+        serialization_alias="Type"
+    )
 
 
 class Period(BaseModel):
@@ -73,9 +83,21 @@ class NumericRange(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.NumericRange
     """
-    op: Optional[str] = None
-    value: Optional[Union[int, float]] = None
-    extent: Optional[Union[int, float]] = None
+    op: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("Op", "op"),
+        serialization_alias="Op"
+    )
+    value: Optional[Union[int, float]] = Field(
+        default=None,
+        validation_alias=AliasChoices("Value", "value"),
+        serialization_alias="Value"
+    )
+    extent: Optional[Union[int, float]] = Field(
+        default=None,
+        validation_alias=AliasChoices("Extent", "extent"),
+        serialization_alias="Extent"
+    )
 
 
 class DateAdjustment(BaseModel):
@@ -99,13 +121,16 @@ class ObservationFilter(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.ObservationFilter
     """
-    prior_days: int
-    post_days: int
-    
-    model_config = ConfigDict(
-        populate_by_name=True,
-        alias_generator=to_pascal_alias
+    prior_days: int = Field(
+        validation_alias=AliasChoices("PriorDays", "priorDays"),
+        serialization_alias="PriorDays"
     )
+    post_days: int = Field(
+        validation_alias=AliasChoices("PostDays", "postDays"),
+        serialization_alias="PostDays"
+    )
+    
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class CollapseSettings(BaseModel):
@@ -113,13 +138,17 @@ class CollapseSettings(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.CollapseSettings
     """
-    era_pad: int
-    collapse_type: Optional[CollapseType] = None
-    
-    model_config = ConfigDict(
-        populate_by_name=True,
-        alias_generator=to_pascal_alias
+    era_pad: int = Field(
+        validation_alias=AliasChoices("EraPad", "eraPad"),
+        serialization_alias="EraPad"
     )
+    collapse_type: Optional[CollapseType] = Field(
+        default=None,
+        validation_alias=AliasChoices("CollapseType", "collapseType"),
+        serialization_alias="CollapseType"
+    )
+    
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class EndStrategy(BaseModel):
@@ -135,9 +164,21 @@ class PrimaryCriteria(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.PrimaryCriteria
     """
-    criteria_list: Optional[List[Any]] = Field(default=None, alias="CriteriaList")
-    observation_window: Optional[ObservationFilter] = Field(default=None, alias="ObservationWindow")
-    primary_limit: Optional[ResultLimit] = Field(default=None, alias="PrimaryCriteriaLimit")
+    criteria_list: Optional[List[Any]] = Field(
+        default=None,
+        validation_alias=AliasChoices("CriteriaList", "criteriaList"),
+        serialization_alias="CriteriaList"
+    )
+    observation_window: Optional[ObservationFilter] = Field(
+        default=None,
+        validation_alias=AliasChoices("ObservationWindow", "observationWindow"),
+        serialization_alias="ObservationWindow"
+    )
+    primary_limit: Optional[ResultLimit] = Field(
+        default=None,
+        validation_alias=AliasChoices("PrimaryCriteriaLimit", "primaryLimit"),
+        serialization_alias="PrimaryCriteriaLimit"
+    )
 
     model_config = ConfigDict(populate_by_name=True)
     
@@ -221,11 +262,23 @@ class CriteriaGroup(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.CriteriaGroup
     """
-    criteria_list: Optional[List[Any]] = Field(default=None, alias="CriteriaList")
+    criteria_list: Optional[List[Any]] = Field(
+        default=None,
+        validation_alias=AliasChoices("CriteriaList", "criteriaList"),
+        serialization_alias="CriteriaList"
+    )
     count: Optional[int] = None
     groups: Optional[List[Any]] = None
-    demographic_criteria_list: Optional[List[Any]] = Field(default=None, alias="DemographicCriteriaList")
-    type: Optional[str] = None
+    demographic_criteria_list: Optional[List['DemographicCriteria']] = Field(
+        default=None,
+        validation_alias=AliasChoices("DemographicCriteriaList", "demographicCriteriaList"),
+        serialization_alias="DemographicCriteriaList"
+    )
+    type: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("Type", "type"),
+        serialization_alias="Type"
+    )
 
     model_config = ConfigDict(populate_by_name=True)
     
@@ -503,8 +556,15 @@ class ConceptSetSelection(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.ConceptSetSelection
     """
-    codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
-    is_exclusion: bool = Field(alias="IsExclusion")
+    codeset_id: Optional[int] = Field(
+        default=None,
+        validation_alias=AliasChoices("CodesetId", "codesetId"),
+        serialization_alias="CodesetId"
+    )
+    is_exclusion: bool = Field(
+        validation_alias=AliasChoices("IsExclusion", "isExclusion"),
+        serialization_alias="IsExclusion"
+    )
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -523,8 +583,17 @@ class WindowBound(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.WindowBound
     """
-    coeff: int
-    days: Optional[int] = None
+    coeff: int = Field(
+        validation_alias=AliasChoices("Coeff", "coeff"),
+        serialization_alias="Coeff"
+    )
+    days: Optional[int] = Field(
+        default=None,
+        validation_alias=AliasChoices("Days", "days"),
+        serialization_alias="Days"
+    )
+    
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class Window(BaseModel):
@@ -532,11 +601,26 @@ class Window(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.Window
     """
-    use_event_end: bool = Field(alias="UseEventEnd")
-    start: Optional[WindowBound] = None
-    coeff: int
-    days: Optional[int] = None
-    end: Optional[WindowBound] = None
+    start: Optional[WindowBound] = Field(
+        default=None,
+        validation_alias=AliasChoices("Start", "start"),
+        serialization_alias="Start"
+    )
+    end: Optional[WindowBound] = Field(
+        default=None,
+        validation_alias=AliasChoices("End", "end"),
+        serialization_alias="End"
+    )
+    use_event_end: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("UseEventEnd", "useEventEnd"),
+        serialization_alias="UseEventEnd"
+    )
+    use_index_end: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("UseIndexEnd", "useIndexEnd"),
+        serialization_alias="UseIndexEnd"
+    )
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -546,11 +630,30 @@ class WindowedCriteria(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.WindowedCriteria
     """
-    criteria: Any  # Will be specific criteria type
-    start_window: Optional[Window] = Field(default=None, alias="StartWindow")
-    end_window: Optional[Window] = Field(default=None, alias="EndWindow")
-    restrict_visit: bool = Field(default=False, alias="RestrictVisit")
-    ignore_observation_period: bool = Field(default=False, alias="IgnoreObservationPeriod")
+    criteria: Any = Field(
+        validation_alias=AliasChoices("Criteria", "criteria"),
+        serialization_alias="Criteria"
+    )  # Will be specific criteria type
+    start_window: Optional[Window] = Field(
+        default=None,
+        validation_alias=AliasChoices("StartWindow", "startWindow"),
+        serialization_alias="StartWindow"
+    )
+    end_window: Optional[Window] = Field(
+        default=None,
+        validation_alias=AliasChoices("EndWindow", "endWindow"),
+        serialization_alias="EndWindow"
+    )
+    restrict_visit: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("RestrictVisit", "restrictVisit"),
+        serialization_alias="RestrictVisit"
+    )
+    ignore_observation_period: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("IgnoreObservationPeriod", "ignoreObservationPeriod"),
+        serialization_alias="IgnoreObservationPeriod"
+    )
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -561,7 +664,10 @@ class DateOffsetStrategy(EndStrategy):
     Java equivalent: org.ohdsi.circe.cohortdefinition.DateOffsetStrategy
     """
     offset: int
-    date_field: str = Field(alias="DateField")
+    date_field: str = Field(
+        validation_alias=AliasChoices("DateField", "dateField"),
+        serialization_alias="DateField"
+    )
 
     model_config = ConfigDict(populate_by_name=True)
     
@@ -575,8 +681,15 @@ class CustomEraStrategy(EndStrategy):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.CustomEraStrategy
     """
-    drug_codeset_id: Optional[int] = Field(default=None, alias="DrugCodesetId")
-    gap_days: int = Field(alias="GapDays")
+    drug_codeset_id: Optional[int] = Field(
+        default=None,
+        validation_alias=AliasChoices("DrugCodesetId", "drugCodesetId"),
+        serialization_alias="DrugCodesetId"
+    )
+    gap_days: int = Field(
+        validation_alias=AliasChoices("GapDays", "gapDays"),
+        serialization_alias="GapDays"
+    )
     offset: int
 
     model_config = ConfigDict(populate_by_name=True)

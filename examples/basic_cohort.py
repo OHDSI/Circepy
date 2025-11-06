@@ -8,6 +8,7 @@ for patients with Type 2 Diabetes using the CIRCE Python API.
 from circe import CohortExpression
 from circe.cohortdefinition import PrimaryCriteria, ConditionOccurrence
 from circe.cohortdefinition.core import ObservationFilter, ResultLimit
+from circe.cohortdefinition.cohort_expression_query_builder import BuildExpressionQueryOptions
 from circe.vocabulary import ConceptSet, ConceptSetExpression, ConceptSetItem, Concept
 from circe.api import build_cohort_query
 
@@ -67,12 +68,15 @@ def create_diabetes_cohort():
 def generate_sql_from_cohort(cohort):
     """Generate SQL from the cohort definition."""
     
-    sql = build_cohort_query(
-        cohort,
-        cdm_schema="my_cdm_schema",
-        vocab_schema="my_vocab_schema",
-        cohort_id=1
-    )
+    # Create build options
+    options = BuildExpressionQueryOptions()
+    options.cdm_schema = "my_cdm_schema"
+    options.vocabulary_schema = "my_vocab_schema"
+    options.target_table = "cohort"
+    options.results_schema = "results"
+    options.cohort_id = 1
+    
+    sql = build_cohort_query(cohort, options)
     
     return sql
 
@@ -102,9 +106,9 @@ if __name__ == "__main__":
         f.write(sql)
     print(f"\nFull SQL saved to: {output_file}")
     
-    # Optionally export as JSON
-    json_output = cohort.model_dump_json(indent=2, exclude_none=True)
+    # Optionally export as JSON (Java CIRCE-BE compatible format)
+    json_output = cohort.model_dump_json(indent=2, exclude_none=True, by_alias=True)
     json_file = "diabetes_cohort.json"
     with open(json_file, "w") as f:
         f.write(json_output)
-    print(f"Cohort definition saved to: {json_file}")
+    print(f"Cohort definition saved to: {json_file} (Java-compatible format)")

@@ -99,13 +99,11 @@ class TestWindow(unittest.TestCase):
     def test_window_initialization(self):
         """Test basic initialization of Window."""
         window = Window(
-            use_event_end=True,
-            coeff=1
+            use_event_end=True
         )
         self.assertTrue(window.use_event_end)
-        self.assertEqual(window.coeff, 1)
+        self.assertFalse(window.use_index_end)
         self.assertIsNone(window.start)
-        self.assertIsNone(window.days)
         self.assertIsNone(window.end)
 
     def test_window_with_all_fields(self):
@@ -115,17 +113,15 @@ class TestWindow(unittest.TestCase):
         
         window = Window(
             use_event_end=True,
+            use_index_end=False,
             start=start_bound,
-            coeff=1,
-            days=30,
             end=end_bound
         )
         
         self.assertTrue(window.use_event_end)
+        self.assertFalse(window.use_index_end)
         self.assertEqual(window.start.coeff, 1)
         self.assertEqual(window.start.days, 30)
-        self.assertEqual(window.coeff, 1)
-        self.assertEqual(window.days, 30)
         self.assertEqual(window.end.coeff, -1)
         self.assertEqual(window.end.days, 7)
 
@@ -133,22 +129,26 @@ class TestWindow(unittest.TestCase):
         """Test that camelCase aliases work correctly."""
         window = Window.model_validate({
             "useEventEnd": True,
-            "coeff": 1,
-            "days": 30
+            "start": {"coeff": -1, "days": 0},
+            "end": {"coeff": 1, "days": 30}
         })
         
         self.assertTrue(window.use_event_end)
-        self.assertEqual(window.coeff, 1)
-        self.assertEqual(window.days, 30)
+        self.assertEqual(window.start.coeff, -1)
+        self.assertEqual(window.start.days, 0)
+        self.assertEqual(window.end.coeff, 1)
+        self.assertEqual(window.end.days, 30)
 
     def test_window_use_event_end_false(self):
         """Test Window with use_event_end=False."""
         window = Window(
             use_event_end=False,
-            coeff=1
+            start=WindowBound(coeff=-1),
+            end=WindowBound(coeff=1)
         )
         self.assertFalse(window.use_event_end)
-        self.assertEqual(window.coeff, 1)
+        self.assertEqual(window.start.coeff, -1)
+        self.assertEqual(window.end.coeff, 1)
 
 
 class TestWindowedCriteria(unittest.TestCase):
@@ -163,8 +163,16 @@ class TestWindowedCriteria(unittest.TestCase):
 
     def test_windowed_criteria_with_windows(self):
         """Test WindowedCriteria with windows populated."""
-        start_window = Window(use_event_end=True, coeff=1, days=30)
-        end_window = Window(use_event_end=False, coeff=-1, days=7)
+        start_window = Window(
+            use_event_end=True,
+            start=WindowBound(coeff=-1, days=0),
+            end=WindowBound(coeff=1, days=30)
+        )
+        end_window = Window(
+            use_event_end=False,
+            start=WindowBound(coeff=-1, days=7),
+            end=WindowBound(coeff=1, days=14)
+        )
         
         windowed_criteria = WindowedCriteria(
             criteria="test_criteria",
@@ -173,24 +181,34 @@ class TestWindowedCriteria(unittest.TestCase):
         )
         
         self.assertEqual(windowed_criteria.criteria, "test_criteria")
-        self.assertEqual(windowed_criteria.start_window.coeff, 1)
-        self.assertEqual(windowed_criteria.start_window.days, 30)
-        self.assertEqual(windowed_criteria.end_window.coeff, -1)
-        self.assertEqual(windowed_criteria.end_window.days, 7)
+        self.assertEqual(windowed_criteria.start_window.end.coeff, 1)
+        self.assertEqual(windowed_criteria.start_window.end.days, 30)
+        self.assertEqual(windowed_criteria.end_window.start.coeff, -1)
+        self.assertEqual(windowed_criteria.end_window.start.days, 7)
 
     def test_windowed_criteria_camel_case_aliases(self):
         """Test that camelCase aliases work correctly."""
         windowed_criteria = WindowedCriteria.model_validate({
             "criteria": "test_criteria",
-            "StartWindow": {"useEventEnd": True, "coeff": 1, "days": 30},
-            "EndWindow": {"useEventEnd": False, "coeff": -1, "days": 7}
+            "StartWindow": {
+                "useEventEnd": True,
+                "start": {"coeff": -1, "days": 0},
+                "end": {"coeff": 1, "days": 30}
+            },
+            "EndWindow": {
+                "useEventEnd": False,
+                "start": {"coeff": -1, "days": 7},
+                "end": {"coeff": 1, "days": 14}
+            }
         })
         
         self.assertEqual(windowed_criteria.criteria, "test_criteria")
         self.assertIsNotNone(windowed_criteria.start_window)
         self.assertIsNotNone(windowed_criteria.end_window)
-        self.assertEqual(windowed_criteria.start_window.coeff, 1)
-        self.assertEqual(windowed_criteria.end_window.coeff, -1)
+        self.assertTrue(windowed_criteria.start_window.use_event_end)
+        self.assertFalse(windowed_criteria.end_window.use_event_end)
+        self.assertEqual(windowed_criteria.start_window.end.coeff, 1)
+        self.assertEqual(windowed_criteria.end_window.start.coeff, -1)
 
 
 class TestDateOffsetStrategy(unittest.TestCase):
@@ -353,8 +371,16 @@ class TestSupportingClassesIntegration(unittest.TestCase):
 
     def test_windowed_criteria_with_window_integration(self):
         """Test WindowedCriteria integration with Window."""
-        start_window = Window(use_event_end=True, coeff=1, days=30)
-        end_window = Window(use_event_end=False, coeff=-1, days=7)
+        start_window = Window(
+            use_event_end=True,
+            start=WindowBound(coeff=-1, days=0),
+            end=WindowBound(coeff=1, days=30)
+        )
+        end_window = Window(
+            use_event_end=False,
+            start=WindowBound(coeff=-1, days=7),
+            end=WindowBound(coeff=1, days=14)
+        )
         
         windowed_criteria = WindowedCriteria(
             criteria="test_criteria",
@@ -363,10 +389,10 @@ class TestSupportingClassesIntegration(unittest.TestCase):
         )
         
         # Test that the windows are properly integrated
-        self.assertEqual(windowed_criteria.start_window.coeff, 1)
-        self.assertEqual(windowed_criteria.start_window.days, 30)
-        self.assertEqual(windowed_criteria.end_window.coeff, -1)
-        self.assertEqual(windowed_criteria.end_window.days, 7)
+        self.assertEqual(windowed_criteria.start_window.end.coeff, 1)
+        self.assertEqual(windowed_criteria.start_window.end.days, 30)
+        self.assertEqual(windowed_criteria.end_window.start.coeff, -1)
+        self.assertEqual(windowed_criteria.end_window.start.days, 7)
 
     def test_text_filter_with_criteria_integration(self):
         """Test TextFilter integration with criteria classes."""

@@ -2,6 +2,23 @@
 
 This directory contains practical examples demonstrating how to use the CIRCE Python package for cohort definition and SQL generation.
 
+## ⚠️ Important: Java CIRCE-BE Compatibility
+
+When exporting cohort definitions to JSON for use with Java CIRCE-BE applications (like ATLAS), **always use**:
+
+```python
+# Correct - Java-compatible format
+json_output = cohort.model_dump_json(indent=2, exclude_none=True, by_alias=True)
+
+# Or as a dictionary:
+json_dict = cohort.model_dump(exclude_none=True, by_alias=True)
+```
+
+The `by_alias=True` parameter is **critical** - it ensures:
+- Field names are exported in PascalCase format that Java expects
+- Criteria objects are properly wrapped in their type names (e.g., `{"ConditionOccurrence": {...}}`)
+- The JSON can be imported into ATLAS or other Java CIRCE-BE applications
+
 ## Examples Overview
 
 ### 1. `type2_diabetes_cohort.ipynb` - Interactive Jupyter Notebook

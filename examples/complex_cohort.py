@@ -11,12 +11,14 @@ This example demonstrates advanced features including:
 from circe import CohortExpression
 from circe.cohortdefinition import (
     PrimaryCriteria, ConditionOccurrence, DrugExposure,
-    CorelatedCriteria, CriteriaGroup, DemographicCriteria
+    CorelatedCriteria, CriteriaGroup, DemographicCriteria, Occurrence,
+    InclusionRule, Measurement
 )
 from circe.cohortdefinition.core import (
     ObservationFilter, ResultLimit, Window, WindowBound,
-    Period, Occurrence, DateRange, NumericRange, Gender
+    Period, DateRange, NumericRange
 )
+from circe.cohortdefinition.cohort_expression_query_builder import BuildExpressionQueryOptions
 from circe.vocabulary import ConceptSet, ConceptSetExpression, ConceptSetItem, Concept
 from circe.api import build_cohort_query
 
@@ -26,8 +28,10 @@ def create_complex_cohort():
     Create a cohort for patients with:
     1. Type 2 Diabetes diagnosis
     2. Metformin prescription within 30 days after diagnosis
-    3. Age 18-75 at index
+    3. Age 18+ at index
     4. No insulin exposure in the 180 days before diagnosis
+    5. Inclusion rule: HbA1c measurement within 6 months after diagnosis
+    6. Censoring: Observation ends if patient develops ESRD or enters hospice
     """
     
     # Concept Set 1: Type 2 Diabetes
@@ -81,6 +85,57 @@ def create_complex_cohort():
         )
     )
     
+    # Concept Set 4: HbA1c measurement
+    hba1c_concepts = ConceptSet(
+        id=4,
+        name="Hemoglobin A1c measurement",
+        expression=ConceptSetExpression(
+            items=[
+                ConceptSetItem(
+                    concept=Concept(
+                        concept_id=3004410,
+                        concept_name="Hemoglobin A1c/Hemoglobin.total in Blood"
+                    ),
+                    include_descendants=True
+                )
+            ]
+        )
+    )
+    
+    # Concept Set 5: End-Stage Renal Disease (censoring event)
+    esrd_concepts = ConceptSet(
+        id=5,
+        name="End-Stage Renal Disease",
+        expression=ConceptSetExpression(
+            items=[
+                ConceptSetItem(
+                    concept=Concept(
+                        concept_id=46271022,
+                        concept_name="End stage renal disease"
+                    ),
+                    include_descendants=True
+                )
+            ]
+        )
+    )
+    
+    # Concept Set 6: Hospice Care (censoring event)
+    hospice_concepts = ConceptSet(
+        id=6,
+        name="Hospice Care",
+        expression=ConceptSetExpression(
+            items=[
+                ConceptSetItem(
+                    concept=Concept(
+                        concept_id=8536,
+                        concept_name="Hospice care"
+                    ),
+                    include_descendants=True
+                )
+            ]
+        )
+    )
+    
     # Primary Criteria: First Type 2 Diabetes diagnosis
     primary_criteria = PrimaryCriteria(
         criteria_list=[
@@ -89,8 +144,7 @@ def create_complex_cohort():
                 first=True,
                 condition_type_exclude=False,
                 # Age restriction at the time of diagnosis
-                age=NumericRange(value=18, op="gte"),
-                age_at_end=NumericRange(value=75, op="lte")
+                age=NumericRange(value=18, op="gte")
             )
         ],
         observation_window=ObservationFilter(
@@ -108,10 +162,9 @@ def create_complex_cohort():
             drug_type_exclude=False
         ),
         start_window=Window(
-            start=WindowBound(days=0, coeff=-1),  # Index date
-            end=WindowBound(days=30, coeff=1),    # 30 days after
-            use_index_end=False,
-            use_event_end=False
+            use_event_end=False,
+            start=WindowBound(coeff=-1, days=0),  # Index date
+            end=WindowBound(coeff=1, days=30)     # 30 days after
         ),
         occurrence=Occurrence(
             type=2,  # At least
@@ -128,10 +181,9 @@ def create_complex_cohort():
             drug_type_exclude=False
         ),
         start_window=Window(
-            start=WindowBound(days=180, coeff=-1),  # 180 days before
-            end=WindowBound(days=1, coeff=-1),       # Day before index
-            use_index_end=False,
-            use_event_end=False
+            use_event_end=False,
+            start=WindowBound(coeff=-1, days=180),  # 180 days before
+            end=WindowBound(coeff=-1, days=1)        # Day before index
         ),
         occurrence=Occurrence(
             type=0,  # Exactly
@@ -151,12 +203,92 @@ def create_complex_cohort():
         groups=None
     )
     
+    # Inclusion Rule 1: HbA1c measurement within 6 months after diagnosis
+    hba1c_measurement = CorelatedCriteria(
+        criteria=Measurement(
+            codeset_id=4,
+            first=False,
+            measurement_type_exclude=False
+        ),
+        start_window=Window(
+            use_event_end=False,
+            start=WindowBound(coeff=-1, days=0),   # Index date
+            end=WindowBound(coeff=1, days=180)      # 6 months (180 days) after
+        ),
+        occurrence=Occurrence(
+            type=2,  # At least
+            count=1,  # One measurement
+            is_distinct=False
+        )
+    )
+    
+    inclusion_rule_hba1c = InclusionRule(
+        name="Has HbA1c measurement within 6 months",
+        description="Patient must have at least one HbA1c measurement within 6 months after diagnosis",
+        expression=CriteriaGroup(
+            type="ALL",
+            criteria_list=[hba1c_measurement],
+            demographic_criteria_list=None,
+            groups=None
+        )
+    )
+    
+    # Inclusion Rule 2: Follow-up visit within 90 days
+    followup_visit = CorelatedCriteria(
+        criteria=ConditionOccurrence(
+            codeset_id=1,  # Type 2 Diabetes
+            first=False,
+            condition_type_exclude=False
+        ),
+        start_window=Window(
+            use_event_end=False,
+            start=WindowBound(coeff=1, days=1),    # Day after index
+            end=WindowBound(coeff=1, days=90)       # 90 days after
+        ),
+        occurrence=Occurrence(
+            type=2,  # At least
+            count=1,  # One follow-up
+            is_distinct=False
+        )
+    )
+    
+    inclusion_rule_followup = InclusionRule(
+        name="Has follow-up visit within 90 days",
+        description="Patient must have at least one follow-up visit for diabetes within 90 days after initial diagnosis",
+        expression=CriteriaGroup(
+            type="ALL",
+            criteria_list=[followup_visit],
+            demographic_criteria_list=None,
+            groups=None
+        )
+    )
+    
+    # Censoring Criteria: Events that end observation for the patient
+    # These represent serious complications or end-of-life care that would alter treatment
+    censoring_criteria = [
+        # ESRD diagnosis - a serious complication requiring different treatment approach
+        ConditionOccurrence(
+            codeset_id=5,
+            first=False,
+            condition_type_exclude=False
+        ),
+        # Hospice care - indicates end-of-life care, patient no longer appropriate for study
+        ConditionOccurrence(
+            codeset_id=6,
+            first=False,
+            condition_type_exclude=False
+        )
+    ]
+    
     # Create the complete cohort expression
     cohort = CohortExpression(
-        title="New Type 2 Diabetes Patients Started on Metformin",
-        concept_sets=[diabetes_concepts, metformin_concepts, insulin_concepts],
+        title="New Type 2 Diabetes Patients Started on Metformin with Monitoring",
+        concept_sets=[diabetes_concepts, metformin_concepts, insulin_concepts, 
+                     hba1c_concepts, esrd_concepts, hospice_concepts],
         primary_criteria=primary_criteria,
         additional_criteria=additional_criteria,
+        inclusion_rules=[inclusion_rule_hba1c, inclusion_rule_followup],
+        censoring_criteria=censoring_criteria,
         qualified_limit=ResultLimit(type="First"),  # First qualifying event per person
         expression_limit=ResultLimit(type="All")
     )
@@ -177,15 +309,26 @@ if __name__ == "__main__":
         print(f"  - {cs.name}")
     
     print(f"\nAdditional Criteria: {len(cohort.additional_criteria.criteria_list)} conditions")
+    print(f"Inclusion Rules: {len(cohort.inclusion_rules)} rules")
+    for rule in cohort.inclusion_rules:
+        print(f"  - {rule.name}")
+    print(f"Censoring Criteria: {len(cohort.censoring_criteria)} events")
+    for i, criteria in enumerate(cohort.censoring_criteria, 1):
+        # Get the criteria type from the wrapped object
+        criteria_dict = criteria.model_dump(by_alias=True)
+        criteria_type = list(criteria_dict.keys())[0]
+        print(f"  - {criteria_type}")
     
     # Generate SQL
     print("\nGenerating SQL...")
-    sql = build_cohort_query(
-        cohort,
-        cdm_schema="my_cdm",
-        vocab_schema="my_vocab",
-        cohort_id=2
-    )
+    options = BuildExpressionQueryOptions()
+    options.cdm_schema = "my_cdm"
+    options.vocabulary_schema = "my_vocab"
+    options.target_table = "cohort"
+    options.results_schema = "results"
+    options.cohort_id = 2
+    
+    sql = build_cohort_query(cohort, options)
     
     # Save outputs
     sql_file = "complex_diabetes_cohort.sql"
@@ -195,11 +338,14 @@ if __name__ == "__main__":
     
     json_file = "complex_diabetes_cohort.json"
     with open(json_file, "w") as f:
-        f.write(cohort.model_dump_json(indent=2, exclude_none=True))
-    print(f"Cohort definition saved to: {json_file}")
+        f.write(cohort.model_dump_json(indent=2, exclude_none=True, by_alias=True))
+    print(f"Cohort definition saved to: {json_file} (Java-compatible format)")
     
     print("\nCohort summary:")
     print("  - Index: First Type 2 Diabetes diagnosis")
-    print("  - Age: 18-75 at diagnosis")
+    print("  - Age: 18+ at diagnosis")
     print("  - Must have: Metformin within 30 days after diagnosis")
     print("  - Must not have: Insulin in 180 days before diagnosis")
+    print("  - Inclusion 1: HbA1c measurement within 6 months after diagnosis")
+    print("  - Inclusion 2: Follow-up visit within 90 days after diagnosis")
+    print("  - Censoring: Observation ends if ESRD or hospice care occurs")
