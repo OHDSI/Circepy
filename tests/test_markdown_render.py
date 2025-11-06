@@ -649,8 +649,10 @@ class TestFormatAgeGender:
         """Test formatting age only."""
         age = NumericRange(op=">=", value=18)
         result = renderer._format_age_gender(age=age)
-        assert "age" in result
+        # Updated to match R format: "who are >= 18 years old"
+        assert "who are" in result
         assert "18" in result
+        assert "years old" in result
     
     def test_format_age_gender_age_at_end(self, renderer):
         """Test formatting age at end only."""
@@ -680,7 +682,8 @@ class TestFormatAgeGender:
         age = NumericRange(op=">=", value=18)
         gender = [Concept(concept_id=8507, concept_name="MALE")]
         result = renderer._format_age_gender(age=age, gender=gender)
-        assert "age" in result
+        # Updated to match R format: "who are >= 18 years old"
+        assert "who are" in result
         assert "gender" in result
     
     def test_format_age_gender_none(self, renderer):
@@ -1636,7 +1639,7 @@ class TestRenderCohortExpression:
     
     def test_render_cohort_expression_all_sections(self):
         """Test rendering with all sections populated."""
-        renderer = MarkdownRender()
+        renderer = MarkdownRender(include_concept_sets=True)
         # Create a valid primary criteria with criteria list
         criteria = ConditionOccurrence(codeset_id=1, first=True)
         concept_set = ConceptSet(id=1, name="Set 1")
@@ -1999,12 +2002,12 @@ class TestRenderInclusionRules:
         """Test rendering with expression."""
         renderer = MarkdownRender()
         expression = CriteriaGroup(type="ALL")
-        rule = InclusionRule(expression=expression)
+        rule = InclusionRule(name="Test Rule", expression=expression)
         # Bug fixed - should render without AttributeError
         result = renderer._render_inclusion_rules([rule])
         
         assert isinstance(result, str)
-        assert "Entry events" in result or "all" in result.lower()
+        assert "Test Rule" in result
 
 
 class TestRenderEndStrategy:
@@ -2749,8 +2752,11 @@ class TestIntegrationWithJavaPatterns:
     def test_inclusion_rules_format_matches_java(self):
         """Test that inclusion rules format matches Java pattern."""
         renderer = MarkdownRender()
-        # Add expression to trigger "Entry events" rendering
-        expression = CriteriaGroup(type="ALL")
+        # Add expression with criteria to trigger "Entry events" rendering
+        from circe.cohortdefinition.criteria import CorelatedCriteria, ConditionOccurrence
+        condition = ConditionOccurrence(codeset_id=1, first=False, condition_type_exclude=False)
+        corelated = CorelatedCriteria(criteria=condition)
+        expression = CriteriaGroup(type="ALL", criteria_list=[corelated])
         rule = InclusionRule(name="Test Rule", description="Test description", expression=expression)
         result = renderer._render_inclusion_rules([rule])
         

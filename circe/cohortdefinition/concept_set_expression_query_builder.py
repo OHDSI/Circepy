@@ -27,9 +27,11 @@ class ConceptSetExpressionQueryBuilder:
     """
     
     CONCEPT_SET_DESCENDANTS_TEMPLATE = """
-    SELECT ca.descendant_concept_id as concept_id
-    FROM @vocabulary_database_schema.CONCEPT_ANCESTOR ca
-    WHERE ca.ancestor_concept_id IN (@conceptIdIn)
+    SELECT c.concept_id
+    FROM @vocabulary_database_schema.CONCEPT c
+    JOIN @vocabulary_database_schema.CONCEPT_ANCESTOR ca ON c.concept_id = ca.descendant_concept_id
+    WHERE c.invalid_reason IS NULL
+    AND ca.ancestor_concept_id IN (@conceptIdIn)
     """
     
     CONCEPT_SET_MAPPED_TEMPLATE = """
@@ -44,14 +46,14 @@ class ConceptSetExpressionQueryBuilder:
     """
     
     CONCEPT_SET_INCLUDE_TEMPLATE = """
-    SELECT DISTINCT concept_id
-    FROM (@includeQuery) concept_set
+    SELECT DISTINCT I.concept_id
+    FROM (@includeQuery) I
     """
     
     CONCEPT_SET_EXCLUDE_TEMPLATE = """
     EXCEPT
-    SELECT DISTINCT concept_id
-    FROM (@excludeQuery) concept_set
+    SELECT DISTINCT E.concept_id
+    FROM (@excludeQuery) E
     """
     
     MAX_IN_LENGTH = 1000  # Oracle limitation

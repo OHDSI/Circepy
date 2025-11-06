@@ -176,7 +176,7 @@ class PrimaryCriteria(BaseModel):
     )
     primary_limit: Optional[ResultLimit] = Field(
         default=None,
-        validation_alias=AliasChoices("PrimaryCriteriaLimit", "primaryLimit"),
+        validation_alias=AliasChoices("PrimaryCriteriaLimit", "primaryCriteriaLimit", "primaryLimit"),
         serialization_alias="PrimaryCriteriaLimit"
     )
 
@@ -235,19 +235,24 @@ class PrimaryCriteria(BaseModel):
                     criteria_data = item[key]
                     break
             
-            if criteria_type and criteria_data:
+            if criteria_type and criteria_data is not None:
                 try:
+                    # Make a copy to avoid modifying the original
+                    criteria_data_copy = dict(criteria_data)
                     # Set default values for commonly missing required fields
-                    if criteria_type == 'Measurement' and 'measurementTypeExclude' not in criteria_data:
-                        criteria_data['measurementTypeExclude'] = False
-                    if criteria_type == 'Observation' and 'observationTypeExclude' not in criteria_data:
-                        criteria_data['observationTypeExclude'] = False
-                    if 'first' not in criteria_data:
-                        criteria_data['first'] = False
+                    # Use PascalCase keys since that's what's in the JSON
+                    if criteria_type == 'Measurement' and 'MeasurementTypeExclude' not in criteria_data_copy and 'measurementTypeExclude' not in criteria_data_copy:
+                        criteria_data_copy['MeasurementTypeExclude'] = False
+                    if criteria_type == 'Observation' and 'ObservationTypeExclude' not in criteria_data_copy and 'observationTypeExclude' not in criteria_data_copy:
+                        criteria_data_copy['ObservationTypeExclude'] = False
+                    if criteria_type == 'ConditionOccurrence' and 'ConditionTypeExclude' not in criteria_data_copy and 'conditionTypeExclude' not in criteria_data_copy:
+                        criteria_data_copy['ConditionTypeExclude'] = False
+                    if 'First' not in criteria_data_copy and 'first' not in criteria_data_copy:
+                        criteria_data_copy['First'] = False
                     
-                    criteria_obj = criteria_class_map[criteria_type].model_validate(criteria_data, strict=False)
+                    criteria_obj = criteria_class_map[criteria_type].model_validate(criteria_data_copy, strict=False)
                     deserialized.append(criteria_obj)
-                except Exception:
+                except Exception as e:
                     # If deserialization fails, keep as dict
                     deserialized.append(item)
             else:
@@ -416,20 +421,24 @@ class CriteriaGroup(BaseModel):
                         
                         if criteria_type in criteria_class_map:
                             try:
+                                # Make a copy to avoid modifying the original
+                                criteria_data_copy = dict(criteria_data)
                                 # Set default values for commonly missing required fields
-                                if 'measurementTypeExclude' not in criteria_data and criteria_type == 'Measurement':
-                                    criteria_data['measurementTypeExclude'] = False
-                                if 'observationTypeExclude' not in criteria_data and criteria_type == 'Observation':
-                                    criteria_data['observationTypeExclude'] = False
-                                if 'first' not in criteria_data:
+                                # Note: Use PascalCase keys since that's what's in the JSON
+                                if 'MeasurementTypeExclude' not in criteria_data_copy and 'measurementTypeExclude' not in criteria_data_copy and criteria_type == 'Measurement':
+                                    criteria_data_copy['MeasurementTypeExclude'] = False
+                                if 'ObservationTypeExclude' not in criteria_data_copy and 'observationTypeExclude' not in criteria_data_copy and criteria_type == 'Observation':
+                                    criteria_data_copy['ObservationTypeExclude'] = False
+                                if 'First' not in criteria_data_copy and 'first' not in criteria_data_copy:
                                     # Most criteria types require 'first' as bool, but some allow Optional[bool]
                                     # Set to False as default for required bool fields
-                                    criteria_data['first'] = False
+                                    criteria_data_copy['First'] = False
                                 # Deserialize the inner criteria
-                                inner_criteria = criteria_class_map[criteria_type].model_validate(criteria_data, strict=False)
+                                inner_criteria = criteria_class_map[criteria_type].model_validate(criteria_data_copy, strict=False)
                                 item_copy['criteria'] = inner_criteria
-                            except Exception:
+                            except Exception as e:
                                 # If deserialization fails, keep as dict
+                                # This is usually due to missing required fields
                                 pass
                 
                 # Normalize Occurrence field - CorelatedCriteria uses 'occurrence' (lowercase) as field name

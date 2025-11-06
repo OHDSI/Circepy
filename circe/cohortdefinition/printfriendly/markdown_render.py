@@ -35,19 +35,22 @@ class MarkdownRender:
     Java equivalent: org.ohdsi.circe.cohortdefinition.printfriendly.MarkdownRender
     """
     
-    def __init__(self, concept_sets: Optional[List[ConceptSet]] = None):
+    def __init__(self, concept_sets: Optional[List[ConceptSet]] = None, include_concept_sets: bool = False):
         """Initialize the markdown renderer.
         
         Args:
             concept_sets: Optional list of concept sets for resolving codeset IDs to names
+            include_concept_sets: Whether to include concept set tables in the output (default: False)
         """
         self._concept_sets = concept_sets or []
+        self._include_concept_sets = include_concept_sets
     
-    def render_cohort_expression(self, cohort_expression: Union[CohortExpression, str]) -> str:
+    def render_cohort_expression(self, cohort_expression: Union[CohortExpression, str], include_concept_sets: Optional[bool] = None) -> str:
         """Render a cohort expression to markdown format.
         
         Args:
             cohort_expression: The cohort expression to render, or JSON string
+            include_concept_sets: Whether to include concept set tables in the output (overrides init parameter if provided)
             
         Returns:
             Markdown formatted string describing the cohort
@@ -114,10 +117,9 @@ class MarkdownRender:
         if cohort_expression.censoring_criteria:
             markdown_parts.append(self._render_censor_criteria(cohort_expression.censoring_criteria))
         
-        # Cohort Eras
-        if cohort_expression.collapse_settings and cohort_expression.collapse_settings.era_pad is not None:
-            markdown_parts.append("### Cohort Eras\n")
-            markdown_parts.append(self._render_cohort_eras(cohort_expression.collapse_settings))
+        # Cohort Eras - always show this section (R shows it even when collapse_settings is missing)
+        markdown_parts.append("### Cohort Eras\n")
+        markdown_parts.append(self._render_cohort_eras(cohort_expression.collapse_settings))
         
         # Censor window
         if cohort_expression.censor_window:
@@ -128,8 +130,9 @@ class MarkdownRender:
             markdown_parts.append("## CDM Version Range\n")
             markdown_parts.append(self._render_period(cohort_expression.cdm_version_range))
         
-        # Concept sets
-        if cohort_expression.concept_sets:
+        # Concept sets (only if explicitly requested)
+        should_include_concept_sets = include_concept_sets if include_concept_sets is not None else self._include_concept_sets
+        if should_include_concept_sets and cohort_expression.concept_sets:
             markdown_parts.append("## Concept Sets\n")
             markdown_parts.append(self._render_concept_sets(cohort_expression.concept_sets))
         
@@ -390,7 +393,7 @@ class MarkdownRender:
         
         # Handle various window patterns
         if start and end:
-            start_days = start.days if start.days is not None else "all"
+            start_days = start.days if start.days is not None else 0
             end_days = end.days if end.days is not None else "all"
             start_coeff = start.coeff if start else 1
             end_coeff = end.coeff if end else 1
@@ -398,15 +401,15 @@ class MarkdownRender:
             start_dir = "before" if start_coeff < 0 else "after"
             end_dir = "before" if end_coeff < 0 else "after"
             
-            if start_days == "all" and end_days == 0 and start_coeff == -1:
+            # Special case: both in the past (coeff=-1, end_days < start_days)
+            if start_coeff == -1 and end_coeff == -1 and isinstance(start_days, int) and isinstance(end_days, int) and end_days < start_days:
+                return f"{event_part} in the {start_days} days prior to {index_label} {index_part}"
+            elif start_days == "all" and end_days == 0 and start_coeff == -1:
                 return f"{event_part} anytime on or before {index_label} {index_part}"
-            elif end_days == 1 and start_coeff == -1 and end_coeff == -1:
-                days_str = f"in the {start_days} days" if start_days != "all" else "anytime"
-                return f"{days_str} prior to {index_label} {index_part}"
-            elif start_days == "all" and end_days > 1 and start_coeff == -1:
-                return f"anytime up to {end_days} days {end_dir} {index_label} {index_part}"
-            elif end_days == "all" and start_days > 0 and end_coeff == 1:
-                return f"{start_days} days {start_dir} {index_label} {index_part}"
+            elif end_days == "all" and isinstance(start_days, int) and start_days > 0 and end_coeff == 1:
+                return f"{event_part} anytime after {start_days} days {start_dir} {index_label} {index_part}"
+            elif start_days == "all" and isinstance(end_days, int) and end_days > 0 and start_coeff == -1:
+                return f"{event_part} anytime up to {end_days} days {end_dir} {index_label} {index_part}"
             else:
                 return f"{event_part} between {start_days} days {start_dir} and {end_days} days {end_dir} {index_label} {index_part}"
         
@@ -565,14 +568,87 @@ class MarkdownRender:
             return ""
         
         criteria_parts = []
-        criteria_parts.append(f"\nRestrict entry events to {self._render_criteria_group(additional_criteria, level=0)}")
+        
+        # Get the group type
+        group_type = self._format_group_type(additional_criteria.type or "ALL")
+        criteria_parts.append(f"\nRestrict entry events to with {group_type} of the following criteria:")
+        criteria_parts.append("")
+        
+        # Render each criteria as a numbered bullet with details
+        if additional_criteria.criteria_list:
+            for i, criteria in enumerate(additional_criteria.criteria_list, 1):
+                # Render with full details, including occurrence and windows
+                criteria_text = self._render_corelated_criteria_detail(criteria)
+                if criteria_text:
+                    criteria_parts.append(f"   {i}. {criteria_text}")
+        
+        criteria_parts.append("  ")
+        criteria_parts.append("")
         
         # Add qualified limit if primary limit is "All"
         primary_limit = primary_criteria.primary_limit if primary_criteria else None
         if primary_limit and primary_limit.type == "All" and qualified_limit and qualified_limit.type != "All":
-            criteria_parts.append(f"\nLimit these restricted entry events to the {self._format_result_limit(qualified_limit)} per person.")
+            criteria_parts.append(f"Limit these restricted entry events to the {self._format_result_limit(qualified_limit)} per person.")
+            criteria_parts.append("")
         
-        return "\n".join(criteria_parts) + "\n"
+        return "\n".join(criteria_parts)
+    
+    def _render_corelated_criteria_detail(self, corelated_criteria: Any) -> str:
+        """Render detailed text for CorelatedCriteria including occurrence and windows.
+        
+        Args:
+            corelated_criteria: CorelatedCriteria object
+            
+        Returns:
+            Detailed criteria text like "having at least 1 drug exposure of 'X', starting between..."
+        """
+        from ..criteria import CorelatedCriteria, Occurrence
+        
+        if not isinstance(corelated_criteria, CorelatedCriteria):
+            return self._render_criteria(corelated_criteria, level=0, is_plural=True)
+        
+        parts = []
+        
+        # Start with occurrence phrase
+        occurrence = corelated_criteria.occurrence
+        if occurrence:
+            if occurrence.type == 0:  # EXACTLY
+                if occurrence.count == 0:
+                    parts.append("having no")
+                else:
+                    parts.append(f"having exactly {occurrence.count}")
+            elif occurrence.type == 1:  # AT_MOST
+                parts.append(f"having at most {occurrence.count}")
+            elif occurrence.type == 2:  # AT_LEAST
+                parts.append(f"having at least {occurrence.count}")
+        else:
+            parts.append("having")
+        
+        # Add the criteria description
+        # Pluralize based on occurrence count: singular if count=1, plural otherwise
+        inner_criteria = corelated_criteria.criteria
+        should_pluralize = not (occurrence and occurrence.count == 1)
+        criteria_text = self._render_criteria(inner_criteria, level=0, is_plural=should_pluralize)
+        # Strip trailing period to avoid double periods when adding window details
+        if criteria_text.endswith('.'):
+            criteria_text = criteria_text[:-1]
+        parts.append(criteria_text)
+        
+        # Add window details
+        window_parts = []
+        if corelated_criteria.start_window:
+            window_text = self._format_window_criteria(corelated_criteria.start_window, "cohort entry")
+            if window_text:
+                window_parts.append(window_text)
+        
+        if corelated_criteria.end_window:
+            window_text = self._format_window_criteria(corelated_criteria.end_window, "cohort entry")
+            if window_text:
+                window_parts.append(window_text)
+        
+        # Add final period at the end
+        result = ", ".join([" ".join(parts)] + window_parts) + "."
+        return result
     
     def _render_censor_criteria(self, censoring_criteria: List[Any]) -> str:
         """Render censor criteria section.
@@ -586,6 +662,8 @@ class MarkdownRender:
             return ""
         
         criteria_parts = []
+        # R always shows this line first
+        criteria_parts.append("The person exits the cohort at the end of continuous observation.")
         criteria_parts.append("The person exits the cohort when encountering any of the following events:")
         criteria_parts.append("")
         
@@ -603,10 +681,11 @@ class MarkdownRender:
         Args:
             collapse_settings: CollapseSettings object
         """
-        if not collapse_settings or collapse_settings.era_pad is None:
-            return ""
+        # R shows cohort eras even when collapse_settings is None (defaults to era_pad=0)
+        era_pad = 0
+        if collapse_settings and collapse_settings.era_pad is not None:
+            era_pad = collapse_settings.era_pad
         
-        era_pad = collapse_settings.era_pad
         day_word = "day" if era_pad == 1 else "days"
         return f"Remaining events will be combined into cohort eras if they are within {era_pad} {day_word} of each other.\n"
     
@@ -796,8 +875,16 @@ class MarkdownRender:
             rules_parts.append(f"#### {i}. {rule_name}{description}")
             rules_parts.append("")
             
-            if rule.expression:
-                rules_parts.append(f"Entry events {self._render_criteria_group(rule.expression, level=0)}")
+            if rule.expression and rule.expression.criteria_list:
+                # For inclusion rules, render CorelatedCriteria with detail
+                from ..criteria import CorelatedCriteria
+                for j, criteria in enumerate(rule.expression.criteria_list):
+                    if isinstance(criteria, CorelatedCriteria):
+                        criteria_text = self._render_corelated_criteria_detail(criteria)
+                        rules_parts.append(f"Entry events {criteria_text}")
+                    else:
+                        criteria_text = self._render_criteria(criteria, level=0, is_plural=True)
+                        rules_parts.append(f"Entry events {criteria_text}")
                 rules_parts.append("")
         
         return "\n".join(rules_parts)
@@ -1106,7 +1193,8 @@ class MarkdownRender:
         if age:
             age_str = self._format_numeric_range(age)
             if age_str:
-                parts.append(f"age {age_str}")
+                # R format: "who are >= X years old" instead of "age >= X"
+                parts.append(f"who are {age_str} years old")
         
         if age_at_end:
             age_str = self._format_numeric_range(age_at_end)

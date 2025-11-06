@@ -152,7 +152,8 @@ def build_cohort_query(
 
 def cohort_print_friendly(
     expression: CohortExpression,
-    concept_sets: Optional[List[ConceptSet]] = None
+    concept_sets: Optional[List[ConceptSet]] = None,
+    include_concept_sets: bool = False
 ) -> str:
     """Generate human-readable Markdown from a cohort expression.
     
@@ -161,6 +162,7 @@ def cohort_print_friendly(
     Args:
         expression: CohortExpression instance
         concept_sets: Optional list of concept sets (uses expression.concept_sets if None)
+        include_concept_sets: Whether to include concept set tables in the output (default: False)
         
     Returns:
         Markdown string
@@ -168,10 +170,12 @@ def cohort_print_friendly(
     Example:
         >>> expression = cohort_expression_from_json(json_str)
         >>> markdown = cohort_print_friendly(expression)
+        >>> # Include concept sets in output
+        >>> markdown_with_sets = cohort_print_friendly(expression, include_concept_sets=True)
     """
     if concept_sets is None:
         concept_sets = expression.concept_sets or []
     
-    renderer = MarkdownRender()
+    renderer = MarkdownRender(concept_sets=concept_sets, include_concept_sets=include_concept_sets)
     return renderer.render_cohort_expression(expression)
 

@@ -43,7 +43,8 @@ class WarningReporterHelper:
         Returns:
             An Execution object that will add the warning when called
         """
-        def exec_warning() -> None:
+        def exec_warning(_value=None) -> None:
+            # Accept optional value parameter (unused) for compatibility with Operations.then()
             self._reporter(self._template, self._primary_group, secondary_group)
         
         return exec_warning

@@ -80,3 +80,4 @@ __all__ = [
 
 # Rebuild models with forward references after all imports are complete
 CriteriaGroup.model_rebuild()
+CohortExpression.model_rebuild()

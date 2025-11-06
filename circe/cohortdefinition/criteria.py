@@ -524,7 +524,11 @@ class Measurement(Criteria):
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     measurement_type: Optional[List[Concept]] = Field(default=None, alias="MeasurementType")
     measurement_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="MeasurementTypeCS")
-    measurement_type_exclude: bool = Field(alias="MeasurementTypeExclude")
+    measurement_type_exclude: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("MeasurementTypeExclude", "measurementTypeExclude"),
+        serialization_alias="MeasurementTypeExclude"
+    )
     operator: Optional[List[Concept]] = None
     operator_cs: Optional[ConceptSetSelection] = Field(default=None, alias="OperatorCS")
     value_as_number: Optional[NumericRange] = Field(default=None, alias="ValueAsNumber")
@@ -536,8 +540,13 @@ class Measurement(Criteria):
     provider_specialty_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ProviderSpecialtyCS")
     visit_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitTypeCS")
     visit_type: Optional[List[Concept]] = Field(default=None, alias="VisitType")
-    codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
+    codeset_id: Optional[int] = Field(
+        default=None,
+        validation_alias=AliasChoices("CodesetId", "codesetId"),
+        serialization_alias="CodesetId"
+    )
     first: bool = Field(
+        default=False,
         validation_alias=AliasChoices("First", "first"),
         serialization_alias="First"
     )

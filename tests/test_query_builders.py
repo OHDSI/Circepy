@@ -89,8 +89,11 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.build_concept_set_sub_query(concepts, descendant_concepts)
         
-        self.assertIn("SELECT ca.descendant_concept_id as concept_id", query)
-        self.assertIn("@vocabulary_database_schema.CONCEPT_ANCESTOR", query)
+        # Check for Java-compatible SQL with invalid_reason filtering
+        self.assertIn("SELECT c.concept_id", query)
+        self.assertIn("@vocabulary_database_schema.CONCEPT c", query)
+        self.assertIn("@vocabulary_database_schema.CONCEPT_ANCESTOR ca", query)
+        self.assertIn("c.invalid_reason IS NULL", query)
         self.assertIn("12345", query)
         self.assertIn("67890", query)
 
@@ -164,7 +167,7 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.build_expression_query(expression)
         
-        self.assertIn("SELECT DISTINCT concept_id", query)
+        self.assertIn("SELECT DISTINCT I.concept_id", query)
         self.assertIn("12345", query)
         self.assertIn("67890", query)
 
@@ -247,7 +250,7 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.build_expression_query(expression)
         
-        self.assertIn("SELECT DISTINCT concept_id", query)
+        self.assertIn("SELECT DISTINCT I.concept_id", query)
         self.assertIn("EXCEPT", query)
         self.assertIn("UNION", query)
         self.assertIn("12345", query)
@@ -265,7 +268,7 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.build_expression_query(expression)
         
-        self.assertIn("SELECT DISTINCT concept_id", query)
+        self.assertIn("SELECT DISTINCT I.concept_id", query)
         self.assertNotIn("EXCEPT", query)
 
 

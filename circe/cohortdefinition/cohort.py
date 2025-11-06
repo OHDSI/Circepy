@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional, Any, Union, TYPE_CHECKING
-from pydantic import BaseModel, Field, ConfigDict, model_validator, AliasChoices
+from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator, AliasChoices
 from .core import (
     ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy, CustomEraStrategy,
     PrimaryCriteria, CriteriaGroup, ObservationFilter
@@ -93,13 +93,90 @@ class CohortExpression(BaseModel):
         validation_alias=AliasChoices("CensorWindow", "censorWindow"),
         serialization_alias="CensorWindow"
     )
-    censoring_criteria: Optional[List[Any]] = Field(
+    censoring_criteria: Optional[List['Criteria']] = Field(
         default=None,
         validation_alias=AliasChoices("CensoringCriteria", "censoringCriteria"),
         serialization_alias="CensoringCriteria"
     )
 
     model_config = ConfigDict(populate_by_name=True)
+    
+    @field_validator('censoring_criteria', mode='before')
+    @classmethod
+    def deserialize_censoring_criteria(cls, v: Any) -> Any:
+        """Deserialize censoring criteria from polymorphic JSON format.
+        
+        Censoring criteria come as [{"ConditionOccurrence": {...}}, ...] 
+        and need to be unwrapped and deserialized to Criteria objects.
+        """
+        if not v or not isinstance(v, list):
+            return v
+        
+        from .criteria import (
+            ConditionOccurrence, DrugExposure, ProcedureOccurrence, VisitOccurrence,
+            Observation, Measurement, DeviceExposure, Specimen, Death, VisitDetail,
+            ObservationPeriod, PayerPlanPeriod, LocationRegion, ConditionEra, 
+            DrugEra, DoseEra
+        )
+        
+        criteria_class_map = {
+            'ConditionOccurrence': ConditionOccurrence,
+            'DrugExposure': DrugExposure,
+            'ProcedureOccurrence': ProcedureOccurrence,
+            'VisitOccurrence': VisitOccurrence,
+            'Observation': Observation,
+            'Measurement': Measurement,
+            'DeviceExposure': DeviceExposure,
+            'Specimen': Specimen,
+            'Death': Death,
+            'VisitDetail': VisitDetail,
+            'ObservationPeriod': ObservationPeriod,
+            'PayerPlanPeriod': PayerPlanPeriod,
+            'LocationRegion': LocationRegion,
+            'ConditionEra': ConditionEra,
+            'DrugEra': DrugEra,
+            'DoseEra': DoseEra,
+        }
+        
+        deserialized = []
+        for item in v:
+            if not isinstance(item, dict):
+                deserialized.append(item)
+                continue
+            
+            # JSON format: {"ConditionOccurrence": {...}} - unwrap and deserialize
+            criteria_type = None
+            criteria_data = None
+            for key in item.keys():
+                if key in criteria_class_map:
+                    criteria_type = key
+                    criteria_data = item[key]
+                    break
+            
+            if criteria_type and criteria_data is not None:
+                try:
+                    # Make a copy to avoid modifying the original
+                    criteria_data_copy = dict(criteria_data)
+                    # Set default values for commonly missing required fields
+                    if 'First' not in criteria_data_copy and 'first' not in criteria_data_copy:
+                        criteria_data_copy['First'] = False
+                    if criteria_type == 'Measurement' and 'MeasurementTypeExclude' not in criteria_data_copy and 'measurementTypeExclude' not in criteria_data_copy:
+                        criteria_data_copy['MeasurementTypeExclude'] = False
+                    if criteria_type == 'Observation' and 'ObservationTypeExclude' not in criteria_data_copy and 'observationTypeExclude' not in criteria_data_copy:
+                        criteria_data_copy['ObservationTypeExclude'] = False
+                    if criteria_type == 'ConditionOccurrence' and 'ConditionTypeExclude' not in criteria_data_copy and 'conditionTypeExclude' not in criteria_data_copy:
+                        criteria_data_copy['ConditionTypeExclude'] = False
+                    
+                    criteria_obj = criteria_class_map[criteria_type].model_validate(criteria_data_copy, strict=False)
+                    deserialized.append(criteria_obj)
+                except Exception as e:
+                    # If deserialization fails, keep as dict
+                    deserialized.append(item)
+            else:
+                # Not a recognized criteria type, keep as-is
+                deserialized.append(item)
+        
+        return deserialized
     
     @model_validator(mode='before')
     @classmethod

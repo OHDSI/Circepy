@@ -44,10 +44,20 @@ class Concept(BaseModel):
         validation_alias=AliasChoices("STANDARD_CONCEPT", "standardConcept"),
         serialization_alias="STANDARD_CONCEPT"
     )
+    standard_concept_caption: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("STANDARD_CONCEPT_CAPTION", "standardConceptCaption"),
+        serialization_alias="STANDARD_CONCEPT_CAPTION"
+    )
     invalid_reason: Optional[str] = Field(
         default=None,
         validation_alias=AliasChoices("INVALID_REASON", "invalidReason"),
         serialization_alias="INVALID_REASON"
+    )
+    invalid_reason_caption: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("INVALID_REASON_CAPTION", "invalidReasonCaption"),
+        serialization_alias="INVALID_REASON_CAPTION"
     )
     domain_id: Optional[str] = Field(
         default=None,
@@ -59,10 +69,10 @@ class Concept(BaseModel):
         validation_alias=AliasChoices("VOCABULARY_ID", "vocabularyId"),
         serialization_alias="VOCABULARY_ID"
     )
-    # Java-specific fields for 1:1 compatibility
-    false: Optional[Any] = None  # return type
-    other: Optional['Concept'] = None
-    true: Optional[Any] = None  # return type
+    # Java-specific fields for 1:1 compatibility (excluded from export)
+    false: Optional[Any] = Field(default=None, exclude=True)
+    other: Optional['Concept'] = Field(default=None, exclude=True)
+    true: Optional[Any] = Field(default=None, exclude=True)
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -73,9 +83,9 @@ class ConceptSetItem(BaseModel):
     Java equivalent: org.ohdsi.circe.vocabulary.ConceptSetItem
     """
     concept: Optional[Concept] = None
-    is_excluded: Optional[bool] = Field(default=None, alias="isExcluded")
-    include_mapped: Optional[bool] = Field(default=None, alias="includeMapped")
-    include_descendants: Optional[bool] = Field(default=None, alias="includeDescendants")
+    is_excluded: bool = Field(default=False, alias="isExcluded")
+    include_mapped: bool = Field(default=False, alias="includeMapped")
+    include_descendants: bool = Field(default=False, alias="includeDescendants")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -90,14 +100,14 @@ class ConceptSetExpression(BaseModel):
     """
     concept: Optional[Concept] = None
     is_excluded: bool = Field(default=False, alias="isExcluded")
-    other: Optional[ConceptSetItem] = None
+    other: Optional[ConceptSetItem] = Field(default=None, exclude=True)
     include_mapped: bool = Field(default=False, alias="includeMapped")
-    json_mapper: Optional[Any] = Field(default=None, alias="JSON_MAPPER")
+    json_mapper: Optional[Any] = Field(default=None, alias="JSON_MAPPER", exclude=True)
     include_descendants: bool = Field(default=False, alias="includeDescendants")
     items: Optional[List[ConceptSetItem]] = None
-    # Java-specific fields for 1:1 compatibility
-    true: Optional[Any] = None  # return type
-    false: Optional[Any] = None  # return type
+    # Java-specific fields for 1:1 compatibility (excluded from export)
+    true: Optional[Any] = Field(default=None, exclude=True)
+    false: Optional[Any] = Field(default=None, exclude=True)
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -110,9 +120,9 @@ class ConceptSet(BaseModel):
     id: int
     name: Optional[str] = None
     expression: Optional[ConceptSetExpression] = None
-    other: Optional['ConceptSet'] = None
-    true: Optional[Any] = None  # return type
-    false: Optional[Any] = None  # return type
+    other: Optional['ConceptSet'] = Field(default=None, exclude=True)
+    true: Optional[Any] = Field(default=None, exclude=True)
+    false: Optional[Any] = Field(default=None, exclude=True)
 
 
 # Forward references will be resolved when all classes are imported

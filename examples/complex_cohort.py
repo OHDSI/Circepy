@@ -321,12 +321,12 @@ if __name__ == "__main__":
     
     # Generate SQL
     print("\nGenerating SQL...")
+    # Note: For SqlRender compatibility, leave schema parameters unset
+    # to preserve @vocabulary_database_schema notation in the output.
+    # SqlRender will replace these at runtime with actual schema names.
     options = BuildExpressionQueryOptions()
-    options.cdm_schema = "my_cdm"
-    options.vocabulary_schema = "my_vocab"
-    options.target_table = "cohort"
-    options.results_schema = "results"
     options.cohort_id = 2
+    options.generate_stats = True
     
     sql = build_cohort_query(cohort, options)
     
@@ -338,8 +338,9 @@ if __name__ == "__main__":
     
     json_file = "complex_diabetes_cohort.json"
     with open(json_file, "w") as f:
-        f.write(cohort.model_dump_json(indent=2, exclude_none=True, by_alias=True))
-    print(f"Cohort definition saved to: {json_file} (Java-compatible format)")
+        # Note: For ATLAS compatibility, concepts should have complete metadata (see ATLAS_COMPATIBILITY.md)
+        f.write(cohort.model_dump_json(indent=2, by_alias=True, exclude_none=True))
+    print(f"Cohort definition saved to: {json_file} (Java/ATLAS-compatible format)")
     
     print("\nCohort summary:")
     print("  - Index: First Type 2 Diabetes diagnosis")
@@ -349,3 +350,4 @@ if __name__ == "__main__":
     print("  - Inclusion 1: HbA1c measurement within 6 months after diagnosis")
     print("  - Inclusion 2: Follow-up visit within 90 days after diagnosis")
     print("  - Censoring: Observation ends if ESRD or hospice care occurs")
+    

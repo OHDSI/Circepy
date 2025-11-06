@@ -69,12 +69,12 @@ def generate_sql_from_cohort(cohort):
     """Generate SQL from the cohort definition."""
     
     # Create build options
+    # Note: For SqlRender compatibility, leave schema parameters unset
+    # to preserve @vocabulary_database_schema notation in the output.
+    # SqlRender will replace these at runtime with actual schema names.
     options = BuildExpressionQueryOptions()
-    options.cdm_schema = "my_cdm_schema"
-    options.vocabulary_schema = "my_vocab_schema"
-    options.target_table = "cohort"
-    options.results_schema = "results"
     options.cohort_id = 1
+    options.generate_stats = True
     
     sql = build_cohort_query(cohort, options)
     
@@ -107,8 +107,9 @@ if __name__ == "__main__":
     print(f"\nFull SQL saved to: {output_file}")
     
     # Optionally export as JSON (Java CIRCE-BE compatible format)
-    json_output = cohort.model_dump_json(indent=2, exclude_none=True, by_alias=True)
+    # Note: For ATLAS compatibility, concepts should have complete metadata (see ATLAS_COMPATIBILITY.md)
+    json_output = cohort.model_dump_json(indent=2, by_alias=True, exclude_none=True)
     json_file = "diabetes_cohort.json"
     with open(json_file, "w") as f:
         f.write(json_output)
-    print(f"Cohort definition saved to: {json_file} (Java-compatible format)")
+    print(f"Cohort definition saved to: {json_file} (Java/ATLAS-compatible format)")
