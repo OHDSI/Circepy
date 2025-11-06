@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional, Any, Union, TYPE_CHECKING
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 from .core import (
     ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy, CustomEraStrategy,
     PrimaryCriteria, CriteriaGroup, ObservationFilter
@@ -56,6 +56,26 @@ class CohortExpression(BaseModel):
     censoring_criteria: Optional[List[Any]] = Field(default=None, alias="censoringCriteria")
 
     model_config = ConfigDict(populate_by_name=True)
+    
+    @model_validator(mode='before')
+    @classmethod
+    def normalize_before_validation(cls, data: Any) -> Any:
+        """Normalize data before validation.
+        
+        Handles cdmVersionRange as string by removing it.
+        """
+        if isinstance(data, dict):
+            # Handle cdmVersionRange as string - remove it
+            if 'cdmVersionRange' in data and isinstance(data['cdmVersionRange'], str):
+                data = dict(data)  # Create copy
+                data.pop('cdmVersionRange')
+            
+            # Handle empty censorWindow
+            if 'censorWindow' in data and data['censorWindow'] == {}:
+                data = dict(data) if 'cdmVersionRange' not in locals() else data
+                data.pop('censorWindow')
+        
+        return data
 
     def validate_expression(self) -> bool:
         """Validate the cohort expression."""

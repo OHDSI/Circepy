@@ -9,15 +9,20 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional, Union, Any
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator, Discriminator
 from enum import Enum
+from .utils import to_camel_alias
 
 
 class CollapseType(str, Enum):
     """Enumeration for collapse types.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.CollapseType
+    
+    Note: Java enum only has ERA, but Python also supports collapse/no_collapse
+    for backward compatibility and future use.
     """
+    ERA = "ERA"
     COLLAPSE = "collapse"
     NO_COLLAPSE = "no_collapse"
 
@@ -46,6 +51,11 @@ class Period(BaseModel):
     """
     start_date: Optional[str] = None
     end_date: Optional[str] = None
+    
+    model_config = ConfigDict(
+        populate_by_name=True,
+        alias_generator=to_camel_alias
+    )
 
 
 class DateRange(BaseModel):
@@ -77,6 +87,11 @@ class DateAdjustment(BaseModel):
     end_offset: int
     start_with: Optional[DateType] = None
     end_with: Optional[DateType] = None
+    
+    model_config = ConfigDict(
+        populate_by_name=True,
+        alias_generator=to_camel_alias
+    )
 
 
 class ObservationFilter(BaseModel):
@@ -86,6 +101,11 @@ class ObservationFilter(BaseModel):
     """
     prior_days: int
     post_days: int
+    
+    model_config = ConfigDict(
+        populate_by_name=True,
+        alias_generator=to_camel_alias
+    )
 
 
 class CollapseSettings(BaseModel):
@@ -95,6 +115,11 @@ class CollapseSettings(BaseModel):
     """
     era_pad: int
     collapse_type: Optional[CollapseType] = None
+    
+    model_config = ConfigDict(
+        populate_by_name=True,
+        alias_generator=to_camel_alias
+    )
 
 
 class EndStrategy(BaseModel):
@@ -115,6 +140,80 @@ class PrimaryCriteria(BaseModel):
     primary_limit: Optional[ResultLimit] = Field(default=None, alias="primaryLimit")
 
     model_config = ConfigDict(populate_by_name=True)
+    
+    @field_validator('criteria_list', mode='before')
+    @classmethod
+    def deserialize_criteria_list(cls, v: Any) -> Any:
+        """Deserialize criteria dicts in primary criteria.
+        
+        PrimaryCriteria.criteriaList contains Criteria[] in Java.
+        JSON format: [{"ConditionOccurrence": {...}}] -> deserialize to ConditionOccurrence object
+        """
+        if not v or not isinstance(v, list):
+            return v
+        
+        from .criteria import (
+            ConditionOccurrence, DrugExposure, ProcedureOccurrence,
+            VisitOccurrence, Observation, Measurement, DeviceExposure,
+            Specimen, Death, VisitDetail, ObservationPeriod,
+            PayerPlanPeriod, LocationRegion, ConditionEra,
+            DrugEra, DoseEra
+        )
+        
+        criteria_class_map = {
+            'ConditionOccurrence': ConditionOccurrence,
+            'DrugExposure': DrugExposure,
+            'ProcedureOccurrence': ProcedureOccurrence,
+            'VisitOccurrence': VisitOccurrence,
+            'Observation': Observation,
+            'Measurement': Measurement,
+            'DeviceExposure': DeviceExposure,
+            'Specimen': Specimen,
+            'Death': Death,
+            'VisitDetail': VisitDetail,
+            'ObservationPeriod': ObservationPeriod,
+            'PayerPlanPeriod': PayerPlanPeriod,
+            'LocationRegion': LocationRegion,
+            'ConditionEra': ConditionEra,
+            'DrugEra': DrugEra,
+            'DoseEra': DoseEra,
+        }
+        
+        deserialized = []
+        for item in v:
+            if not isinstance(item, dict):
+                deserialized.append(item)
+                continue
+            
+            # JSON format: {"ConditionOccurrence": {...}} - unwrap and deserialize
+            criteria_type = None
+            criteria_data = None
+            for key in item.keys():
+                if key in criteria_class_map:
+                    criteria_type = key
+                    criteria_data = item[key]
+                    break
+            
+            if criteria_type and criteria_data:
+                try:
+                    # Set default values for commonly missing required fields
+                    if criteria_type == 'Measurement' and 'measurementTypeExclude' not in criteria_data:
+                        criteria_data['measurementTypeExclude'] = False
+                    if criteria_type == 'Observation' and 'observationTypeExclude' not in criteria_data:
+                        criteria_data['observationTypeExclude'] = False
+                    if 'first' not in criteria_data:
+                        criteria_data['first'] = False
+                    
+                    criteria_obj = criteria_class_map[criteria_type].model_validate(criteria_data, strict=False)
+                    deserialized.append(criteria_obj)
+                except Exception:
+                    # If deserialization fails, keep as dict
+                    deserialized.append(item)
+            else:
+                # Not a recognized criteria type, keep as-is
+                deserialized.append(item)
+        
+        return deserialized
 
 
 class CriteriaGroup(BaseModel):
@@ -129,6 +228,264 @@ class CriteriaGroup(BaseModel):
     type: Optional[str] = None
 
     model_config = ConfigDict(populate_by_name=True)
+    
+    @field_validator('criteria_list', mode='before')
+    @classmethod
+    def deserialize_criteria_list(cls, v: Any) -> Any:
+        """Deserialize criteria dicts to CorelatedCriteria objects.
+        
+        CriteriaGroup.criteriaList contains CorelatedCriteria[] in Java.
+        JSON format: [{"Criteria": {"ConditionOccurrence": {...}}, "StartWindow": {...}, ...}]
+        -> deserialize to CorelatedCriteria object
+        """
+        if not v or not isinstance(v, list):
+            return v
+        
+        from .criteria import CorelatedCriteria
+        
+        def normalize_window(window_dict: dict) -> dict:
+            """Normalize Window dict from Java JSON to Python model format."""
+            if not isinstance(window_dict, dict):
+                return window_dict
+            normalized = {}
+            # Normalize field names - Window uses aliases
+            if 'UseEventEnd' in window_dict:
+                normalized['useEventEnd'] = window_dict['UseEventEnd']
+            elif 'useEventEnd' in window_dict:
+                normalized['useEventEnd'] = window_dict['useEventEnd']
+            if 'UseIndexEnd' in window_dict:
+                normalized['useIndexEnd'] = window_dict['UseIndexEnd']
+            elif 'useIndexEnd' in window_dict:
+                normalized['useIndexEnd'] = window_dict['useIndexEnd']
+            # Window model uses 'use_event_end' and 'use_index_end' as field names with aliases
+            # but we need to use the aliases for validation
+            if 'useEventEnd' in normalized:
+                normalized['useEventEnd'] = normalized['useEventEnd']
+            if 'useIndexEnd' in normalized:
+                normalized['useIndexEnd'] = normalized['useIndexEnd']
+            # Normalize Start/End to WindowBound format
+            if 'Start' in window_dict:
+                start = window_dict['Start']
+                if isinstance(start, dict):
+                    normalized['start'] = {
+                        'coeff': start.get('Coeff') or start.get('coeff', 0),
+                        'days': start.get('Days') or start.get('days')
+                    }
+                else:
+                    normalized['start'] = start
+            if 'End' in window_dict:
+                end = window_dict['End']
+                if isinstance(end, dict):
+                    normalized['end'] = {
+                        'coeff': end.get('Coeff') or end.get('coeff', 0),
+                        'days': end.get('Days') or end.get('days')
+                    }
+                else:
+                    normalized['end'] = end
+            # Extract coeff from Start if available (required field)
+            if 'coeff' not in normalized and 'start' in normalized:
+                if isinstance(normalized['start'], dict) and 'coeff' in normalized['start']:
+                    normalized['coeff'] = normalized['start']['coeff']
+                else:
+                    normalized['coeff'] = 0  # Default
+            elif 'coeff' not in normalized:
+                normalized['coeff'] = 0  # Default
+            # Ensure useEventEnd is present (required)
+            if 'useEventEnd' not in normalized:
+                normalized['useEventEnd'] = False
+            return normalized
+        
+        def deserialize_criteria_item(item: Any) -> Any:
+            """Convert a criteria dict to CorelatedCriteria object."""
+            if not isinstance(item, dict):
+                return item
+            
+            # Create a copy to avoid modifying the original
+            item_copy = dict(item)
+            
+            # Normalize Window fields if present
+            if 'StartWindow' in item_copy:
+                item_copy['StartWindow'] = normalize_window(item_copy['StartWindow'])
+            elif 'startWindow' in item_copy:
+                item_copy['StartWindow'] = normalize_window(item_copy['startWindow'])
+                item_copy.pop('startWindow', None)
+            if 'EndWindow' in item_copy:
+                item_copy['EndWindow'] = normalize_window(item_copy['EndWindow'])
+            elif 'endWindow' in item_copy:
+                item_copy['EndWindow'] = normalize_window(item_copy['endWindow'])
+                item_copy.pop('endWindow', None)
+            
+            # Check if already a CorelatedCriteria structure with "Criteria" or "criteria" field
+            if 'Criteria' in item_copy or 'criteria' in item_copy:
+                # Normalize "Criteria" to "criteria"
+                if 'Criteria' in item_copy:
+                    item_copy['criteria'] = item_copy.pop('Criteria')
+                
+                # Deserialize the inner criteria dict if it's still a dict
+                if isinstance(item_copy.get('criteria'), dict):
+                    criteria_dict = item_copy['criteria']
+                    # Find the criteria type (ConditionOccurrence, DrugEra, etc.)
+                    criteria_type = None
+                    criteria_data = None
+                    for key in criteria_dict.keys():
+                        criteria_type = key
+                        criteria_data = criteria_dict[key]
+                        break
+                    
+                    if criteria_type and criteria_data:
+                        # Try to deserialize the inner criteria to the specific type
+                        from .criteria import (
+                            ConditionOccurrence, DrugExposure, ProcedureOccurrence,
+                            VisitOccurrence, Observation, Measurement, DeviceExposure,
+                            Specimen, Death, VisitDetail, ObservationPeriod,
+                            PayerPlanPeriod, LocationRegion, ConditionEra,
+                            DrugEra, DoseEra
+                        )
+                        
+                        criteria_class_map = {
+                            'ConditionOccurrence': ConditionOccurrence,
+                            'DrugExposure': DrugExposure,
+                            'ProcedureOccurrence': ProcedureOccurrence,
+                            'VisitOccurrence': VisitOccurrence,
+                            'Observation': Observation,
+                            'Measurement': Measurement,
+                            'DeviceExposure': DeviceExposure,
+                            'Specimen': Specimen,
+                            'Death': Death,
+                            'VisitDetail': VisitDetail,
+                            'ObservationPeriod': ObservationPeriod,
+                            'PayerPlanPeriod': PayerPlanPeriod,
+                            'LocationRegion': LocationRegion,
+                            'ConditionEra': ConditionEra,
+                            'DrugEra': DrugEra,
+                            'DoseEra': DoseEra,
+                        }
+                        
+                        if criteria_type in criteria_class_map:
+                            try:
+                                # Set default values for commonly missing required fields
+                                if 'measurementTypeExclude' not in criteria_data and criteria_type == 'Measurement':
+                                    criteria_data['measurementTypeExclude'] = False
+                                if 'observationTypeExclude' not in criteria_data and criteria_type == 'Observation':
+                                    criteria_data['observationTypeExclude'] = False
+                                if 'first' not in criteria_data:
+                                    # Most criteria types require 'first' as bool, but some allow Optional[bool]
+                                    # Set to False as default for required bool fields
+                                    criteria_data['first'] = False
+                                # Deserialize the inner criteria
+                                inner_criteria = criteria_class_map[criteria_type].model_validate(criteria_data, strict=False)
+                                item_copy['criteria'] = inner_criteria
+                            except Exception:
+                                # If deserialization fails, keep as dict
+                                pass
+                
+                # Normalize Occurrence field - CorelatedCriteria uses 'occurrence' (lowercase) as field name
+                # but JSON may have 'Occurrence' (capital O)
+                from .criteria import Occurrence
+                if 'Occurrence' in item_copy:
+                    # Move to lowercase key and deserialize
+                    occ_data = item_copy.pop('Occurrence')
+                    if isinstance(occ_data, dict):
+                        # Occurrence uses aliases (Type, Count, IsDistinct) - pass through as-is
+                        # Pydantic will handle the aliases
+                        item_copy['occurrence'] = Occurrence.model_validate(occ_data)
+                    else:
+                        item_copy['occurrence'] = occ_data
+                elif 'occurrence' not in item_copy:
+                    # Ensure Occurrence is present if missing
+                    item_copy['occurrence'] = Occurrence(type=Occurrence._AT_LEAST, count=1, is_distinct=False)
+                
+                # Validate as CorelatedCriteria
+                try:
+                    return CorelatedCriteria.model_validate(item_copy)
+                except Exception as e:
+                    # If validation fails, return as-is (may be incomplete)
+                    return item
+            
+            # Check if it's a simple polymorphic criteria like {"ConditionOccurrence": {...}}
+            # or has window fields indicating it's a CorelatedCriteria
+            if 'StartWindow' in item_copy or 'EndWindow' in item_copy or 'RestrictVisit' in item_copy or 'IgnoreObservationPeriod' in item_copy:
+                # Find the criteria type
+                criteria_type = None
+                criteria_data = None
+                for key in item_copy.keys():
+                    if key not in ['StartWindow', 'EndWindow', 'RestrictVisit', 'IgnoreObservationPeriod', 'Occurrence', 'criteria']:
+                        criteria_type = key
+                        criteria_data = item_copy[key]
+                        break
+                
+                if criteria_type and criteria_data:
+                    # Convert to CorelatedCriteria structure
+                    corelated_dict = {
+                        'criteria': {criteria_type: criteria_data}
+                    }
+                    if 'StartWindow' in item_copy:
+                        corelated_dict['StartWindow'] = item_copy['StartWindow']
+                    if 'EndWindow' in item_copy:
+                        corelated_dict['EndWindow'] = item_copy['EndWindow']
+                    if 'RestrictVisit' in item_copy:
+                        corelated_dict['RestrictVisit'] = item_copy['RestrictVisit']
+                    if 'IgnoreObservationPeriod' in item_copy:
+                        corelated_dict['IgnoreObservationPeriod'] = item_copy['IgnoreObservationPeriod']
+                    if 'Occurrence' in item_copy:
+                        corelated_dict['Occurrence'] = item_copy['Occurrence']
+                    elif 'occurrence' in item_copy:
+                        corelated_dict['Occurrence'] = item_copy['occurrence']
+                    else:
+                        # Ensure Occurrence is present
+                        from .criteria import Occurrence
+                        corelated_dict['Occurrence'] = {'Type': Occurrence._AT_LEAST, 'Count': 1, 'IsDistinct': False}
+                    
+                    try:
+                        return CorelatedCriteria.model_validate(corelated_dict)
+                    except Exception:
+                        return item
+            else:
+                # Simple polymorphic criteria like {"ConditionOccurrence": {...}}
+                criteria_type = None
+                criteria_data = None
+                for key in item_copy.keys():
+                    criteria_type = key
+                    criteria_data = item_copy[key]
+                    break
+                
+                if criteria_type and criteria_data:
+                    # Convert to CorelatedCriteria structure
+                    corelated_dict = {'criteria': {criteria_type: criteria_data}}
+                    try:
+                        return CorelatedCriteria.model_validate(corelated_dict)
+                    except Exception:
+                        return item
+            
+            return item
+        
+        deserialized = []
+        for item in v:
+            if not isinstance(item, dict):
+                deserialized.append(item)
+                continue
+            
+            deserialized_item = deserialize_criteria_item(item)
+            deserialized.append(deserialized_item)
+        
+        return deserialized
+    
+    @field_validator('groups', mode='before')
+    @classmethod
+    def deserialize_groups(cls, v: Any) -> Any:
+        """Deserialize groups recursively."""
+        if not v or not isinstance(v, list):
+            return v
+        
+        deserialized = []
+        for group in v:
+            if isinstance(group, dict):
+                # Let Pydantic handle validation - it will call field validators
+                deserialized.append(group)
+            else:
+                deserialized.append(group)
+        
+        return deserialized
     
     def is_empty(self) -> bool:
         """Check if the criteria group is empty."""

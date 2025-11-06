@@ -378,7 +378,7 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.get_primary_events_query(primary_criteria)
         
-        self.assertIn("SELECT E.person_id, E.event_id", query)
+        self.assertIn("select E.person_id, E.start_date, E.end_date", query)
         self.assertIn("@cdm_database_schema.OBSERVATION_PERIOD", query)
         self.assertIn("ORDER BY E.sort_date ASC", query)
 

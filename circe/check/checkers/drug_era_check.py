@@ -46,6 +46,15 @@ class DrugEraCheck(BaseCorelatedCriteriaCheck):
             group_name: The name of the group containing this criteria
             reporter: The warning reporter to use
         """
+        # Handle case where criteria is still a dict (not yet deserialized)
+        if isinstance(criteria, dict):
+            # Skip validation for dict-based criteria - they need to be deserialized first
+            return
+        
+        # Ensure criteria has a criteria attribute
+        if not hasattr(criteria, 'criteria') or not criteria.criteria:
+            return
+        
         match_result = Operations.match(criteria.criteria)
         match_result.is_a(DrugEra)
         match_result.then(lambda c: Operations.match(criteria)

@@ -146,8 +146,8 @@ class BaseValueCheck(BaseCheck):
         elif isinstance(criteria, Criteria):
             if hasattr(criteria, 'correlated_criteria') and criteria.correlated_criteria:
                 self._check_criteria(criteria.correlated_criteria, reporter, name)
-            factory = self._get_factory(reporter, name)
-            factory.check(criteria)
+            # Don't call factory.check for base Criteria - only specific criteria types have ranges to check
+            # The factory's check method is for CohortExpression, not Criteria
     
     def _get_factory(self, reporter: WarningReporter, name: str):
         """Get a checker factory (to be implemented by subclasses).

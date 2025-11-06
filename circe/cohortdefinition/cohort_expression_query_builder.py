@@ -97,6 +97,8 @@ class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySql
 
     @inclusionCohortInserts
 
+    @includedEventsQuery
+
     @strategy_ends_temp_tables
 
     @cohort_end_unions
@@ -109,14 +111,34 @@ class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySql
     """
     
     PRIMARY_EVENTS_TEMPLATE = """
-    SELECT E.person_id, E.event_id, E.start_date, E.end_date, E.visit_occurrence_id, E.sort_date
-    FROM (
-        @criteriaQueries
-    ) E
-    INNER JOIN @cdm_database_schema.OBSERVATION_PERIOD OP ON E.person_id = OP.person_id
-    WHERE @primaryEventsFilter
-    ORDER BY E.sort_date @EventSort
-    @primaryEventLimit
+SELECT event_id, person_id, start_date, end_date, op_start_date, op_end_date, visit_occurrence_id
+INTO #qualified_events
+FROM 
+(
+  select pe.event_id, pe.person_id, pe.start_date, pe.end_date, pe.op_start_date, pe.op_end_date, row_number() over (partition by pe.person_id order by pe.start_date @QualifiedEventSort) as ordinal, cast(pe.visit_occurrence_id as bigint) as visit_occurrence_id
+  FROM (-- Begin Primary Events
+select P.ordinal as event_id, P.person_id, P.start_date, P.end_date, op_start_date, op_end_date, cast(P.visit_occurrence_id as bigint) as visit_occurrence_id
+FROM
+(
+  select E.person_id, E.start_date, E.end_date,
+         row_number() OVER (PARTITION BY E.person_id ORDER BY E.sort_date @EventSort, E.event_id) ordinal,
+         OP.observation_period_start_date as op_start_date, OP.observation_period_end_date as op_end_date, cast(E.visit_occurrence_id as bigint) as visit_occurrence_id
+  FROM 
+  (
+  @criteriaQueries
+  ) E
+	JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on E.person_id = OP.person_id and E.start_date >=  OP.observation_period_start_date and E.start_date <= op.observation_period_end_date
+  WHERE @primaryEventsFilter
+) P
+@primaryEventLimit
+
+-- End Primary Events
+) pe
+  @additionalCriteriaQuery
+) QE
+@QualifiedLimitFilter
+
+;
     """
     
     WINDOWED_CRITERIA_TEMPLATE = """
@@ -189,6 +211,25 @@ class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySql
     COHORT_CENSORED_STATS_TEMPLATE = """
     SELECT person_id, event_id, start_date, end_date
     FROM #final_cohort
+    """
+    
+    INCLUDED_EVENTS_TEMPLATE = """
+select event_id, person_id, start_date, end_date, op_start_date, op_end_date
+into #included_events
+FROM (
+  SELECT event_id, person_id, start_date, end_date, op_start_date, op_end_date, row_number() over (partition by person_id order by start_date @IncludedEventSort) as ordinal
+  from
+  (
+    select Q.event_id, Q.person_id, Q.start_date, Q.end_date, Q.op_start_date, Q.op_end_date, SUM(coalesce(POWER(cast(2 as bigint), I.inclusion_rule_id), 0)) as inclusion_rule_mask
+    from #qualified_events Q
+    LEFT JOIN #inclusion_events I on I.person_id = Q.person_id and I.event_id = Q.event_id
+    GROUP BY Q.event_id, Q.person_id, Q.start_date, Q.end_date, Q.op_start_date, Q.op_end_date
+  ) MG -- matching groups
+  @InclusionRuleMaskFilter
+) Results
+@ResultLimitFilter
+
+;
     """
     
     # Strategy templates
@@ -319,11 +360,11 @@ class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySql
         query = query.replace("@primaryEventsFilter", " AND ".join(primary_events_filters))
         
         # Event sort
-        event_sort = "DESC" if primary_criteria.primary_limit.type and primary_criteria.primary_limit.type.upper() == "LAST" else "ASC"
+        event_sort = "DESC" if (primary_criteria.primary_limit and primary_criteria.primary_limit.type and str(primary_criteria.primary_limit.type).upper() == "LAST") else "ASC"
         query = query.replace("@EventSort", event_sort)
         
-        # Primary event limit
-        primary_event_limit = "" if primary_criteria.primary_limit.type.upper() == "ALL" else "WHERE P.ordinal = 1"
+        # Primary event limit - this filters P.ordinal
+        primary_event_limit = "" if (primary_criteria.primary_limit and primary_criteria.primary_limit.type and str(primary_criteria.primary_limit.type).upper() == "ALL") else "\nWHERE P.ordinal = 1"
         query = query.replace("@primaryEventLimit", primary_event_limit)
         
         return query
@@ -410,21 +451,30 @@ class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySql
         primary_events_query = self.get_primary_events_query(expression.primary_criteria)
         result_sql = result_sql.replace("@primaryEventsQuery", primary_events_query)
         
-        # Additional criteria query
-        additional_criteria_query = ""
+        # Additional criteria query - this filters primary events based on additional conditions
         if expression.additional_criteria:
-            ac_group = expression.additional_criteria
-            ac_group_query = self.get_criteria_group_query(ac_group, f"({primary_events_query})")
-            ac_group_query = ac_group_query.replace("@indexId", "0")
-            additional_criteria_query = f"\nJOIN (\n{ac_group_query}) AC ON AC.person_id = PE.person_id AND AC.event_id = PE.event_id\n"
-        result_sql = result_sql.replace("@additionalCriteriaQuery", additional_criteria_query)
+            # Generate criteria group query that joins with the pe (primary events) subquery
+            # The pe subquery is defined in PRIMARY_EVENTS_TEMPLATE and has columns: 
+            # event_id, person_id, start_date, end_date, op_start_date, op_end_date, visit_occurrence_id
+            additional_criteria_group_query = self.get_criteria_group_query(
+                expression.additional_criteria, 
+                "pe"  # Reference the 'pe' alias from PRIMARY_EVENTS_TEMPLATE
+            )
+            
+            # Create a JOIN clause that filters pe events based on the additional criteria
+            additional_criteria_sql = f"\nJOIN (\n{additional_criteria_group_query}) AC ON AC.person_id = pe.person_id AND AC.event_id = pe.event_id"
+            additional_criteria_sql = additional_criteria_sql.replace("@indexId", "0")
+            
+            result_sql = result_sql.replace("@additionalCriteriaQuery", additional_criteria_sql)
+        else:
+            result_sql = result_sql.replace("@additionalCriteriaQuery", "")
         
         # Qualified event sort
-        qualified_event_sort = "DESC" if expression.qualified_limit and expression.qualified_limit.type and expression.qualified_limit.type.upper() == "LAST" else "ASC"
+        qualified_event_sort = "DESC" if (expression.qualified_limit and expression.qualified_limit.type and str(expression.qualified_limit.type).upper() == "LAST") else "ASC"
         result_sql = result_sql.replace("@QualifiedEventSort", qualified_event_sort)
         
         # Qualified limit filter
-        if expression.additional_criteria and expression.qualified_limit and expression.qualified_limit.type and expression.qualified_limit.type.upper() != "ALL":
+        if expression.additional_criteria and expression.qualified_limit and expression.qualified_limit.type and str(expression.qualified_limit.type).upper() != "ALL":
             result_sql = result_sql.replace("@QualifiedLimitFilter", "WHERE QE.ordinal = 1")
         else:
             result_sql = result_sql.replace("@QualifiedLimitFilter", "")
@@ -458,27 +508,48 @@ class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySql
             result_sql = result_sql.replace("@inclusionCohortInserts", "CREATE TABLE #inclusion_events (inclusion_rule_id bigint,\n\tperson_id bigint,\n\tevent_id bigint\n);")
         
         # Included event sort
-        included_event_sort = "DESC" if expression.expression_limit and expression.expression_limit.type and expression.expression_limit.type.upper() == "LAST" else "ASC"
+        included_event_sort = "DESC" if (expression.expression_limit and expression.expression_limit.type and str(expression.expression_limit.type).upper() == "LAST") else "ASC"
         result_sql = result_sql.replace("@IncludedEventSort", included_event_sort)
         
         # Result limit filter
-        if expression.expression_limit and expression.expression_limit.type and expression.expression_limit.type.upper() != "ALL":
+        if expression.expression_limit and expression.expression_limit.type and str(expression.expression_limit.type).upper() != "ALL":
             result_sql = result_sql.replace("@ResultLimitFilter", "WHERE Results.ordinal = 1")
         else:
             result_sql = result_sql.replace("@ResultLimitFilter", "")
         
         result_sql = result_sql.replace("@ruleTotal", str(len(expression.inclusion_rules) if expression.inclusion_rules else 0))
         
+        # Included events query - creates #included_events from #qualified_events
+        included_events_query = self.INCLUDED_EVENTS_TEMPLATE
+        
+        # Inclusion rule mask filter - only apply if there are inclusion rules
+        if expression.inclusion_rules and len(expression.inclusion_rules) > 0:
+            rule_count = len(expression.inclusion_rules)
+            inclusion_rule_mask_filter = f"WHERE (MG.inclusion_rule_mask = POWER(cast(2 as bigint),{rule_count})-1)"
+        else:
+            inclusion_rule_mask_filter = ""
+        
+        included_events_query = included_events_query.replace("@InclusionRuleMaskFilter", inclusion_rule_mask_filter)
+        result_sql = result_sql.replace("@includedEventsQuery", included_events_query)
+        
         # End date selects
         end_date_selects = []
+        
+        from .core import EndStrategy, DateOffsetStrategy, CustomEraStrategy
         
         if not isinstance(expression.end_strategy, DateOffsetStrategy):
             end_date_selects.append("-- By default, cohort exit at the event's op end date\nSELECT event_id, person_id, op_end_date as end_date FROM #included_events")
         
         if expression.end_strategy:
-            result_sql = result_sql.replace("@strategy_ends_temp_tables", expression.end_strategy.accept(self, "#included_events"))
-            result_sql = result_sql.replace("@strategy_ends_cleanup", "TRUNCATE TABLE #strategy_ends;\nDROP TABLE #strategy_ends;\n")
-            end_date_selects.append("-- End Date Strategy\nSELECT event_id, person_id, end_date FROM #strategy_ends")
+            # Only DateOffsetStrategy and CustomEraStrategy have accept method
+            if isinstance(expression.end_strategy, (DateOffsetStrategy, CustomEraStrategy)):
+                result_sql = result_sql.replace("@strategy_ends_temp_tables", expression.end_strategy.accept(self, "#included_events"))
+                result_sql = result_sql.replace("@strategy_ends_cleanup", "TRUNCATE TABLE #strategy_ends;\nDROP TABLE #strategy_ends;\n")
+                end_date_selects.append("-- End Date Strategy\nSELECT event_id, person_id, end_date FROM #strategy_ends")
+            else:
+                # Base EndStrategy doesn't have accept method - use default
+                result_sql = result_sql.replace("@strategy_ends_temp_tables", "")
+                result_sql = result_sql.replace("@strategy_ends_cleanup", "")
         else:
             result_sql = result_sql.replace("@strategy_ends_temp_tables", "")
             result_sql = result_sql.replace("@strategy_ends_cleanup", "")
@@ -560,12 +631,12 @@ class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySql
             query = query.replace("@criteriaQueries", " UNION ALL ".join(additional_criteria_queries))
             
             occurrence_count_clause = "HAVING COUNT(index_id) "
-            if group.type.upper() == "ALL":
+            if group.type and str(group.type).upper() == "ALL":
                 occurrence_count_clause += f"= {index_id}"
-            elif group.type.upper() == "ANY":
+            elif group.type and str(group.type).upper() == "ANY":
                 occurrence_count_clause += "> 0"
-            elif group.type.upper().startswith("AT_"):
-                if group.type.upper().endswith("LEAST"):
+            elif group.type and str(group.type).upper().startswith("AT_"):
+                if str(group.type).upper().endswith("LEAST"):
                     occurrence_count_clause += f">= {group.count}"
                 else:  # AT_MOST
                     occurrence_count_clause += f"<= {group.count}"
@@ -657,7 +728,70 @@ class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySql
         query = sql_template
         check_observation_period = not criteria.ignore_observation_period
         
-        criteria_query = criteria.criteria.accept(self, options)
+        # Handle case where criteria.criteria is still a dict (shouldn't happen, but be defensive)
+        inner_criteria = criteria.criteria
+        if isinstance(inner_criteria, dict):
+            # Try to deserialize it - import here to avoid circular dependency issues
+            from .criteria import (
+                ConditionOccurrence as CO, DrugExposure as DE, ProcedureOccurrence as PO,
+                VisitOccurrence as VO, Observation as O, Measurement as M, DeviceExposure as DevE,
+                Specimen as S, Death as D, VisitDetail as VD, ObservationPeriod as OP,
+                PayerPlanPeriod as PPP, LocationRegion as LR, ConditionEra as CE,
+                DrugEra as DrE, DoseEra as DoE
+            )
+            
+            criteria_type = None
+            criteria_data = None
+            for key in inner_criteria.keys():
+                criteria_type = key
+                criteria_data = inner_criteria[key]
+                break
+            
+            if criteria_type and criteria_data:
+                criteria_class_map = {
+                    'ConditionOccurrence': ConditionOccurrence,
+                    'DrugExposure': DrugExposure,
+                    'ProcedureOccurrence': ProcedureOccurrence,
+                    'VisitOccurrence': VisitOccurrence,
+                    'Observation': Observation,
+                    'Measurement': Measurement,
+                    'DeviceExposure': DeviceExposure,
+                    'Specimen': Specimen,
+                    'Death': Death,
+                    'VisitDetail': VisitDetail,
+                    'ObservationPeriod': ObservationPeriod,
+                    'PayerPlanPeriod': PayerPlanPeriod,
+                    'LocationRegion': LocationRegion,
+                    'ConditionEra': ConditionEra,
+                    'DrugEra': DrugEra,
+                    'DoseEra': DoseEra,
+                }
+                
+                if criteria_type in criteria_class_map:
+                    try:
+                        # Set default values for required fields that might be missing
+                        if criteria_type == 'Measurement' and 'measurementTypeExclude' not in criteria_data:
+                            criteria_data['measurementTypeExclude'] = False
+                        if criteria_type == 'Observation' and 'observationTypeExclude' not in criteria_data:
+                            criteria_data['observationTypeExclude'] = False
+                        if criteria_type == 'ProcedureOccurrence' and 'procedureTypeExclude' not in criteria_data:
+                            criteria_data['procedureTypeExclude'] = False
+                        if criteria_type == 'DrugExposure' and 'drugTypeExclude' not in criteria_data:
+                            criteria_data['drugTypeExclude'] = False
+                        # Most criteria types require 'first' field
+                        if 'first' not in criteria_data or criteria_data.get('first') is None:
+                            criteria_data['first'] = False
+                        inner_criteria = criteria_class_map[criteria_type].model_validate(criteria_data, strict=False)
+                        # Update the criteria object
+                        criteria.criteria = inner_criteria
+                    except Exception as e:
+                        raise ValueError(f"Failed to deserialize criteria from dict: {criteria_type} - {e}")
+                else:
+                    raise ValueError(f"Unknown criteria type in dict: {criteria_type}")
+            else:
+                raise ValueError(f"Invalid criteria dict structure: {inner_criteria}")
+        
+        criteria_query = inner_criteria.accept(self, options)
         query = query.replace("@criteriaQuery", criteria_query)
         query = query.replace("@eventTable", event_table)
         
@@ -674,7 +808,9 @@ class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySql
         # StartWindow
         start_window = criteria.start_window
         if start_window:
-            start_index_date_expression = "P.END_DATE" if start_window.use_index_end else "P.START_DATE"
+            # Window doesn't have use_index_end - it only has use_event_end
+            # use_index_end is not a Window property, default to START_DATE
+            start_index_date_expression = "P.START_DATE"
             start_event_date_expression = "A.END_DATE" if start_window.use_event_end else "A.START_DATE"
             
             if start_window.start and start_window.start.days is not None:
@@ -696,7 +832,9 @@ class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySql
         # EndWindow
         end_window = criteria.end_window
         if end_window:
-            end_index_date_expression = "P.END_DATE" if end_window.use_index_end else "P.START_DATE"
+            # Window doesn't have use_index_end - it only has use_event_end  
+            # use_index_end is not a Window property, default to START_DATE
+            end_index_date_expression = "P.START_DATE"
             end_event_date_expression = "A.END_DATE" if end_window.use_event_end else "A.START_DATE"
             
             if end_window.start.days is not None:
@@ -736,7 +874,13 @@ class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySql
         Java equivalent: getCorelatedlCriteriaQuery()
         """
         # Pick the appropriate query template
-        query = self.ADDITIONAL_CRITERIA_LEFT_TEMPLATE if corelated_criteria.occurrence.type == Occurrence._AT_MOST or corelated_criteria.occurrence.count == 0 else self.ADDITIONAL_CRITERIA_INNER_TEMPLATE
+        # Handle None occurrence
+        if corelated_criteria.occurrence is None:
+            from .criteria import Occurrence as Occ
+            corelated_criteria.occurrence = Occ(type=Occ._AT_LEAST, count=1, is_distinct=False)
+        
+        from .criteria import Occurrence as Occ
+        query = self.ADDITIONAL_CRITERIA_LEFT_TEMPLATE if corelated_criteria.occurrence.type == Occ._AT_MOST or corelated_criteria.occurrence.count == 0 else self.ADDITIONAL_CRITERIA_INNER_TEMPLATE
         
         count_column_expression = "cc.event_id"
         
@@ -763,6 +907,67 @@ class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySql
         
         Java equivalent: Various getCriteriaSql methods
         """
+        # Handle case where criteria is still a dict (shouldn't happen, but be defensive)
+        if isinstance(criteria, dict):
+            # Try to deserialize it - import here to avoid circular dependency issues
+            from .criteria import (
+                ConditionOccurrence as CO, DrugExposure as DE, ProcedureOccurrence as PO,
+                VisitOccurrence as VO, Observation as O, Measurement as M, DeviceExposure as DevE,
+                Specimen as S, Death as D, VisitDetail as VD, ObservationPeriod as OP,
+                PayerPlanPeriod as PPP, LocationRegion as LR, ConditionEra as CE,
+                DrugEra as DrE, DoseEra as DoE
+            )
+            
+            criteria_type = None
+            criteria_data = None
+            for key in criteria.keys():
+                criteria_type = key
+                criteria_data = criteria[key]
+                break
+            
+            if criteria_type and criteria_data:
+                criteria_class_map = {
+                    'ConditionOccurrence': CO,
+                    'DrugExposure': DE,
+                    'ProcedureOccurrence': PO,
+                    'VisitOccurrence': VO,
+                    'Observation': O,
+                    'Measurement': M,
+                    'DeviceExposure': DevE,
+                    'Specimen': S,
+                    'Death': D,
+                    'VisitDetail': VD,
+                    'ObservationPeriod': OP,
+                    'PayerPlanPeriod': PPP,
+                    'LocationRegion': LR,
+                    'ConditionEra': CE,
+                    'DrugEra': DrE,
+                    'DoseEra': DoE,
+                }
+                
+                if criteria_type in criteria_class_map:
+                    try:
+                        # Set default values for required fields that might be missing
+                        if criteria_type == 'Measurement' and 'measurementTypeExclude' not in criteria_data:
+                            criteria_data['measurementTypeExclude'] = False
+                        if criteria_type == 'Observation' and 'observationTypeExclude' not in criteria_data:
+                            criteria_data['observationTypeExclude'] = False
+                        if criteria_type == 'ProcedureOccurrence' and 'procedureTypeExclude' not in criteria_data:
+                            criteria_data['procedureTypeExclude'] = False
+                        if criteria_type == 'DrugExposure' and 'drugTypeExclude' not in criteria_data:
+                            criteria_data['drugTypeExclude'] = False
+                        # Most criteria types require 'first' field
+                        if 'first' not in criteria_data or criteria_data.get('first') is None:
+                            criteria_data['first'] = False
+                        criteria = criteria_class_map[criteria_type].model_validate(criteria_data, strict=False)
+                    except Exception as e:
+                        raise ValueError(f"Failed to deserialize criteria from dict: {criteria_type} - {e}")
+                else:
+                    raise ValueError(f"Unknown criteria type in dict: {criteria_type}")
+            else:
+                raise ValueError(f"Invalid criteria dict structure: {criteria}")
+        
+        # Import here to avoid circular dependency - use the already imported names
         if isinstance(criteria, ConditionOccurrence):
             return self._get_criteria_sql_from_builder(self.condition_occurrence_sql_builder, criteria, options)
         elif isinstance(criteria, Death):
@@ -781,6 +986,10 @@ class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySql
             return self._get_criteria_sql_from_builder(self.drug_exposure_sql_builder, criteria, options)
         elif isinstance(criteria, ProcedureOccurrence):
             return self._get_criteria_sql_from_builder(self.procedure_occurrence_sql_builder, criteria, options)
+        elif isinstance(criteria, (ObservationPeriod, PayerPlanPeriod, VisitDetail, LocationRegion, ConditionEra, DrugEra, DoseEra)):
+            # These criteria types don't have dedicated builders yet - return a placeholder
+            # TODO: Implement builders for these types
+            return f"-- TODO: Implement SQL builder for {type(criteria).__name__}\nSELECT person_id, 0 as event_id, CAST('1900-01-01' as DATE) as start_date, CAST('1900-01-01' as DATE) as end_date, NULL as visit_occurrence_id, CAST('1900-01-01' as DATE) as sort_date WHERE 1=0"
         else:
             raise ValueError(f"Unsupported criteria type: {type(criteria)}")
     

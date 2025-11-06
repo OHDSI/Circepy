@@ -18,7 +18,7 @@ from ..criteria import (
     ConditionOccurrence, DrugExposure, ProcedureOccurrence, VisitOccurrence,
     Observation, Measurement, DeviceExposure, Specimen, Death, VisitDetail,
     ObservationPeriod, PayerPlanPeriod, LocationRegion, ConditionEra,
-    DrugEra, DoseEra, GeoCriteria, Occurrence
+    DrugEra, DoseEra, GeoCriteria, Occurrence, CorelatedCriteria
 )
 from ..core import (
     ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy,
@@ -737,6 +737,12 @@ class MarkdownRender:
             return self._render_dose_era(criteria, level, is_plural, count_criteria, index_label)
         elif isinstance(criteria, GeoCriteria):
             return self._render_geo_criteria(criteria, level, is_plural, count_criteria, index_label)
+        elif isinstance(criteria, CorelatedCriteria):
+            # CorelatedCriteria wraps a Criteria object - render the inner criteria
+            if criteria.criteria:
+                return self._render_criteria(criteria.criteria, level, is_plural, count_criteria, index_label)
+            else:
+                return "No criteria specified in CorelatedCriteria."
         else:
             # Generic fallback
             return f"Unknown criteria type: {type(criteria).__name__}"

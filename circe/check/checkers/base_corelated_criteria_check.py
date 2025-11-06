@@ -42,6 +42,9 @@ class BaseCorelatedCriteriaCheck(BaseIterableCheck):
             for inclusion_rule in expression.inclusion_rules:
                 if inclusion_rule.expression and inclusion_rule.expression.criteria_list:
                     for criteria in inclusion_rule.expression.criteria_list:
+                        # Skip if criteria is still a dict (shouldn't happen after deserialization, but be defensive)
+                        if isinstance(criteria, dict):
+                            continue
                         group_name = f"{self.INCLUSION_RULE}{inclusion_rule.name}"
                         self._check_criteria(criteria, group_name, reporter)
                         if hasattr(criteria, 'criteria') and criteria.criteria:
@@ -55,10 +58,17 @@ class BaseCorelatedCriteriaCheck(BaseIterableCheck):
             group_name: The name of the group containing this criteria
             reporter: The warning reporter to use
         """
+        # Skip if criteria is still a dict (not yet deserialized)
+        if isinstance(criteria, dict):
+            return
+        
         if hasattr(criteria, 'correlated_criteria') and criteria.correlated_criteria:
             correlated = criteria.correlated_criteria
             if hasattr(correlated, 'criteria_list') and correlated.criteria_list:
                 for corelated_criteria in correlated.criteria_list:
+                    # Skip dicts
+                    if isinstance(corelated_criteria, dict):
+                        continue
                     self._check_criteria(corelated_criteria, group_name, reporter)
                     if hasattr(corelated_criteria, 'criteria') and corelated_criteria.criteria:
                         self._check_criteria_group(corelated_criteria.criteria, group_name, reporter)
@@ -66,6 +76,9 @@ class BaseCorelatedCriteriaCheck(BaseIterableCheck):
                 for group in correlated.groups:
                     if hasattr(group, 'criteria_list') and group.criteria_list:
                         for corelated_criteria in group.criteria_list:
+                            # Skip dicts
+                            if isinstance(corelated_criteria, dict):
+                                continue
                             self._check_criteria(corelated_criteria, group_name, reporter)
                             if hasattr(corelated_criteria, 'criteria') and corelated_criteria.criteria:
                                 self._check_criteria_group(corelated_criteria.criteria, group_name, reporter)
@@ -78,5 +91,10 @@ class BaseCorelatedCriteriaCheck(BaseIterableCheck):
             group_name: The name of the group containing this criteria
             reporter: The warning reporter to use
         """
+        # Skip if criteria is still a dict (not yet deserialized)
+        # This can happen when Pydantic doesn't fully deserialize polymorphic types
+        if isinstance(criteria, dict):
+            return
+        
         raise NotImplementedError("Subclasses must implement _check_criteria")
 

@@ -28,6 +28,11 @@ __license__ = "Apache License 2.0"
 # Main exports
 from .cohortdefinition import CohortExpression
 from .vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
+from .api import (
+    cohort_expression_from_json,
+    build_cohort_query,
+    cohort_print_friendly,
+)
 
 __all__ = [
     "__version__",
@@ -37,5 +42,9 @@ __all__ = [
     # Main cohort class
     "CohortExpression",
     # Vocabulary classes
-    "Concept", "ConceptSet", "ConceptSetExpression", "ConceptSetItem"
+    "Concept", "ConceptSet", "ConceptSetExpression", "ConceptSetItem",
+    # API functions
+    "cohort_expression_from_json",
+    "build_cohort_query",
+    "cohort_print_friendly",
 ]
