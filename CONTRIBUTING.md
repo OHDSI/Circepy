@@ -199,12 +199,79 @@ When reporting issues:
 
 ## Release Process
 
-Releases are managed by maintainers:
+Releases are managed by maintainers following a structured process to ensure quality and consistency.
 
-1. Update version in `pyproject.toml`
-2. Update `CHANGELOG.md`
-3. Create a release tag
-4. Publish to PyPI
+### Version Numbering
+
+We follow [Semantic Versioning](https://semver.org/):
+- **MAJOR.MINOR.PATCH** (e.g., 1.0.0)
+- **MAJOR**: Breaking changes
+- **MINOR**: New features, backward compatible
+- **PATCH**: Bug fixes, backward compatible
+
+### Release Steps
+
+1. **Prepare the Release**
+   - Update version in `pyproject.toml`
+   - Update version in `circe/__init__.py`
+   - Update `CHANGELOG.md` with release notes
+   - Ensure all tests pass: `pytest`
+   - Verify coverage is adequate: `pytest --cov`
+
+2. **Build the Package**
+   ```bash
+   # Clean previous builds
+   rm -rf build/ dist/ *.egg-info/
+   
+   # Build package
+   python -m build
+   
+   # Check package
+   twine check dist/*
+   ```
+
+3. **Test on TestPyPI** (Optional but recommended)
+   ```bash
+   # Upload to TestPyPI
+   twine upload --repository testpypi dist/*
+   
+   # Test installation
+   pip install --index-url https://test.pypi.org/simple/ ohdsi-circe
+   ```
+
+4. **Create Git Tag**
+   ```bash
+   git tag -a vX.Y.Z -m "Release version X.Y.Z"
+   git push origin vX.Y.Z
+   ```
+
+5. **Publish to PyPI**
+   ```bash
+   twine upload dist/*
+   ```
+
+6. **Post-Release Tasks**
+   - Create GitHub release with release notes
+   - Announce release in community channels
+   - Update documentation if needed
+
+### Detailed Release Checklist
+
+See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for a comprehensive checklist covering:
+- Pre-release quality checks
+- Build and test procedures
+- TestPyPI validation
+- Production release steps
+- Post-release tasks
+- Troubleshooting common issues
+
+### Release Permissions
+
+Only maintainers with PyPI publishing rights can make releases. If you believe a release is needed:
+
+1. Open an issue describing the changes
+2. Tag maintainers with `@maintainer`
+3. Provide summary of changes for release notes
 
 ## License
 

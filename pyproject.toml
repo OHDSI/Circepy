@@ -3,10 +3,10 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "circe"
+name = "ohdsi-circe"
 version = "1.0.0"
 description = "Python implementation of OHDSI CIRCE-BE for cohort definition and SQL generation"
-readme = "README.md"
+readme = {file = "README.md", content-type = "text/markdown"}
 license = {text = "Apache-2.0"}
 authors = [
     {name = "CIRCE Python Implementation Team", email = "circe-python@ohdsi.org"}
@@ -14,7 +14,7 @@ authors = [
 maintainers = [
     {name = "CIRCE Python Implementation Team", email = "circe-python@ohdsi.org"}
 ]
-keywords = ["ohdsi", "circe", "cohort", "sql", "omop", "cdm", "healthcare"]
+keywords = ["ohdsi", "circe", "cohort", "sql", "omop", "cdm", "healthcare", "observational-health"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Healthcare Industry",
@@ -29,6 +29,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
 ]
 requires-python = ">=3.8"
 dependencies = [
@@ -51,11 +52,13 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/OHDSI/circe-be-python"
-Documentation = "https://circe-be-python.readthedocs.io/"
-Repository = "https://github.com/OHDSI/circe-be-python.git"
-Issues = "https://github.com/OHDSI/circe-be-python/issues"
-Changelog = "https://github.com/OHDSI/circe-be-python/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/OHDSI/CIRCE-Python"
+Documentation = "https://github.com/OHDSI/CIRCE-Python#readme"
+Repository = "https://github.com/OHDSI/CIRCE-Python.git"
+Issues = "https://github.com/OHDSI/CIRCE-Python/issues"
+Changelog = "https://github.com/OHDSI/CIRCE-Python/blob/main/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/OHDSI/CIRCE-Python/issues"
+"Source Code" = "https://github.com/OHDSI/CIRCE-Python"
 
 [project.scripts]
 circe = "circe.cli:main"

@@ -1,0 +1,65 @@
+# Include documentation and license files
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+include requirements.txt
+include pyproject.toml
+
+# Include all Python files in the circe package
+recursive-include circe *.py
+
+# Include type hints marker
+include circe/py.typed
+
+# Exclude test files
+recursive-exclude tests *
+exclude tests
+
+# Exclude Java source
+recursive-exclude circe-be *
+exclude circe-be
+
+# Exclude temporary and build files
+exclude *.json
+exclude *.R
+exclude *.sql
+exclude .gitignore
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * .DS_Store
+
+# Exclude development and analysis files
+exclude analyze_java_schema_simple.py
+exclude generate_json_schema.py
+exclude circe_sql.R
+exclude 1006.json
+exclude java_analysis_report.json
+exclude java_cohort_expression_schema.json
+exclude output.md
+exclude output.sql
+exclude test_output_py.md
+exclude test_output_py.sql
+exclude test_output_r.md
+exclude test_output_r.sql
+exclude evaluation.md
+exclude CIRCE_PROJECT_CHARTER.md
+exclude COHORT_CLASSES_OVERVIEW.md
+exclude COHORT_EXPRESSION_TEST_COVERAGE.md
+exclude JAVA_CLASS_MAPPINGS.md
+exclude SCHEMA_VALIDATION_TEST.md
+exclude SQL_BUILDERS_DOCUMENTATION.md
+exclude SQL_BUILDERS_IMPLEMENTATION_SUMMARY.md
+exclude TEST_COVERAGE_SUMMARY.md
+
+# Exclude coverage and test results
+exclude coverage.xml
+recursive-exclude htmlcov *
+exclude htmlcov
+
+# Exclude build directories
+recursive-exclude build *
+exclude build
+recursive-exclude dist *
+exclude dist
+recursive-exclude *.egg-info *
