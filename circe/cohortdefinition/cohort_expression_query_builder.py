@@ -559,7 +559,12 @@ FROM (
         
         result_sql = result_sql.replace("@finalCohortQuery", self.get_final_cohort_query(expression.censor_window))
         result_sql = result_sql.replace("@cohort_end_unions", " UNION ALL ".join(end_date_selects))
-        result_sql = result_sql.replace("@eraconstructorpad", str(expression.collapse_settings.era_pad))
+        
+        # Handle optional collapse_settings
+        era_pad = "0"
+        if expression.collapse_settings and expression.collapse_settings.era_pad is not None:
+            era_pad = str(expression.collapse_settings.era_pad)
+        result_sql = result_sql.replace("@eraconstructorpad", era_pad)
         result_sql = result_sql.replace("@inclusionRuleTable", self.get_inclusion_rule_table_sql(expression))
         result_sql = result_sql.replace("@inclusionImpactAnalysisByEventQuery", self.get_inclusion_analysis_query("#qualified_events", 0))
         result_sql = result_sql.replace("@inclusionImpactAnalysisByPersonQuery", self.get_inclusion_analysis_query("#best_events", 1))

@@ -4,7 +4,31 @@ This directory contains practical examples demonstrating how to use the CIRCE Py
 
 ## Examples Overview
 
-### 1. `basic_cohort.py` - Simple Cohort Definition
+### 1. `type2_diabetes_cohort.ipynb` - Interactive Jupyter Notebook
+
+**Purpose**: Interactive notebook demonstrating the complete workflow using athena-client to fetch concepts.
+
+**What it covers**:
+- Using athena-client to search ATHENA for OMOP concepts
+- Building concept sets from search results
+- Creating cohort definitions interactively
+- Validation and SQL generation with immediate feedback
+- Saving outputs (JSON and SQL)
+
+**Usage**:
+```bash
+# Install Jupyter and dependencies
+pip install jupyter athena-client
+
+# Launch notebook
+jupyter notebook type2_diabetes_cohort.ipynb
+```
+
+**Perfect for**: Learning, exploration, and rapid prototyping
+
+---
+
+### 2. `basic_cohort.py` - Simple Cohort Definition
 
 **Purpose**: Demonstrates creating a basic cohort definition with a single condition.
 
@@ -25,7 +49,7 @@ python basic_cohort.py
 
 ---
 
-### 2. `complex_cohort.py` - Advanced Cohort Features
+### 3. `complex_cohort.py` - Advanced Cohort Features
 
 **Purpose**: Shows how to create complex cohorts with multiple criteria, time windows, and restrictions.
 
@@ -53,7 +77,7 @@ python complex_cohort.py
 
 ---
 
-### 3. `generate_sql.py` - SQL Generation Techniques
+### 4. `generate_sql.py` - SQL Generation Techniques
 
 **Purpose**: Demonstrates different methods for generating SQL from cohort definitions.
 
@@ -77,7 +101,7 @@ python generate_sql.py
 
 ---
 
-### 4. `validate_cohort.py` - Cohort Validation
+### 5. `validate_cohort.py` - Cohort Validation
 
 **Purpose**: Shows how to validate cohort definitions and handle validation warnings.
 
@@ -166,9 +190,10 @@ sql = build_cohort_query(
 ### Validating a Cohort
 
 ```python
-from circe.check.check import check_cohort_expression
+from circe.check import Checker
 
-warnings = check_cohort_expression(cohort)
+checker = Checker()
+warnings = checker.check(cohort)
 
 if not warnings:
     print("Cohort is valid!")

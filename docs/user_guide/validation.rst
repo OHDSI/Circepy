@@ -8,9 +8,10 @@ Basic Validation
 
 .. code-block:: python
 
-   from circe.check.check import check_cohort_expression
+   from circe.check import Checker
    
-   warnings = check_cohort_expression(cohort)
+   checker = Checker()
+   warnings = checker.check(cohort)
    
    if not warnings:
        print("✓ Cohort is valid!")

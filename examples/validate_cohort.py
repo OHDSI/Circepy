@@ -7,7 +7,7 @@ using the CIRCE validation framework.
 
 import json
 from circe import cohort_expression_from_json
-from circe.check.check import check_cohort_expression
+from circe.check import Checker
 from circe.check.warning_severity import WarningSeverity
 
 
@@ -22,7 +22,8 @@ def validate_cohort_from_json(json_string):
     cohort = cohort_expression_from_json(json_string)
     
     # Run validation checks
-    warnings = check_cohort_expression(cohort)
+    checker = Checker()
+    warnings = checker.check(cohort)
     
     return cohort, warnings
 

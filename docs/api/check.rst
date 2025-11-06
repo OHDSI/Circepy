@@ -3,10 +3,12 @@ Validation API
 
 Classes and functions for validating cohort definitions.
 
-Check Function
---------------
+Checker Class
+-------------
 
-.. autofunction:: circe.check.check.check_cohort_expression
+.. autoclass:: circe.check.checker.Checker
+   :members:
+   :undoc-members:
 
 Warning Classes
 ---------------

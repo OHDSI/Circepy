@@ -85,8 +85,9 @@ Run `pip install --upgrade ohdsi-circe` to get the latest security updates.
 
 1. **Validate Input**: Always validate cohort definitions before processing:
    ```python
-   from circe.check.check import check_cohort_expression
-   warnings = check_cohort_expression(cohort)
+   from circe.check import Checker
+   checker = Checker()
+   warnings = checker.check(cohort)
    ```
 
 2. **Review Generated SQL**: Inspect SQL before execution, especially for production databases
