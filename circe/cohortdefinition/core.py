@@ -11,7 +11,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 from typing import List, Optional, Union, Any
 from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator, Discriminator
 from enum import Enum
-from .utils import to_camel_alias
+from .utils import to_pascal_alias
 
 
 class CollapseType(str, Enum):
@@ -54,7 +54,7 @@ class Period(BaseModel):
     
     model_config = ConfigDict(
         populate_by_name=True,
-        alias_generator=to_camel_alias
+        alias_generator=to_pascal_alias
     )
 
 
@@ -90,7 +90,7 @@ class DateAdjustment(BaseModel):
     
     model_config = ConfigDict(
         populate_by_name=True,
-        alias_generator=to_camel_alias
+        alias_generator=to_pascal_alias
     )
 
 
@@ -104,7 +104,7 @@ class ObservationFilter(BaseModel):
     
     model_config = ConfigDict(
         populate_by_name=True,
-        alias_generator=to_camel_alias
+        alias_generator=to_pascal_alias
     )
 
 
@@ -118,7 +118,7 @@ class CollapseSettings(BaseModel):
     
     model_config = ConfigDict(
         populate_by_name=True,
-        alias_generator=to_camel_alias
+        alias_generator=to_pascal_alias
     )
 
 
@@ -135,9 +135,9 @@ class PrimaryCriteria(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.PrimaryCriteria
     """
-    criteria_list: Optional[List[Any]] = Field(default=None, alias="criteriaList")
-    observation_window: Optional[ObservationFilter] = Field(default=None, alias="observationWindow")
-    primary_limit: Optional[ResultLimit] = Field(default=None, alias="primaryLimit")
+    criteria_list: Optional[List[Any]] = Field(default=None, alias="CriteriaList")
+    observation_window: Optional[ObservationFilter] = Field(default=None, alias="ObservationWindow")
+    primary_limit: Optional[ResultLimit] = Field(default=None, alias="PrimaryCriteriaLimit")
 
     model_config = ConfigDict(populate_by_name=True)
     
@@ -221,10 +221,10 @@ class CriteriaGroup(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.CriteriaGroup
     """
-    criteria_list: Optional[List[Any]] = Field(default=None, alias="criteriaList")
+    criteria_list: Optional[List[Any]] = Field(default=None, alias="CriteriaList")
     count: Optional[int] = None
     groups: Optional[List[Any]] = None
-    demographic_criteria_list: Optional[List[Any]] = Field(default=None, alias="demographicCriteriaList")
+    demographic_criteria_list: Optional[List[Any]] = Field(default=None, alias="DemographicCriteriaList")
     type: Optional[str] = None
 
     model_config = ConfigDict(populate_by_name=True)
@@ -503,8 +503,8 @@ class ConceptSetSelection(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.ConceptSetSelection
     """
-    codeset_id: Optional[int] = Field(default=None, alias="codesetId")
-    is_exclusion: bool = Field(alias="isExclusion")
+    codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
+    is_exclusion: bool = Field(alias="IsExclusion")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -532,7 +532,7 @@ class Window(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.Window
     """
-    use_event_end: bool = Field(alias="useEventEnd")
+    use_event_end: bool = Field(alias="UseEventEnd")
     start: Optional[WindowBound] = None
     coeff: int
     days: Optional[int] = None
@@ -561,7 +561,7 @@ class DateOffsetStrategy(EndStrategy):
     Java equivalent: org.ohdsi.circe.cohortdefinition.DateOffsetStrategy
     """
     offset: int
-    date_field: str = Field(alias="dateField")
+    date_field: str = Field(alias="DateField")
 
     model_config = ConfigDict(populate_by_name=True)
     
@@ -575,8 +575,8 @@ class CustomEraStrategy(EndStrategy):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.CustomEraStrategy
     """
-    drug_codeset_id: Optional[int] = Field(default=None, alias="drugCodesetId")
-    gap_days: int = Field(alias="gapDays")
+    drug_codeset_id: Optional[int] = Field(default=None, alias="DrugCodesetId")
+    gap_days: int = Field(alias="GapDays")
     offset: int
 
     model_config = ConfigDict(populate_by_name=True)

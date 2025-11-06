@@ -8,6 +8,7 @@ by the Java version and vice versa.
 import json
 import unittest
 from typing import Dict, Any
+from pathlib import Path
 
 # Add project root to path for imports
 import sys
@@ -15,7 +16,8 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from circe.cohortdefinition.criteria import ConditionOccurrence
-from circe.vocabulary.concept import Concept
+from circe.cohortdefinition.cohort import CohortExpression
+from circe.vocabulary.concept import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 
 class TestJavaInteroperability(unittest.TestCase):

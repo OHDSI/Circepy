@@ -42,18 +42,18 @@ class CohortExpression(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.CohortExpression
     """
-    concept_sets: Optional[List['ConceptSet']] = Field(default=None, alias="conceptSets")
-    qualified_limit: Optional[ResultLimit] = Field(default=None, alias="qualifiedLimit")
-    additional_criteria: Optional[CriteriaGroup] = Field(default=None, alias="additionalCriteria")
-    end_strategy: Optional[EndStrategy] = Field(default=None, alias="endStrategy")
-    cdm_version_range: Optional[Period] = Field(default=None, alias="cdmVersionRange")
-    primary_criteria: Optional[PrimaryCriteria] = Field(default=None, alias="primaryCriteria")
-    expression_limit: Optional[ResultLimit] = Field(default=None, alias="expressionLimit")
-    collapse_settings: Optional[CollapseSettings] = Field(default=None, alias="collapseSettings")
+    concept_sets: Optional[List['ConceptSet']] = Field(default=None, alias="ConceptSets")
+    qualified_limit: Optional[ResultLimit] = Field(default=None, alias="QualifiedLimit")
+    additional_criteria: Optional[CriteriaGroup] = Field(default=None, alias="AdditionalCriteria")
+    end_strategy: Optional[EndStrategy] = Field(default=None, alias="EndStrategy")
+    cdm_version_range: Optional[Period] = Field(default=None, alias="CdmVersionRange")
+    primary_criteria: Optional[PrimaryCriteria] = Field(default=None, alias="PrimaryCriteria")
+    expression_limit: Optional[ResultLimit] = Field(default=None, alias="ExpressionLimit")
+    collapse_settings: Optional[CollapseSettings] = Field(default=None, alias="CollapseSettings")
     title: Optional[str] = None
-    inclusion_rules: Optional[List['InclusionRule']] = Field(default=None, alias="inclusionRules")
-    censor_window: Optional[Period] = Field(default=None, alias="censorWindow")
-    censoring_criteria: Optional[List[Any]] = Field(default=None, alias="censoringCriteria")
+    inclusion_rules: Optional[List['InclusionRule']] = Field(default=None, alias="InclusionRules")
+    censor_window: Optional[Period] = Field(default=None, alias="CensorWindow")
+    censoring_criteria: Optional[List[Any]] = Field(default=None, alias="CensoringCriteria")
 
     model_config = ConfigDict(populate_by_name=True)
     

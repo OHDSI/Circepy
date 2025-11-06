@@ -19,14 +19,14 @@ class Concept(BaseModel):
     Note: In Java, conceptId is Long (nullable), but JSON schema marks it as required.
     We make it Optional to match Java runtime behavior while maintaining schema compatibility.
     """
-    concept_id: Optional[int] = Field(default=None, alias="conceptId")
-    concept_name: Optional[str] = Field(default=None, alias="conceptName")
-    concept_code: Optional[str] = Field(default=None, alias="conceptCode")
-    concept_class_id: Optional[str] = Field(default=None, alias="conceptClassId")
-    standard_concept: Optional[str] = Field(default=None, alias="standardConcept")
-    invalid_reason: Optional[str] = Field(default=None, alias="invalidReason")
-    domain_id: Optional[str] = Field(default=None, alias="domainId")
-    vocabulary_id: Optional[str] = Field(default=None, alias="vocabularyId")
+    concept_id: Optional[int] = Field(default=None, alias="ConceptId")
+    concept_name: Optional[str] = Field(default=None, alias="ConceptName")
+    concept_code: Optional[str] = Field(default=None, alias="ConceptCode")
+    concept_class_id: Optional[str] = Field(default=None, alias="ConceptClassId")
+    standard_concept: Optional[str] = Field(default=None, alias="StandardConcept")
+    invalid_reason: Optional[str] = Field(default=None, alias="InvalidReason")
+    domain_id: Optional[str] = Field(default=None, alias="DomainId")
+    vocabulary_id: Optional[str] = Field(default=None, alias="VocabularyId")
     # Java-specific fields for 1:1 compatibility
     false: Optional[Any] = None  # return type
     other: Optional['Concept'] = None
@@ -41,9 +41,9 @@ class ConceptSetItem(BaseModel):
     Java equivalent: org.ohdsi.circe.vocabulary.ConceptSetItem
     """
     concept: Optional[Concept] = None
-    is_excluded: Optional[bool] = Field(default=None, alias="isExcluded")
-    include_mapped: Optional[bool] = Field(default=None, alias="includeMapped")
-    include_descendants: Optional[bool] = Field(default=None, alias="includeDescendants")
+    is_excluded: Optional[bool] = Field(default=None, alias="IsExcluded")
+    include_mapped: Optional[bool] = Field(default=None, alias="IncludeMapped")
+    include_descendants: Optional[bool] = Field(default=None, alias="IncludeDescendants")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -54,11 +54,11 @@ class ConceptSetExpression(BaseModel):
     Java equivalent: org.ohdsi.circe.vocabulary.ConceptSetExpression
     """
     concept: Optional[Concept] = None
-    is_excluded: bool = Field(alias="isExcluded")
+    is_excluded: bool = Field(alias="IsExcluded")
     other: Optional[ConceptSetItem] = None
-    include_mapped: bool = Field(alias="includeMapped")
+    include_mapped: bool = Field(alias="IncludeMapped")
     json_mapper: Optional[Any] = Field(default=None, alias="JSON_MAPPER")
-    include_descendants: bool = Field(alias="includeDescendants")
+    include_descendants: bool = Field(alias="IncludeDescendants")
     items: Optional[List[ConceptSetItem]] = None
     # Java-specific fields for 1:1 compatibility
     true: Optional[Any] = None  # return type
