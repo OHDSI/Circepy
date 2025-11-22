@@ -301,8 +301,8 @@ circe process my_cohort.json --validate --sql my_cohort.sql --markdown my_cohort
 ### Setup Development Environment
 
 ```bash
-git clone https://github.com/OHDSI/circe-be-python.git
-cd circe-be-python
+git clone https://github.com/azimov/circepy.git
+cd circepy
 pip install -e ".[dev]"
 ```
 
