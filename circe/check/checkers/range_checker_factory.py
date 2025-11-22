@@ -305,11 +305,24 @@ class RangeCheckerFactory(BaseCheckerFactory):
         match_result.when(Comparisons.start_is_greater_than_end)\
             .then(lambda x: warning(self.WARNING_START_GREATER_THAN_END))
     
-    def check(self, expression: 'CohortExpression') -> None:
-        """Check the cohort expression's censor window.
+    def check(self, expression_or_criteria) -> None:
+        """Check the cohort expression's censor window or individual criteria.
         
         Args:
-            expression: The cohort expression to check
+            expression_or_criteria: Either a CohortExpression (for censor_window) 
+                                or Criteria/DemographicCriteria (for individual criteria)
         """
-        self.check_range(expression.censor_window, self.ROOT_OBJECT, Constants.Attributes.CENSOR_WINDOW_ATTR)
+        # Import here to avoid circular dependencies
+        from ...cohortdefinition.cohort import CohortExpression
+        from ...cohortdefinition.criteria import Criteria, DemographicCriteria
+        
+        # Handle CohortExpression (for censor_window)
+        if isinstance(expression_or_criteria, CohortExpression):
+            self.check_range(expression_or_criteria.censor_window, self.ROOT_OBJECT, Constants.Attributes.CENSOR_WINDOW_ATTR)
+        # Handle DemographicCriteria (delegate to base class)
+        elif isinstance(expression_or_criteria, DemographicCriteria):
+            super().check(expression_or_criteria)
+        # Handle Criteria (delegate to base class)
+        elif isinstance(expression_or_criteria, Criteria):
+            super().check(expression_or_criteria)
 

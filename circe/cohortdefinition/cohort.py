@@ -154,24 +154,20 @@ class CohortExpression(BaseModel):
                     break
             
             if criteria_type and criteria_data is not None:
-                try:
-                    # Make a copy to avoid modifying the original
-                    criteria_data_copy = dict(criteria_data)
-                    # Set default values for commonly missing required fields
-                    if 'First' not in criteria_data_copy and 'first' not in criteria_data_copy:
-                        criteria_data_copy['First'] = False
-                    if criteria_type == 'Measurement' and 'MeasurementTypeExclude' not in criteria_data_copy and 'measurementTypeExclude' not in criteria_data_copy:
-                        criteria_data_copy['MeasurementTypeExclude'] = False
-                    if criteria_type == 'Observation' and 'ObservationTypeExclude' not in criteria_data_copy and 'observationTypeExclude' not in criteria_data_copy:
-                        criteria_data_copy['ObservationTypeExclude'] = False
-                    if criteria_type == 'ConditionOccurrence' and 'ConditionTypeExclude' not in criteria_data_copy and 'conditionTypeExclude' not in criteria_data_copy:
-                        criteria_data_copy['ConditionTypeExclude'] = False
-                    
-                    criteria_obj = criteria_class_map[criteria_type].model_validate(criteria_data_copy, strict=False)
-                    deserialized.append(criteria_obj)
-                except Exception as e:
-                    # If deserialization fails, keep as dict
-                    deserialized.append(item)
+                # Make a copy to avoid modifying the original
+                criteria_data_copy = dict(criteria_data)
+                # Set default values for commonly missing required fields
+                if 'First' not in criteria_data_copy and 'first' not in criteria_data_copy:
+                    criteria_data_copy['First'] = False
+                if criteria_type == 'Measurement' and 'MeasurementTypeExclude' not in criteria_data_copy and 'measurementTypeExclude' not in criteria_data_copy:
+                    criteria_data_copy['MeasurementTypeExclude'] = False
+                if criteria_type == 'Observation' and 'ObservationTypeExclude' not in criteria_data_copy and 'observationTypeExclude' not in criteria_data_copy:
+                    criteria_data_copy['ObservationTypeExclude'] = False
+                if criteria_type == 'ConditionOccurrence' and 'ConditionTypeExclude' not in criteria_data_copy and 'conditionTypeExclude' not in criteria_data_copy:
+                    criteria_data_copy['ConditionTypeExclude'] = False
+
+                criteria_obj = criteria_class_map[criteria_type].model_validate(criteria_data_copy, strict=False)
+                deserialized.append(criteria_obj)
             else:
                 # Not a recognized criteria type, keep as-is
                 deserialized.append(item)

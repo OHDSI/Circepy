@@ -36,15 +36,15 @@ def print_validation_results(warnings):
         return True
     
     # Group warnings by severity
-    errors = [w for w in warnings if w.severity == WarningSeverity.ERROR]
+    critical = [w for w in warnings if w.severity == WarningSeverity.CRITICAL]
     warnings_list = [w for w in warnings if w.severity == WarningSeverity.WARNING]
     info_list = [w for w in warnings if w.severity == WarningSeverity.INFO]
     
-    # Print errors
-    if errors:
-        print(f"\n✗ ERRORS ({len(errors)}):")
-        for err in errors:
-            print(f"  - {err.message}")
+    # Print critical warnings
+    if critical:
+        print(f"\n✗ CRITICAL ({len(critical)}):")
+        for err in critical:
+            print(f"  - {err.to_message()}")
             if hasattr(err, 'location') and err.location:
                 print(f"    Location: {err.location}")
     
@@ -52,7 +52,7 @@ def print_validation_results(warnings):
     if warnings_list:
         print(f"\n⚠ WARNINGS ({len(warnings_list)}):")
         for warn in warnings_list:
-            print(f"  - {warn.message}")
+            print(f"  - {warn.to_message()}")
             if hasattr(warn, 'location') and warn.location:
                 print(f"    Location: {warn.location}")
     
@@ -60,10 +60,10 @@ def print_validation_results(warnings):
     if info_list:
         print(f"\nℹ INFO ({len(info_list)}):")
         for info in info_list:
-            print(f"  - {info.message}")
+            print(f"  - {info.to_message()}")
     
-    # Return True if no errors
-    return len(errors) == 0
+    # Return True if no critical warnings
+    return len(critical) == 0
 
 
 def create_valid_cohort_json():

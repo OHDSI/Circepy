@@ -40,17 +40,14 @@ def cohort_expression_from_json(json_str: str) -> CohortExpression:
     # Parse JSON
     data = json.loads(json_str)
     
-    # Normalize field names
-    data = _normalize_dict(data)
-    
     # Handle cdmVersionRange as string
     if 'cdmVersionRange' in data and isinstance(data['cdmVersionRange'], str):
         data.pop('cdmVersionRange', None)
-    
+
     # Handle empty censorWindow
     if 'censorWindow' in data and data['censorWindow'] == {}:
         data.pop('censorWindow', None)
-    
+
     # Ensure ConceptSetExpression objects have required fields
     if 'conceptSets' in data and data['conceptSets']:
         for concept_set in data['conceptSets']:
@@ -63,61 +60,11 @@ def cohort_expression_from_json(json_str: str) -> CohortExpression:
                         expr['includeMapped'] = False
                     if 'includeDescendants' not in expr:
                         expr['includeDescendants'] = False
-    
+
     try:
         return CohortExpression.model_validate(data)
     except Exception as e:
         raise ValueError(f"Invalid cohort expression JSON: {str(e)}") from e
-
-
-def _normalize_dict(obj):
-    """Recursively normalize dictionary keys."""
-    if not isinstance(obj, dict):
-        return obj
-    
-    result = {}
-    for key, value in obj.items():
-        # Recurse into nested structures
-        if isinstance(value, dict):
-            value = _normalize_dict(value)
-        elif isinstance(value, list):
-            value = [_normalize_dict(item) if isinstance(item, dict) else item for item in value]
-        
-        # Normalize key
-        normalized_key = key
-        
-        # Handle ALL_CAPS_WITH_UNDERSCORES → camelCase (for concept fields)
-        if key.isupper() and '_' in key:
-            parts = key.split('_')
-            normalized_key = parts[0].lower() + ''.join(p.capitalize() for p in parts[1:])
-        # Handle PascalCase top-level fields → camelCase
-        # BUT preserve certain fields that have explicit Field(alias=...) in models
-        elif key and key[0].isupper() and not key.isupper():
-            # Fields that must be preserved as-is (have explicit aliases in Pydantic models)
-            preserved_fields = [
-                # Criteria type names (polymorphic discriminators)
-                'ConditionOccurrence', 'DrugExposure', 'ProcedureOccurrence',
-                'VisitOccurrence', 'Observation', 'Measurement', 'DeviceExposure',
-                'Specimen', 'Death', 'VisitDetail', 'ObservationPeriod',
-                'PayerPlanPeriod', 'LocationRegion', 'ConditionEra',
-                'DrugEra', 'DoseEra',
-                # Window and criteria fields (have Field aliases)
-                'StartWindow', 'EndWindow', 'RestrictVisit', 'IgnoreObservationPeriod',
-                'Criteria', 'Occurrence',
-                # Other fields with explicit aliases
-                'UseEventEnd', 'UseIndexEnd', 'Start', 'End', 'Coeff', 'Days',
-                'Type', 'Count', 'IsDistinct'
-            ]
-            if key in preserved_fields:
-                # Keep as-is - explicit aliases or type discriminators
-                normalized_key = key
-            else:
-                # Convert to camelCase (lowercase first letter)
-                normalized_key = key[0].lower() + key[1:]
-        
-        result[normalized_key] = value
-    
-    return result
 
 
 def build_cohort_query(
@@ -125,16 +72,16 @@ def build_cohort_query(
     options: Optional[BuildExpressionQueryOptions] = None
 ) -> str:
     """Generate SQL query from a cohort expression.
-    
+
     This is equivalent to R CirceR's `buildCohortQuery()` function.
-    
+
     Args:
         expression: CohortExpression instance
         options: Build options (schema names, cohort ID, etc.)
-        
+
     Returns:
         SQL query string
-        
+
     Example:
         >>> expression = cohort_expression_from_json(json_str)
         >>> options = BuildExpressionQueryOptions()
@@ -145,7 +92,7 @@ def build_cohort_query(
     """
     if options is None:
         options = BuildExpressionQueryOptions()
-    
+
     builder = CohortExpressionQueryBuilder()
     return builder.build_expression_query(expression, options)
 
@@ -153,6 +100,7 @@ def build_cohort_query(
 def cohort_print_friendly(
     expression: CohortExpression,
     concept_sets: Optional[List[ConceptSet]] = None,
+    title: Optional[str] = None,
     include_concept_sets: bool = False
 ) -> str:
     """Generate human-readable Markdown from a cohort expression.
@@ -163,7 +111,7 @@ def cohort_print_friendly(
         expression: CohortExpression instance
         concept_sets: Optional list of concept sets (uses expression.concept_sets if None)
         include_concept_sets: Whether to include concept set tables in the output (default: False)
-        
+        title: Optional title for the output (default: None)
     Returns:
         Markdown string
         
@@ -177,5 +125,5 @@ def cohort_print_friendly(
         concept_sets = expression.concept_sets or []
     
     renderer = MarkdownRender(concept_sets=concept_sets, include_concept_sets=include_concept_sets)
-    return renderer.render_cohort_expression(expression)
+    return renderer.render_cohort_expression(expression, title=title)
 

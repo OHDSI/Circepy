@@ -40,7 +40,8 @@ def main():
     md_parser.add_argument('input', help='Input JSON file')
     md_parser.add_argument('--output', '-o', help='Output Markdown file (default: stdout)')
     md_parser.add_argument('--no-validate', action='store_true', help='Skip validation')
-    
+    md_parser.add_argument('--title', '-t', type=str, help='Title to add to markdown document')
+
     # Process command (all-in-one)
     process_parser = subparsers.add_parser('process', help='Validate, generate SQL and Markdown')
     process_parser.add_argument('input', help='Input JSON file')
@@ -152,7 +153,7 @@ def render_markdown_command(args):
             return 1
     
     # Generate Markdown
-    markdown = cohort_print_friendly(expression)
+    markdown = cohort_print_friendly(expression, title=args.title)
     
     # Output
     if args.output:

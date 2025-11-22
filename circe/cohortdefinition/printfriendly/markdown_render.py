@@ -45,12 +45,13 @@ class MarkdownRender:
         self._concept_sets = concept_sets or []
         self._include_concept_sets = include_concept_sets
     
-    def render_cohort_expression(self, cohort_expression: Union[CohortExpression, str], include_concept_sets: Optional[bool] = None) -> str:
+    def render_cohort_expression(self, cohort_expression: Union[CohortExpression, str], include_concept_sets: Optional[bool] = None, title: Optional[str] = None) -> str:
         """Render a cohort expression to markdown format.
         
         Args:
             cohort_expression: The cohort expression to render, or JSON string
             include_concept_sets: Whether to include concept set tables in the output (overrides init parameter if provided)
+            title: Optional title for the markdown output
             
         Returns:
             Markdown formatted string describing the cohort
@@ -69,7 +70,7 @@ class MarkdownRender:
         markdown_parts = []
         
         # Title
-        title = cohort_expression.title or "Untitled Cohort"
+        title = title or cohort_expression.title or "Untitled Cohort"
         markdown_parts.append(f"# {title}\n")
         
         # Description section

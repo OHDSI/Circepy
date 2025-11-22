@@ -25,13 +25,17 @@ def load_cohort_from_json_file(file_path):
 
 def generate_sql_simple(cohort_json_string):
     """Generate SQL using the simple API."""
+    from circe.api import cohort_expression_from_json
     
-    sql = build_cohort_query(
-        cohort_json_string,
-        cdm_schema="cdm_schema",
-        vocab_schema="vocab_schema",
-        cohort_id=1
-    )
+    # Parse JSON to CohortExpression
+    cohort = cohort_expression_from_json(cohort_json_string)
+    
+    # Create options
+    options = BuildExpressionQueryOptions()
+    options.cohort_id = 1
+    # Note: Leave schema parameters unset to preserve @parameter notation for SqlRender
+    
+    sql = build_cohort_query(cohort, options)
     
     return sql
 
@@ -128,12 +132,12 @@ def main():
             print(f"Loading cohort from: {cohort_file}")
             cohort = load_cohort_from_json_file(cohort_file)
             
-            sql = build_cohort_query(
-                cohort,
-                cdm_schema="my_cdm",
-                vocab_schema="my_vocab",
-                cohort_id=100
-            )
+            # Create options
+            options = BuildExpressionQueryOptions()
+            options.cohort_id = 100
+            # Note: Leave schema parameters unset to preserve @parameter notation for SqlRender
+            
+            sql = build_cohort_query(cohort, options)
             
             output_file = cohort_file.stem + "_generated.sql"
             save_sql_to_file(sql, output_file)
