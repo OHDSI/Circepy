@@ -1,3 +1,5 @@
+from build.lib.circe.cohortdefinition import BuildExpressionQueryOptions
+
 # CIRCE Python Implementation
 
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
@@ -97,13 +99,14 @@ cohort = CohortExpression(
 
 # Generate SQL using the API
 from circe.api import build_cohort_query
+from circe.cohortdefinition import BuildExpressionQueryOptions
 
-sql = build_cohort_query(
-    cohort,
-    cdm_schema="my_cdm",
-    vocab_schema="my_vocab",
-    cohort_id=1
-)
+options = BuildExpressionQueryOptions()
+options.cdm_schema = 'cdm'
+options.vocabulary_schema = 'cdm'
+options.cohort_id = 1
+options.target_table = 'scratch.cohort'
+sql = build_cohort_query(cohort, options)
 print(sql)
 ```
 
