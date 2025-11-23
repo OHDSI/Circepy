@@ -627,7 +627,11 @@ class Death(Criteria):
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     death_type: Optional[List[Concept]] = Field(default=None, alias="DeathType")
     death_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="DeathTypeCS")
-    death_type_exclude: bool = Field(alias="DeathTypeExclude")
+    death_type_exclude: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("DeathTypeExclude", "deathTypeExclude"),
+        serialization_alias="DeathTypeExclude"
+    )
     cause_source_concept: Optional[int] = Field(default=None, alias="CauseSourceConcept")
     cause_source_concept_cs: Optional[ConceptSetSelection] = Field(default=None, alias="CauseSourceConceptCS")
     codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
