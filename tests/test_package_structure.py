@@ -35,7 +35,6 @@ class TestPackageStructure:
         # Test sub-subpackages
         import circe.cohortdefinition.builders
         import circe.cohortdefinition.printfriendly
-        import circe.cohortdefinition.negativecontrols
         import circe.check.checkers
         import circe.check.operations
         import circe.check.utils

@@ -178,12 +178,6 @@ circe/
 - [x] Observation period and demographic criteria
 - [x] Inclusion rules and censoring criteria
 
-### 📋 Future Enhancements
-
-- [ ] Additional negative control algorithms
-- [ ] Performance optimizations for large cohorts
-- [ ] Extended documentation with tutorials
-- [ ] Additional output formats (JSON, XML)
 
 ## Command-Line Interface
 
