@@ -90,8 +90,12 @@ def test_specific_cohorts():
     """Test specific cohorts that are known to have issues."""
     test_cohorts = [
         'tests/cohorts/1299.json',  # ProcedureOccurrence deserialization
+        'tests/cohorts/1.json',  # Known working cohort
+        'tests/cohorts/1006.json',  # Known working cohort
+        'tests/cohorts/22.json',  # Known working cohort
         'tests/cohorts/1006.json',  # Known working cohort
         'tests/cohorts/2.json',     # Known working cohort
+        'tests/cohorts/730.json',     # Known working cohort
         'complex_diabetes_cohort.json',  # Complex example
     ]
     
