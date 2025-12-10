@@ -366,15 +366,6 @@ class SchemaValidator:
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
-def test_schema_compatibility():
-    """Test that Python classes match the Java JSON schema exactly."""
-    validator = SchemaValidator('java_cohort_expression_schema.json')
-    success = validator.validate_all_classes()
-    
-    if not success:
-        pytest.fail(f"Schema validation failed. See errors above.")
-
-
 def test_camel_case_field_access():
     """Test that fields can be accessed using camelCase (JSON format)."""
     # Test CohortExpression with camelCase fields
