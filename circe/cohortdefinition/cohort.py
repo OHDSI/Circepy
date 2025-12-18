@@ -12,8 +12,9 @@ from typing import List, Optional, Any, Union, TYPE_CHECKING
 from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator, AliasChoices
 from .core import (
     ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy, CustomEraStrategy,
-    PrimaryCriteria, CriteriaGroup, ObservationFilter
+    PrimaryCriteria, CriteriaGroup, ObservationFilter, CriteriaGroup, Period, CollapseSettings
 )
+from .criteria import Criteria
 
 if TYPE_CHECKING:
     from ..check.warning import Warning
@@ -42,8 +43,9 @@ class CohortExpression(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.CohortExpression
     """
-    concept_sets: Optional[List['ConceptSet']] = Field(
-        default=None, 
+
+    concept_sets: Optional[List[ConceptSet]] = Field(
+        default=None,
         validation_alias=AliasChoices("ConceptSets", "conceptSets"),
         serialization_alias="ConceptSets"
     )
@@ -83,7 +85,7 @@ class CohortExpression(BaseModel):
         serialization_alias="CollapseSettings"
     )
     title: Optional[str] = None
-    inclusion_rules: Optional[List['InclusionRule']] = Field(
+    inclusion_rules: Optional[List[InclusionRule]] = Field(
         default=None,
         validation_alias=AliasChoices("InclusionRules", "inclusionRules"),
         serialization_alias="InclusionRules"
@@ -93,7 +95,7 @@ class CohortExpression(BaseModel):
         validation_alias=AliasChoices("CensorWindow", "censorWindow"),
         serialization_alias="CensorWindow"
     )
-    censoring_criteria: Optional[List['Criteria']] = Field(
+    censoring_criteria: Optional[List[Criteria]] = Field(
         default=None,
         validation_alias=AliasChoices("CensoringCriteria", "censoringCriteria"),
         serialization_alias="CensoringCriteria"
@@ -154,26 +156,23 @@ class CohortExpression(BaseModel):
                     break
             
             if criteria_type and criteria_data is not None:
-                # Make a copy to avoid modifying the original
-                criteria_data_copy = dict(criteria_data)
-                # Set default values for commonly missing required fields
-                if 'First' not in criteria_data_copy and 'first' not in criteria_data_copy:
-                    criteria_data_copy['First'] = False
-                if criteria_type == 'Measurement' and 'MeasurementTypeExclude' not in criteria_data_copy and 'measurementTypeExclude' not in criteria_data_copy:
-                    criteria_data_copy['MeasurementTypeExclude'] = False
-                if criteria_type == 'Observation' and 'ObservationTypeExclude' not in criteria_data_copy and 'observationTypeExclude' not in criteria_data_copy:
-                    criteria_data_copy['ObservationTypeExclude'] = False
-                if criteria_type == 'ConditionOccurrence' and 'ConditionTypeExclude' not in criteria_data_copy and 'conditionTypeExclude' not in criteria_data_copy:
-                    criteria_data_copy['ConditionTypeExclude'] = False
+                data_copy = dict(criteria_data)
+                if 'First' not in data_copy and 'first' not in data_copy:
+                    data_copy['First'] = False
+                if criteria_type == 'Measurement' and 'MeasurementTypeExclude' not in data_copy and 'measurementTypeExclude' not in data_copy:
+                    data_copy['MeasurementTypeExclude'] = False
+                if criteria_type == 'Observation' and 'ObservationTypeExclude' not in data_copy and 'observationTypeExclude' not in data_copy:
+                    data_copy['ObservationTypeExclude'] = False
+                if criteria_type == 'ConditionOccurrence' and 'ConditionTypeExclude' not in data_copy and 'conditionTypeExclude' not in data_copy:
+                    data_copy['ConditionTypeExclude'] = False
 
-                criteria_obj = criteria_class_map[criteria_type].model_validate(criteria_data_copy, strict=False)
+                criteria_obj = criteria_class_map[criteria_type].model_validate(data_copy, strict=False)
                 deserialized.append(criteria_obj)
             else:
-                # Not a recognized criteria type, keep as-is
                 deserialized.append(item)
-        
+
         return deserialized
-    
+
     @model_validator(mode='before')
     @classmethod
     def normalize_before_validation(cls, data: Any) -> Any:
@@ -184,15 +183,65 @@ class CohortExpression(BaseModel):
         if isinstance(data, dict):
             # Handle cdmVersionRange as string - remove it
             if 'cdmVersionRange' in data and isinstance(data['cdmVersionRange'], str):
-                data = dict(data)  # Create copy
+                data = dict(data)
                 data.pop('cdmVersionRange')
-            
-            # Handle empty censorWindow
+
             if 'censorWindow' in data and data['censorWindow'] == {}:
-                data = dict(data) if 'cdmVersionRange' not in locals() else data
+                data = dict(data)
                 data.pop('censorWindow')
-        
+
         return data
+
+    def add_concept_set(self, concept_set: ConceptSet) -> None:
+        """
+        Adds a concept set
+        """
+        if not isinstance(concept_set, ConceptSet):
+            raise TypeError("Expected ConceptSet instance")
+        if self.concept_sets is None:
+            self.concept_sets = []
+        self.concept_sets.append(concept_set)
+
+    def remove_concept_set_by_id(self, id_: int) -> None:
+        """
+        Removes a concept set by its id
+        """
+        if self.concept_sets:
+            self.concept_sets = [cs for cs in self.concept_sets if cs.id != id_]
+
+    def add_inclusion_rule(self, rule: InclusionRule) -> None:
+        """
+        Adds an inclusion rule
+        """
+        if not isinstance(rule, InclusionRule):
+            raise TypeError("Expected InclusionRule instance")
+        if self.inclusion_rules is None:
+            self.inclusion_rules = []
+        self.inclusion_rules.append(rule)
+
+    def remove_inclusion_rule_by_name(self, name: str) -> None:
+        """
+        Removes an inclusion rule by its name
+        """
+        if self.inclusion_rules:
+            self.inclusion_rules = [r for r in self.inclusion_rules if getattr(r, 'name', None) != name]
+
+    def add_censoring_criteria(self, criteria: Criteria) -> None:
+        """
+        Adds a censoring criteria
+        """
+        if not isinstance(criteria, Criteria):
+            raise TypeError("Expected Criteria instance")
+        if self.censoring_criteria is None:
+            self.censoring_criteria = []
+        self.censoring_criteria.append(criteria)
+
+    def remove_censoring_criteria_by_type(self, criteria_type: str) -> None:
+        """
+        Removes a censoring criteria by its type
+        """
+        if self.censoring_criteria:
+            self.censoring_criteria = [c for c in self.censoring_criteria if c.__class__.__name__ != criteria_type]
 
     def validate_expression(self) -> bool:
         """Validate the cohort expression."""
