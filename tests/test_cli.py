@@ -88,7 +88,10 @@ def run_python_cli(cohort_file: Path) -> tuple[str, str]:
 def test_sql_generation_matches_r(cohort_name):
     """Test that Python CLI generates SQL similar to R CirceR."""
     cohort_file = COHORTS_DIR / cohort_name
-    
+
+    if shutil.which("Rscript") is None:
+        pytest.skip(f"R not available")
+
     if not cohort_file.exists():
         pytest.skip(f"Cohort file not found: {cohort_file}")
     
