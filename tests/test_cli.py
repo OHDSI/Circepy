@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 import pytest
 import tempfile
-
+import shutil
 
 # Get list of test cohorts
 COHORTS_DIR = Path(__file__).parent / 'cohorts'
