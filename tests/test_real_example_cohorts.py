@@ -137,10 +137,20 @@ def normalize_sql(sql: str) -> str:
     # Remove template markers like {0 != 0}?{ and } that appear in reference SQL
     # These are artifacts of incomplete template processing in R/Java output
     import re
-    # Remove conditional template blocks: {condition}?{
-    sql = re.sub(r'\{[^}]+\}\?\{', '', sql)
-    # Remove standalone closing braces that were part of template blocks
-    sql = re.sub(r'^\s*\}\s*$', '', sql, flags=re.MULTILINE)
+    # Remove entire conditional template blocks: {condition}?{ content }
+    # Need to handle nested braces carefully
+    # Strategy: repeatedly remove conditional blocks until none remain
+    max_iterations = 10
+    for _ in range(max_iterations):
+        old_sql = sql
+        # Match {condition}?{ ... } where condition doesn't contain ?{
+        # Use non-greedy match for content between opening and closing brace
+        sql = re.sub(r'\{[^}]*\}\?\{.*?\}', '', sql, flags=re.DOTALL)
+        # Also remove orphaned closing braces on their own lines
+        sql = re.sub(r'^\s*\}\s*$', '', sql, flags=re.MULTILINE)
+        if sql == old_sql:
+            break
+    
     # Remove orphaned template content like "-- comment... where(condition)" 
     # that appears in reference when conditional blocks aren't fully processed
     # Pattern: "-- the matching group...inclusion_rule_mask where(...)"

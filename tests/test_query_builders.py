@@ -448,7 +448,39 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
         query = self.builder.get_inclusion_rule_table_sql(expression)
         
         self.assertIn("into #inclusion_rules", query)
+        # Single rule should NOT have UNION ALL (matches Java/R behavior)
+        self.assertIn("SELECT CAST(0 as int) as rule_sequence", query)
+        self.assertNotIn("UNION ALL", query)
+
+    def test_get_inclusion_rule_table_sql_with_multiple_rules(self):
+        """Test get_inclusion_rule_table_sql with multiple inclusion rules."""
+        from circe.cohortdefinition.criteria import InclusionRule
+        
+        expression = CohortExpression(
+            primary_criteria=PrimaryCriteria(
+                criteria_list=[],
+                observation_window=ObservationFilter(prior_days=0, post_days=0),
+                primary_limit=ResultLimit(type="ALL")
+            ),
+            inclusion_rules=[
+                InclusionRule(
+                    name="Test Rule 1",
+                    expression=CriteriaGroup(type="ALL", criteria_list=[])
+                ),
+                InclusionRule(
+                    name="Test Rule 2",
+                    expression=CriteriaGroup(type="ALL", criteria_list=[])
+                )
+            ]
+        )
+        
+        query = self.builder.get_inclusion_rule_table_sql(expression)
+        
+        self.assertIn("into #inclusion_rules", query)
+        # Multiple rules SHOULD have UNION ALL
         self.assertIn("UNION ALL", query)
+        self.assertIn("SELECT CAST(0 as int) as rule_sequence", query)
+        self.assertIn("SELECT CAST(1 as int) as rule_sequence", query)
 
     def test_get_inclusion_analysis_query(self):
         """Test get_inclusion_analysis_query method."""

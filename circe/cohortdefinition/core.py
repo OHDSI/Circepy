@@ -623,13 +623,13 @@ class Window(BaseModel):
         validation_alias=AliasChoices("End", "end"),
         serialization_alias="End"
     )
-    use_event_end: bool = Field(
-        default=False,
+    use_event_end: Optional[bool] = Field(
+        default=None,
         validation_alias=AliasChoices("UseEventEnd", "useEventEnd"),
         serialization_alias="UseEventEnd"
     )
-    use_index_end: bool = Field(
-        default=False,
+    use_index_end: Optional[bool] = Field(
+        default=None,
         validation_alias=AliasChoices("UseIndexEnd", "useIndexEnd"),
         serialization_alias="UseIndexEnd"
     )

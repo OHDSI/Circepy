@@ -206,13 +206,15 @@ GROUP BY cc.person_id, cc.event_id
 """
 
     ADDITIONAL_CRITERIA_LEFT_TEMPLATE = """-- Begin Correlated Criteria
-select @indexId as index_id, cc.person_id, cc.event_id
-from (SELECT p.person_id, p.event_id 
-FROM @eventTable P
+select @indexId as index_id, p.person_id, p.event_id
+from @eventTable p
 LEFT JOIN (
+SELECT p.person_id, p.event_id 
+FROM @eventTable P
+JOIN (
 @criteriaQuery
-) A on A.person_id = P.person_id @windowCriteria ) cc 
-GROUP BY cc.person_id, cc.event_id
+) A on A.person_id = P.person_id @windowCriteria ) cc on p.person_id = cc.person_id and p.event_id = cc.event_id
+GROUP BY p.person_id, p.event_id
 @occurrenceCriteria
 -- End Correlated Criteria
 """
@@ -526,11 +528,9 @@ WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id =
         union_template = "SELECT CAST({} as int) as rule_sequence"
         union_list = [union_template.format(i) for i in range(len(expression.inclusion_rules))]
 
-        # Join with UNION ALL - for single rule, test expects UNION ALL to be present
-        # (though Java wouldn't include it for single item)
+        # Join with UNION ALL - match Java behavior (no UNION ALL for single rule)
         if len(union_list) == 1:
-            # Test expects UNION ALL even with one rule - duplicate to satisfy test
-            union_query = union_list[0] + " UNION ALL " + union_list[0]
+            union_query = union_list[0]
         else:
             union_query = " UNION ALL ".join(union_list)
 
@@ -1025,10 +1025,10 @@ DROP TABLE #inclusion_rules;
         # StartWindow
         start_window = criteria.start_window
         if start_window:
-            # Window doesn't have use_index_end - it only has use_event_end
-            # use_index_end is not a Window property, default to START_DATE
-            start_index_date_expression = "P.START_DATE"
-            start_event_date_expression = "A.END_DATE" if start_window.use_event_end else "A.START_DATE"
+            # Java: (useIndexEnd != null && useIndexEnd) - true only if not null AND true
+            start_index_date_expression = "P.END_DATE" if (start_window.use_index_end is not None and start_window.use_index_end) else "P.START_DATE"
+            # Java: (useEventEnd != null && useEventEnd) - true only if not null AND true
+            start_event_date_expression = "A.END_DATE" if (start_window.use_event_end is not None and start_window.use_event_end) else "A.START_DATE"
 
             if start_window.start and start_window.start.days is not None:
                 start_expression = f"DATEADD(day,{start_window.start.coeff * start_window.start.days},{start_index_date_expression})"
@@ -1049,10 +1049,10 @@ DROP TABLE #inclusion_rules;
         # EndWindow
         end_window = criteria.end_window
         if end_window:
-            # Window doesn't have use_index_end - it only has use_event_end  
-            # use_index_end is not a Window property, default to START_DATE
-            end_index_date_expression = "P.START_DATE"
-            end_event_date_expression = "A.END_DATE" if end_window.use_event_end else "A.START_DATE"
+            # Java: (useIndexEnd != null && useIndexEnd) - true only if not null AND true
+            end_index_date_expression = "P.END_DATE" if (end_window.use_index_end is not None and end_window.use_index_end) else "P.START_DATE"
+            # Java: (useEventEnd == null || useEventEnd) - backwards compatibility: null defaults to true!
+            end_event_date_expression = "A.END_DATE" if (end_window.use_event_end is None or end_window.use_event_end) else "A.START_DATE"
 
             if end_window.start.days is not None:
                 start_expression = f"DATEADD(day,{end_window.start.coeff * end_window.start.days},{end_index_date_expression})"
