@@ -42,6 +42,7 @@ COHORT_FILES = [
     '22168.json',  # Unknown structure
     '22224.json',  # Unknown structure
     '22225.json',  # Unknown structure
+    '20968.json'   # mCRPC
 ]
 
 # Directories
