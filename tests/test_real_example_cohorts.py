@@ -15,6 +15,7 @@ Test cohorts:
 - 22168.json: Unknown structure - needs analysis
 - 22224.json: Unknown structure - needs analysis
 - 22225.json: Unknown structure - needs analysis
+- 20968.json: mCRPC cohort with complex nested correlated criteria (marked xfail - known limitations)
 
 Reference outputs were generated using R CirceR package and are stored in
 tests/cohorts/reference_outputs/

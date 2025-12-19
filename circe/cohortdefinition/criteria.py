@@ -327,6 +327,7 @@ class DrugExposure(Criteria):
         serialization_alias="DrugTypeCS"
     )
     drug_type_exclude: bool = Field(
+        default=False,
         validation_alias=AliasChoices("DrugTypeExclude", "drugTypeExclude"),
         serialization_alias="DrugTypeExclude"
     )
@@ -390,7 +391,7 @@ class ProcedureOccurrence(Criteria):
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     procedure_type: Optional[List[Concept]] = Field(default=None, alias="ProcedureType")
     procedure_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ProcedureTypeCS")
-    procedure_type_exclude: bool = Field(alias="ProcedureTypeExclude")
+    procedure_type_exclude: bool = Field(default=False, alias="ProcedureTypeExclude")
     provider_specialty_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ProviderSpecialtyCS")
     visit_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitTypeCS")
     visit_type: Optional[List[Concept]] = Field(default=None, alias="VisitType")
@@ -420,7 +421,7 @@ class VisitOccurrence(Criteria):
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     visit_type: Optional[List[Concept]] = Field(default=None, alias="VisitType")
     visit_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitTypeCS")
-    visit_type_exclude: bool = Field(alias="VisitTypeExclude")
+    visit_type_exclude: bool = Field(default=False, alias="VisitTypeExclude")
     visit_source_concept: Optional[int] = Field(default=None, alias="VisitSourceConcept")
     visit_length: Optional[NumericRange] = Field(default=None, alias="VisitLength")
     provider_specialty_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ProviderSpecialtyCS")
