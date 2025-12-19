@@ -23,14 +23,19 @@ class ObservationSqlBuilder(CriteriaSqlBuilder[Observation]):
     
     def get_query_template(self) -> str:
         """Get the SQL query template for observation criteria."""
-        return """
-        SELECT 
-            @selectClause@additionalColumns
-        FROM @cdm_database_schema.OBSERVATION C
-        @joinClause
-        WHERE @whereClause
-        @ordinalExpression
-        """
+        return """-- Begin Observation Criteria
+select C.person_id, C.observation_id as event_id, C.start_date, C.END_DATE,
+       C.visit_occurrence_id, C.start_date as sort_date@additionalColumns
+from 
+(
+  select @selectClause @ordinalExpression
+  FROM @cdm_database_schema.OBSERVATION o
+@codesetClause
+) C
+@joinClause
+@whereClause
+-- End Observation Criteria
+"""
     
     def get_default_columns(self) -> Set[CriteriaColumn]:
         """Get default columns for observation criteria."""
@@ -53,42 +58,14 @@ class ObservationSqlBuilder(CriteriaSqlBuilder[Observation]):
         }
         return column_mapping.get(criteria_column, "NULL")
     
-    def get_criteria_sql(self, criteria: Observation, options: Optional[BuilderOptions] = None) -> str:
-        """Generate SQL for observation criteria."""
-        if options is None:
-            options = BuilderOptions()
-        
-        # Build select clause
-        select_clause = ", ".join(self.resolve_select_clauses(criteria, options))
-        
-        # Build join clause
-        join_clause = " ".join(self.resolve_join_clauses(criteria, options))
-        
-        # Build where clause
-        where_clause = " AND ".join(self.resolve_where_clauses(criteria, options)) if self.resolve_where_clauses(criteria, options) else "1=1"
-        
-        # Build ordinal expression
-        ordinal_expression = self.resolve_ordinal_expression(criteria, options)
-        
-        # Replace placeholders in template
-        sql = self.get_query_template()
-        sql = sql.replace("@selectClause", select_clause)
-        sql = sql.replace("@joinClause", join_clause)
-        sql = sql.replace("@whereClause", where_clause)
-        sql = sql.replace("@ordinalExpression", ordinal_expression)
-        
-        return sql
     
     def embed_codeset_clause(self, query: str, criteria: Observation) -> str:
         """Embed codeset clause for observation criteria."""
         if criteria.codeset_id is None:
             return query.replace("@codesetClause", "")
         
-        codeset_clause = BuilderUtils.get_codeset_in_expression(
-            criteria.codeset_id, 
-            "C.observation_concept_id",
-            not criteria.observation_type_exclude if hasattr(criteria, 'observation_type_exclude') else False
-        )
+        # Use JOIN syntax for codeset, not WHERE clause
+        codeset_clause = f"JOIN #Codesets cs on (o.observation_concept_id = cs.concept_id and cs.codeset_id = {criteria.codeset_id})"
         return query.replace("@codesetClause", codeset_clause)
     
     def resolve_select_clauses(self, criteria: Observation, options: Optional[BuilderOptions] = None) -> List[str]:
@@ -96,31 +73,18 @@ class ObservationSqlBuilder(CriteriaSqlBuilder[Observation]):
         
         Java equivalent: ObservationSqlBuilder.resolveSelectClauses()
         """
-        # Default select columns that are always returned
+        # Default select columns that are always returned from inner subquery
         select_cols = [
-            "C.person_id",
-            "C.observation_id", 
-            "C.observation_concept_id"
+            "o.person_id",
+            "o.observation_id", 
+            "o.observation_concept_id",
+            "o.visit_occurrence_id",
+            "o.value_as_number"  # Always include for compatibility with reference SQL
         ]
         
         # Add date columns (start_date and end_date)
-        select_cols.append("C.observation_date as start_date")
-        select_cols.append("C.observation_date as end_date")
-        
-        # Add domain concept column
-        select_cols.append("C.observation_concept_id as domain_concept")
-        
-        # Add visit_id column
-        select_cols.append("C.visit_occurrence_id as visit_id")
-        
-        # Add additional columns from options if provided
-        if options and options.additional_columns:
-            filtered_columns = [
-                column for column in options.additional_columns 
-                if column not in self.get_default_columns()
-            ]
-            for col in filtered_columns:
-                select_cols.append(f"{self.get_table_column_for_criteria_column(col)} as {col.value}")
+        select_cols.append("o.observation_date as start_date")
+        select_cols.append("DATEADD(day,1,o.observation_date) as end_date")
         
         return select_cols
     
@@ -146,30 +110,21 @@ class ObservationSqlBuilder(CriteriaSqlBuilder[Observation]):
         
         return join_clauses
     
-    def resolve_where_clauses(self, criteria: Observation, options: BuilderOptions) -> List[str]:
+    def resolve_where_clauses(self, criteria: Observation, options: Optional[BuilderOptions] = None) -> List[str]:
         """Resolve where clauses for observation criteria."""
         where_clauses = []
-        
-        # Add codeset condition
-        if criteria.codeset_id is not None:
-            codeset_clause = BuilderUtils.get_codeset_in_expression(
-                criteria.codeset_id, 
-                "C.observation_concept_id",
-                criteria.observation_type_exclude
-            )
-            where_clauses.append(codeset_clause)
         
         # Add date range conditions
         if criteria.occurrence_start_date:
             date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_start_date, "C.observation_date"
+                criteria.occurrence_start_date, "C.start_date"
             )
             if date_clause:
                 where_clauses.append(date_clause)
         
         if criteria.occurrence_end_date:
             date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_end_date, "C.observation_date"
+                criteria.occurrence_end_date, "C.end_date"
             )
             if date_clause:
                 where_clauses.append(date_clause)
@@ -177,12 +132,10 @@ class ObservationSqlBuilder(CriteriaSqlBuilder[Observation]):
         # Add age condition
         if criteria.age:
             age_clause = BuilderUtils.build_numeric_range_clause(
-                criteria.age, "YEAR(C.observation_date) - P.year_of_birth"
+                criteria.age, "YEAR(C.start_date) - P.year_of_birth"
             )
             if age_clause:
                 where_clauses.append(age_clause)
-                # Add person_id check for join requirement
-                where_clauses.append("C.person_id = P.person_id")
         
         # Add value as string condition
         if criteria.value_as_string:
@@ -202,7 +155,7 @@ class ObservationSqlBuilder(CriteriaSqlBuilder[Observation]):
             if provider_clause:
                 where_clauses.append(provider_clause)
         
-        return where_clauses if where_clauses else ["1=1"]
+        return where_clauses
     
     def get_additional_columns(self, columns: List[CriteriaColumn]) -> str:
         """Get additional columns string with proper aliases.
@@ -211,8 +164,18 @@ class ObservationSqlBuilder(CriteriaSqlBuilder[Observation]):
         """
         return ", ".join([f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns])
     
+    def embed_ordinal_expression(self, query: str, criteria: Observation, where_clauses: List[str]) -> str:
+        """Embed ordinal expression in query."""
+        # first
+        if criteria.first is not None and criteria.first:
+            where_clauses.append("C.ordinal = 1")
+            query = query.replace("@ordinalExpression", ", row_number() over (PARTITION BY o.person_id ORDER BY o.observation_date, o.observation_id) as ordinal")
+        else:
+            query = query.replace("@ordinalExpression", "")
+        return query
+    
     def resolve_ordinal_expression(self, criteria: Observation, options: BuilderOptions) -> str:
         """Resolve ordinal expression for observation criteria."""
         if criteria.first:
-            return "ORDER BY C.observation_date ASC"
+            return ", row_number() over (PARTITION BY o.person_id ORDER BY o.observation_date, o.observation_id) as ordinal"
         return ""

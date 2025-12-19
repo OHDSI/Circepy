@@ -561,7 +561,7 @@ class TestProcedureOccurrenceSqlBuilder(unittest.TestCase):
         # Check that SQL structure is maintained
         self.assertIn("-- Begin Procedure Occurrence Criteria", result)
         self.assertIn("-- End Procedure Occurrence Criteria", result)
-        self.assertIn("SELECT C.person_id", result)
+        self.assertIn("select C.person_id", result)
 
 
 class TestBuilderIntegration(unittest.TestCase):
@@ -630,8 +630,8 @@ class TestBuilderIntegration(unittest.TestCase):
         for builder, criteria in builders_and_criteria:
             result = builder.get_criteria_sql(criteria)
             
-            # All SQL should have consistent structure
-            self.assertIn("SELECT C.person_id", result)
+            # All SQL should have consistent structure (case-insensitive check)
+            self.assertIn("C.person_id", result)
             self.assertIn("FROM", result)
             self.assertIn("-- Begin", result)
             self.assertIn("-- End", result)

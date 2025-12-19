@@ -20,19 +20,14 @@ class ConceptSetExpressionQueryBuilder:
     """
     
     # SQL templates - equivalent to Java ResourceHelper.GetResourceAsString
-    CONCEPT_SET_QUERY_TEMPLATE = """
-    SELECT concept_id 
-    FROM @vocabulary_database_schema.CONCEPT 
-    WHERE concept_id IN (@conceptIdIn)
-    """
+    # IMPORTANT: Must use @vocabulary_database_schema (not @cdm_database_schema) for concept lookups
+    CONCEPT_SET_QUERY_TEMPLATE = """  select concept_id from @vocabulary_database_schema.CONCEPT where (concept_id in (@conceptIdIn))"""
     
-    CONCEPT_SET_DESCENDANTS_TEMPLATE = """
-    SELECT c.concept_id
-    FROM @vocabulary_database_schema.CONCEPT c
-    JOIN @vocabulary_database_schema.CONCEPT_ANCESTOR ca ON c.concept_id = ca.descendant_concept_id
-    WHERE c.invalid_reason IS NULL
-    AND ca.ancestor_concept_id IN (@conceptIdIn)
-    """
+    CONCEPT_SET_DESCENDANTS_TEMPLATE = """select c.concept_id
+  from @vocabulary_database_schema.CONCEPT c
+  join @vocabulary_database_schema.CONCEPT_ANCESTOR ca on c.concept_id = ca.descendant_concept_id
+  WHERE c.invalid_reason is null
+  and (ca.ancestor_concept_id in (@conceptIdIn))"""
     
     CONCEPT_SET_MAPPED_TEMPLATE = """
     SELECT c.concept_id
@@ -45,10 +40,11 @@ class ConceptSetExpressionQueryBuilder:
         AND cr.invalid_reason IS NULL
     """
     
-    CONCEPT_SET_INCLUDE_TEMPLATE = """
-    SELECT DISTINCT I.concept_id
-    FROM (@includeQuery) I
-    """
+    CONCEPT_SET_INCLUDE_TEMPLATE = """select distinct I.concept_id FROM
+( 
+@includeQuery
+
+) I"""
     
     CONCEPT_SET_EXCLUDE_TEMPLATE = """
     EXCEPT
@@ -84,7 +80,7 @@ class ConceptSetExpressionQueryBuilder:
             query = self.CONCEPT_SET_DESCENDANTS_TEMPLATE.replace("@conceptIdIn", concept_id_in)
             queries.append(query)
         
-        return " UNION ".join(queries)
+        return "\nUNION  ".join(queries)
     
     def build_concept_set_mapped_query(self, mapped_concepts: List[Concept], mapped_descendant_concepts: List[Concept]) -> str:
         """Build concept set mapped query.

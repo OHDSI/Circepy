@@ -322,22 +322,25 @@ class CriteriaGroup(BaseModel):
             if 'useIndexEnd' in normalized:
                 normalized['useIndexEnd'] = normalized['useIndexEnd']
             # Normalize Start/End to WindowBound format
+            # Note: Use explicit key checks instead of 'or' to handle days=0 correctly
             if 'Start' in window_dict:
                 start = window_dict['Start']
                 if isinstance(start, dict):
-                    normalized['start'] = {
-                        'coeff': start.get('Coeff') or start.get('coeff', 0),
-                        'days': start.get('Days') or start.get('days')
-                    }
+                    # Handle coeff - check both key variants
+                    coeff = start.get('Coeff') if 'Coeff' in start else start.get('coeff', 0)
+                    # Handle days - days=0 is valid, so check key existence not truthiness
+                    days = start.get('Days') if 'Days' in start else start.get('days')
+                    normalized['start'] = {'coeff': coeff, 'days': days}
                 else:
                     normalized['start'] = start
             if 'End' in window_dict:
                 end = window_dict['End']
                 if isinstance(end, dict):
-                    normalized['end'] = {
-                        'coeff': end.get('Coeff') or end.get('coeff', 0),
-                        'days': end.get('Days') or end.get('days')
-                    }
+                    # Handle coeff - check both key variants
+                    coeff = end.get('Coeff') if 'Coeff' in end else end.get('coeff', 0)
+                    # Handle days - days=0 is valid, so check key existence not truthiness
+                    days = end.get('Days') if 'Days' in end else end.get('days')
+                    normalized['end'] = {'coeff': coeff, 'days': days}
                 else:
                     normalized['end'] = end
             # Extract coeff from Start if available (required field)
@@ -672,7 +675,10 @@ class DateOffsetStrategy(EndStrategy):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.DateOffsetStrategy
     """
-    offset: int
+    offset: int = Field(
+        validation_alias=AliasChoices("Offset", "offset"),
+        serialization_alias="Offset"
+    )
     date_field: str = Field(
         validation_alias=AliasChoices("DateField", "dateField"),
         serialization_alias="DateField"
@@ -696,10 +702,20 @@ class CustomEraStrategy(EndStrategy):
         serialization_alias="DrugCodesetId"
     )
     gap_days: int = Field(
+        default=0,
         validation_alias=AliasChoices("GapDays", "gapDays"),
         serialization_alias="GapDays"
     )
-    offset: int
+    offset: int = Field(
+        default=0,
+        validation_alias=AliasChoices("Offset", "offset"),
+        serialization_alias="Offset"
+    )
+    days_supply_override: Optional[int] = Field(
+        default=None,
+        validation_alias=AliasChoices("DaysSupplyOverride", "daysSupplyOverride"),
+        serialization_alias="DaysSupplyOverride"
+    )
 
     model_config = ConfigDict(populate_by_name=True)
     

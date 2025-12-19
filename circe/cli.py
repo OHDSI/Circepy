@@ -32,7 +32,7 @@ def main():
     sql_parser.add_argument('--output', '-o', help='Output SQL file (default: stdout)')
     sql_parser.add_argument('--cdm-schema', default='@cdm_database_schema', help='CDM schema name')
     sql_parser.add_argument('--target-table', default='@target_database_schema.@target_cohort_table', help='Target table')
-    sql_parser.add_argument('--cohort-id', type=int, default=1, help='Cohort ID')
+    sql_parser.add_argument('--cohort-id', type=int, default=None, help='Cohort ID (default: @target_cohort_id placeholder)')
     sql_parser.add_argument('--no-validate', action='store_true', help='Skip validation')
     
     # Render markdown command
@@ -49,7 +49,7 @@ def main():
     process_parser.add_argument('--md-output', help='Markdown output file')
     process_parser.add_argument('--cdm-schema', default='@cdm_database_schema', help='CDM schema name')
     process_parser.add_argument('--target-table', default='@target_database_schema.@target_cohort_table', help='Target table')
-    process_parser.add_argument('--cohort-id', type=int, default=1, help='Cohort ID')
+    process_parser.add_argument('--cohort-id', type=int, default=None, help='Cohort ID (default: @target_cohort_id placeholder)')
     
     args = parser.parse_args()
     
@@ -122,6 +122,7 @@ def generate_sql_command(args):
     options.cdm_schema = args.cdm_schema
     options.target_table = args.target_table
     options.cohort_id = args.cohort_id
+    options.generate_stats = True  # Match R/Java default behavior
     
     # Generate SQL
     sql = build_cohort_query(expression, options)
@@ -190,6 +191,7 @@ def process_command(args):
     options.cdm_schema = args.cdm_schema
     options.target_table = args.target_table
     options.cohort_id = args.cohort_id
+    options.generate_stats = True  # Match R/Java default behavior
     
     # Generate SQL
     sql = build_cohort_query(expression, options)

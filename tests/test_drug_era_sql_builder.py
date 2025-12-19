@@ -79,7 +79,8 @@ class TestDrugEraSqlBuilder:
         
         result = self.builder.embed_codeset_clause(query, criteria)
         
-        expected_clause = "WHERE de.drug_concept_id in (SELECT concept_id from #Codesets where codeset_id = 123)"
+        # Note: Reference uses lowercase 'where' and double space before #Codesets
+        expected_clause = "where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = 123)"
         assert "@codesetClause" not in result
         assert expected_clause in result
     
@@ -338,8 +339,9 @@ class TestDrugEraSqlBuilder:
         
         result = self.builder.get_criteria_sql(criteria)
         
-        assert "SELECT" in result
-        assert "FROM" in result
+        # Note: Template uses lowercase 'select' to match Java output
+        assert "select" in result
+        assert "FROM" in result or "from" in result
         assert "DRUG_ERA" in result
         assert "@selectClause" not in result
         assert "@codesetClause" not in result
@@ -354,7 +356,8 @@ class TestDrugEraSqlBuilder:
         
         result = self.builder.get_criteria_sql(criteria)
         
-        assert "WHERE de.drug_concept_id in (SELECT concept_id from #Codesets where codeset_id = 123)" in result
+        # Note: Reference uses lowercase 'where' and double space before #Codesets
+        assert "where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = 123)" in result
     
     def test_get_criteria_sql_with_first_true(self):
         """Test get_criteria_sql with first=True."""
@@ -413,9 +416,9 @@ class TestDrugEraSqlBuilder:
         
         result = self.builder.get_criteria_sql_with_options(criteria, None)
         
-        assert "SELECT" in result
-        assert "FROM" in result
-        assert "DRUG_ERA" in result
+        assert "select" in result.lower()
+        assert "from" in result.lower()
+        assert "drug_era" in result.lower()
     
     def test_edge_case_empty_gender_list(self):
         """Test edge case with empty gender list."""
@@ -486,7 +489,8 @@ class TestDrugEraSqlBuilder:
         result = self.builder.get_criteria_sql(criteria)
         
         # Verify all components are present
-        assert "WHERE de.drug_concept_id in (SELECT concept_id from #Codesets where codeset_id = 456)" in result
+        # Note: Reference uses lowercase 'where' and double space before #Codesets
+        assert "where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = 456)" in result
         assert "row_number() over" in result
         assert "C.ordinal = 1" in result
         assert "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id" in result

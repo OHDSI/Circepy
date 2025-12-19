@@ -131,8 +131,9 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         """Embed select clauses in query.
         
         Java equivalent: CriteriaSqlBuilder.embedSelectClauses()
+        Note: Reference uses no space after comma
         """
-        select_clause = ", ".join(select_clauses) if select_clauses else ""
+        select_clause = ",".join(select_clauses) if select_clauses else ""
         return query.replace("@selectClause", select_clause)
     
     def embed_join_clauses(self, query: str, join_clauses: List[str]) -> str:

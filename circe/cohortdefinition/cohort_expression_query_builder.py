@@ -76,29 +76,25 @@ class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySql
     """
 
     # SQL templates - equivalent to Java ResourceHelper.GetResourceAsString
-    CODESET_QUERY_TEMPLATE = """
-IF OBJECT_ID('tempdb..#Codesets', 'U') IS NOT NULL
-DROP TABLE #Codesets;
-
-CREATE TABLE #Codesets (
+    CODESET_QUERY_TEMPLATE = """CREATE TABLE #Codesets (
   codeset_id int NOT NULL,
   concept_id bigint NOT NULL
-);
+)
+;
 
 @codesetInserts
-    """
 
-    COHORT_QUERY_TEMPLATE = """
-@codesetQuery
+UPDATE STATISTICS #Codesets;
+"""
 
-@primaryEventsQuery
+    COHORT_QUERY_TEMPLATE = """@codesetQuery
 
-@additionalCriteriaQuery
+@primaryEventsQuery@additionalCriteriaQuery
+--- Inclusion Rule Inserts
 
 @inclusionCohortInserts
 
 @includedEventsQuery
-
 @strategy_ends_temp_tables
 
 -- generate cohort periods into #final_cohort
@@ -161,8 +157,7 @@ TRUNCATE TABLE #Codesets;
 DROP TABLE #Codesets;
     """
 
-    PRIMARY_EVENTS_TEMPLATE = """
-SELECT event_id, person_id, start_date, end_date, op_start_date, op_end_date, visit_occurrence_id
+    PRIMARY_EVENTS_TEMPLATE = """SELECT event_id, person_id, start_date, end_date, op_start_date, op_end_date, visit_occurrence_id
 INTO #qualified_events
 FROM 
 (
@@ -178,19 +173,17 @@ FROM
   (
   @criteriaQueries
   ) E
-	JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on E.person_id = OP.person_id and E.start_date >=  OP.observation_period_start_date and E.start_date <= op.observation_period_end_date
+	JOIN @cdm_database_schema.observation_period OP on E.person_id = OP.person_id and E.start_date >=  OP.observation_period_start_date and E.start_date <= op.observation_period_end_date
   WHERE @primaryEventsFilter
 ) P
 @primaryEventLimit
-
 -- End Primary Events
 ) pe
   @additionalCriteriaQuery
 ) QE
 @QualifiedLimitFilter
-
 ;
-    """
+"""
 
     WINDOWED_CRITERIA_TEMPLATE = """
 SELECT @indexId as index_id, A.person_id, A.event_id
@@ -199,43 +192,67 @@ INNER JOIN (@criteriaQuery) A ON A.person_id = P.person_id
 WHERE @windowCriteria@additionalColumns
     """
 
-    ADDITIONAL_CRITERIA_INNER_TEMPLATE = """
-SELECT @indexId as index_id, person_id, event_id
-FROM (@eventTable) P
-INNER JOIN (@criteriaQuery) A ON A.person_id = P.person_id
-GROUP BY person_id, event_id
+    # Correlated criteria templates - must match Java structure with nested cc alias
+    ADDITIONAL_CRITERIA_INNER_TEMPLATE = """-- Begin Correlated Criteria
+select @indexId as index_id, cc.person_id, cc.event_id
+from (SELECT p.person_id, p.event_id 
+FROM @eventTable P
+JOIN (
+  @criteriaQuery
+) A on A.person_id = P.person_id @windowCriteria ) cc 
+GROUP BY cc.person_id, cc.event_id
 @occurrenceCriteria
-    """
+-- End Correlated Criteria
+"""
 
-    ADDITIONAL_CRITERIA_LEFT_TEMPLATE = """
-SELECT @indexId as index_id, person_id, event_id
-FROM (@eventTable) P
-LEFT JOIN (@criteriaQuery) A ON A.person_id = P.person_id
-GROUP BY person_id, event_id
+    ADDITIONAL_CRITERIA_LEFT_TEMPLATE = """-- Begin Correlated Criteria
+select @indexId as index_id, cc.person_id, cc.event_id
+from (SELECT p.person_id, p.event_id 
+FROM @eventTable P
+LEFT JOIN (
+@criteriaQuery
+) A on A.person_id = P.person_id @windowCriteria ) cc 
+GROUP BY cc.person_id, cc.event_id
 @occurrenceCriteria
-    """
+-- End Correlated Criteria
+"""
 
-    GROUP_QUERY_TEMPLATE = """
-SELECT @indexId as index_id, person_id, event_id
-FROM (@eventTable) P
-@joinType JOIN (
+    # Criteria group template - must match Java nested structure with E/CQ/G aliases
+    GROUP_QUERY_TEMPLATE = """-- Begin Criteria Group
+select @indexId as index_id, person_id, event_id
+FROM
+(
+  select E.person_id, E.event_id 
+  FROM @eventTable E
+  @joinType JOIN
+  (
     @criteriaQueries
-) A ON A.person_id = P.person_id
-GROUP BY person_id, event_id
-@occurrenceCountClause
-    """
+  ) CQ on E.person_id = CQ.person_id and E.event_id = CQ.event_id
+  GROUP BY E.person_id, E.event_id
+  @occurrenceCountClause
+) G
+-- End Criteria Group
+"""
 
-    INCLUSION_RULE_QUERY_TEMPLATE = """
-SELECT @inclusion_rule_id as inclusion_rule_id, person_id, event_id
-FROM (@eventTable) pe
-@additionalCriteriaQuery
-    """
+    INCLUSION_RULE_QUERY_TEMPLATE = """select @inclusion_rule_id as inclusion_rule_id, person_id, event_id
+INTO #Inclusion_@inclusion_rule_id
+FROM 
+(
+  select pe.person_id, pe.event_id
+  FROM @eventTable pe
+  @additionalCriteriaQuery
+) Results
+;
+"""
 
-    INCLUSION_RULE_TEMP_TABLE_TEMPLATE = """
-CREATE TABLE #inclusion_rules (rule_sequence int);
-INSERT INTO #inclusion_rules (rule_sequence)
-@inclusionRuleUnions;
-    """
+    INCLUSION_RULE_TEMP_TABLE_TEMPLATE = """-- Create a temp table of inclusion rule rows for joining in the inclusion rule impact analysis
+
+select cast(rule_sequence as int) as rule_sequence
+into #inclusion_rules
+from (
+  @inclusionRuleUnions
+) IR;
+"""
 
     CENSORING_QUERY_TEMPLATE = """
 SELECT person_id, event_id, start_date as end_date
@@ -254,18 +271,57 @@ INNER JOIN @cdm_database_schema.PERSON P ON E.person_id = P.person_id
 @whereClause
     """
 
-    COHORT_INCLUSION_ANALYSIS_TEMPLATE = """
-SELECT @inclusionImpactMode as inclusion_rule_id, person_id, event_id
-FROM (@eventTable) E
-    """
+    COHORT_INCLUSION_ANALYSIS_TEMPLATE = """-- calculte matching group counts
+delete from @results_database_schema.cohort_inclusion_result where @cohort_id_field_name = @target_cohort_id and mode_id = @inclusionImpactMode;
+insert into @results_database_schema.cohort_inclusion_result (@cohort_id_field_name, inclusion_rule_mask, person_count, mode_id)
+select @target_cohort_id as @cohort_id_field_name, inclusion_rule_mask, count_big(*) as person_count, @inclusionImpactMode as mode_id
+from
+(
+  select Q.person_id, Q.event_id, CAST(SUM(coalesce(POWER(cast(2 as bigint), I.inclusion_rule_id), 0)) AS bigint) as inclusion_rule_mask
+  from @eventTable Q
+  LEFT JOIN #inclusion_events I on q.person_id = i.person_id and q.event_id = i.event_id
+  GROUP BY Q.person_id, Q.event_id
+) MG -- matching groups
+group by inclusion_rule_mask
+;
+
+-- calculate gain counts 
+delete from @results_database_schema.cohort_inclusion_stats where @cohort_id_field_name = @target_cohort_id and mode_id = @inclusionImpactMode;
+insert into @results_database_schema.cohort_inclusion_stats (@cohort_id_field_name, rule_sequence, person_count, gain_count, person_total, mode_id)
+select @target_cohort_id as @cohort_id_field_name, ir.rule_sequence, coalesce(T.person_count, 0) as person_count, coalesce(SR.person_count, 0) gain_count, EventTotal.total, @inclusionImpactMode as mode_id
+from #inclusion_rules ir
+left join
+(
+  select i.inclusion_rule_id, count_big(i.event_id) as person_count
+  from @eventTable Q
+  JOIN #inclusion_events i on Q.person_id = I.person_id and Q.event_id = i.event_id
+  group by i.inclusion_rule_id
+) T on ir.rule_sequence = T.inclusion_rule_id
+CROSS JOIN (select count(*) as total_rules from #inclusion_rules) RuleTotal
+CROSS JOIN (select count_big(event_id) as total from @eventTable) EventTotal
+LEFT JOIN @results_database_schema.cohort_inclusion_result SR on SR.mode_id = @inclusionImpactMode AND SR.@cohort_id_field_name = @target_cohort_id AND (POWER(cast(2 as bigint),RuleTotal.total_rules) - POWER(cast(2 as bigint),ir.rule_sequence) - 1) = SR.inclusion_rule_mask -- POWER(2,rule count) - POWER(2,rule sequence) - 1 is the mask for 'all except this rule'
+;
+
+-- calculate totals
+delete from @results_database_schema.cohort_summary_stats where @cohort_id_field_name = @target_cohort_id and mode_id = @inclusionImpactMode;
+insert into @results_database_schema.cohort_summary_stats (@cohort_id_field_name, base_count, final_count, mode_id)
+select @target_cohort_id as @cohort_id_field_name, PC.total as person_count, coalesce(FC.total, 0) as final_count, @inclusionImpactMode as mode_id
+FROM
+(select count_big(event_id) as total from @eventTable) PC,
+(select sum(sr.person_count) as total
+  from @results_database_schema.cohort_inclusion_result sr
+  CROSS JOIN (select count(*) as total_rules from #inclusion_rules) RuleTotal
+  where sr.mode_id = @inclusionImpactMode and sr.@cohort_id_field_name = @target_cohort_id and sr.inclusion_rule_mask = POWER(cast(2 as bigint),RuleTotal.total_rules)-1
+) FC
+;
+"""
 
     COHORT_CENSORED_STATS_TEMPLATE = """
 SELECT person_id, event_id, start_date, end_date
 FROM #final_cohort
     """
 
-    INCLUDED_EVENTS_TEMPLATE = """
-select event_id, person_id, start_date, end_date, op_start_date, op_end_date
+    INCLUDED_EVENTS_TEMPLATE = """select event_id, person_id, start_date, end_date, op_start_date, op_end_date
 into #included_events
 FROM (
   SELECT event_id, person_id, start_date, end_date, op_start_date, op_end_date, row_number() over (partition by person_id order by start_date @IncludedEventSort) as ordinal
@@ -276,20 +332,20 @@ FROM (
     LEFT JOIN #inclusion_events I on I.person_id = Q.person_id and I.event_id = Q.event_id
     GROUP BY Q.event_id, Q.person_id, Q.start_date, Q.end_date, Q.op_start_date, Q.op_end_date
   ) MG -- matching groups
-  @InclusionRuleMaskFilter
+@InclusionRuleMaskFilter
 ) Results
 @ResultLimitFilter
-
 ;
-    """
+"""
 
     # Strategy templates
-    DATE_OFFSET_STRATEGY_TEMPLATE = """
-CREATE TABLE #strategy_ends (event_id bigint, person_id bigint, end_date date);
-INSERT INTO #strategy_ends (event_id, person_id, end_date)
-SELECT event_id, person_id, DATEADD(day, @offset, @dateField) as end_date
-FROM (@eventTable) E;
-    """
+    DATE_OFFSET_STRATEGY_TEMPLATE = """-- date offset strategy
+
+select event_id, person_id, 
+  case when DATEADD(day,@offset,@dateField) > op_end_date then op_end_date else DATEADD(day,@offset,@dateField) end as end_date
+INTO #strategy_ends
+from @eventTable;
+"""
 
     CUSTOM_ERA_STRATEGY_TEMPLATE = """
 CREATE TABLE #strategy_ends (event_id bigint, person_id bigint, end_date date);
@@ -378,10 +434,10 @@ WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id =
         for cs in concept_sets:
             if hasattr(cs, 'id') and hasattr(cs, 'expression'):
                 expression_query = self.concept_set_query_builder.build_expression_query(cs.expression)
-                union_select = f"SELECT {cs.id} as codeset_id, c.concept_id FROM ({expression_query}) C"
+                union_select = f"SELECT {cs.id} as codeset_id, c.concept_id FROM ({expression_query}\n) C"
                 union_selects.append(union_select)
 
-        union_query = " UNION ALL ".join(union_selects)
+        union_query = " UNION ALL \n".join(union_selects)
         codeset_inserts = f"INSERT INTO #Codesets (codeset_id, concept_id)\n{union_query};"
 
         return self.CODESET_QUERY_TEMPLATE.replace("@codesetInserts", codeset_inserts)
@@ -410,7 +466,7 @@ WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id =
         for criteria in primary_criteria.criteria_list:
             criteria_queries.append(self.get_criteria_sql(criteria))
 
-        query = query.replace("@criteriaQueries", " UNION ALL ".join(criteria_queries))
+        query = query.replace("@criteriaQueries", "\nUNION ALL\n".join(criteria_queries))
 
         # Primary events filters
         primary_events_filters = [
@@ -426,7 +482,7 @@ WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id =
 
         # Primary event limit - this filters P.ordinal
         primary_event_limit = "" if (primary_criteria.primary_limit and primary_criteria.primary_limit.type and str(
-            primary_criteria.primary_limit.type).upper() == "ALL") else "\nWHERE P.ordinal = 1"
+            primary_criteria.primary_limit.type).upper() == "ALL") else "WHERE P.ordinal = 1"
         query = query.replace("@primaryEventLimit", primary_event_limit)
 
         return query
@@ -436,7 +492,7 @@ WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id =
         
         Java equivalent: getFinalCohortQuery()
         """
-        query = "SELECT @target_cohort_id as @cohort_id_field_name, person_id, @start_date, @end_date\nFROM #final_cohort CO"
+        query = "select @target_cohort_id as @cohort_id_field_name, person_id, @start_date, @end_date \nFROM #final_cohort CO"
 
         start_date = "start_date"
         end_date = "end_date"
@@ -539,11 +595,10 @@ TRUNCATE TABLE #inclusion_rules;
 DROP TABLE #inclusion_rules;
 """
         
-        return f"""
+        return f"""{{1 != 0 & {rule_total} != 0}}?{{
+
 {inclusion_rule_table}
-
 {best_events_query}
-
 -- modes of generation: (the same tables store the results for the different modes, identified by the mode_id column)
 -- 0: all events
 -- 1: best event
@@ -557,7 +612,7 @@ DROP TABLE #inclusion_rules;
 {inclusion_impact_person}
 -- END: Inclusion Impact Analysis - person
 
-{cleanup}
+{cleanup}}}
 """
 
     def build_expression_query(self, expression: str, options: BuildExpressionQueryOptions) -> str:
@@ -625,8 +680,8 @@ DROP TABLE #inclusion_rules;
                 inclusion_rule_inserts.append(inclusion_rule_insert)
                 inclusion_rule_temp_tables.append(f"#Inclusion_{i}")
 
-            ir_temp_union = " UNION ALL ".join([
-                f"SELECT inclusion_rule_id, person_id, event_id FROM {table}"
+            ir_temp_union = "\nUNION ALL\n".join([
+                f"select inclusion_rule_id, person_id, event_id from {table}"
                 for table in inclusion_rule_temp_tables
             ])
 
@@ -643,32 +698,33 @@ DROP TABLE #inclusion_rules;
             result_sql = result_sql.replace("@inclusionCohortInserts",
                                             "CREATE TABLE #inclusion_events (inclusion_rule_id bigint,\n\tperson_id bigint,\n\tevent_id bigint\n);")
 
-        # Included event sort
-        included_event_sort = "DESC" if (expression.expression_limit and expression.expression_limit.type and str(
-            expression.expression_limit.type).upper() == "LAST") else "ASC"
-        result_sql = result_sql.replace("@IncludedEventSort", included_event_sort)
-
-        # Result limit filter
-        if expression.expression_limit and expression.expression_limit.type and str(
-                expression.expression_limit.type).upper() != "ALL":
-            result_sql = result_sql.replace("@ResultLimitFilter", "WHERE Results.ordinal = 1")
-        else:
-            result_sql = result_sql.replace("@ResultLimitFilter", "")
-
         result_sql = result_sql.replace("@ruleTotal",
                                         str(len(expression.inclusion_rules) if expression.inclusion_rules else 0))
 
         # Included events query - creates #included_events from #qualified_events
         included_events_query = self.INCLUDED_EVENTS_TEMPLATE
 
+        # Included event sort - determine sort order based on expression limit
+        included_event_sort = "DESC" if (expression.expression_limit and expression.expression_limit.type and str(
+            expression.expression_limit.type).upper() == "LAST") else "ASC"
+        included_events_query = included_events_query.replace("@IncludedEventSort", included_event_sort)
+
+        # Result limit filter
+        if expression.expression_limit and expression.expression_limit.type and str(
+                expression.expression_limit.type).upper() != "ALL":
+            result_limit_filter = "WHERE Results.ordinal = 1"
+        else:
+            result_limit_filter = ""
+        included_events_query = included_events_query.replace("@ResultLimitFilter", result_limit_filter)
+
         # Inclusion rule mask filter - only apply if there are inclusion rules
         if expression.inclusion_rules and len(expression.inclusion_rules) > 0:
             rule_count = len(expression.inclusion_rules)
-            inclusion_rule_mask_filter = f"WHERE (MG.inclusion_rule_mask = POWER(cast(2 as bigint),{rule_count})-1)"
+            inclusion_rule_mask_filter = f"{{{rule_count} != 0}}?{{\n  -- the matching group with all bits set ( POWER(2,# of inclusion rules) - 1 = inclusion_rule_mask\n  WHERE (MG.inclusion_rule_mask = POWER(cast(2 as bigint),{rule_count})-1)\n}}"
         else:
             inclusion_rule_mask_filter = ""
-
         included_events_query = included_events_query.replace("@InclusionRuleMaskFilter", inclusion_rule_mask_filter)
+
         result_sql = result_sql.replace("@includedEventsQuery", included_events_query)
 
         # End date selects
@@ -678,7 +734,7 @@ DROP TABLE #inclusion_rules;
 
         if not isinstance(expression.end_strategy, DateOffsetStrategy):
             end_date_selects.append(
-                "-- By default, cohort exit at the event's op end date\nSELECT event_id, person_id, op_end_date as end_date FROM #included_events")
+                "-- By default, cohort exit at the event's op end date\nselect event_id, person_id, op_end_date as end_date from #included_events")
 
         if expression.end_strategy:
             # Only DateOffsetStrategy and CustomEraStrategy have accept method
@@ -711,8 +767,11 @@ DROP TABLE #inclusion_rules;
         result_sql = result_sql.replace("@eraconstructorpad", era_pad)
         # Build inclusion analysis query (for stats generation)
         inclusion_analysis_query = ""
-        if options and options.generate_stats and expression.inclusion_rules:
-            inclusion_analysis_query = self._build_inclusion_analysis_section(expression)
+        if options and options.generate_stats:
+            # Add censored stats wrapper (even if empty)
+            inclusion_analysis_query = "{1 != 0}?{\n-- BEGIN: Censored Stats\n\ndelete from @results_database_schema.cohort_censor_stats where @cohort_id_field_name = @target_cohort_id;\n\n-- END: Censored Stats\n}\n"
+            if expression.inclusion_rules:
+                inclusion_analysis_query += self._build_inclusion_analysis_section(expression)
         result_sql = result_sql.replace("@inclusionAnalysisQuery", inclusion_analysis_query)
 
         # Replace query parameters with tokens
@@ -725,8 +784,6 @@ DROP TABLE #inclusion_rules;
                 result_sql = result_sql.replace("@results_database_schema", options.result_schema)
             if options.vocabulary_schema:
                 result_sql = result_sql.replace("@vocabulary_database_schema", options.vocabulary_schema)
-            elif options.cdm_schema:
-                result_sql = result_sql.replace("@vocabulary_database_schema", options.cdm_schema)
             if options.cohort_id is not None:
                 result_sql = result_sql.replace("@target_cohort_id", str(options.cohort_id))
 
@@ -773,7 +830,7 @@ DROP TABLE #inclusion_rules;
                 index_id += 1
 
         if not group.is_empty():
-            query = query.replace("@criteriaQueries", " UNION ALL ".join(additional_criteria_queries))
+            query = query.replace("@criteriaQueries", "\nUNION ALL\n".join(additional_criteria_queries))
 
             occurrence_count_clause = "HAVING COUNT(index_id) "
             if group.type and str(group.type).upper() == "ALL":
@@ -804,9 +861,11 @@ DROP TABLE #inclusion_rules;
         Java equivalent: getInclusionRuleQuery()
         """
         result_sql = self.INCLUSION_RULE_QUERY_TEMPLATE
-        additional_criteria_query = f"\nJOIN (\n{self.get_criteria_group_query(inclusion_rule, '#qualified_events')}) AC ON AC.person_id = PE.person_id AND AC.event_id = PE.event_id"
-        additional_criteria_query = additional_criteria_query.replace("@indexId", "0")
+        criteria_group_sql = self.get_criteria_group_query(inclusion_rule, '#qualified_events')
+        criteria_group_sql = criteria_group_sql.replace("@indexId", "0")
+        additional_criteria_query = f"\nJOIN (\n{criteria_group_sql}) AC on AC.person_id = pe.person_id AND AC.event_id = pe.event_id"
         result_sql = result_sql.replace("@additionalCriteriaQuery", additional_criteria_query)
+        result_sql = result_sql.replace("@eventTable", "#qualified_events")
         return result_sql
 
     def get_demographic_criteria_query(self, criteria: DemographicCriteria, event_table: str) -> str:

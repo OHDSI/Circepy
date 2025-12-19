@@ -28,6 +28,7 @@ class DrugEraSqlBuilder(CriteriaSqlBuilder[DrugEra]):
     }
     
     # Default select columns are the columns that will always be returned from the subquery, but are added to based on the specific criteria
+    # Note: These are joined with comma to form a single line like the Java output
     DEFAULT_SELECT_COLUMNS = [
         "de.person_id",
         "de.drug_era_id", 
@@ -37,27 +38,23 @@ class DrugEraSqlBuilder(CriteriaSqlBuilder[DrugEra]):
     ]
     
     def get_query_template(self) -> str:
-        """Get the SQL query template for drug era criteria."""
-        return """
-        SELECT 
-            @selectClause
-        FROM (
-            SELECT 
-                de.person_id,
-                de.drug_era_id,
-                de.drug_concept_id,
-                de.drug_exposure_count,
-                de.gap_days,
-                de.drug_era_start_date,
-                de.drug_era_end_date
-                @ordinalExpression
-            FROM @cdm_database_schema.DRUG_ERA de
-            @codesetClause
-        ) C
-        @joinClause
-        WHERE @whereClause
-        @additionalColumns
+        """Get the SQL query template for drug era criteria.
+        
+        This template matches the Java DrugEraSqlBuilder template exactly.
         """
+        return """-- Begin Drug Era Criteria
+select C.person_id, C.drug_era_id as event_id, C.start_date, C.end_date,
+    CAST(NULL as bigint) as visit_occurrence_id,C.start_date as sort_date@additionalColumns
+from 
+(
+  select @selectClause @ordinalExpression
+  FROM @cdm_database_schema.DRUG_ERA de
+@codesetClause
+) C
+@joinClause
+@whereClause
+-- End Drug Era Criteria
+"""
     
     def get_default_columns(self) -> Set[CriteriaColumn]:
         """Get default columns for drug era criteria."""
@@ -81,10 +78,13 @@ class DrugEraSqlBuilder(CriteriaSqlBuilder[DrugEra]):
         return column_mapping.get(criteria_column, "NULL")
     
     def embed_codeset_clause(self, query: str, criteria: DrugEra) -> str:
-        """Embed codeset clause in query."""
+        """Embed codeset clause in query.
+        
+        Note: Reference uses lowercase 'where' and double space before #Codesets
+        """
         codeset_clause = ""
         if criteria.codeset_id is not None:
-            codeset_clause = f"WHERE de.drug_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.codeset_id})"
+            codeset_clause = f"where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = {criteria.codeset_id})"
         return query.replace("@codesetClause", codeset_clause)
     
     def embed_ordinal_expression(self, query: str, criteria: DrugEra, where_clauses: List[str]) -> str:

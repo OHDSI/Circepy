@@ -59,7 +59,7 @@ class CohortExpression(BaseModel):
         validation_alias=AliasChoices("AdditionalCriteria", "additionalCriteria"),
         serialization_alias="AdditionalCriteria"
     )
-    end_strategy: Optional[EndStrategy] = Field(
+    end_strategy: Optional[Union[EndStrategy, DateOffsetStrategy, CustomEraStrategy]] = Field(
         default=None,
         validation_alias=AliasChoices("EndStrategy", "endStrategy"),
         serialization_alias="EndStrategy"
@@ -102,6 +102,32 @@ class CohortExpression(BaseModel):
     )
 
     model_config = ConfigDict(populate_by_name=True)
+    
+    @field_validator('end_strategy', mode='before')
+    @classmethod
+    def deserialize_end_strategy(cls, v: Any) -> Any:
+        """Deserialize end strategy from polymorphic JSON format.
+        
+        End strategy can come as:
+        - {"DateOffset": {"DateField": "StartDate", "Offset": 7}}
+        - {"CustomEra": {...}}
+        - null/None
+        """
+        if not v or not isinstance(v, dict):
+            return v
+        
+        # Check if it has DateOffset key
+        if 'DateOffset' in v:
+            date_offset_data = v['DateOffset']
+            return DateOffsetStrategy.model_validate(date_offset_data, strict=False)
+        
+        # Check if it has CustomEra key
+        if 'CustomEra' in v:
+            custom_era_data = v['CustomEra']
+            return CustomEraStrategy.model_validate(custom_era_data, strict=False)
+        
+        # Otherwise, try to parse as base EndStrategy
+        return EndStrategy.model_validate(v, strict=False)
     
     @field_validator('censoring_criteria', mode='before')
     @classmethod

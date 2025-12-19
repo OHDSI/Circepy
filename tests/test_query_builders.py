@@ -74,7 +74,8 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.build_concept_set_sub_query(concepts, descendant_concepts)
         
-        self.assertIn("SELECT concept_id", query)
+        # Note: Template uses lowercase to match Java output
+        self.assertIn("select concept_id", query)
         self.assertIn("@vocabulary_database_schema.CONCEPT", query)
         self.assertIn("12345", query)
         self.assertIn("67890", query)
@@ -90,10 +91,11 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         query = self.builder.build_concept_set_sub_query(concepts, descendant_concepts)
         
         # Check for Java-compatible SQL with invalid_reason filtering
-        self.assertIn("SELECT c.concept_id", query)
+        # Note: Template uses lowercase to match Java output
+        self.assertIn("select c.concept_id", query)
         self.assertIn("@vocabulary_database_schema.CONCEPT c", query)
         self.assertIn("@vocabulary_database_schema.CONCEPT_ANCESTOR ca", query)
-        self.assertIn("c.invalid_reason IS NULL", query)
+        self.assertIn("c.invalid_reason is null", query)
         self.assertIn("12345", query)
         self.assertIn("67890", query)
 
@@ -167,7 +169,7 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.build_expression_query(expression)
         
-        self.assertIn("SELECT DISTINCT I.concept_id", query)
+        self.assertIn("select distinct I.concept_id", query)
         self.assertIn("12345", query)
         self.assertIn("67890", query)
 
@@ -250,7 +252,7 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.build_expression_query(expression)
         
-        self.assertIn("SELECT DISTINCT I.concept_id", query)
+        self.assertIn("select distinct I.concept_id", query)
         self.assertIn("EXCEPT", query)
         self.assertIn("UNION", query)
         self.assertIn("12345", query)
@@ -268,7 +270,7 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.build_expression_query(expression)
         
-        self.assertIn("SELECT DISTINCT I.concept_id", query)
+        self.assertIn("select distinct I.concept_id", query)
         self.assertNotIn("EXCEPT", query)
 
 
@@ -382,14 +384,15 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
         query = self.builder.get_primary_events_query(primary_criteria)
         
         self.assertIn("select E.person_id, E.start_date, E.end_date", query)
-        self.assertIn("@cdm_database_schema.OBSERVATION_PERIOD", query)
+        # Note: Template now uses lowercase to match Java output
+        self.assertIn("@cdm_database_schema.observation_period", query)
         self.assertIn("ORDER BY E.sort_date ASC", query)
 
     def test_get_final_cohort_query_no_censor_window(self):
         """Test get_final_cohort_query without censor window."""
         query = self.builder.get_final_cohort_query(None)
         
-        self.assertIn("SELECT @target_cohort_id as @cohort_id_field_name", query)
+        self.assertIn("select @target_cohort_id as @cohort_id_field_name", query)
         self.assertIn("FROM #final_cohort CO", query)
         self.assertNotIn("WHERE", query)
 
@@ -399,7 +402,7 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.get_final_cohort_query(censor_window)
         
-        self.assertIn("SELECT @target_cohort_id as @cohort_id_field_name", query)
+        self.assertIn("select @target_cohort_id as @cohort_id_field_name", query)
         self.assertIn("FROM #final_cohort CO", query)
         self.assertIn("WHERE", query)
         self.assertIn("CASE WHEN", query)
@@ -440,14 +443,14 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.get_inclusion_rule_table_sql(expression)
         
-        self.assertIn("CREATE TABLE #inclusion_rules", query)
+        self.assertIn("into #inclusion_rules", query)
         self.assertIn("UNION ALL", query)
 
     def test_get_inclusion_analysis_query(self):
         """Test get_inclusion_analysis_query method."""
         query = self.builder.get_inclusion_analysis_query("#test_events", 1)
         
-        self.assertIn("SELECT 1 as inclusion_rule_id", query)
+        self.assertIn("mode_id = 1", query)
         self.assertIn("#test_events", query)
 
     def test_get_demographic_criteria_query(self):
@@ -504,7 +507,7 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.get_criteria_group_query(group, "#test_events")
         
-        self.assertIn("SELECT @indexId as index_id", query)
+        self.assertIn("select @indexId as index_id", query)
         self.assertIn("#test_events", query)
 
     def test_get_strategy_sql_date_offset_strategy(self):
@@ -513,8 +516,8 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.get_strategy_sql(strategy, "#test_events")
         
-        self.assertIn("CREATE TABLE #strategy_ends", query)
-        self.assertIn("DATEADD(day, 30, start_date)", query)
+        self.assertIn("INTO #strategy_ends", query)
+        self.assertIn("DATEADD(day,30,start_date)", query)
         self.assertIn("#test_events", query)
 
     def test_get_strategy_sql_custom_era_strategy(self):
@@ -528,7 +531,7 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.get_strategy_sql(strategy, "#test_events")
         
-        self.assertIn("CREATE TABLE #strategy_ends", query)
+        self.assertIn("INTO #strategy_ends", query)
         self.assertIn("12345", query)
         self.assertIn("30", query)
         self.assertIn("#test_events", query)
@@ -656,8 +659,8 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.build_expression_query(expression, options)
         
-        self.assertIn("CREATE TABLE #strategy_ends", query)
-        self.assertIn("DATEADD(day, 30, start_date)", query)
+        self.assertIn("INTO #strategy_ends", query)
+        self.assertIn("DATEADD(day,30,start_date)", query)
 
     def test_build_expression_query_with_censor_window(self):
         """Test build_expression_query with censor window."""

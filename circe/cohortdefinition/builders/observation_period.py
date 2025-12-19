@@ -35,25 +35,23 @@ class ObservationPeriodSqlBuilder(CriteriaSqlBuilder[ObservationPeriod]):
     ]
     
     def get_query_template(self) -> str:
-        """Get the SQL query template for observation period criteria."""
-        return """
-        SELECT 
-            @selectClause@additionalColumns
-        FROM (
-            SELECT 
-                op.person_id,
-                op.observation_period_id,
-                op.period_type_concept_id,
-                op.observation_period_start_date,
-                op.observation_period_end_date
-                @ordinalExpression
-            FROM @cdm_database_schema.OBSERVATION_PERIOD op
-            @codesetClause
-        ) C
-        @joinClause
-        WHERE @whereClause
-        @additionalColumns
+        """Get the SQL query template for observation period criteria.
+        
+        This template matches the Java ObservationPeriodSqlBuilder template exactly.
         """
+        return """-- Begin Observation Period Criteria
+select C.person_id, C.observation_period_id as event_id, @startDateExpression as start_date, @endDateExpression as end_date,
+       CAST(NULL as bigint) as visit_occurrence_id, C.start_date as sort_date@additionalColumns
+
+from 
+(
+  select @selectClause , row_number() over (PARTITION BY op.person_id ORDER BY op.observation_period_start_date) as ordinal
+  FROM @cdm_database_schema.OBSERVATION_PERIOD op
+) C
+@joinClause
+@whereClause
+-- End Observation Period Criteria
+"""
     
     def get_default_columns(self) -> Set[CriteriaColumn]:
         """Get default columns for observation period criteria."""
@@ -100,7 +98,11 @@ class ObservationPeriodSqlBuilder(CriteriaSqlBuilder[ObservationPeriod]):
         return query.replace("@ordinalExpression", "")
     
     def resolve_select_clauses(self, criteria: ObservationPeriod, options: Optional[BuilderOptions] = None) -> List[str]:
-        """Resolve select clauses for observation period criteria."""
+        """Resolve select clauses for observation period criteria.
+        
+        Note: The outer SELECT in the template handles event_id, start_date, end_date, visit_occurrence_id, sort_date.
+        This method only provides columns for the inner subquery.
+        """
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
         
         # dateAdjustment or default start/end dates
@@ -109,14 +111,7 @@ class ObservationPeriodSqlBuilder(CriteriaSqlBuilder[ObservationPeriod]):
             end_column = "op.observation_period_start_date" if criteria.date_adjustment.end_with == "start_date" else "op.observation_period_end_date"
             select_cols.append(BuilderUtils.get_date_adjustment_expression(criteria.date_adjustment, start_column, end_column))
         else:
-            select_cols.append("op.observation_period_start_date as start_date")
-            select_cols.append("op.observation_period_end_date as end_date")
-        
-        # Add domain concept column
-        select_cols.append("op.period_type_concept_id as domain_concept")
-        
-        # Add visit_id column (observation period doesn't have visit_id, so use NULL)
-        select_cols.append("NULL as visit_id")
+            select_cols.append("op.observation_period_start_date as start_date, op.observation_period_end_date as end_date")
         
         return select_cols
     
