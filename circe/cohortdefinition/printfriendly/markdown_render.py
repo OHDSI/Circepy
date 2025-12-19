@@ -397,10 +397,19 @@ class MarkdownRender:
         
         # Handle various window patterns
         if start and end:
-            start_days = start.days if start.days is not None else 0
-            end_days = end.days if end.days is not None else "all"
+            # Handle None values: use "all" for None when going backwards (coeff=-1), 0 otherwise
             start_coeff = start.coeff if start else 1
             end_coeff = end.coeff if end else 1
+            
+            if start.days is None:
+                start_days = "all" if start_coeff == -1 else 0
+            else:
+                start_days = start.days
+            
+            if end.days is None:
+                end_days = "all" if end_coeff == 1 else 0
+            else:
+                end_days = end.days
             
             start_dir = "before" if start_coeff < 0 else "after"
             end_dir = "before" if end_coeff < 0 else "after"
@@ -408,6 +417,9 @@ class MarkdownRender:
             # Special case: both in the past (coeff=-1, end_days < start_days)
             if start_coeff == -1 and end_coeff == -1 and isinstance(start_days, int) and isinstance(end_days, int) and end_days < start_days:
                 return f"{event_part} in the {start_days} days prior to {index_label} {index_part}"
+            # Special case: "anytime prior to" when start is all and end is 0 or 1 day before
+            elif start_days == "all" and isinstance(end_days, int) and end_days <= 1 and start_coeff == -1 and end_coeff == -1:
+                return f"{event_part} anytime prior to {index_label} {index_part}"
             elif start_days == "all" and end_days == 0 and start_coeff == -1:
                 return f"{event_part} anytime on or before {index_label} {index_part}"
             elif end_days == "all" and isinstance(start_days, int) and start_days > 0 and end_coeff == 1:
@@ -606,7 +618,7 @@ class MarkdownRender:
         Returns:
             Detailed criteria text like "having at least 1 drug exposure of 'X', starting between..."
         """
-        from ..criteria import CorelatedCriteria, Occurrence
+        from ..criteria import CorelatedCriteria, Occurrence, Measurement
         
         if not isinstance(corelated_criteria, CorelatedCriteria):
             return self._render_criteria(corelated_criteria, level=0, is_plural=True)
@@ -636,6 +648,34 @@ class MarkdownRender:
         # Strip trailing period to avoid double periods when adding window details
         if criteria_text.endswith('.'):
             criteria_text = criteria_text[:-1]
+        
+        # For Measurement criteria, extract domain-specific attributes to append after window
+        measurement_attrs = []
+        if isinstance(inner_criteria, Measurement):
+            # Split criteria_text to extract measurement-specific parts
+            # Pattern: "measurements of 'X', attr1, attr2, ..." 
+            # We want to move measurement-specific attrs (numeric value, unit, etc.) to after window
+            import re
+            # Look for measurement-specific attribute patterns
+            # Use lookahead to stop at next attribute keyword or end
+            measurement_patterns = [
+                (r',\s*(numeric value [^,]+?)(?=,\s*(?:unit:|operator:|value as string|range low|range high|starting|ending)|$)', 'numeric value'),
+                (r',\s*(unit: [^,]+(?:,\s*"[^"]*")*(?:\s+or\s+"[^"]*")?)(?=,\s*(?:numeric value|operator:|value as string|range low|range high|a measurement|an operator|a unit|starting|ending)|$)', 'unit'),
+                (r',\s*(operator: [^,]+?)(?=,\s*(?:unit:|numeric value|value as string|range low|range high|starting|ending)|$)', 'operator'),
+                (r',\s*(value as string [^,]+?)(?=,\s*(?:unit:|operator:|numeric value|range low|range high|starting|ending)|$)', 'value as string'),
+                (r',\s*(range low [^,]+?)(?=,\s*(?:unit:|operator:|value as string|numeric value|range high|starting|ending)|$)', 'range low'),
+                (r',\s*(range high [^,]+?)(?=,\s*(?:unit:|operator:|value as string|range low|numeric value|starting|ending)|$)', 'range high'),
+                (r',\s*(a measurement type [^,]+?)(?=,\s*(?:unit:|operator:|starting|ending)|$)', 'measurement type'),
+                (r',\s*(an operator concept [^,]+?)(?=,\s*(?:unit:|starting|ending)|$)', 'operator concept'),
+                (r',\s*(a unit concept [^,]+?)(?=,\s*(?:starting|ending)|$)', 'unit concept')
+            ]
+            
+            for pattern, desc in measurement_patterns:
+                matches = list(re.finditer(pattern, criteria_text))
+                for match in matches:
+                    measurement_attrs.append(match.group(1))
+                criteria_text = re.sub(pattern, '', criteria_text)
+        
         parts.append(criteria_text)
         
         # Add window details
@@ -650,8 +690,25 @@ class MarkdownRender:
             if window_text:
                 window_parts.append(window_text)
         
-        # Add final period at the end
-        result = ", ".join([" ".join(parts)] + window_parts) + "."
+        # Build result: base + window (with comma/and) + measurement attrs (with semicolons)
+        result_parts = [" ".join(parts)]
+        if window_parts:
+            # Join multiple window parts with " and " instead of ", "
+            window_text = " and ".join(window_parts)
+            result_parts.append(window_text)
+        if measurement_attrs:
+            result_parts.extend(measurement_attrs)
+        
+        # Join with appropriate separators: comma for window, semicolon for measurement attrs
+        if window_parts and measurement_attrs:
+            result = result_parts[0] + ", " + result_parts[1] + "; " + "; ".join(result_parts[2:]) + "."
+        elif window_parts:
+            result = ", ".join(result_parts) + "."
+        elif measurement_attrs:
+            result = result_parts[0] + "; " + "; ".join(result_parts[1:]) + "."
+        else:
+            result = result_parts[0] + "."
+        
         return result
     
     def _render_censor_criteria(self, censoring_criteria: List[Any]) -> str:
@@ -882,13 +939,31 @@ class MarkdownRender:
             if rule.expression and rule.expression.criteria_list:
                 # For inclusion rules, render CorelatedCriteria with detail
                 from ..criteria import CorelatedCriteria
-                for j, criteria in enumerate(rule.expression.criteria_list):
-                    if isinstance(criteria, CorelatedCriteria):
-                        criteria_text = self._render_corelated_criteria_detail(criteria)
-                        rules_parts.append(f"Entry events {criteria_text}")
-                    else:
-                        criteria_text = self._render_criteria(criteria, level=0, is_plural=True)
-                        rules_parts.append(f"Entry events {criteria_text}")
+                
+                # If multiple criteria, wrap with "with all of the following criteria:"
+                if len(rule.expression.criteria_list) > 1:
+                    rules_parts.append("Entry events with all of the following criteria:")
+                    rules_parts.append("")
+                    for j, criteria in enumerate(rule.expression.criteria_list, 1):
+                        if isinstance(criteria, CorelatedCriteria):
+                            criteria_text = self._render_corelated_criteria_detail(criteria)
+                            # Remove "Entry events " prefix since it's in the wrapper
+                            if criteria_text.startswith("having"):
+                                rules_parts.append(f"{j}. {criteria_text}")
+                            else:
+                                rules_parts.append(f"{j}. {criteria_text}")
+                        else:
+                            criteria_text = self._render_criteria(criteria, level=0, is_plural=True)
+                            rules_parts.append(f"{j}. {criteria_text}")
+                else:
+                    # Single criterion - use original format
+                    for j, criteria in enumerate(rule.expression.criteria_list):
+                        if isinstance(criteria, CorelatedCriteria):
+                            criteria_text = self._render_corelated_criteria_detail(criteria)
+                            rules_parts.append(f"Entry events {criteria_text}")
+                        else:
+                            criteria_text = self._render_criteria(criteria, level=0, is_plural=True)
+                            rules_parts.append(f"Entry events {criteria_text}")
                 rules_parts.append("")
         
         return "\n".join(rules_parts)
@@ -1635,7 +1710,11 @@ class MarkdownRender:
         else:
             correlated = "."
         
-        return f"observation period of {codeset_name}{attrs_str}{correlated}"
+        # Don't repeat "observation period" if using default name
+        if codeset_name == "any observation period":
+            return f"observation period{attrs_str}{correlated}"
+        else:
+            return f"observation period of {codeset_name}{attrs_str}{correlated}"
     
     def _render_payer_plan_period(self, criteria: PayerPlanPeriod, level: int = 0,
                                   is_plural: bool = True, count_criteria: Optional[Dict] = None,
