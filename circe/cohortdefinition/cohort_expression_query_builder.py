@@ -95,21 +95,70 @@ CREATE TABLE #Codesets (
 
 @additionalCriteriaQuery
 
-@inclusionRuleTable
-
 @inclusionCohortInserts
 
 @includedEventsQuery
 
 @strategy_ends_temp_tables
 
+-- generate cohort periods into #final_cohort
+select person_id, start_date, end_date
+INTO #cohort_rows
+from ( -- first_ends
+	select F.person_id, F.start_date, F.end_date
+	FROM (
+	  select I.event_id, I.person_id, I.start_date, CE.end_date, row_number() over (partition by I.person_id, I.event_id order by CE.end_date) as ordinal
+	  from #included_events I
+	  join ( -- cohort_ends
+-- cohort exit dates
 @cohort_end_unions
+    ) CE on I.event_id = CE.event_id and I.person_id = CE.person_id and CE.end_date >= I.start_date
+	) F
+	WHERE F.ordinal = 1
+) FE;
 
+
+select person_id, min(start_date) as start_date, DATEADD(day,-1 * @eraconstructorpad, max(end_date)) as end_date
+into #final_cohort
+from (
+  select person_id, start_date, end_date, sum(is_start) over (partition by person_id order by start_date, is_start desc rows unbounded preceding) group_idx
+  from (
+    select person_id, start_date, end_date, 
+      case when max(end_date) over (partition by person_id order by start_date rows between unbounded preceding and 1 preceding) >= start_date then 0 else 1 end is_start
+    from (
+      select person_id, start_date, DATEADD(day,@eraconstructorpad,end_date) as end_date
+      from #cohort_rows
+    ) CR
+  ) ST
+) GR
+group by person_id, group_idx;
+
+DELETE FROM @target_database_schema.@target_cohort_table where @cohort_id_field_name = @target_cohort_id;
+INSERT INTO @target_database_schema.@target_cohort_table (@cohort_id_field_name, subject_id, cohort_start_date, cohort_end_date)
 @finalCohortQuery
+;
+
+@inclusionAnalysisQuery
 
 @strategy_ends_cleanup
 
-@cohortCensoredStatsQuery
+TRUNCATE TABLE #cohort_rows;
+DROP TABLE #cohort_rows;
+
+TRUNCATE TABLE #final_cohort;
+DROP TABLE #final_cohort;
+
+TRUNCATE TABLE #inclusion_events;
+DROP TABLE #inclusion_events;
+
+TRUNCATE TABLE #qualified_events;
+DROP TABLE #qualified_events;
+
+TRUNCATE TABLE #included_events;
+DROP TABLE #included_events;
+
+TRUNCATE TABLE #Codesets;
+DROP TABLE #Codesets;
     """
 
     PRIMARY_EVENTS_TEMPLATE = """
@@ -441,6 +490,76 @@ WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id =
         result_sql = result_sql.replace("@eventTable", event_table)
         return result_sql
 
+    def _build_inclusion_analysis_section(self, expression: CohortExpression) -> str:
+        """Build the inclusion analysis section for stats generation.
+        
+        This includes:
+        - inclusion_rules table
+        - best_events table
+        - inclusion impact analysis queries
+        - cleanup of temp tables
+        
+        Java equivalent: Part of generateCohort.sql template with @generateStats != 0 & @ruleTotal != 0
+        """
+        rule_total = len(expression.inclusion_rules) if expression.inclusion_rules else 0
+        if rule_total == 0:
+            return ""
+        
+        inclusion_rule_table = self.get_inclusion_rule_table_sql(expression)
+        
+        best_events_query = """
+-- Find the event that is the 'best match' per person.  
+-- the 'best match' is defined as the event that satisfies the most inclusion rules.
+-- ties are solved by choosing the event that matches the earliest inclusion rule, and then earliest.
+
+select q.person_id, q.event_id
+into #best_events
+from #qualified_events Q
+join (
+	SELECT R.person_id, R.event_id, ROW_NUMBER() OVER (PARTITION BY R.person_id ORDER BY R.rule_count DESC,R.min_rule_id ASC, R.start_date ASC) AS rank_value
+	FROM (
+		SELECT Q.person_id, Q.event_id, COALESCE(COUNT(DISTINCT I.inclusion_rule_id), 0) AS rule_count, COALESCE(MIN(I.inclusion_rule_id), 0) AS min_rule_id, Q.start_date
+		FROM #qualified_events Q
+		LEFT JOIN #inclusion_events I ON q.person_id = i.person_id AND q.event_id = i.event_id
+		GROUP BY Q.person_id, Q.event_id, Q.start_date
+	) R
+) ranked on Q.person_id = ranked.person_id and Q.event_id = ranked.event_id
+WHERE ranked.rank_value = 1
+;
+"""
+        
+        inclusion_impact_event = self.get_inclusion_analysis_query("#qualified_events", 0)
+        inclusion_impact_person = self.get_inclusion_analysis_query("#best_events", 1)
+        
+        cleanup = """
+TRUNCATE TABLE #best_events;
+DROP TABLE #best_events;
+
+TRUNCATE TABLE #inclusion_rules;
+DROP TABLE #inclusion_rules;
+"""
+        
+        return f"""
+{inclusion_rule_table}
+
+{best_events_query}
+
+-- modes of generation: (the same tables store the results for the different modes, identified by the mode_id column)
+-- 0: all events
+-- 1: best event
+
+
+-- BEGIN: Inclusion Impact Analysis - event
+{inclusion_impact_event}
+-- END: Inclusion Impact Analysis - event
+
+-- BEGIN: Inclusion Impact Analysis - person
+{inclusion_impact_person}
+-- END: Inclusion Impact Analysis - person
+
+{cleanup}
+"""
+
     def build_expression_query(self, expression: str, options: BuildExpressionQueryOptions) -> str:
         """Build expression query from JSON string.
         
@@ -590,17 +709,11 @@ WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id =
         if expression.collapse_settings and expression.collapse_settings.era_pad is not None:
             era_pad = str(expression.collapse_settings.era_pad)
         result_sql = result_sql.replace("@eraconstructorpad", era_pad)
-        result_sql = result_sql.replace("@inclusionRuleTable", self.get_inclusion_rule_table_sql(expression))
-        result_sql = result_sql.replace("@inclusionImpactAnalysisByEventQuery",
-                                        self.get_inclusion_analysis_query("#qualified_events", 0))
-        result_sql = result_sql.replace("@inclusionImpactAnalysisByPersonQuery",
-                                        self.get_inclusion_analysis_query("#best_events", 1))
-
-        # Cohort censored stats query
-        cohort_censored_stats_query = ""
-        if expression.censor_window and (expression.censor_window.start_date or expression.censor_window.end_date):
-            cohort_censored_stats_query = self.COHORT_CENSORED_STATS_TEMPLATE
-        result_sql = result_sql.replace("@cohortCensoredStatsQuery", cohort_censored_stats_query)
+        # Build inclusion analysis query (for stats generation)
+        inclusion_analysis_query = ""
+        if options and options.generate_stats and expression.inclusion_rules:
+            inclusion_analysis_query = self._build_inclusion_analysis_section(expression)
+        result_sql = result_sql.replace("@inclusionAnalysisQuery", inclusion_analysis_query)
 
         # Replace query parameters with tokens
         if options:
@@ -787,7 +900,9 @@ WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id =
                 criteria_data = inner_criteria[key]
                 break
 
-            if criteria_type and criteria_data:
+            # Note: criteria_data may be an empty dict {} which is valid
+            # (e.g., {"ObservationPeriod": {}} means "any observation period")
+            if criteria_type and criteria_data is not None:
                 criteria_class_map = {
                     'ConditionOccurrence': ConditionOccurrence,
                     'DrugExposure': DrugExposure,
@@ -809,6 +924,8 @@ WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id =
 
                 if criteria_type in criteria_class_map:
                     try:
+                        # Make a mutable copy to add defaults
+                        criteria_data = dict(criteria_data) if criteria_data else {}
                         # Set default values for required fields that might be missing
                         if criteria_type == 'Measurement' and 'measurementTypeExclude' not in criteria_data:
                             criteria_data['measurementTypeExclude'] = False
@@ -968,7 +1085,9 @@ WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id =
                 criteria_data = criteria[key]
                 break
 
-            if criteria_type and criteria_data:
+            # Note: criteria_data may be an empty dict {} which is valid
+            # (e.g., {"ObservationPeriod": {}} means "any observation period")
+            if criteria_type and criteria_data is not None:
                 criteria_class_map = {
                     'ConditionOccurrence': CO,
                     'DrugExposure': DE,
@@ -990,6 +1109,8 @@ WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id =
 
                 if criteria_type in criteria_class_map:
                     try:
+                        # Make a mutable copy to add defaults
+                        criteria_data = dict(criteria_data) if criteria_data else {}
                         # Set default values for required fields that might be missing
                         if criteria_type == 'Measurement' and 'measurementTypeExclude' not in criteria_data:
                             criteria_data['measurementTypeExclude'] = False
@@ -1029,12 +1150,20 @@ WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id =
             return self._get_criteria_sql_from_builder(self.drug_exposure_sql_builder, criteria, options)
         elif isinstance(criteria, ProcedureOccurrence):
             return self._get_criteria_sql_from_builder(self.procedure_occurrence_sql_builder, criteria, options)
-        elif isinstance(criteria,
-                        (ObservationPeriod, PayerPlanPeriod, VisitDetail, LocationRegion, ConditionEra, DrugEra,
-                         DoseEra)):
-            # These criteria types don't have dedicated builders yet - return a placeholder
-            # TODO: Implement builders for these types
-            return f"-- TODO: Implement SQL builder for {type(criteria).__name__}\nSELECT person_id, 0 as event_id, CAST('1900-01-01' as DATE) as start_date, CAST('1900-01-01' as DATE) as end_date, NULL as visit_occurrence_id, CAST('1900-01-01' as DATE) as sort_date WHERE 1=0"
+        elif isinstance(criteria, DrugEra):
+            return self._get_criteria_sql_from_builder(self.drug_era_sql_builder, criteria, options)
+        elif isinstance(criteria, ConditionEra):
+            return self._get_criteria_sql_from_builder(self.condition_era_sql_builder, criteria, options)
+        elif isinstance(criteria, DoseEra):
+            return self._get_criteria_sql_from_builder(self.dose_era_sql_builder, criteria, options)
+        elif isinstance(criteria, ObservationPeriod):
+            return self._get_criteria_sql_from_builder(self.observation_period_sql_builder, criteria, options)
+        elif isinstance(criteria, PayerPlanPeriod):
+            return self._get_criteria_sql_from_builder(self.payer_plan_period_sql_builder, criteria, options)
+        elif isinstance(criteria, VisitDetail):
+            return self._get_criteria_sql_from_builder(self.visit_detail_sql_builder, criteria, options)
+        elif isinstance(criteria, LocationRegion):
+            return self._get_criteria_sql_from_builder(self.location_region_sql_builder, criteria, options)
         else:
             raise ValueError(f"Unsupported criteria type: {type(criteria)}")
 
