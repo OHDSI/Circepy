@@ -23,14 +23,19 @@ class MeasurementSqlBuilder(CriteriaSqlBuilder[Measurement]):
     
     def get_query_template(self) -> str:
         """Get the SQL query template for measurement criteria."""
-        return """
-        SELECT 
-            @selectClause@additionalColumns
-        FROM @cdm_database_schema.MEASUREMENT C
-        @joinClause
-        WHERE @whereClause
-        @ordinalExpression
-        """
+        return """-- Begin Measurement Criteria
+select C.person_id, C.measurement_id as event_id, C.start_date, C.end_date,
+       C.visit_occurrence_id, C.start_date as sort_date@additionalColumns
+from 
+(
+  select @selectClause @ordinalExpression
+  FROM @cdm_database_schema.MEASUREMENT m
+@codesetClause
+) C
+@joinClause
+@whereClause
+-- End Measurement Criteria
+"""
     
     def get_default_columns(self) -> Set[CriteriaColumn]:
         """Get default columns for measurement criteria."""
@@ -53,42 +58,13 @@ class MeasurementSqlBuilder(CriteriaSqlBuilder[Measurement]):
         }
         return column_mapping.get(criteria_column, "NULL")
     
-    def get_criteria_sql(self, criteria: Measurement, options: Optional[BuilderOptions] = None) -> str:
-        """Generate SQL for measurement criteria."""
-        if options is None:
-            options = BuilderOptions()
-        
-        # Build select clause
-        select_clause = ", ".join(self.resolve_select_clauses(criteria, options))
-        
-        # Build join clause
-        join_clause = " ".join(self.resolve_join_clauses(criteria, options))
-        
-        # Build where clause
-        where_clause = " AND ".join(self.resolve_where_clauses(criteria, options)) if self.resolve_where_clauses(criteria, options) else "1=1"
-        
-        # Build ordinal expression
-        ordinal_expression = self.resolve_ordinal_expression(criteria, options)
-        
-        # Replace placeholders in template
-        sql = self.get_query_template()
-        sql = sql.replace("@selectClause", select_clause)
-        sql = sql.replace("@joinClause", join_clause)
-        sql = sql.replace("@whereClause", where_clause)
-        sql = sql.replace("@ordinalExpression", ordinal_expression)
-        
-        return sql
-    
     def embed_codeset_clause(self, query: str, criteria: Measurement) -> str:
         """Embed codeset clause for measurement criteria."""
         if criteria.codeset_id is None:
             return query.replace("@codesetClause", "")
         
-        codeset_clause = BuilderUtils.get_codeset_in_expression(
-            criteria.codeset_id, 
-            "C.measurement_concept_id",
-            criteria.measurement_type_exclude
-        )
+        # Use JOIN syntax for codeset, not WHERE clause
+        codeset_clause = f"JOIN #Codesets cs on (m.measurement_concept_id = cs.concept_id and cs.codeset_id = {criteria.codeset_id})"
         return query.replace("@codesetClause", codeset_clause)
     
     def resolve_select_clauses(self, criteria: Measurement, options: Optional[BuilderOptions] = None) -> List[str]:
@@ -96,31 +72,23 @@ class MeasurementSqlBuilder(CriteriaSqlBuilder[Measurement]):
         
         Java equivalent: MeasurementSqlBuilder.resolveSelectClauses()
         """
-        # Default select columns that are always returned
+        # Default select columns that are always returned from inner subquery
         select_cols = [
-            "C.person_id",
-            "C.measurement_id", 
-            "C.measurement_concept_id"
+            "m.person_id",
+            "m.measurement_id", 
+            "m.measurement_concept_id",
+            "m.visit_occurrence_id"
         ]
         
-        # Add date columns (start_date and end_date)
-        select_cols.append("C.measurement_date as start_date")
-        select_cols.append("C.measurement_date as end_date")
+        # Add value columns if they might be used for filtering
+        select_cols.append("m.value_as_number")
+        select_cols.append("m.range_high")
+        select_cols.append("m.range_low")
+        select_cols.append("m.unit_concept_id")
         
-        # Add domain concept column
-        select_cols.append("C.measurement_concept_id as domain_concept")
-        
-        # Add visit_id column
-        select_cols.append("C.visit_occurrence_id as visit_id")
-        
-        # Add additional columns from options if provided
-        if options and options.additional_columns:
-            filtered_columns = [
-                column for column in options.additional_columns 
-                if column not in self.get_default_columns()
-            ]
-            for col in filtered_columns:
-                select_cols.append(f"{self.get_table_column_for_criteria_column(col)} as {col.value}")
+        # Add date columns (start_date and end_date) with proper calculation for end_date
+        select_cols.append("m.measurement_date as start_date")
+        select_cols.append(" DATEADD(day,1,m.measurement_date) as end_date")
         
         return select_cols
     
@@ -136,9 +104,9 @@ class MeasurementSqlBuilder(CriteriaSqlBuilder[Measurement]):
             join_clauses.append("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id")
         
         # Join to PROVIDER if provider specialty conditions are present
-        # Note: Uses "P" alias as tests expect, even though this conflicts with PERSON alias
+        # Use "PR" alias to avoid conflict with PERSON alias
         if criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id:
-            join_clauses.append("LEFT JOIN @cdm_database_schema.PROVIDER P on C.provider_id = P.provider_id")
+            join_clauses.append("JOIN @cdm_database_schema.PROVIDER PR on C.provider_id = PR.provider_id")
         
         return join_clauses
     
@@ -149,19 +117,12 @@ class MeasurementSqlBuilder(CriteriaSqlBuilder[Measurement]):
         """
         where_clauses = []
         
-        # Add codeset condition
-        if criteria.codeset_id is not None:
-            codeset_clause = BuilderUtils.get_codeset_in_expression(
-                criteria.codeset_id, 
-                "C.measurement_concept_id",
-                criteria.measurement_type_exclude
-            )
-            where_clauses.append(codeset_clause)
+        # Note: codeset filtering is now handled via JOIN in inner query, not WHERE clause
         
         # Add occurrence start date condition
         if criteria.occurrence_start_date:
             date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_start_date, "C.measurement_date"
+                criteria.occurrence_start_date, "C.start_date"
             )
             if date_clause:
                 where_clauses.append(date_clause)
@@ -169,7 +130,7 @@ class MeasurementSqlBuilder(CriteriaSqlBuilder[Measurement]):
         # Add occurrence end date condition
         if criteria.occurrence_end_date:
             date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_end_date, "C.measurement_date"
+                criteria.occurrence_end_date, "C.end_date"
             )
             if date_clause:
                 where_clauses.append(date_clause)
@@ -177,12 +138,10 @@ class MeasurementSqlBuilder(CriteriaSqlBuilder[Measurement]):
         # Add age condition
         if criteria.age:
             age_clause = BuilderUtils.build_numeric_range_clause(
-                criteria.age, "YEAR(C.measurement_date) - P.year_of_birth"
+                criteria.age, "YEAR(C.start_date) - P.year_of_birth"
             )
             if age_clause:
                 where_clauses.append(age_clause)
-                # Add person_id check for join requirement
-                where_clauses.append("C.person_id = P.person_id")
         
         # Add value as number condition
         if criteria.value_as_number:
@@ -191,6 +150,22 @@ class MeasurementSqlBuilder(CriteriaSqlBuilder[Measurement]):
             )
             if value_clause:
                 where_clauses.append(value_clause)
+        
+        # Add unit condition using unit concept list or concept set
+        if criteria.unit:
+            # Extract concept IDs from unit list
+            unit_ids = [str(concept.concept_id) for concept in criteria.unit if hasattr(concept, 'concept_id')]
+            if unit_ids:
+                where_clauses.append(f"C.unit_concept_id in ({','.join(unit_ids)})")
+        
+        if criteria.unit_cs and criteria.unit_cs.codeset_id:
+            unit_clause = BuilderUtils.get_codeset_in_expression(
+                criteria.unit_cs.codeset_id,
+                "C.unit_concept_id",
+                criteria.unit_cs.is_exclusion
+            )
+            if unit_clause:
+                where_clauses.append(unit_clause)
         
         # Add value as string condition
         if criteria.value_as_string:
@@ -219,13 +194,13 @@ class MeasurementSqlBuilder(CriteriaSqlBuilder[Measurement]):
         if criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id:
             provider_clause = BuilderUtils.get_codeset_in_expression(
                 criteria.provider_specialty_cs.codeset_id,
-                "P.specialty_concept_id",
+                "PR.specialty_concept_id",
                 criteria.provider_specialty_cs.is_exclusion
             )
             if provider_clause:
                 where_clauses.append(provider_clause)
         
-        return where_clauses if where_clauses else ["1=1"]
+        return where_clauses
     
     def get_additional_columns(self, columns: List[CriteriaColumn]) -> str:
         """Get additional columns string with proper aliases.
@@ -234,8 +209,13 @@ class MeasurementSqlBuilder(CriteriaSqlBuilder[Measurement]):
         """
         return ", ".join([f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns])
     
-    def resolve_ordinal_expression(self, criteria: Measurement, options: BuilderOptions) -> str:
+    def embed_ordinal_expression(self, query: str, criteria: Measurement, options: Optional[BuilderOptions] = None) -> str:
+        """Embed ordinal expression for measurement criteria."""
+        ordinal_expression = self.resolve_ordinal_expression(criteria, options)
+        return query.replace("@ordinalExpression", ordinal_expression)
+    
+    def resolve_ordinal_expression(self, criteria: Measurement, options: Optional[BuilderOptions] = None) -> str:
         """Resolve ordinal expression for measurement criteria."""
         if criteria.first:
-            return "ORDER BY C.measurement_date ASC"
+            return ", ROW_NUMBER() OVER (PARTITION BY m.person_id ORDER BY m.measurement_date, m.measurement_id) ordinal"
         return ""

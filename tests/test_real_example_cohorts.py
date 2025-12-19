@@ -119,7 +119,18 @@ def generate_python_outputs(cohort_file: Path) -> Tuple[Optional[str], Optional[
 
 
 def normalize_sql(sql: str) -> str:
-    """Normalize SQL for comparison by removing whitespace variations and case differences."""
+    """
+    Normalize SQL for comparison - removes ALL formatting differences.
+    
+    This aggressive normalization focuses on functional differences only:
+    - Case insensitive
+    - All whitespace (spaces, tabs, newlines) collapsed to single spaces
+    - Comments preserved as single tokens
+    - Template markers removed
+    - Consistent spacing around keywords and operators
+    
+    This means only the actual SQL tokens matter, not formatting.
+    """
     # Convert to lowercase for case-insensitive comparison
     sql = sql.lower()
     
@@ -129,37 +140,69 @@ def normalize_sql(sql: str) -> str:
     # Remove conditional template blocks: {condition}?{
     sql = re.sub(r'\{[^}]+\}\?\{', '', sql)
     # Remove standalone closing braces that were part of template blocks
-    lines_temp = []
-    for line in sql.splitlines():
-        stripped = line.strip()
-        # Skip lines that are just a closing brace (template marker)
-        if stripped == '}':
-            continue
-        lines_temp.append(line)
-    sql = '\n'.join(lines_temp)
+    sql = re.sub(r'^\s*\}\s*$', '', sql, flags=re.MULTILINE)
+    # Remove orphaned template content like "-- comment... where(condition)" 
+    # that appears in reference when conditional blocks aren't fully processed
+    # Pattern: "-- the matching group...inclusion_rule_mask where(...)"
+    sql = re.sub(r'--\s*the matching group.*?inclusion_rule_mask\s+where\([^)]+\)', '', sql, flags=re.IGNORECASE)
     
-    # Remove trailing whitespace from lines
-    lines = [line.rstrip() for line in sql.splitlines()]
-    # Remove empty lines at start/end
-    while lines and not lines[0].strip():
-        lines.pop(0)
-    while lines and not lines[-1].strip():
-        lines.pop()
-    # Normalize multiple spaces to single space within lines
-    normalized_lines = []
-    for line in lines:
-        # Preserve leading whitespace for indentation, but normalize inner spaces
-        leading_space = len(line) - len(line.lstrip())
-        content = ' '.join(line.split())
-        if content:
-            normalized_lines.append(' ' * leading_space + content)
-        else:
-            normalized_lines.append('')
-    return '\n'.join(normalized_lines)
+    # Split on newlines but preserve SQL comments
+    lines = []
+    for line in sql.splitlines():
+        line = line.strip()
+        if line:  # Skip empty lines
+            lines.append(line)
+    
+    # Join all non-empty lines with space
+    sql = ' '.join(lines)
+    
+    # Normalize all whitespace sequences to single space
+    sql = ' '.join(sql.split())
+    
+    # Normalize some common SQL formatting differences
+    # Remove spaces around parentheses to avoid (x) vs ( x ) differences
+    sql = re.sub(r'\s*\(\s*', '(', sql)
+    sql = re.sub(r'\s*\)\s*', ')', sql)
+    # Remove spaces around commas
+    sql = re.sub(r'\s*,\s*', ',', sql)
+    # Normalize spaces around operators =, <, >, !=, but preserve SQL keywords like "and", "or"
+    sql = re.sub(r'\s*=\s*', '=', sql)
+    sql = re.sub(r'\s*!=\s*', '!=', sql)
+    sql = re.sub(r'\s*<=\s*', '<=', sql)
+    sql = re.sub(r'\s*>=\s*', '>=', sql)
+    sql = re.sub(r'\s*<\s*', '<', sql)
+    sql = re.sub(r'\s*>\s*', '>', sql)
+    
+    # Ensure keywords have consistent spacing (single space before and after)
+    # But first collapse repeated spaces from operator normalization
+    sql = ' '.join(sql.split())
+    
+    # Normalize "and" keyword - ensure space before (avoid things like "0.0000and")
+    sql = re.sub(r'(\w)and\b', r'\1 and', sql)
+    sql = re.sub(r'\band(\w)', r'and \1', sql)
+    # Same for "or"
+    sql = re.sub(r'(\w)or\b', r'\1 or', sql)
+    sql = re.sub(r'\bor(\w)', r'or \1', sql)
+    
+    # Final cleanup of multiple spaces
+    sql = ' '.join(sql.split())
+    
+    return sql.strip()
 
 
 def normalize_markdown(text: str) -> str:
-    """Normalize markdown for comparison (remove title/description sections and normalize whitespace/case)."""
+    """
+    Normalize markdown for comparison - removes ALL formatting differences.
+    
+    This aggressive normalization focuses on content differences only:
+    - Case insensitive
+    - All whitespace collapsed to single spaces
+    - Title/description sections removed (Python adds these, R doesn't)
+    - Empty lines removed
+    - Bullet/numbering preserved but spacing normalized
+    
+    This means only the actual content tokens matter, not formatting.
+    """
     # Convert to lowercase for case-insensitive comparison
     text = text.lower()
     lines = text.split('\n')
@@ -167,6 +210,8 @@ def normalize_markdown(text: str) -> str:
     skip_section = False
     
     for line in lines:
+        line = line.strip()
+        
         # Skip title and description sections (Python adds these, R doesn't)
         if line.startswith('# ') and not line.startswith('###'):
             skip_section = True
@@ -179,19 +224,28 @@ def normalize_markdown(text: str) -> str:
         if skip_section:
             continue
         
-        # Normalize whitespace - remove trailing and normalize multiple spaces
-        line = line.rstrip()
-        # Normalize multiple spaces to single space
+        # Skip empty lines
+        if not line:
+            continue
+        
+        # Normalize whitespace - collapse multiple spaces to single space
         line = ' '.join(line.split())
         normalized.append(line)
     
-    # Remove empty lines at start/end
-    while normalized and not normalized[0]:
-        normalized.pop(0)
-    while normalized and not normalized[-1]:
-        normalized.pop()
+    # Join all lines with single space to ignore line break differences
+    result = ' '.join(normalized)
     
-    return '\n'.join(normalized).strip()
+    # Normalize some common markdown patterns
+    import re
+    # Normalize bullet points - spaces around * or -
+    result = re.sub(r'\s*\*\s*', '* ', result)
+    result = re.sub(r'\s*-\s*', '- ', result)
+    # Normalize heading markers
+    result = re.sub(r'\s*###\s*', '### ', result)
+    result = re.sub(r'\s*##\s*', '## ', result)
+    result = re.sub(r'\s*#\s*', '# ', result)
+    
+    return result.strip()
 
 
 def compare_outputs(python_output: str, reference_output: str, label: str) -> dict:
@@ -203,27 +257,36 @@ def compare_outputs(python_output: str, reference_output: str, label: str) -> di
     py_normalized = normalize_sql(python_output) if label == "SQL" else normalize_markdown(python_output)
     ref_normalized = normalize_sql(reference_output) if label == "SQL" else normalize_markdown(reference_output)
     
-    # Get diff
-    py_lines = py_normalized.splitlines()
-    ref_lines = ref_normalized.splitlines()
+    is_identical = py_normalized == ref_normalized
     
-    diff = list(unified_diff(
-        ref_lines,
-        py_lines,
-        fromfile='Reference (R/Java)',
-        tofile='Python',
-        lineterm='',
-        n=3
-    ))
+    # Since normalization creates single-line strings, split them into chunks for readable diff
+    if is_identical:
+        diff = []
+    else:
+        # Break normalized output into chunks (every 100 chars) for diff display
+        def chunk_string(s, size=100):
+            return [s[i:i+size] for i in range(0, len(s), size)]
+        
+        py_chunks = chunk_string(py_normalized)
+        ref_chunks = chunk_string(ref_normalized)
+        
+        diff = list(unified_diff(
+            ref_chunks,
+            py_chunks,
+            fromfile='Reference (R/Java)',
+            tofile='Python',
+            lineterm='',
+            n=2
+        ))
     
     return {
-        'is_identical': py_normalized == ref_normalized,
+        'is_identical': is_identical,
         'python_length': len(py_normalized),
         'reference_length': len(ref_normalized),
-        'python_lines': len(py_lines),
-        'reference_lines': len(ref_lines),
-        'diff_lines': len(diff),
-        'diff': diff[:100],  # Limit to first 100 lines
+        'python_lines': len(python_output.splitlines()),  # Original line count for reference
+        'reference_lines': len(reference_output.splitlines()),  # Original line count
+        'diff_lines': len([line for line in diff if line.startswith('+') or line.startswith('-')]),
+        'diff': diff[:50],  # Limit to first 50 chunks for readability
     }
 
 

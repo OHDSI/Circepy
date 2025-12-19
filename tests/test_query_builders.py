@@ -197,7 +197,9 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.build_expression_query(expression)
         
-        self.assertIn("EXCEPT", query)
+        # Now uses LEFT JOIN pattern instead of EXCEPT
+        self.assertIn("LEFT JOIN", query)
+        self.assertIn("WHERE E.concept_id is null", query)
         self.assertIn("12345", query)
         self.assertIn("67890", query)
 
@@ -253,7 +255,9 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         query = self.builder.build_expression_query(expression)
         
         self.assertIn("select distinct I.concept_id", query)
-        self.assertIn("EXCEPT", query)
+        # Now uses LEFT JOIN pattern instead of EXCEPT
+        self.assertIn("LEFT JOIN", query)
+        self.assertIn("WHERE E.concept_id is null", query)
         self.assertIn("UNION", query)
         self.assertIn("12345", query)
         self.assertIn("67890", query)

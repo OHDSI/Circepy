@@ -44,14 +44,16 @@ class ConceptSetExpressionQueryBuilder:
     """
     
     CONCEPT_SET_INCLUDE_TEMPLATE = """
-    SELECT DISTINCT concept_id
-    FROM (@includeQuery) concept_set
+    SELECT DISTINCT I.concept_id
+    FROM (@includeQuery) I
     """
     
     CONCEPT_SET_EXCLUDE_TEMPLATE = """
-    EXCEPT
-    SELECT DISTINCT concept_id
-    FROM (@excludeQuery) concept_set
+    LEFT JOIN
+    (
+    @excludeQuery
+    ) E ON I.concept_id = E.concept_id
+    WHERE E.concept_id IS NULL
     """
     
     MAX_IN_LENGTH = 1000  # Oracle limitation

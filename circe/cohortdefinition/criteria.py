@@ -533,7 +533,7 @@ class Measurement(Criteria):
     operator_cs: Optional[ConceptSetSelection] = Field(default=None, alias="OperatorCS")
     value_as_number: Optional[NumericRange] = Field(default=None, alias="ValueAsNumber")
     value_as_string: Optional[TextFilter] = Field(default=None, alias="ValueAsString")
-    unit: Optional[List[Concept]] = None
+    unit: Optional[List[Concept]] = Field(default=None, alias="Unit")
     unit_cs: Optional[ConceptSetSelection] = Field(default=None, alias="UnitCS")
     range_low: Optional[NumericRange] = Field(default=None, alias="RangeLow")
     range_high: Optional[NumericRange] = Field(default=None, alias="RangeHigh")

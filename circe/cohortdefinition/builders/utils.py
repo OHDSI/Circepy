@@ -159,9 +159,31 @@ class BuilderUtils:
         if numeric_range is None:
             return None
         
-        # This would need to be implemented based on the Java logic
-        # For now, return a placeholder
-        return f"{column_name} {numeric_range.op} {numeric_range.value}"
+        op = numeric_range.op
+        value = numeric_range.value
+        extent = numeric_range.extent
+        
+        # Handle "bt" (between) operator
+        if op == "bt" and extent is not None:
+            # Always format with 4 decimal places to match R/Java output
+            return f"({column_name} >= {float(value):.4f} and {column_name} <= {float(extent):.4f})"
+        
+        # Handle other operators
+        if op == "lt":
+            return f"{column_name} < {value}"
+        elif op == "lte":
+            return f"{column_name} <= {value}"
+        elif op == "gt":
+            return f"{column_name} > {value}"
+        elif op == "gte":
+            return f"{column_name} >= {value}"
+        elif op == "eq":
+            return f"{column_name} = {value}"
+        elif op == "!eq":
+            return f"{column_name} != {value}"
+        else:
+            # Fallback for unknown operators
+            return f"{column_name} {op} {value}"
     
     @staticmethod
     def build_text_filter_clause(text_filter: Optional[str], column_name: str) -> Optional[str]:
