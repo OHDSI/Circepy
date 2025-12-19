@@ -77,39 +77,39 @@ class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySql
 
     # SQL templates - equivalent to Java ResourceHelper.GetResourceAsString
     CODESET_QUERY_TEMPLATE = """
-    IF OBJECT_ID('tempdb..#Codesets', 'U') IS NOT NULL
-    DROP TABLE #Codesets;
+IF OBJECT_ID('tempdb..#Codesets', 'U') IS NOT NULL
+DROP TABLE #Codesets;
 
-    CREATE TABLE #Codesets (
-      codeset_id int NOT NULL,
-      concept_id bigint NOT NULL
-    );
+CREATE TABLE #Codesets (
+  codeset_id int NOT NULL,
+  concept_id bigint NOT NULL
+);
 
-    @codesetInserts
+@codesetInserts
     """
 
     COHORT_QUERY_TEMPLATE = """
-    @codesetQuery
+@codesetQuery
 
-    @primaryEventsQuery
+@primaryEventsQuery
 
-    @additionalCriteriaQuery
+@additionalCriteriaQuery
 
-    @inclusionRuleTable
+@inclusionRuleTable
 
-    @inclusionCohortInserts
+@inclusionCohortInserts
 
-    @includedEventsQuery
+@includedEventsQuery
 
-    @strategy_ends_temp_tables
+@strategy_ends_temp_tables
 
-    @cohort_end_unions
+@cohort_end_unions
 
-    @finalCohortQuery
+@finalCohortQuery
 
-    @strategy_ends_cleanup
+@strategy_ends_cleanup
 
-    @cohortCensoredStatsQuery
+@cohortCensoredStatsQuery
     """
 
     PRIMARY_EVENTS_TEMPLATE = """
@@ -144,75 +144,75 @@ FROM
     """
 
     WINDOWED_CRITERIA_TEMPLATE = """
-    SELECT @indexId as index_id, A.person_id, A.event_id
-    FROM (@eventTable) P
-    INNER JOIN (@criteriaQuery) A ON A.person_id = P.person_id
-    WHERE @windowCriteria@additionalColumns
+SELECT @indexId as index_id, A.person_id, A.event_id
+FROM (@eventTable) P
+INNER JOIN (@criteriaQuery) A ON A.person_id = P.person_id
+WHERE @windowCriteria@additionalColumns
     """
 
     ADDITIONAL_CRITERIA_INNER_TEMPLATE = """
-    SELECT @indexId as index_id, person_id, event_id
-    FROM (@eventTable) P
-    INNER JOIN (@criteriaQuery) A ON A.person_id = P.person_id
-    GROUP BY person_id, event_id
-    @occurrenceCriteria
+SELECT @indexId as index_id, person_id, event_id
+FROM (@eventTable) P
+INNER JOIN (@criteriaQuery) A ON A.person_id = P.person_id
+GROUP BY person_id, event_id
+@occurrenceCriteria
     """
 
     ADDITIONAL_CRITERIA_LEFT_TEMPLATE = """
-    SELECT @indexId as index_id, person_id, event_id
-    FROM (@eventTable) P
-    LEFT JOIN (@criteriaQuery) A ON A.person_id = P.person_id
-    GROUP BY person_id, event_id
-    @occurrenceCriteria
+SELECT @indexId as index_id, person_id, event_id
+FROM (@eventTable) P
+LEFT JOIN (@criteriaQuery) A ON A.person_id = P.person_id
+GROUP BY person_id, event_id
+@occurrenceCriteria
     """
 
     GROUP_QUERY_TEMPLATE = """
-    SELECT @indexId as index_id, person_id, event_id
-    FROM (@eventTable) P
-    @joinType JOIN (
-        @criteriaQueries
-    ) A ON A.person_id = P.person_id
-    GROUP BY person_id, event_id
-    @occurrenceCountClause
+SELECT @indexId as index_id, person_id, event_id
+FROM (@eventTable) P
+@joinType JOIN (
+    @criteriaQueries
+) A ON A.person_id = P.person_id
+GROUP BY person_id, event_id
+@occurrenceCountClause
     """
 
     INCLUSION_RULE_QUERY_TEMPLATE = """
-    SELECT @inclusion_rule_id as inclusion_rule_id, person_id, event_id
-    FROM (@eventTable) pe
-    @additionalCriteriaQuery
+SELECT @inclusion_rule_id as inclusion_rule_id, person_id, event_id
+FROM (@eventTable) pe
+@additionalCriteriaQuery
     """
 
     INCLUSION_RULE_TEMP_TABLE_TEMPLATE = """
-    CREATE TABLE #inclusion_rules (rule_sequence int);
-    INSERT INTO #inclusion_rules (rule_sequence)
-    @inclusionRuleUnions;
+CREATE TABLE #inclusion_rules (rule_sequence int);
+INSERT INTO #inclusion_rules (rule_sequence)
+@inclusionRuleUnions;
     """
 
     CENSORING_QUERY_TEMPLATE = """
-    SELECT person_id, event_id, start_date as end_date
-    FROM (@criteriaQuery) C
+SELECT person_id, event_id, start_date as end_date
+FROM (@criteriaQuery) C
     """
 
     EVENT_TABLE_EXPRESSION_TEMPLATE = """
-    SELECT person_id, event_id, start_date, end_date, visit_occurrence_id, sort_date
-    FROM (@eventQuery) E
+SELECT person_id, event_id, start_date, end_date, visit_occurrence_id, sort_date
+FROM (@eventQuery) E
     """
 
     DEMOGRAPHIC_CRITERIA_QUERY_TEMPLATE = """
-    SELECT @indexId as index_id, person_id, event_id
-    FROM (@eventTable) E
-    INNER JOIN @cdm_database_schema.PERSON P ON E.person_id = P.person_id
-    @whereClause
+SELECT @indexId as index_id, person_id, event_id
+FROM (@eventTable) E
+INNER JOIN @cdm_database_schema.PERSON P ON E.person_id = P.person_id
+@whereClause
     """
 
     COHORT_INCLUSION_ANALYSIS_TEMPLATE = """
-    SELECT @inclusionImpactMode as inclusion_rule_id, person_id, event_id
-    FROM (@eventTable) E
+SELECT @inclusionImpactMode as inclusion_rule_id, person_id, event_id
+FROM (@eventTable) E
     """
 
     COHORT_CENSORED_STATS_TEMPLATE = """
-    SELECT person_id, event_id, start_date, end_date
-    FROM #final_cohort
+SELECT person_id, event_id, start_date, end_date
+FROM #final_cohort
     """
 
     INCLUDED_EVENTS_TEMPLATE = """
@@ -236,21 +236,21 @@ FROM (
 
     # Strategy templates
     DATE_OFFSET_STRATEGY_TEMPLATE = """
-    CREATE TABLE #strategy_ends (event_id bigint, person_id bigint, end_date date);
-    INSERT INTO #strategy_ends (event_id, person_id, end_date)
-    SELECT event_id, person_id, DATEADD(day, @offset, @dateField) as end_date
-    FROM (@eventTable) E;
+CREATE TABLE #strategy_ends (event_id bigint, person_id bigint, end_date date);
+INSERT INTO #strategy_ends (event_id, person_id, end_date)
+SELECT event_id, person_id, DATEADD(day, @offset, @dateField) as end_date
+FROM (@eventTable) E;
     """
 
     CUSTOM_ERA_STRATEGY_TEMPLATE = """
-    CREATE TABLE #strategy_ends (event_id bigint, person_id bigint, end_date date);
-    INSERT INTO #strategy_ends (event_id, person_id, end_date)
-    SELECT E.event_id, E.person_id, DATEADD(day, @offset, @drugExposureEndDateExpression) as end_date
-    FROM (@eventTable) E
-    INNER JOIN @cdm_database_schema.DRUG_EXPOSURE DE ON E.person_id = DE.person_id
-    WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id = @drugCodesetId)
-        AND DE.drug_exposure_start_date <= E.end_date
-        AND DATEADD(day, @gapDays, DE.drug_exposure_end_date) >= E.start_date;
+CREATE TABLE #strategy_ends (event_id bigint, person_id bigint, end_date date);
+INSERT INTO #strategy_ends (event_id, person_id, end_date)
+SELECT E.event_id, E.person_id, DATEADD(day, @offset, @drugExposureEndDateExpression) as end_date
+FROM (@eventTable) E
+INNER JOIN @cdm_database_schema.DRUG_EXPOSURE DE ON E.person_id = DE.person_id
+WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id = @drugCodesetId)
+    AND DE.drug_exposure_start_date <= E.end_date
+    AND DATEADD(day, @gapDays, DE.drug_exposure_end_date) >= E.start_date;
     """
 
     DEFAULT_DRUG_EXPOSURE_END_DATE_EXPRESSION = "COALESCE(DRUG_EXPOSURE_END_DATE, DATEADD(day,DAYS_SUPPLY,DRUG_EXPOSURE_START_DATE), DATEADD(day,1,DRUG_EXPOSURE_START_DATE))"
