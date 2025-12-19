@@ -113,6 +113,9 @@ class MarkdownRender:
         markdown_parts.append("### Cohort Exit\n")
         if cohort_expression.end_strategy:
             markdown_parts.append(self._render_end_strategy(cohort_expression.end_strategy))
+        else:
+            # Default end strategy when none is specified (continuous observation)
+            markdown_parts.append("The person exits the cohort at the end of continuous observation.\n")
         
         # Censor criteria
         if cohort_expression.censoring_criteria:
@@ -196,7 +199,7 @@ class MarkdownRender:
         Returns:
             Concept set name in quotes, or default name
         """
-        if not codeset_id:
+        if codeset_id is None:
             return default_name
         
         # Find concept set by ID
@@ -548,7 +551,7 @@ class MarkdownRender:
         
         # Render each primary criteria
         for i, criteria in enumerate(primary_criteria.criteria_list, 1):
-            criteria_parts.append(f"{i}. {self._render_criteria(criteria, level=0, is_plural=False)}")
+            criteria_parts.append(f"{i}. {self._render_criteria(criteria, level=0, is_plural=True)}")
             criteria_parts.append("")
         
         # Add primary limit if not "All"
@@ -1466,6 +1469,60 @@ class MarkdownRender:
                            index_label: str = "cohort entry") -> str:
         """Render Measurement criteria."""
         attrs = self._build_criteria_attributes(criteria, count_criteria, index_label)
+        
+        # Add measurement-specific attributes
+        if criteria.measurement_type:
+            exclude_str = "is not:" if getattr(criteria, 'measurement_type_exclude', False) else "is:"
+            measurement_type_str = self._format_concept_list(criteria.measurement_type)
+            attrs.append(f"a measurement type that {exclude_str} {measurement_type_str}")
+        
+        if criteria.measurement_type_cs:
+            measurement_type_str = self._format_concept_set_selection(criteria.measurement_type_cs, "any measurement")
+            attrs.append(f"a measurement type concept {measurement_type_str} concept set")
+        
+        if criteria.operator:
+            operator_str = self._format_concept_list(criteria.operator)
+            attrs.append(f"operator: {operator_str}")
+        
+        if criteria.operator_cs:
+            operator_str = self._format_concept_set_selection(criteria.operator_cs, "any operator")
+            attrs.append(f"an operator concept {operator_str} concept set")
+        
+        if criteria.value_as_number:
+            value_str = self._format_numeric_range(criteria.value_as_number)
+            attrs.append(f"numeric value {value_str}")
+        
+        if criteria.value_as_string:
+            value_str = self._format_text_filter(criteria.value_as_string)
+            attrs.append(f"value as string {value_str}")
+        
+        if criteria.unit:
+            unit_str = self._format_concept_list(criteria.unit)
+            attrs.append(f"unit: {unit_str}")
+        
+        if criteria.unit_cs:
+            unit_str = self._format_concept_set_selection(criteria.unit_cs, "any unit")
+            attrs.append(f"a unit concept {unit_str} concept set")
+        
+        if criteria.range_low:
+            range_str = self._format_numeric_range(criteria.range_low)
+            attrs.append(f"range low {range_str}")
+        
+        if criteria.range_high:
+            range_str = self._format_numeric_range(criteria.range_high)
+            attrs.append(f"range high {range_str}")
+        
+        if criteria.provider_specialty_cs:
+            provider_str = self._format_concept_set_selection(criteria.provider_specialty_cs, "any specialty")
+            attrs.append(f"a provider specialty concept {provider_str} concept set")
+        
+        if criteria.visit_type:
+            visit_str = self._format_concept_list(criteria.visit_type)
+            attrs.append(f"a visit occurrence that is: {visit_str}")
+        
+        if criteria.visit_type_cs:
+            visit_str = self._format_concept_set_selection(criteria.visit_type_cs, "any visit")
+            attrs.append(f"a visit concept {visit_str} concept set")
         
         codeset_name = self._get_concept_set_name(criteria.codeset_id, "any measurement")
         plural = "s" if (is_plural and not criteria.first) else ""

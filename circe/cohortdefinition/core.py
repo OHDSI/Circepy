@@ -393,7 +393,7 @@ class CriteriaGroup(BaseModel):
                         criteria_data = criteria_dict[key]
                         break
                     
-                    if criteria_type and criteria_data:
+                    if criteria_type and criteria_data is not None:
                         # Try to deserialize the inner criteria to the specific type
                         from .criteria import (
                             ConditionOccurrence, DrugExposure, ProcedureOccurrence,
@@ -479,7 +479,7 @@ class CriteriaGroup(BaseModel):
                         criteria_data = item_copy[key]
                         break
                 
-                if criteria_type and criteria_data:
+                if criteria_type and criteria_data is not None:
                     # Convert to CorelatedCriteria structure
                     corelated_dict = {
                         'criteria': {criteria_type: criteria_data}
@@ -514,7 +514,7 @@ class CriteriaGroup(BaseModel):
                     criteria_data = item_copy[key]
                     break
                 
-                if criteria_type and criteria_data:
+                if criteria_type and criteria_data is not None:
                     # Convert to CorelatedCriteria structure
                     corelated_dict = {'criteria': {criteria_type: criteria_data}}
                     try:
