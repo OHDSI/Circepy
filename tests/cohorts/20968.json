@@ -1,0 +1,4363 @@
+{
+  "ConceptSets": [
+    {
+      "id": 0,
+      "name": "Prostate cancer",
+      "expression": {
+        "items": [
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Clinical Finding",
+              "CONCEPT_CODE": "399068003",
+              "CONCEPT_ID": 4163261,
+              "CONCEPT_NAME": "Malignant tumor of prostate",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "includeDescendants": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "name": "[PL] Any secondary malignancies or metastasis",
+      "expression": {
+        "items": [
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Metastasis",
+              "CONCEPT_CODE": "OMOP4998856",
+              "CONCEPT_ID": 36769180,
+              "CONCEPT_NAME": "Metastasis",
+              "DOMAIN_ID": "Measurement",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "Cancer Modifier"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "4-dig billing code",
+              "CONCEPT_CODE": "196.1",
+              "CONCEPT_ID": 44834501,
+              "CONCEPT_NAME": "Secondary and unspecified malignant neoplasm of intrathoracic lymph nodes",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "ICD9CM"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "4-dig billing code",
+              "CONCEPT_CODE": "196.9",
+              "CONCEPT_ID": 44836848,
+              "CONCEPT_NAME": "Secondary and unspecified malignant neoplasm of lymph nodes, site unspecified",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "ICD9CM"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "4-dig billing code",
+              "CONCEPT_CODE": "196.8",
+              "CONCEPT_ID": 44828745,
+              "CONCEPT_NAME": "Secondary and unspecified malignant neoplasm of lymph nodes of multiple sites",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "ICD9CM"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "4-dig billing code",
+              "CONCEPT_CODE": "196.3",
+              "CONCEPT_ID": 44821738,
+              "CONCEPT_NAME": "Secondary and unspecified malignant neoplasm of lymph nodes of axilla and upper limb",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "ICD9CM"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "4-dig billing code",
+              "CONCEPT_CODE": "196.0",
+              "CONCEPT_ID": 44832135,
+              "CONCEPT_NAME": "Secondary and unspecified malignant neoplasm of lymph nodes of head, face, and neck",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "ICD9CM"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "4-dig billing code",
+              "CONCEPT_CODE": "196.5",
+              "CONCEPT_ID": 44829821,
+              "CONCEPT_NAME": "Secondary and unspecified malignant neoplasm of lymph nodes of inguinal region and lower limb",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "ICD9CM"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "4-dig billing code",
+              "CONCEPT_CODE": "196.2",
+              "CONCEPT_ID": 44821737,
+              "CONCEPT_NAME": "Secondary and unspecified malignant neoplasm of intra-abdominal lymph nodes",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "ICD9CM"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "4-char billing code",
+              "CONCEPT_CODE": "C77.3",
+              "CONCEPT_ID": 35206322,
+              "CONCEPT_NAME": "Secondary and unspecified malignant neoplasm of axilla and upper limb lymph nodes",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "ICD10CM"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "4-char billing code",
+              "CONCEPT_CODE": "C77.4",
+              "CONCEPT_ID": 35206323,
+              "CONCEPT_NAME": "Secondary and unspecified malignant neoplasm of inguinal and lower limb lymph nodes",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "ICD10CM"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "4-char billing code",
+              "CONCEPT_CODE": "C77.2",
+              "CONCEPT_ID": 35206321,
+              "CONCEPT_NAME": "Secondary and unspecified malignant neoplasm of intra-abdominal lymph nodes",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "ICD10CM"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "4-char billing code",
+              "CONCEPT_CODE": "C77.1",
+              "CONCEPT_ID": 35206320,
+              "CONCEPT_NAME": "Secondary and unspecified malignant neoplasm of intrathoracic lymph nodes",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "ICD10CM"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "3-char nonbill code",
+              "CONCEPT_CODE": "C77",
+              "CONCEPT_ID": 1567618,
+              "CONCEPT_NAME": "Secondary and unspecified malignant neoplasm of lymph nodes",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "ICD10CM"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "4-char billing code",
+              "CONCEPT_CODE": "C77.0",
+              "CONCEPT_ID": 35206319,
+              "CONCEPT_NAME": "Secondary and unspecified malignant neoplasm of lymph nodes of head, face and neck",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "ICD10CM"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "4-char billing code",
+              "CONCEPT_CODE": "C77.8",
+              "CONCEPT_ID": 35206325,
+              "CONCEPT_NAME": "Secondary and unspecified malignant neoplasm of lymph nodes of multiple regions",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "ICD10CM"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "4-char billing code",
+              "CONCEPT_CODE": "C77.9",
+              "CONCEPT_ID": 35206326,
+              "CONCEPT_NAME": "Secondary and unspecified malignant neoplasm of lymph node, unspecified",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "ICD10CM"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Staging/Grading",
+              "CONCEPT_CODE": "Stage-M1",
+              "CONCEPT_ID": 1633615,
+              "CONCEPT_NAME": "Stage M1",
+              "DOMAIN_ID": "Measurement",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "Cancer Modifier"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Staging/Grading",
+              "CONCEPT_CODE": "AJCC/UICC-M1",
+              "CONCEPT_ID": 1635142,
+              "CONCEPT_NAME": "AJCC/UICC M1 Category",
+              "DOMAIN_ID": "Measurement",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "Cancer Modifier"
+            },
+            "includeDescendants": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "name": "Any cancer (excl. prostate cancer)",
+      "expression": {
+        "items": [
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "363346000",
+              "CONCEPT_ID": 443392,
+              "CONCEPT_NAME": "Malignant neoplastic disease",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "254651007",
+              "CONCEPT_ID": 4111921,
+              "CONCEPT_NAME": "Squamous cell carcinoma of skin",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true,
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "254701007",
+              "CONCEPT_ID": 4112752,
+              "CONCEPT_NAME": "Basal cell carcinoma of skin",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true,
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "128462008",
+              "CONCEPT_ID": 432851,
+              "CONCEPT_NAME": "Metastatic malignant neoplasm",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true,
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "109386008",
+              "CONCEPT_ID": 258981,
+              "CONCEPT_NAME": "Kaposi's sarcoma of skin",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "313250007",
+              "CONCEPT_ID": 4197475,
+              "CONCEPT_NAME": "Malignant neoplasm of lower eyelid",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "188089003",
+              "CONCEPT_ID": 4095598,
+              "CONCEPT_NAME": "Malignant neoplasm of skin of ear and external auditory canal",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "372124007",
+              "CONCEPT_ID": 4162993,
+              "CONCEPT_NAME": "Malignant neoplasm of skin of lower limb",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "188099008",
+              "CONCEPT_ID": 4092380,
+              "CONCEPT_NAME": "Malignant neoplasm of skin of nose (external)",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "372128005",
+              "CONCEPT_ID": 4162994,
+              "CONCEPT_NAME": "Malignant neoplasm of skin of upper limb",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "313249007",
+              "CONCEPT_ID": 4197474,
+              "CONCEPT_NAME": "Malignant neoplasm of upper eyelid",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "109264009",
+              "CONCEPT_ID": 133974,
+              "CONCEPT_NAME": "Overlapping malignant neoplasm of skin",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "94047004",
+              "CONCEPT_ID": 139750,
+              "CONCEPT_NAME": "Primary malignant neoplasm of skin",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "372123001",
+              "CONCEPT_ID": 4157456,
+              "CONCEPT_NAME": "Primary malignant neoplasm of skin head and neck",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "94012007",
+              "CONCEPT_ID": 4247348,
+              "CONCEPT_NAME": "Primary malignant neoplasm of skin of breast",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "94017001",
+              "CONCEPT_ID": 4247350,
+              "CONCEPT_NAME": "Primary malignant neoplasm of skin of ear",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "94021008",
+              "CONCEPT_ID": 435755,
+              "CONCEPT_NAME": "Primary malignant neoplasm of skin of eyelid",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "94022001",
+              "CONCEPT_ID": 136917,
+              "CONCEPT_NAME": "Primary malignant neoplasm of skin of face",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "94032008",
+              "CONCEPT_ID": 136915,
+              "CONCEPT_NAME": "Primary malignant neoplasm of skin of lip",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "94043000",
+              "CONCEPT_ID": 133147,
+              "CONCEPT_NAME": "Primary malignant neoplasm of skin of trunk",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "1082051000119106",
+              "CONCEPT_ID": 605478,
+              "CONCEPT_NAME": "Primary squamous cell carcinoma of skin of left upper limb",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "1082171000119101",
+              "CONCEPT_ID": 602164,
+              "CONCEPT_NAME": "Primary squamous cell carcinoma of skin of right upper limb",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "24111000119105",
+              "CONCEPT_ID": 37018872,
+              "CONCEPT_NAME": "Primary squamous cell carcinoma of upper limb",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "231833004",
+              "CONCEPT_ID": 4335884,
+              "CONCEPT_NAME": "Sebaceous adenocarcinoma of eyelid",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "255084004",
+              "CONCEPT_ID": 4116241,
+              "CONCEPT_NAME": "Squamous cell carcinoma of anal margin",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "231831002",
+              "CONCEPT_ID": 4338759,
+              "CONCEPT_NAME": "Squamous cell carcinoma of eyelid",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "448930008",
+              "CONCEPT_ID": 40492482,
+              "CONCEPT_NAME": "Squamous cell carcinoma of nose",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "403894000",
+              "CONCEPT_ID": 4295624,
+              "CONCEPT_NAME": "Squamous cell carcinoma of skin of ear",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "403892001",
+              "CONCEPT_ID": 4298026,
+              "CONCEPT_NAME": "Squamous cell carcinoma of skin of face",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "403898002",
+              "CONCEPT_ID": 4298028,
+              "CONCEPT_NAME": "Squamous cell carcinoma of skin of lower extremity",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "285308002",
+              "CONCEPT_ID": 4109067,
+              "CONCEPT_NAME": "Squamous cell carcinoma of skin of lower lip",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "403899005",
+              "CONCEPT_ID": 4300557,
+              "CONCEPT_NAME": "Squamous cell carcinoma of skin of trunk",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "93875005",
+              "CONCEPT_ID": 201518,
+              "CONCEPT_NAME": "Primary malignant neoplasm of lower limb",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "94116007",
+              "CONCEPT_ID": 81239,
+              "CONCEPT_NAME": "Primary malignant neoplasm of upper limb",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "35868009",
+              "CONCEPT_ID": 199771,
+              "CONCEPT_NAME": "Carcinoid syndrome",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "109993000",
+              "CONCEPT_ID": 4304484,
+              "CONCEPT_NAME": "Chronic myeloproliferative disorder (clinical)",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "80113008",
+              "CONCEPT_ID": 441364,
+              "CONCEPT_NAME": "Complication of the puerperium",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "109994006",
+              "CONCEPT_ID": 438383,
+              "CONCEPT_NAME": "Essential thrombocythemia",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "58961005",
+              "CONCEPT_ID": 133511,
+              "CONCEPT_NAME": "Lethal midline granuloma",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "118615008",
+              "CONCEPT_ID": 4040379,
+              "CONCEPT_NAME": "Malignant mast cell tumor (clinical)",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "10745291000119103",
+              "CONCEPT_ID": 45757101,
+              "CONCEPT_NAME": "Malignant neoplastic disease in mother complicating childbirth",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "10749871000119100",
+              "CONCEPT_ID": 45757107,
+              "CONCEPT_NAME": "Malignant neoplastic disease in pregnancy",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "1260217004",
+              "CONCEPT_ID": 37166856,
+              "CONCEPT_NAME": "Myelodysplastic neoplasm with low blasts and SF3B1 mutation",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "109995007",
+              "CONCEPT_ID": 138994,
+              "CONCEPT_NAME": "Myelodysplastic syndrome (clinical)",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "398623004",
+              "CONCEPT_ID": 136949,
+              "CONCEPT_NAME": "Myelodysplastic syndrome with excess blasts",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "415283002",
+              "CONCEPT_ID": 4190771,
+              "CONCEPT_NAME": "Myelodysplastic syndrome with excess blasts-1",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "415284008",
+              "CONCEPT_ID": 4187355,
+              "CONCEPT_NAME": "Myelodysplastic syndrome with excess blasts-2",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "277597005",
+              "CONCEPT_ID": 136950,
+              "CONCEPT_NAME": "Myelodysplastic syndrome with isolated del(5q)",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "1260268001",
+              "CONCEPT_ID": 37166869,
+              "CONCEPT_NAME": "Myelodysplastic syndrome with low blasts",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "109998009",
+              "CONCEPT_ID": 4003186,
+              "CONCEPT_NAME": "Myelodysplastic syndrome with ring sideroblasts and single lineage dysplasia",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "118616009",
+              "CONCEPT_ID": 432582,
+              "CONCEPT_NAME": "Neoplastic disease of uncertain behavior",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "405546008",
+              "CONCEPT_ID": 4231817,
+              "CONCEPT_NAME": "Pericardial effusion co-occurrent and due to malignant neoplasm of pericardium",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "860792009",
+              "CONCEPT_ID": 3655266,
+              "CONCEPT_NAME": "Pleural effusion due to malignant neoplastic disease",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "109992005",
+              "CONCEPT_ID": 135214,
+              "CONCEPT_NAME": "Polycythemia vera (clinical)",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "307651005",
+              "CONCEPT_ID": 140064,
+              "CONCEPT_NAME": "Primary myelofibrosis",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "448212009",
+              "CONCEPT_ID": 40488896,
+              "CONCEPT_NAME": "Anaplastic large cell lymphoma, ALK negative",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "445105005",
+              "CONCEPT_ID": 40482072,
+              "CONCEPT_NAME": "Blastic plasmacytoid dendritic cell neoplasm",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "420120006",
+              "CONCEPT_ID": 4170421,
+              "CONCEPT_NAME": "Gastrointestinal stromal tumor",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "421418009",
+              "CONCEPT_ID": 4225982,
+              "CONCEPT_NAME": "Mature T-cell AND/OR NK cell neoplasm",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "126675008",
+              "CONCEPT_ID": 4054513,
+              "CONCEPT_NAME": "Neoplasm of accessory sinus",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "371481006",
+              "CONCEPT_ID": 4160342,
+              "CONCEPT_NAME": "Neoplasm of eye region",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "126920004",
+              "CONCEPT_ID": 4131761,
+              "CONCEPT_NAME": "Neoplasm of placenta",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "422172005",
+              "CONCEPT_ID": 4227653,
+              "CONCEPT_NAME": "T-cell AND/OR NK-cell neoplasm",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            }
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "860792009",
+              "CONCEPT_ID": 3655266,
+              "CONCEPT_NAME": "Pleural effusion due to malignant neoplastic disease",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "363346000",
+              "CONCEPT_ID": 443392,
+              "CONCEPT_NAME": "Malignant neoplastic disease",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "363461003",
+              "CONCEPT_ID": 4181477,
+              "CONCEPT_NAME": "Malignant neoplasm of eye",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "94034009",
+              "CONCEPT_ID": 434291,
+              "CONCEPT_NAME": "Primary malignant neoplasm of skin of neck",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "443648003",
+              "CONCEPT_ID": 40482750,
+              "CONCEPT_NAME": "Malignant neoplasm of ear",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "94045007",
+              "CONCEPT_ID": 440658,
+              "CONCEPT_NAME": "Primary malignant neoplasm of skin of upper limb",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true,
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "765205004",
+              "CONCEPT_ID": 35622958,
+              "CONCEPT_NAME": "Disorder in remission",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true,
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "429114002",
+              "CONCEPT_ID": 4179980,
+              "CONCEPT_NAME": "Malignant basal cell neoplasm of skin",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "372130007",
+              "CONCEPT_ID": 4155297,
+              "CONCEPT_NAME": "Malignant neoplasm of skin",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "ICDO Condition",
+              "CONCEPT_CODE": "8090/3-NULL",
+              "CONCEPT_ID": 42513061,
+              "CONCEPT_NAME": "Neoplasm defined only by histology: Basal cell carcinoma, NOS",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "ICDO3"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "402815007",
+              "CONCEPT_ID": 4300118,
+              "CONCEPT_NAME": "Squamous cell carcinoma",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true,
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "429114002",
+              "CONCEPT_ID": 4179980,
+              "CONCEPT_NAME": "Malignant basal cell neoplasm of skin",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "ICDO Condition",
+              "CONCEPT_CODE": "8090/3-NULL",
+              "CONCEPT_ID": 42513061,
+              "CONCEPT_NAME": "Neoplasm defined only by histology: Basal cell carcinoma, NOS",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "ICDO3"
+            },
+            "isExcluded": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "399068003",
+              "CONCEPT_ID": 4163261,
+              "CONCEPT_NAME": "Malignant tumor of prostate",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true,
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Staging/Grading",
+              "CONCEPT_CODE": "AJCC/UICC-M1",
+              "CONCEPT_ID": 1635142,
+              "CONCEPT_NAME": "AJCC/UICC M1 Category",
+              "DOMAIN_ID": "Measurement",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "Cancer Modifier"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Metastasis",
+              "CONCEPT_CODE": "OMOP4998856",
+              "CONCEPT_ID": 36769180,
+              "CONCEPT_NAME": "Metastasis",
+              "DOMAIN_ID": "Measurement",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "Cancer Modifier"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Staging/Grading",
+              "CONCEPT_CODE": "Stage-M1",
+              "CONCEPT_ID": 1633615,
+              "CONCEPT_NAME": "Stage M1",
+              "DOMAIN_ID": "Measurement",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "Cancer Modifier"
+            },
+            "includeDescendants": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "name": "Diagnosis of hormone sensitive malignancy",
+      "expression": {
+        "items": [
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "417742002",
+              "CONCEPT_ID": 4167363,
+              "CONCEPT_NAME": "Hormone receptor positive tumor",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "includeDescendants": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "name": "[PL] ADT - medical castration (LHRH or GnRH agonists and antagonists)",
+      "expression": {
+        "items": [
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "50610",
+              "CONCEPT_ID": 1366310,
+              "CONCEPT_NAME": "goserelin",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "50975",
+              "CONCEPT_ID": 1366773,
+              "CONCEPT_NAME": "histrelin",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "42375",
+              "CONCEPT_ID": 1351541,
+              "CONCEPT_NAME": "leuprolide",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "38782",
+              "CONCEPT_ID": 1343039,
+              "CONCEPT_NAME": "triptorelin",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "475230",
+              "CONCEPT_ID": 19058410,
+              "CONCEPT_NAME": "degarelix",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "name": "[PL] ADT - non-specific procedure",
+      "expression": {
+        "items": [
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Procedure",
+              "CONCEPT_CODE": "707266006",
+              "CONCEPT_ID": 45768763,
+              "CONCEPT_NAME": "Androgen deprivation therapy",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "includeDescendants": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "name": "[PL] ADT - surgical castration procedures (bilateral)",
+      "expression": {
+        "items": [
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "PT",
+              "CONCEPT_CODE": "10049628",
+              "CONCEPT_ID": 37521407,
+              "CONCEPT_NAME": "Bilateral orchidectomy",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "C",
+              "STANDARD_CONCEPT_CAPTION": "Classification",
+              "VOCABULARY_ID": "MedDRA"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Procedure",
+              "CONCEPT_CODE": "386634006",
+              "CONCEPT_ID": 4304921,
+              "CONCEPT_NAME": "Bilateral orchidectomy",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "ICD10PCS",
+              "CONCEPT_CODE": "0VTC0ZZ",
+              "CONCEPT_ID": 2780498,
+              "CONCEPT_NAME": "Resection of Bilateral Testes, Open Approach",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "ICD10PCS"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "ICD10PCS",
+              "CONCEPT_CODE": "0VTC4ZZ",
+              "CONCEPT_ID": 2780499,
+              "CONCEPT_NAME": "Resection of Bilateral Testes, Percutaneous Endoscopic Approach",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "ICD10PCS"
+            },
+            "includeDescendants": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "name": "[PL] ADT - surgical castration procedures (CPTs that require modifier codes)",
+      "expression": {
+        "items": [
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "CPT4",
+              "CONCEPT_CODE": "54535",
+              "CONCEPT_ID": 2109976,
+              "CONCEPT_NAME": "Orchiectomy, radical, for tumor; with abdominal exploration",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "CPT4"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "CPT4",
+              "CONCEPT_CODE": "54690",
+              "CONCEPT_ID": 2109986,
+              "CONCEPT_NAME": "Laparoscopy, surgical; orchiectomy",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "CPT4"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "CPT4",
+              "CONCEPT_CODE": "54530",
+              "CONCEPT_ID": 2109975,
+              "CONCEPT_NAME": "Orchiectomy, radical, for tumor; inguinal approach",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "CPT4"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "CPT4",
+              "CONCEPT_CODE": "54522",
+              "CONCEPT_ID": 2109974,
+              "CONCEPT_NAME": "Orchiectomy, partial",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "CPT4"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "CPT4",
+              "CONCEPT_CODE": "54520",
+              "CONCEPT_ID": 2109973,
+              "CONCEPT_NAME": "Orchiectomy, simple (including subcapsular), with or without testicular prosthesis, scrotal or inguinal approach",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "CPT4"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "CPT4",
+              "CONCEPT_CODE": "00928",
+              "CONCEPT_ID": 2101582,
+              "CONCEPT_NAME": "Anesthesia for procedures on male genitalia (including open urethral procedures); radical orchiectomy, abdominal",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "CPT4"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "CPT4",
+              "CONCEPT_CODE": "00926",
+              "CONCEPT_ID": 2101071,
+              "CONCEPT_NAME": "Anesthesia for procedures on male genitalia (including open urethral procedures); radical orchiectomy, inguinal",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "CPT4"
+            },
+            "includeDescendants": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "name": "[PL] ADT - surgical castration procedures (left)",
+      "expression": {
+        "items": [
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "ICD10PCS Hierarchy",
+              "CONCEPT_CODE": "0VTB",
+              "CONCEPT_ID": 2867878,
+              "CONCEPT_NAME": "Medical and Surgical @ Male Reproductive System @ Resection @ Testis, Left",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "ICD10PCS"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "ICD10PCS",
+              "CONCEPT_CODE": "0VTB0ZZ",
+              "CONCEPT_ID": 2780496,
+              "CONCEPT_NAME": "Resection of Left Testis, Open Approach",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "ICD10PCS"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "ICD10PCS",
+              "CONCEPT_CODE": "0VTB4ZZ",
+              "CONCEPT_ID": 2780497,
+              "CONCEPT_NAME": "Resection of Left Testis, Percutaneous Endoscopic Approach",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "ICD10PCS"
+            },
+            "includeDescendants": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "name": "[PL] ADT - surgical castration procedures (right)",
+      "expression": {
+        "items": [
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "ICD10PCS Hierarchy",
+              "CONCEPT_CODE": "0VT9",
+              "CONCEPT_ID": 2841757,
+              "CONCEPT_NAME": "Medical and Surgical @ Male Reproductive System @ Resection @ Testis, Right",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "ICD10PCS"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "ICD10PCS",
+              "CONCEPT_CODE": "0VT90ZZ",
+              "CONCEPT_ID": 2780494,
+              "CONCEPT_NAME": "Resection of Right Testis, Open Approach",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "ICD10PCS"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "ICD10PCS",
+              "CONCEPT_CODE": "0VT94ZZ",
+              "CONCEPT_ID": 2780495,
+              "CONCEPT_NAME": "Resection of Right Testis, Percutaneous Endoscopic Approach",
+              "DOMAIN_ID": "Procedure",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "ICD10PCS"
+            },
+            "includeDescendants": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "name": "Diagnosis of hormone resistant malignancy",
+      "expression": {
+        "items": [
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Disorder",
+              "CONCEPT_CODE": "438628005",
+              "CONCEPT_ID": 4230400,
+              "CONCEPT_NAME": "Hormone receptor negative neoplasm",
+              "DOMAIN_ID": "Condition",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "includeDescendants": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "name": "[ASSURE indications] Raised prostate-specific antigen (PSA)",
+      "expression": {
+        "items": [
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Clinical Finding",
+              "CONCEPT_CODE": "396152005",
+              "CONCEPT_ID": 4245252,
+              "CONCEPT_NAME": "Prostate specific antigen above reference range",
+              "DOMAIN_ID": "Measurement",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "includeDescendants": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "name": "[ASSURE indications] Prostate cancer treatments solely indicated for mCRPC",
+      "expression": {
+        "items": [
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "996051",
+              "CONCEPT_ID": 40222431,
+              "CONCEPT_NAME": "cabazitaxel",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "1546450",
+              "CONCEPT_ID": 45775578,
+              "CONCEPT_NAME": "radium",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "7005",
+              "CONCEPT_ID": 1309188,
+              "CONCEPT_NAME": "mitoxantrone",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "997261",
+              "CONCEPT_ID": 40224095,
+              "CONCEPT_NAME": "sipuleucel-T",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "3390",
+              "CONCEPT_ID": 1525866,
+              "CONCEPT_NAME": "diethylstilbestrol",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "4089",
+              "CONCEPT_ID": 1349025,
+              "CONCEPT_NAME": "estramustine",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "34119",
+              "CONCEPT_ID": 19094980,
+              "CONCEPT_NAME": "polyestradiol",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "2555",
+              "CONCEPT_ID": 1397599,
+              "CONCEPT_NAME": "cisplatin",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "40048",
+              "CONCEPT_ID": 1344905,
+              "CONCEPT_NAME": "carboplatin",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "4179",
+              "CONCEPT_ID": 1350504,
+              "CONCEPT_NAME": "etoposide",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "1547545",
+              "CONCEPT_ID": 45775965,
+              "CONCEPT_NAME": "pembrolizumab",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "HCPCS",
+              "CONCEPT_CODE": "A9606",
+              "CONCEPT_ID": 45890601,
+              "CONCEPT_NAME": "Radium ra-223 dichloride, therapeutic, per microcurie",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "N",
+              "STANDARD_CONCEPT_CAPTION": "Non-Standard",
+              "VOCABULARY_ID": "HCPCS"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "1862579",
+              "CONCEPT_ID": 1718850,
+              "CONCEPT_NAME": "rucaparib",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Ingredient",
+              "CONCEPT_CODE": "1597582",
+              "CONCEPT_ID": 45892579,
+              "CONCEPT_NAME": "olaparib",
+              "DOMAIN_ID": "Drug",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "RxNorm"
+            },
+            "includeDescendants": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 13,
+      "name": "Prostate specific antigen measurement",
+      "expression": {
+        "items": [
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Procedure",
+              "CONCEPT_CODE": "63476009",
+              "CONCEPT_ID": 4272032,
+              "CONCEPT_NAME": "Prostate specific antigen measurement",
+              "DOMAIN_ID": "Measurement",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "includeDescendants": true
+          },
+          {
+            "concept": {
+              "CONCEPT_CLASS_ID": "Procedure",
+              "CONCEPT_CODE": "395145001",
+              "CONCEPT_ID": 4194418,
+              "CONCEPT_NAME": "Free prostate specific antigen level",
+              "DOMAIN_ID": "Measurement",
+              "INVALID_REASON": "V",
+              "INVALID_REASON_CAPTION": "Valid",
+              "STANDARD_CONCEPT": "S",
+              "STANDARD_CONCEPT_CAPTION": "Standard",
+              "VOCABULARY_ID": "SNOMED"
+            },
+            "isExcluded": true,
+            "includeDescendants": true
+          }
+        ]
+      }
+    }
+  ],
+  "PrimaryCriteria": {
+    "CriteriaList": [
+      {
+        "ConditionOccurrence": {
+          "CorrelatedCriteria": {
+            "Type": "ANY",
+            "CriteriaList": [
+              {
+                "Criteria": {
+                  "ConditionOccurrence": {
+                    "CorrelatedCriteria": {
+                      "Type": "ALL",
+                      "CriteriaList": [
+                        {
+                          "Criteria": {
+                            "ConditionOccurrence": {
+                              "CodesetId": 0
+                            }
+                          },
+                          "StartWindow": {
+                            "Start": {
+                              "Coeff": -1
+                            },
+                            "End": {
+                              "Days": 0,
+                              "Coeff": -1
+                            },
+                            "UseEventEnd": false
+                          },
+                          "IgnoreObservationPeriod": true,
+                          "Occurrence": {
+                            "Type": 2,
+                            "Count": 1
+                          }
+                        }
+                      ],
+                      "DemographicCriteriaList": [],
+                      "Groups": []
+                    },
+                    "ConditionSourceConcept": 1
+                  }
+                },
+                "StartWindow": {
+                  "Start": {
+                    "Coeff": -1
+                  },
+                  "End": {
+                    "Days": 0,
+                    "Coeff": -1
+                  },
+                  "UseEventEnd": false
+                },
+                "IgnoreObservationPeriod": true,
+                "Occurrence": {
+                  "Type": 2,
+                  "Count": 1
+                }
+              },
+              {
+                "Criteria": {
+                  "Measurement": {
+                    "CorrelatedCriteria": {
+                      "Type": "ALL",
+                      "CriteriaList": [
+                        {
+                          "Criteria": {
+                            "ConditionOccurrence": {
+                              "CodesetId": 0
+                            }
+                          },
+                          "StartWindow": {
+                            "Start": {
+                              "Coeff": -1
+                            },
+                            "End": {
+                              "Days": 0,
+                              "Coeff": -1
+                            },
+                            "UseEventEnd": false
+                          },
+                          "IgnoreObservationPeriod": true,
+                          "Occurrence": {
+                            "Type": 2,
+                            "Count": 1
+                          }
+                        }
+                      ],
+                      "DemographicCriteriaList": [],
+                      "Groups": []
+                    },
+                    "CodesetId": 1
+                  }
+                },
+                "StartWindow": {
+                  "Start": {
+                    "Coeff": -1
+                  },
+                  "End": {
+                    "Days": 0,
+                    "Coeff": -1
+                  },
+                  "UseEventEnd": false
+                },
+                "IgnoreObservationPeriod": true,
+                "Occurrence": {
+                  "Type": 2,
+                  "Count": 1
+                }
+              }
+            ],
+            "DemographicCriteriaList": [],
+            "Groups": []
+          },
+          "CodesetId": 10
+        }
+      },
+      {
+        "Measurement": {
+          "CorrelatedCriteria": {
+            "Type": "ALL",
+            "CriteriaList": [],
+            "DemographicCriteriaList": [],
+            "Groups": [
+              {
+                "Type": "ANY",
+                "CriteriaList": [
+                  {
+                    "Criteria": {
+                      "DrugExposure": {
+                        "CodesetId": 4
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 1,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  },
+                  {
+                    "Criteria": {
+                      "ProcedureOccurrence": {
+                        "CodesetId": 5
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 1,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  },
+                  {
+                    "Criteria": {
+                      "ProcedureOccurrence": {
+                        "CodesetId": 6
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 1,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  },
+                  {
+                    "Criteria": {
+                      "ProcedureOccurrence": {
+                        "CodesetId": 7,
+                        "Modifier": [
+                          {
+                            "CONCEPT_CODE": "50",
+                            "CONCEPT_ID": 42739579,
+                            "CONCEPT_NAME": "Bilateral Procedure",
+                            "DOMAIN_ID": "Observation",
+                            "INVALID_REASON_CAPTION": "Unknown",
+                            "STANDARD_CONCEPT_CAPTION": "Unknown",
+                            "VOCABULARY_ID": "CPT4"
+                          }
+                        ]
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 1,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  }
+                ],
+                "DemographicCriteriaList": [],
+                "Groups": [
+                  {
+                    "Type": "AT_LEAST",
+                    "Count": 2,
+                    "CriteriaList": [],
+                    "DemographicCriteriaList": [],
+                    "Groups": [
+                      {
+                        "Type": "ANY",
+                        "CriteriaList": [
+                          {
+                            "Criteria": {
+                              "ProcedureOccurrence": {
+                                "CodesetId": 7,
+                                "Modifier": [
+                                  {
+                                    "CONCEPT_CODE": "LT",
+                                    "CONCEPT_ID": 45888270,
+                                    "CONCEPT_NAME": "Left side (used to identify procedures performed on the left side of the body)",
+                                    "DOMAIN_ID": "Observation",
+                                    "INVALID_REASON_CAPTION": "Unknown",
+                                    "STANDARD_CONCEPT_CAPTION": "Unknown",
+                                    "VOCABULARY_ID": "CPT4"
+                                  }
+                                ]
+                              }
+                            },
+                            "StartWindow": {
+                              "Start": {
+                                "Coeff": -1
+                              },
+                              "End": {
+                                "Days": 1,
+                                "Coeff": -1
+                              },
+                              "UseEventEnd": false
+                            },
+                            "IgnoreObservationPeriod": true,
+                            "Occurrence": {
+                              "Type": 2,
+                              "Count": 1
+                            }
+                          },
+                          {
+                            "Criteria": {
+                              "ProcedureOccurrence": {
+                                "CodesetId": 8
+                              }
+                            },
+                            "StartWindow": {
+                              "Start": {
+                                "Coeff": -1
+                              },
+                              "End": {
+                                "Days": 1,
+                                "Coeff": -1
+                              },
+                              "UseEventEnd": false
+                            },
+                            "IgnoreObservationPeriod": true,
+                            "Occurrence": {
+                              "Type": 2,
+                              "Count": 1
+                            }
+                          }
+                        ],
+                        "DemographicCriteriaList": [],
+                        "Groups": []
+                      },
+                      {
+                        "Type": "ANY",
+                        "CriteriaList": [
+                          {
+                            "Criteria": {
+                              "ProcedureOccurrence": {
+                                "CodesetId": 7,
+                                "Modifier": [
+                                  {
+                                    "CONCEPT_CODE": "RT",
+                                    "CONCEPT_ID": 45888271,
+                                    "CONCEPT_NAME": "Right side (used to identify procedures performed on the right side of the body)",
+                                    "DOMAIN_ID": "Observation",
+                                    "INVALID_REASON_CAPTION": "Unknown",
+                                    "STANDARD_CONCEPT_CAPTION": "Unknown",
+                                    "VOCABULARY_ID": "CPT4"
+                                  }
+                                ]
+                              }
+                            },
+                            "StartWindow": {
+                              "Start": {
+                                "Coeff": -1
+                              },
+                              "End": {
+                                "Days": 1,
+                                "Coeff": -1
+                              },
+                              "UseEventEnd": false
+                            },
+                            "IgnoreObservationPeriod": true,
+                            "Occurrence": {
+                              "Type": 2,
+                              "Count": 1
+                            }
+                          },
+                          {
+                            "Criteria": {
+                              "ProcedureOccurrence": {
+                                "CodesetId": 9
+                              }
+                            },
+                            "StartWindow": {
+                              "Start": {
+                                "Coeff": -1
+                              },
+                              "End": {
+                                "Days": 1,
+                                "Coeff": -1
+                              },
+                              "UseEventEnd": false
+                            },
+                            "IgnoreObservationPeriod": true,
+                            "Occurrence": {
+                              "Type": 2,
+                              "Count": 1
+                            }
+                          }
+                        ],
+                        "DemographicCriteriaList": [],
+                        "Groups": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "ANY",
+                "CriteriaList": [
+                  {
+                    "Criteria": {
+                      "ConditionOccurrence": {
+                        "CorrelatedCriteria": {
+                          "Type": "ALL",
+                          "CriteriaList": [
+                            {
+                              "Criteria": {
+                                "ConditionOccurrence": {
+                                  "CodesetId": 0
+                                }
+                              },
+                              "StartWindow": {
+                                "Start": {
+                                  "Coeff": -1
+                                },
+                                "End": {
+                                  "Days": 0,
+                                  "Coeff": -1
+                                },
+                                "UseEventEnd": false
+                              },
+                              "IgnoreObservationPeriod": true,
+                              "Occurrence": {
+                                "Type": 2,
+                                "Count": 1
+                              }
+                            }
+                          ],
+                          "DemographicCriteriaList": [],
+                          "Groups": []
+                        },
+                        "ConditionSourceConcept": 1,
+                        "First": true
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 0,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  },
+                  {
+                    "Criteria": {
+                      "Measurement": {
+                        "CorrelatedCriteria": {
+                          "Type": "ALL",
+                          "CriteriaList": [
+                            {
+                              "Criteria": {
+                                "ConditionOccurrence": {
+                                  "CodesetId": 0
+                                }
+                              },
+                              "StartWindow": {
+                                "Start": {
+                                  "Coeff": -1
+                                },
+                                "End": {
+                                  "Days": 0,
+                                  "Coeff": -1
+                                },
+                                "UseEventEnd": false
+                              },
+                              "IgnoreObservationPeriod": true,
+                              "Occurrence": {
+                                "Type": 2,
+                                "Count": 1
+                              }
+                            }
+                          ],
+                          "DemographicCriteriaList": [],
+                          "Groups": []
+                        },
+                        "CodesetId": 1,
+                        "First": true
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 0,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  }
+                ],
+                "DemographicCriteriaList": [],
+                "Groups": []
+              }
+            ]
+          },
+          "CodesetId": 11
+        }
+      },
+      {
+        "DrugExposure": {
+          "CorrelatedCriteria": {
+            "Type": "ALL",
+            "CriteriaList": [
+              {
+                "Criteria": {
+                  "ConditionOccurrence": {
+                    "CorrelatedCriteria": {
+                      "Type": "ALL",
+                      "CriteriaList": [
+                        {
+                          "Criteria": {
+                            "ConditionOccurrence": {
+                              "CodesetId": 0
+                            }
+                          },
+                          "StartWindow": {
+                            "Start": {
+                              "Coeff": -1
+                            },
+                            "End": {
+                              "Days": 0,
+                              "Coeff": -1
+                            },
+                            "UseEventEnd": false
+                          },
+                          "Occurrence": {
+                            "Type": 2,
+                            "Count": 1
+                          }
+                        }
+                      ],
+                      "DemographicCriteriaList": [],
+                      "Groups": []
+                    },
+                    "CodesetId": 1,
+                    "First": true
+                  }
+                },
+                "StartWindow": {
+                  "Start": {
+                    "Coeff": -1
+                  },
+                  "End": {
+                    "Days": 0,
+                    "Coeff": -1
+                  },
+                  "UseEventEnd": false
+                },
+                "Occurrence": {
+                  "Type": 2,
+                  "Count": 1
+                }
+              }
+            ],
+            "DemographicCriteriaList": [],
+            "Groups": []
+          },
+          "CodesetId": 12
+        }
+      },
+      {
+        "ConditionOccurrence": {
+          "CorrelatedCriteria": {
+            "Type": "ALL",
+            "CriteriaList": [
+              {
+                "Criteria": {
+                  "ConditionOccurrence": {
+                    "CodesetId": 0
+                  }
+                },
+                "StartWindow": {
+                  "Start": {
+                    "Coeff": -1
+                  },
+                  "End": {
+                    "Days": 0,
+                    "Coeff": -1
+                  },
+                  "UseEventEnd": false
+                },
+                "IgnoreObservationPeriod": true,
+                "Occurrence": {
+                  "Type": 2,
+                  "Count": 1
+                }
+              }
+            ],
+            "DemographicCriteriaList": [],
+            "Groups": [
+              {
+                "Type": "ANY",
+                "CriteriaList": [
+                  {
+                    "Criteria": {
+                      "Measurement": {
+                        "CorrelatedCriteria": {
+                          "Type": "ANY",
+                          "CriteriaList": [
+                            {
+                              "Criteria": {
+                                "DrugExposure": {
+                                  "CodesetId": 4
+                                }
+                              },
+                              "StartWindow": {
+                                "Start": {
+                                  "Coeff": -1
+                                },
+                                "End": {
+                                  "Days": 1,
+                                  "Coeff": -1
+                                },
+                                "UseEventEnd": false
+                              },
+                              "IgnoreObservationPeriod": true,
+                              "Occurrence": {
+                                "Type": 2,
+                                "Count": 1
+                              }
+                            },
+                            {
+                              "Criteria": {
+                                "ProcedureOccurrence": {
+                                  "CodesetId": 5
+                                }
+                              },
+                              "StartWindow": {
+                                "Start": {
+                                  "Coeff": -1
+                                },
+                                "End": {
+                                  "Days": 1,
+                                  "Coeff": -1
+                                },
+                                "UseEventEnd": false
+                              },
+                              "IgnoreObservationPeriod": true,
+                              "Occurrence": {
+                                "Type": 2,
+                                "Count": 1
+                              }
+                            },
+                            {
+                              "Criteria": {
+                                "ProcedureOccurrence": {
+                                  "CodesetId": 6
+                                }
+                              },
+                              "StartWindow": {
+                                "Start": {
+                                  "Coeff": -1
+                                },
+                                "End": {
+                                  "Days": 1,
+                                  "Coeff": -1
+                                },
+                                "UseEventEnd": false
+                              },
+                              "IgnoreObservationPeriod": true,
+                              "Occurrence": {
+                                "Type": 2,
+                                "Count": 1
+                              }
+                            },
+                            {
+                              "Criteria": {
+                                "ProcedureOccurrence": {
+                                  "CodesetId": 7,
+                                  "Modifier": [
+                                    {
+                                      "CONCEPT_CODE": "50",
+                                      "CONCEPT_ID": 42739579,
+                                      "CONCEPT_NAME": "Bilateral Procedure",
+                                      "DOMAIN_ID": "Observation",
+                                      "INVALID_REASON_CAPTION": "Unknown",
+                                      "STANDARD_CONCEPT_CAPTION": "Unknown",
+                                      "VOCABULARY_ID": "CPT4"
+                                    }
+                                  ]
+                                }
+                              },
+                              "StartWindow": {
+                                "Start": {
+                                  "Coeff": -1
+                                },
+                                "End": {
+                                  "Days": 1,
+                                  "Coeff": -1
+                                },
+                                "UseEventEnd": false
+                              },
+                              "IgnoreObservationPeriod": true,
+                              "Occurrence": {
+                                "Type": 2,
+                                "Count": 1
+                              }
+                            }
+                          ],
+                          "DemographicCriteriaList": [],
+                          "Groups": [
+                            {
+                              "Type": "AT_LEAST",
+                              "Count": 2,
+                              "CriteriaList": [],
+                              "DemographicCriteriaList": [],
+                              "Groups": [
+                                {
+                                  "Type": "ANY",
+                                  "CriteriaList": [
+                                    {
+                                      "Criteria": {
+                                        "ProcedureOccurrence": {
+                                          "CodesetId": 7,
+                                          "Modifier": [
+                                            {
+                                              "CONCEPT_CODE": "LT",
+                                              "CONCEPT_ID": 45888270,
+                                              "CONCEPT_NAME": "Left side (used to identify procedures performed on the left side of the body)",
+                                              "DOMAIN_ID": "Observation",
+                                              "INVALID_REASON_CAPTION": "Unknown",
+                                              "STANDARD_CONCEPT_CAPTION": "Unknown",
+                                              "VOCABULARY_ID": "CPT4"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "StartWindow": {
+                                        "Start": {
+                                          "Coeff": -1
+                                        },
+                                        "End": {
+                                          "Days": 1,
+                                          "Coeff": -1
+                                        },
+                                        "UseEventEnd": false
+                                      },
+                                      "IgnoreObservationPeriod": true,
+                                      "Occurrence": {
+                                        "Type": 2,
+                                        "Count": 1
+                                      }
+                                    },
+                                    {
+                                      "Criteria": {
+                                        "ProcedureOccurrence": {
+                                          "CodesetId": 8
+                                        }
+                                      },
+                                      "StartWindow": {
+                                        "Start": {
+                                          "Coeff": -1
+                                        },
+                                        "End": {
+                                          "Days": 1,
+                                          "Coeff": -1
+                                        },
+                                        "UseEventEnd": false
+                                      },
+                                      "IgnoreObservationPeriod": true,
+                                      "Occurrence": {
+                                        "Type": 2,
+                                        "Count": 1
+                                      }
+                                    }
+                                  ],
+                                  "DemographicCriteriaList": [],
+                                  "Groups": []
+                                },
+                                {
+                                  "Type": "ANY",
+                                  "CriteriaList": [
+                                    {
+                                      "Criteria": {
+                                        "ProcedureOccurrence": {
+                                          "CodesetId": 7,
+                                          "Modifier": [
+                                            {
+                                              "CONCEPT_CODE": "RT",
+                                              "CONCEPT_ID": 45888271,
+                                              "CONCEPT_NAME": "Right side (used to identify procedures performed on the right side of the body)",
+                                              "DOMAIN_ID": "Observation",
+                                              "INVALID_REASON_CAPTION": "Unknown",
+                                              "STANDARD_CONCEPT_CAPTION": "Unknown",
+                                              "VOCABULARY_ID": "CPT4"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "StartWindow": {
+                                        "Start": {
+                                          "Coeff": -1
+                                        },
+                                        "End": {
+                                          "Days": 1,
+                                          "Coeff": -1
+                                        },
+                                        "UseEventEnd": false
+                                      },
+                                      "IgnoreObservationPeriod": true,
+                                      "Occurrence": {
+                                        "Type": 2,
+                                        "Count": 1
+                                      }
+                                    },
+                                    {
+                                      "Criteria": {
+                                        "ProcedureOccurrence": {
+                                          "CodesetId": 9
+                                        }
+                                      },
+                                      "StartWindow": {
+                                        "Start": {
+                                          "Coeff": -1
+                                        },
+                                        "End": {
+                                          "Days": 1,
+                                          "Coeff": -1
+                                        },
+                                        "UseEventEnd": false
+                                      },
+                                      "IgnoreObservationPeriod": true,
+                                      "Occurrence": {
+                                        "Type": 2,
+                                        "Count": 1
+                                      }
+                                    }
+                                  ],
+                                  "DemographicCriteriaList": [],
+                                  "Groups": []
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "CodesetId": 11
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 0,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  },
+                  {
+                    "Criteria": {
+                      "ConditionOccurrence": {
+                        "CodesetId": 10
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 0,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  }
+                ],
+                "DemographicCriteriaList": [],
+                "Groups": []
+              }
+            ]
+          },
+          "ConditionSourceConcept": 1,
+          "First": true
+        }
+      },
+      {
+        "Measurement": {
+          "CorrelatedCriteria": {
+            "Type": "ALL",
+            "CriteriaList": [
+              {
+                "Criteria": {
+                  "ConditionOccurrence": {
+                    "CodesetId": 0
+                  }
+                },
+                "StartWindow": {
+                  "Start": {
+                    "Coeff": -1
+                  },
+                  "End": {
+                    "Days": 0,
+                    "Coeff": -1
+                  },
+                  "UseEventEnd": false
+                },
+                "IgnoreObservationPeriod": true,
+                "Occurrence": {
+                  "Type": 2,
+                  "Count": 1
+                }
+              }
+            ],
+            "DemographicCriteriaList": [],
+            "Groups": [
+              {
+                "Type": "ANY",
+                "CriteriaList": [
+                  {
+                    "Criteria": {
+                      "Measurement": {
+                        "CorrelatedCriteria": {
+                          "Type": "ANY",
+                          "CriteriaList": [
+                            {
+                              "Criteria": {
+                                "DrugExposure": {
+                                  "CodesetId": 4
+                                }
+                              },
+                              "StartWindow": {
+                                "Start": {
+                                  "Coeff": -1
+                                },
+                                "End": {
+                                  "Days": 1,
+                                  "Coeff": -1
+                                },
+                                "UseEventEnd": false
+                              },
+                              "IgnoreObservationPeriod": true,
+                              "Occurrence": {
+                                "Type": 2,
+                                "Count": 1
+                              }
+                            },
+                            {
+                              "Criteria": {
+                                "ProcedureOccurrence": {
+                                  "CodesetId": 5
+                                }
+                              },
+                              "StartWindow": {
+                                "Start": {
+                                  "Coeff": -1
+                                },
+                                "End": {
+                                  "Days": 1,
+                                  "Coeff": -1
+                                },
+                                "UseEventEnd": false
+                              },
+                              "IgnoreObservationPeriod": true,
+                              "Occurrence": {
+                                "Type": 2,
+                                "Count": 1
+                              }
+                            },
+                            {
+                              "Criteria": {
+                                "ProcedureOccurrence": {
+                                  "CodesetId": 6
+                                }
+                              },
+                              "StartWindow": {
+                                "Start": {
+                                  "Coeff": -1
+                                },
+                                "End": {
+                                  "Days": 1,
+                                  "Coeff": -1
+                                },
+                                "UseEventEnd": false
+                              },
+                              "IgnoreObservationPeriod": true,
+                              "Occurrence": {
+                                "Type": 2,
+                                "Count": 1
+                              }
+                            },
+                            {
+                              "Criteria": {
+                                "ProcedureOccurrence": {
+                                  "CodesetId": 7,
+                                  "Modifier": [
+                                    {
+                                      "CONCEPT_CODE": "50",
+                                      "CONCEPT_ID": 42739579,
+                                      "CONCEPT_NAME": "Bilateral Procedure",
+                                      "DOMAIN_ID": "Observation",
+                                      "INVALID_REASON_CAPTION": "Unknown",
+                                      "STANDARD_CONCEPT_CAPTION": "Unknown",
+                                      "VOCABULARY_ID": "CPT4"
+                                    }
+                                  ]
+                                }
+                              },
+                              "StartWindow": {
+                                "Start": {
+                                  "Coeff": -1
+                                },
+                                "End": {
+                                  "Days": 1,
+                                  "Coeff": -1
+                                },
+                                "UseEventEnd": false
+                              },
+                              "IgnoreObservationPeriod": true,
+                              "Occurrence": {
+                                "Type": 2,
+                                "Count": 1
+                              }
+                            }
+                          ],
+                          "DemographicCriteriaList": [],
+                          "Groups": [
+                            {
+                              "Type": "AT_LEAST",
+                              "Count": 2,
+                              "CriteriaList": [],
+                              "DemographicCriteriaList": [],
+                              "Groups": [
+                                {
+                                  "Type": "ANY",
+                                  "CriteriaList": [
+                                    {
+                                      "Criteria": {
+                                        "ProcedureOccurrence": {
+                                          "CodesetId": 7,
+                                          "Modifier": [
+                                            {
+                                              "CONCEPT_CODE": "LT",
+                                              "CONCEPT_ID": 45888270,
+                                              "CONCEPT_NAME": "Left side (used to identify procedures performed on the left side of the body)",
+                                              "DOMAIN_ID": "Observation",
+                                              "INVALID_REASON_CAPTION": "Unknown",
+                                              "STANDARD_CONCEPT_CAPTION": "Unknown",
+                                              "VOCABULARY_ID": "CPT4"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "StartWindow": {
+                                        "Start": {
+                                          "Coeff": -1
+                                        },
+                                        "End": {
+                                          "Days": 1,
+                                          "Coeff": -1
+                                        },
+                                        "UseEventEnd": false
+                                      },
+                                      "IgnoreObservationPeriod": true,
+                                      "Occurrence": {
+                                        "Type": 2,
+                                        "Count": 1
+                                      }
+                                    },
+                                    {
+                                      "Criteria": {
+                                        "ProcedureOccurrence": {
+                                          "CodesetId": 8
+                                        }
+                                      },
+                                      "StartWindow": {
+                                        "Start": {
+                                          "Coeff": -1
+                                        },
+                                        "End": {
+                                          "Days": 1,
+                                          "Coeff": -1
+                                        },
+                                        "UseEventEnd": false
+                                      },
+                                      "IgnoreObservationPeriod": true,
+                                      "Occurrence": {
+                                        "Type": 2,
+                                        "Count": 1
+                                      }
+                                    }
+                                  ],
+                                  "DemographicCriteriaList": [],
+                                  "Groups": []
+                                },
+                                {
+                                  "Type": "ANY",
+                                  "CriteriaList": [
+                                    {
+                                      "Criteria": {
+                                        "ProcedureOccurrence": {
+                                          "CodesetId": 7,
+                                          "Modifier": [
+                                            {
+                                              "CONCEPT_CODE": "RT",
+                                              "CONCEPT_ID": 45888271,
+                                              "CONCEPT_NAME": "Right side (used to identify procedures performed on the right side of the body)",
+                                              "DOMAIN_ID": "Observation",
+                                              "INVALID_REASON_CAPTION": "Unknown",
+                                              "STANDARD_CONCEPT_CAPTION": "Unknown",
+                                              "VOCABULARY_ID": "CPT4"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "StartWindow": {
+                                        "Start": {
+                                          "Coeff": -1
+                                        },
+                                        "End": {
+                                          "Days": 1,
+                                          "Coeff": -1
+                                        },
+                                        "UseEventEnd": false
+                                      },
+                                      "IgnoreObservationPeriod": true,
+                                      "Occurrence": {
+                                        "Type": 2,
+                                        "Count": 1
+                                      }
+                                    },
+                                    {
+                                      "Criteria": {
+                                        "ProcedureOccurrence": {
+                                          "CodesetId": 9
+                                        }
+                                      },
+                                      "StartWindow": {
+                                        "Start": {
+                                          "Coeff": -1
+                                        },
+                                        "End": {
+                                          "Days": 1,
+                                          "Coeff": -1
+                                        },
+                                        "UseEventEnd": false
+                                      },
+                                      "IgnoreObservationPeriod": true,
+                                      "Occurrence": {
+                                        "Type": 2,
+                                        "Count": 1
+                                      }
+                                    }
+                                  ],
+                                  "DemographicCriteriaList": [],
+                                  "Groups": []
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "CodesetId": 11
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 0,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  },
+                  {
+                    "Criteria": {
+                      "ConditionOccurrence": {
+                        "CodesetId": 10
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 0,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  }
+                ],
+                "DemographicCriteriaList": [],
+                "Groups": []
+              }
+            ]
+          },
+          "CodesetId": 1,
+          "First": true
+        }
+      },
+      {
+        "ConditionOccurrence": {
+          "CorrelatedCriteria": {
+            "Type": "ALL",
+            "CriteriaList": [
+              {
+                "Criteria": {
+                  "ConditionOccurrence": {
+                    "CodesetId": 0
+                  }
+                },
+                "StartWindow": {
+                  "Start": {
+                    "Coeff": -1
+                  },
+                  "End": {
+                    "Days": 0,
+                    "Coeff": -1
+                  },
+                  "UseEventEnd": false
+                },
+                "IgnoreObservationPeriod": true,
+                "Occurrence": {
+                  "Type": 2,
+                  "Count": 1
+                }
+              }
+            ],
+            "DemographicCriteriaList": [],
+            "Groups": [
+              {
+                "Type": "ANY",
+                "CriteriaList": [
+                  {
+                    "Criteria": {
+                      "DrugEra": {
+                        "CodesetId": 4
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 90,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "EndWindow": {
+                      "Start": {
+                        "Days": 0,
+                        "Coeff": 1
+                      },
+                      "End": {
+                        "Coeff": 1
+                      },
+                      "UseEventEnd": true
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  },
+                  {
+                    "Criteria": {
+                      "ProcedureOccurrence": {
+                        "CodesetId": 6
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 90,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  },
+                  {
+                    "Criteria": {
+                      "ProcedureOccurrence": {
+                        "CodesetId": 7,
+                        "Modifier": [
+                          {
+                            "CONCEPT_CODE": "50",
+                            "CONCEPT_ID": 42739579,
+                            "CONCEPT_NAME": "Bilateral Procedure",
+                            "DOMAIN_ID": "Observation",
+                            "INVALID_REASON_CAPTION": "Unknown",
+                            "STANDARD_CONCEPT_CAPTION": "Unknown",
+                            "VOCABULARY_ID": "CPT4"
+                          }
+                        ]
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 90,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  }
+                ],
+                "DemographicCriteriaList": [],
+                "Groups": [
+                  {
+                    "Type": "AT_LEAST",
+                    "Count": 2,
+                    "CriteriaList": [],
+                    "DemographicCriteriaList": [],
+                    "Groups": [
+                      {
+                        "Type": "ANY",
+                        "CriteriaList": [
+                          {
+                            "Criteria": {
+                              "ProcedureOccurrence": {
+                                "CodesetId": 7,
+                                "Modifier": [
+                                  {
+                                    "CONCEPT_CODE": "LT",
+                                    "CONCEPT_ID": 45888270,
+                                    "CONCEPT_NAME": "Left side (used to identify procedures performed on the left side of the body)",
+                                    "DOMAIN_ID": "Observation",
+                                    "INVALID_REASON_CAPTION": "Unknown",
+                                    "STANDARD_CONCEPT_CAPTION": "Unknown",
+                                    "VOCABULARY_ID": "CPT4"
+                                  }
+                                ]
+                              }
+                            },
+                            "StartWindow": {
+                              "Start": {
+                                "Coeff": -1
+                              },
+                              "End": {
+                                "Days": 90,
+                                "Coeff": -1
+                              },
+                              "UseEventEnd": false
+                            },
+                            "IgnoreObservationPeriod": true,
+                            "Occurrence": {
+                              "Type": 2,
+                              "Count": 1
+                            }
+                          },
+                          {
+                            "Criteria": {
+                              "ProcedureOccurrence": {
+                                "CodesetId": 8
+                              }
+                            },
+                            "StartWindow": {
+                              "Start": {
+                                "Coeff": -1
+                              },
+                              "End": {
+                                "Days": 90,
+                                "Coeff": -1
+                              },
+                              "UseEventEnd": false
+                            },
+                            "IgnoreObservationPeriod": true,
+                            "Occurrence": {
+                              "Type": 2,
+                              "Count": 1
+                            }
+                          }
+                        ],
+                        "DemographicCriteriaList": [],
+                        "Groups": []
+                      },
+                      {
+                        "Type": "ANY",
+                        "CriteriaList": [
+                          {
+                            "Criteria": {
+                              "ProcedureOccurrence": {
+                                "CodesetId": 7,
+                                "Modifier": [
+                                  {
+                                    "CONCEPT_CODE": "RT",
+                                    "CONCEPT_ID": 45888271,
+                                    "CONCEPT_NAME": "Right side (used to identify procedures performed on the right side of the body)",
+                                    "DOMAIN_ID": "Observation",
+                                    "INVALID_REASON_CAPTION": "Unknown",
+                                    "STANDARD_CONCEPT_CAPTION": "Unknown",
+                                    "VOCABULARY_ID": "CPT4"
+                                  }
+                                ]
+                              }
+                            },
+                            "StartWindow": {
+                              "Start": {
+                                "Coeff": -1
+                              },
+                              "End": {
+                                "Days": 90,
+                                "Coeff": -1
+                              },
+                              "UseEventEnd": false
+                            },
+                            "IgnoreObservationPeriod": true,
+                            "Occurrence": {
+                              "Type": 2,
+                              "Count": 1
+                            }
+                          },
+                          {
+                            "Criteria": {
+                              "ProcedureOccurrence": {
+                                "CodesetId": 9
+                              }
+                            },
+                            "StartWindow": {
+                              "Start": {
+                                "Coeff": -1
+                              },
+                              "End": {
+                                "Days": 90,
+                                "Coeff": -1
+                              },
+                              "UseEventEnd": false
+                            },
+                            "IgnoreObservationPeriod": true,
+                            "Occurrence": {
+                              "Type": 2,
+                              "Count": 1
+                            }
+                          }
+                        ],
+                        "DemographicCriteriaList": [],
+                        "Groups": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "ConditionSourceConcept": 1,
+          "First": true
+        }
+      },
+      {
+        "Measurement": {
+          "CorrelatedCriteria": {
+            "Type": "ALL",
+            "CriteriaList": [
+              {
+                "Criteria": {
+                  "ProcedureOccurrence": {
+                    "CodesetId": 0
+                  }
+                },
+                "StartWindow": {
+                  "Start": {
+                    "Coeff": -1
+                  },
+                  "End": {
+                    "Days": 0,
+                    "Coeff": -1
+                  },
+                  "UseEventEnd": false
+                },
+                "IgnoreObservationPeriod": true,
+                "Occurrence": {
+                  "Type": 2,
+                  "Count": 1
+                }
+              }
+            ],
+            "DemographicCriteriaList": [],
+            "Groups": [
+              {
+                "Type": "ANY",
+                "CriteriaList": [
+                  {
+                    "Criteria": {
+                      "DrugEra": {
+                        "CodesetId": 4
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 90,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "EndWindow": {
+                      "Start": {
+                        "Days": 0,
+                        "Coeff": 1
+                      },
+                      "End": {
+                        "Coeff": 1
+                      },
+                      "UseEventEnd": true
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  },
+                  {
+                    "Criteria": {
+                      "ProcedureOccurrence": {
+                        "CodesetId": 6
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 90,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  },
+                  {
+                    "Criteria": {
+                      "ProcedureOccurrence": {
+                        "CodesetId": 7,
+                        "Modifier": [
+                          {
+                            "CONCEPT_CODE": "50",
+                            "CONCEPT_ID": 42739579,
+                            "CONCEPT_NAME": "Bilateral Procedure",
+                            "DOMAIN_ID": "Observation",
+                            "INVALID_REASON_CAPTION": "Unknown",
+                            "STANDARD_CONCEPT_CAPTION": "Unknown",
+                            "VOCABULARY_ID": "CPT4"
+                          }
+                        ]
+                      }
+                    },
+                    "StartWindow": {
+                      "Start": {
+                        "Coeff": -1
+                      },
+                      "End": {
+                        "Days": 90,
+                        "Coeff": -1
+                      },
+                      "UseEventEnd": false
+                    },
+                    "IgnoreObservationPeriod": true,
+                    "Occurrence": {
+                      "Type": 2,
+                      "Count": 1
+                    }
+                  }
+                ],
+                "DemographicCriteriaList": [],
+                "Groups": [
+                  {
+                    "Type": "AT_LEAST",
+                    "Count": 2,
+                    "CriteriaList": [],
+                    "DemographicCriteriaList": [],
+                    "Groups": [
+                      {
+                        "Type": "ANY",
+                        "CriteriaList": [
+                          {
+                            "Criteria": {
+                              "ProcedureOccurrence": {
+                                "CodesetId": 7,
+                                "Modifier": [
+                                  {
+                                    "CONCEPT_CODE": "LT",
+                                    "CONCEPT_ID": 45888270,
+                                    "CONCEPT_NAME": "Left side (used to identify procedures performed on the left side of the body)",
+                                    "DOMAIN_ID": "Observation",
+                                    "INVALID_REASON_CAPTION": "Unknown",
+                                    "STANDARD_CONCEPT_CAPTION": "Unknown",
+                                    "VOCABULARY_ID": "CPT4"
+                                  }
+                                ]
+                              }
+                            },
+                            "StartWindow": {
+                              "Start": {
+                                "Coeff": -1
+                              },
+                              "End": {
+                                "Days": 90,
+                                "Coeff": -1
+                              },
+                              "UseEventEnd": false
+                            },
+                            "IgnoreObservationPeriod": true,
+                            "Occurrence": {
+                              "Type": 2,
+                              "Count": 1
+                            }
+                          },
+                          {
+                            "Criteria": {
+                              "ProcedureOccurrence": {
+                                "CodesetId": 8
+                              }
+                            },
+                            "StartWindow": {
+                              "Start": {
+                                "Coeff": -1
+                              },
+                              "End": {
+                                "Days": 90,
+                                "Coeff": -1
+                              },
+                              "UseEventEnd": false
+                            },
+                            "IgnoreObservationPeriod": true,
+                            "Occurrence": {
+                              "Type": 2,
+                              "Count": 1
+                            }
+                          }
+                        ],
+                        "DemographicCriteriaList": [],
+                        "Groups": []
+                      },
+                      {
+                        "Type": "ANY",
+                        "CriteriaList": [
+                          {
+                            "Criteria": {
+                              "ProcedureOccurrence": {
+                                "CodesetId": 7,
+                                "Modifier": [
+                                  {
+                                    "CONCEPT_CODE": "RT",
+                                    "CONCEPT_ID": 45888271,
+                                    "CONCEPT_NAME": "Right side (used to identify procedures performed on the right side of the body)",
+                                    "DOMAIN_ID": "Observation",
+                                    "INVALID_REASON_CAPTION": "Unknown",
+                                    "STANDARD_CONCEPT_CAPTION": "Unknown",
+                                    "VOCABULARY_ID": "CPT4"
+                                  }
+                                ]
+                              }
+                            },
+                            "StartWindow": {
+                              "Start": {
+                                "Coeff": -1
+                              },
+                              "End": {
+                                "Days": 90,
+                                "Coeff": -1
+                              },
+                              "UseEventEnd": false
+                            },
+                            "IgnoreObservationPeriod": true,
+                            "Occurrence": {
+                              "Type": 2,
+                              "Count": 1
+                            }
+                          },
+                          {
+                            "Criteria": {
+                              "ProcedureOccurrence": {
+                                "CodesetId": 9
+                              }
+                            },
+                            "StartWindow": {
+                              "Start": {
+                                "Coeff": -1
+                              },
+                              "End": {
+                                "Days": 90,
+                                "Coeff": -1
+                              },
+                              "UseEventEnd": false
+                            },
+                            "IgnoreObservationPeriod": true,
+                            "Occurrence": {
+                              "Type": 2,
+                              "Count": 1
+                            }
+                          }
+                        ],
+                        "DemographicCriteriaList": [],
+                        "Groups": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "CodesetId": 1,
+          "First": true
+        }
+      }
+    ],
+    "ObservationWindow": {
+      "PriorDays": 0,
+      "PostDays": 0
+    },
+    "PrimaryCriteriaLimit": {
+      "Type": "First"
+    }
+  },
+  "QualifiedLimit": {
+    "Type": "First"
+  },
+  "ExpressionLimit": {
+    "Type": "First"
+  },
+  "InclusionRules": [
+    {
+      "name": "Age >= 18",
+      "expression": {
+        "Type": "ALL",
+        "CriteriaList": [],
+        "DemographicCriteriaList": [
+          {
+            "Age": {
+              "Value": 18,
+              "Op": "gte"
+            }
+          }
+        ],
+        "Groups": []
+      }
+    },
+    {
+      "name": "Gender=Male",
+      "expression": {
+        "Type": "ALL",
+        "CriteriaList": [],
+        "DemographicCriteriaList": [
+          {
+            "Gender": [
+              {
+                "CONCEPT_CODE": "M",
+                "CONCEPT_ID": 8507,
+                "CONCEPT_NAME": "MALE",
+                "DOMAIN_ID": "Gender",
+                "INVALID_REASON_CAPTION": "Unknown",
+                "STANDARD_CONCEPT_CAPTION": "Unknown",
+                "VOCABULARY_ID": "Gender"
+              }
+            ]
+          }
+        ],
+        "Groups": []
+      }
+    },
+    {
+      "name": "No claims with a diagnosis of metastatic disease prior to the first observed prostate cancer diagnosis",
+      "expression": {
+        "Type": "ALL",
+        "CriteriaList": [
+          {
+            "Criteria": {
+              "ConditionOccurrence": {
+                "CorrelatedCriteria": {
+                  "Type": "ANY",
+                  "CriteriaList": [
+                    {
+                      "Criteria": {
+                        "ConditionOccurrence": {
+                          "ConditionSourceConcept": 1
+                        }
+                      },
+                      "StartWindow": {
+                        "Start": {
+                          "Coeff": -1
+                        },
+                        "End": {
+                          "Days": 0,
+                          "Coeff": -1
+                        },
+                        "UseEventEnd": false
+                      },
+                      "IgnoreObservationPeriod": true,
+                      "Occurrence": {
+                        "Type": 2,
+                        "Count": 1
+                      }
+                    },
+                    {
+                      "Criteria": {
+                        "Measurement": {
+                          "CodesetId": 1
+                        }
+                      },
+                      "StartWindow": {
+                        "Start": {
+                          "Coeff": -1
+                        },
+                        "End": {
+                          "Days": 0,
+                          "Coeff": -1
+                        },
+                        "UseEventEnd": false
+                      },
+                      "IgnoreObservationPeriod": true,
+                      "Occurrence": {
+                        "Type": 2,
+                        "Count": 1
+                      }
+                    }
+                  ],
+                  "DemographicCriteriaList": [],
+                  "Groups": []
+                },
+                "CodesetId": 0,
+                "First": true
+              }
+            },
+            "StartWindow": {
+              "Start": {
+                "Coeff": -1
+              },
+              "End": {
+                "Days": 0,
+                "Coeff": -1
+              },
+              "UseEventEnd": false
+            },
+            "IgnoreObservationPeriod": true,
+            "Occurrence": {
+              "Type": 0,
+              "Count": 0
+            }
+          }
+        ],
+        "DemographicCriteriaList": [],
+        "Groups": []
+      }
+    },
+    {
+      "name": "No more than 1 claim with a diagnosis of other types of cancer prior to the first observed metastatic disease diagnosis",
+      "expression": {
+        "Type": "AT_LEAST",
+        "Count": 1,
+        "CriteriaList": [
+          {
+            "Criteria": {
+              "ConditionOccurrence": {
+                "CorrelatedCriteria": {
+                  "Type": "AT_MOST",
+                  "Count": 1,
+                  "CriteriaList": [
+                    {
+                      "Criteria": {
+                        "ConditionOccurrence": {
+                          "CodesetId": 2
+                        }
+                      },
+                      "StartWindow": {
+                        "Start": {
+                          "Coeff": -1
+                        },
+                        "End": {
+                          "Days": 1,
+                          "Coeff": -1
+                        },
+                        "UseEventEnd": false
+                      },
+                      "IgnoreObservationPeriod": true,
+                      "Occurrence": {
+                        "Type": 2,
+                        "Count": 1
+                      }
+                    },
+                    {
+                      "Criteria": {
+                        "ConditionOccurrence": {
+                          "CodesetId": 2
+                        }
+                      },
+                      "StartWindow": {
+                        "Start": {
+                          "Coeff": -1
+                        },
+                        "End": {
+                          "Days": 1,
+                          "Coeff": -1
+                        },
+                        "UseEventEnd": false
+                      },
+                      "IgnoreObservationPeriod": true,
+                      "Occurrence": {
+                        "Type": 2,
+                        "Count": 2
+                      }
+                    },
+                    {
+                      "Criteria": {
+                        "Measurement": {
+                          "CodesetId": 2
+                        }
+                      },
+                      "StartWindow": {
+                        "Start": {
+                          "Coeff": -1
+                        },
+                        "End": {
+                          "Days": 1,
+                          "Coeff": -1
+                        },
+                        "UseEventEnd": false
+                      },
+                      "IgnoreObservationPeriod": true,
+                      "Occurrence": {
+                        "Type": 2,
+                        "Count": 1
+                      }
+                    },
+                    {
+                      "Criteria": {
+                        "Measurement": {
+                          "CodesetId": 2
+                        }
+                      },
+                      "StartWindow": {
+                        "Start": {
+                          "Coeff": -1
+                        },
+                        "End": {
+                          "Days": 1,
+                          "Coeff": -1
+                        },
+                        "UseEventEnd": false
+                      },
+                      "IgnoreObservationPeriod": true,
+                      "Occurrence": {
+                        "Type": 2,
+                        "Count": 2
+                      }
+                    }
+                  ],
+                  "DemographicCriteriaList": [],
+                  "Groups": []
+                },
+                "ConditionSourceConcept": 1,
+                "First": true
+              }
+            },
+            "StartWindow": {
+              "Start": {
+                "Coeff": -1
+              },
+              "End": {
+                "Days": 0,
+                "Coeff": -1
+              },
+              "UseEventEnd": false
+            },
+            "IgnoreObservationPeriod": true,
+            "Occurrence": {
+              "Type": 2,
+              "Count": 1
+            }
+          },
+          {
+            "Criteria": {
+              "Measurement": {
+                "CorrelatedCriteria": {
+                  "Type": "AT_MOST",
+                  "Count": 1,
+                  "CriteriaList": [
+                    {
+                      "Criteria": {
+                        "ConditionOccurrence": {
+                          "CodesetId": 2
+                        }
+                      },
+                      "StartWindow": {
+                        "Start": {
+                          "Coeff": -1
+                        },
+                        "End": {
+                          "Days": 1,
+                          "Coeff": -1
+                        },
+                        "UseEventEnd": false
+                      },
+                      "IgnoreObservationPeriod": true,
+                      "Occurrence": {
+                        "Type": 2,
+                        "Count": 1
+                      }
+                    },
+                    {
+                      "Criteria": {
+                        "ConditionOccurrence": {
+                          "CodesetId": 2
+                        }
+                      },
+                      "StartWindow": {
+                        "Start": {
+                          "Coeff": -1
+                        },
+                        "End": {
+                          "Days": 1,
+                          "Coeff": -1
+                        },
+                        "UseEventEnd": false
+                      },
+                      "IgnoreObservationPeriod": true,
+                      "Occurrence": {
+                        "Type": 2,
+                        "Count": 2
+                      }
+                    },
+                    {
+                      "Criteria": {
+                        "Measurement": {
+                          "CodesetId": 2
+                        }
+                      },
+                      "StartWindow": {
+                        "Start": {
+                          "Coeff": -1
+                        },
+                        "End": {
+                          "Days": 1,
+                          "Coeff": -1
+                        },
+                        "UseEventEnd": false
+                      },
+                      "IgnoreObservationPeriod": true,
+                      "Occurrence": {
+                        "Type": 2,
+                        "Count": 1
+                      }
+                    },
+                    {
+                      "Criteria": {
+                        "Measurement": {
+                          "CodesetId": 2
+                        }
+                      },
+                      "StartWindow": {
+                        "Start": {
+                          "Coeff": -1
+                        },
+                        "End": {
+                          "Days": 1,
+                          "Coeff": -1
+                        },
+                        "UseEventEnd": false
+                      },
+                      "IgnoreObservationPeriod": true,
+                      "Occurrence": {
+                        "Type": 2,
+                        "Count": 2
+                      }
+                    }
+                  ],
+                  "DemographicCriteriaList": [],
+                  "Groups": []
+                },
+                "CodesetId": 1,
+                "First": true
+              }
+            },
+            "StartWindow": {
+              "Start": {
+                "Coeff": -1
+              },
+              "End": {
+                "Days": 0,
+                "Coeff": -1
+              },
+              "UseEventEnd": false
+            },
+            "IgnoreObservationPeriod": true,
+            "Occurrence": {
+              "Type": 2,
+              "Count": 1
+            }
+          }
+        ],
+        "DemographicCriteriaList": [],
+        "Groups": []
+      }
+    },
+    {
+      "name": "No claim with a diagnosis for hormone sensitive malignancy status on or after the index date",
+      "expression": {
+        "Type": "ALL",
+        "CriteriaList": [
+          {
+            "Criteria": {
+              "ConditionOccurrence": {
+                "CodesetId": 3
+              }
+            },
+            "StartWindow": {
+              "Start": {
+                "Days": 0,
+                "Coeff": -1
+              },
+              "End": {
+                "Coeff": 1
+              },
+              "UseEventEnd": false
+            },
+            "IgnoreObservationPeriod": true,
+            "Occurrence": {
+              "Type": 0,
+              "Count": 0
+            }
+          }
+        ],
+        "DemographicCriteriaList": [],
+        "Groups": []
+      }
+    }
+  ],
+  "CensoringCriteria": [],
+  "CollapseSettings": {
+    "CollapseType": "ERA",
+    "EraPad": 0
+  },
+  "CensorWindow": {},
+  "cdmVersionRange": ">=5.0.0"
+}
