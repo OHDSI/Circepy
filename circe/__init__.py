@@ -34,6 +34,16 @@ from .api import (
     cohort_print_friendly,
 )
 
+from circe.cohortdefinition import (
+    CohortExpression, Criteria, CorelatedCriteria, DemographicCriteria,
+    Occurrence, CriteriaColumn, InclusionRule, CollapseType, DateType,
+    ResultLimit, Period, DateRange, NumericRange, DateAdjustment,
+    ObservationFilter, CollapseSettings, EndStrategy, PrimaryCriteria,
+    CriteriaGroup, ConceptSetSelection
+)
+
+from typing import Dict
+
 # ---------------------------------------------------------------------
 # Embedded interpreter (e.g. R reticulate) bootstrapping for Pydantic
 # ---------------------------------------------------------------------
@@ -75,8 +85,65 @@ def safe_model_rebuild(package):
     except Exception:
         pass
 
-# ---------------------------------------------------------------------
 
+
+def get_json_schema() -> dict:
+    """
+    Generate a combined JSON Schema from your Pydantic models
+    in the same shape as the Java version.
+    """
+    # Map name → Pydantic model
+    models: Dict[str, type] = {
+        "CohortExpression": CohortExpression,
+        "ConceptSet": ConceptSet,
+        "ConceptSetExpression": ConceptSetExpression,
+        "ConceptSetItem": ConceptSetItem,
+        "Concept": Concept,
+        "ResultLimit": ResultLimit,
+        "CriteriaGroup": CriteriaGroup,
+        "CorelatedCriteria": CorelatedCriteria,
+        "Occurrence": Occurrence,
+        "DemographicCriteria": DemographicCriteria,
+        "DateRange": DateRange,
+        "ConceptSetSelection": ConceptSetSelection,
+        "NumericRange": NumericRange,
+        "EndStrategy": EndStrategy,
+        "PrimaryCriteria": PrimaryCriteria,
+        "Criteria": Criteria,
+        "DateAdjustment": DateAdjustment,
+        "ObservationFilter": ObservationFilter,
+        "CollapseSettings": CollapseSettings,
+        "Period": Period,
+        # add others as needed
+    }
+
+    # Build root-level $defs with each schema
+    defs: Dict[str, dict] = {}
+    for name, model in models.items():
+        # Use by_alias=True so JSON keys match Java casing if you set aliases in models
+        schema = model.model_json_schema(by_alias=True)
+        # Remove nested $defs if present (avoid double nesting)
+        schema.pop("$defs", None)
+        defs[name] = schema
+
+    # Assemble root schema, referencing CohortExpression
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/OHDSI/circe-be/java-schema.json",
+        "title": "CIRCE-BE Java Implementation Schema",
+        "description": "JSON Schema extracted from Java CIRCE-BE source code",
+        "version": "1.3.3",
+        "type": "object",
+        "$defs": defs,
+        "properties": {
+            "CohortExpression": {"$ref": "#/$defs/CohortExpression"}
+        },
+        "required": ["CohortExpression"]
+    }
+
+
+
+# ---------------------------------------------------------------------
 __all__ = [
     "__version__",
     "__author__",
@@ -84,6 +151,7 @@ __all__ = [
     "__license__",
     # Main cohort class
     "CohortExpression",
+    "get_json_schema",
     # Vocabulary classes
     "Concept", "ConceptSet", "ConceptSetExpression", "ConceptSetItem",
     # API functions

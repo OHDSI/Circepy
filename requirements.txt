@@ -12,3 +12,4 @@ mypy>=1.0.0
 
 # Optional dependencies for analysis
 javalang>=0.13.0
+deepdiff>=8.6.0
