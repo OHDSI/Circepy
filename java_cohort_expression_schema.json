@@ -4,7 +4,7 @@
   "title": "CIRCE-BE Java Implementation Schema",
   "description": "JSON Schema extracted from Java CIRCE-BE source code",
   "version": "1.0.0",
-  "definitions": {
+  "$defs": {
     "CohortExpression": {
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.CohortExpression",
@@ -33,9 +33,8 @@
           "$ref": "#/$defs/EndStrategy"
         },
         "cdmVersionRange": {
-          "type": "object",
-          "description": "Field: cdmVersionRange (return)",
-          "$ref": "#/$defs/return"
+          "type": "string",
+          "description": "Field: cdmVersionRange (return)"
         },
         "primaryCriteria": {
           "type": "object",
@@ -85,11 +84,6 @@
           "description": "Field: other (ConceptSet)",
           "$ref": "#/$defs/ConceptSet"
         },
-        "true": {
-          "type": "object",
-          "description": "Field: true (return)",
-          "$ref": "#/$defs/return"
-        },
         "id": {
           "type": "integer",
           "description": "Field: id (int)"
@@ -102,11 +96,6 @@
         "name": {
           "type": "string",
           "description": "Field: name (String)"
-        },
-        "false": {
-          "type": "object",
-          "description": "Field: false (return)",
-          "$ref": "#/$defs/return"
         }
       },
       "required": [
@@ -140,19 +129,9 @@
           "description": "Field: JSON_MAPPER (ObjectMapper)",
           "$ref": "#/$defs/ObjectMapper"
         },
-        "true": {
-          "type": "object",
-          "description": "Field: true (return)",
-          "$ref": "#/$defs/return"
-        },
         "includeDescendants": {
           "type": "boolean",
           "description": "Field: includeDescendants (boolean)"
-        },
-        "false": {
-          "type": "object",
-          "description": "Field: false (return)",
-          "$ref": "#/$defs/return"
         },
         "items": {
           "type": "array",
@@ -189,20 +168,10 @@
           "type": "string",
           "description": "Field: conceptName (String)"
         },
-        "false": {
-          "type": "object",
-          "description": "Field: false (return)",
-          "$ref": "#/$defs/return"
-        },
         "other": {
           "type": "object",
           "description": "Field: other (Concept)",
           "$ref": "#/$defs/Concept"
-        },
-        "true": {
-          "type": "object",
-          "description": "Field: true (return)",
-          "$ref": "#/$defs/return"
         },
         "standardConcept": {
           "type": "string",
@@ -578,9 +547,10 @@
     }
   },
   "properties": {
-    "cohortExpression": {
+    "CohortExpression": {
       "$ref": "#/$defs/CohortExpression"
     }
   },
-  "type": "object"
+  "type": "object",
+  "required": ["CohortExpression"]
 }
