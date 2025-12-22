@@ -79,7 +79,8 @@ Occurrence._AT_LEAST = 2
 
 class CorelatedCriteria(WindowedCriteria):
     """Represents correlated criteria.
-    
+    NOTE - this is a spelling mistake in the java implementation which leads to some confusion here.
+    The class also doesn't appear to be used much (there is a CorrelationGroup class that may supersede it?
     Java equivalent: org.ohdsi.circe.cohortdefinition.CorelatedCriteria
     """
     occurrence: Optional[Occurrence] = Field(
@@ -87,6 +88,7 @@ class CorelatedCriteria(WindowedCriteria):
         validation_alias=AliasChoices("Occurrence", "occurrence"),
         serialization_alias="Occurrence"
     )
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class DemographicCriteria(BaseModel):

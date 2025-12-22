@@ -113,8 +113,7 @@ def get_json_schema() -> dict:
         "DateAdjustment": DateAdjustment,
         "ObservationFilter": ObservationFilter,
         "CollapseSettings": CollapseSettings,
-        "Period": Period,
-        # add others as needed
+        "Period": Period
     }
 
     # Build root-level $defs with each schema

@@ -9,7 +9,7 @@
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.CohortExpression",
       "properties": {
-        "conceptSets": {
+        "ConceptSets": {
           "type": "array",
           "items": {
             "type": "object",
@@ -17,36 +17,36 @@
             "$ref": "#/$defs/conceptset"
           }
         },
-        "qualifiedLimit": {
+        "QualifiedLimit": {
           "type": "object",
           "description": "Field: qualifiedLimit (ResultLimit)",
           "$ref": "#/$defs/ResultLimit"
         },
-        "additionalCriteria": {
+        "AdditionalCriteria": {
           "type": "object",
           "description": "Field: additionalCriteria (CriteriaGroup)",
           "$ref": "#/$defs/CriteriaGroup"
         },
-        "endStrategy": {
+        "EndStrategy": {
           "type": "object",
           "description": "Field: endStrategy (EndStrategy)",
           "$ref": "#/$defs/EndStrategy"
         },
-        "cdmVersionRange": {
+        "CdmVersionRange": {
           "type": "string",
           "description": "Field: cdmVersionRange (return)"
         },
-        "primaryCriteria": {
+        "PrimaryCriteria": {
           "type": "object",
           "description": "Field: primaryCriteria (PrimaryCriteria)",
           "$ref": "#/$defs/PrimaryCriteria"
         },
-        "expressionLimit": {
+        "ExpressionLimit": {
           "type": "object",
           "description": "Field: expressionLimit (ResultLimit)",
           "$ref": "#/$defs/ResultLimit"
         },
-        "collapseSettings": {
+        "CollapseSettings": {
           "type": "object",
           "description": "Field: collapseSettings (CollapseSettings)",
           "$ref": "#/$defs/CollapseSettings"
@@ -55,17 +55,16 @@
           "type": "string",
           "description": "Field: title (String)"
         },
-        "inclusionRules": {
-          "type": "object",
-          "description": "Field: inclusionRules (List<InclusionRule>)",
-          "$ref": "#/$defs/List"
+        "InclusionRules": {
+          "type": "array",
+          "description": "Field: inclusionRules (List<InclusionRule>)"
         },
-        "censorWindow": {
+        "CensorWindow": {
           "type": "object",
           "description": "Field: censorWindow (Period)",
           "$ref": "#/$defs/Period"
         },
-        "censoringCriteria": {
+        "CensoringCriteria": {
           "type": "array",
           "items": {
             "type": "object",
@@ -79,11 +78,6 @@
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.ConceptSet",
       "properties": {
-        "other": {
-          "type": "object",
-          "description": "Field: other (ConceptSet)",
-          "$ref": "#/$defs/ConceptSet"
-        },
         "id": {
           "type": "integer",
           "description": "Field: id (int)"
@@ -115,19 +109,9 @@
           "type": "boolean",
           "description": "Field: isExcluded (boolean)"
         },
-        "other": {
-          "type": "object",
-          "description": "Field: other (ConceptSetItem)",
-          "$ref": "#/$defs/ConceptSetItem"
-        },
         "includeMapped": {
           "type": "boolean",
           "description": "Field: includeMapped (boolean)"
-        },
-        "JSON_MAPPER": {
-          "type": "object",
-          "description": "Field: JSON_MAPPER (ObjectMapper)",
-          "$ref": "#/$defs/ObjectMapper"
         },
         "includeDescendants": {
           "type": "boolean",
@@ -152,40 +136,35 @@
       "type": "object",
       "description": "Java class: org.ohdsi.circe.vocabulary.Concept",
       "properties": {
-        "conceptClassId": {
+        "ConceptClassId": {
           "type": "string",
           "description": "Field: conceptClassId (String)"
         },
-        "invalidReason": {
+        "InvalidReason": {
           "type": "string",
           "description": "Field: invalidReason (String)"
         },
-        "conceptId": {
+        "ConceptId": {
           "type": "integer",
           "description": "Field: conceptId (Long)"
         },
-        "conceptName": {
+        "ConceptName": {
           "type": "string",
           "description": "Field: conceptName (String)"
         },
-        "other": {
-          "type": "object",
-          "description": "Field: other (Concept)",
-          "$ref": "#/$defs/Concept"
-        },
-        "standardConcept": {
+        "StandardConcept": {
           "type": "string",
           "description": "Field: standardConcept (String)"
         },
-        "domainId": {
+        "DomainId": {
           "type": "string",
           "description": "Field: domainId (String)"
         },
-        "vocabularyId": {
+        "VocabularyId": {
           "type": "string",
           "description": "Field: vocabularyId (String)"
         },
-        "conceptCode": {
+        "ConceptCode": {
           "type": "string",
           "description": "Field: conceptCode (String)"
         }
@@ -198,7 +177,7 @@
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.ResultLimit",
       "properties": {
-        "type": {
+        "Type": {
           "type": "string",
           "description": "Field: type (String)"
         }
@@ -208,7 +187,7 @@
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.CriteriaGroup",
       "properties": {
-        "criteriaList": {
+        "CriteriaList": {
           "type": "array",
           "items": {
             "type": "object",
@@ -216,7 +195,7 @@
             "$ref": "#/$defs/corelatedcriteria"
           }
         },
-        "count": {
+        "Count": {
           "type": "integer",
           "description": "Field: count (Integer)"
         },
@@ -228,7 +207,7 @@
             "$ref": "#/$defs/criteriagroup"
           }
         },
-        "demographicCriteriaList": {
+        "DemographicCriteriaList": {
           "type": "array",
           "items": {
             "type": "object",
@@ -236,7 +215,7 @@
             "$ref": "#/$defs/demographiccriteria"
           }
         },
-        "type": {
+        "Type": {
           "type": "string",
           "description": "Field: type (String)"
         }
@@ -246,7 +225,7 @@
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.CorelatedCriteria",
       "properties": {
-        "occurrence": {
+        "Occurrence": {
           "type": "object",
           "description": "Field: occurrence (Occurrence)",
           "$ref": "#/$defs/Occurrence"
@@ -265,16 +244,16 @@
           "type": "integer",
           "description": "Field: AT_LEAST (int)"
         },
-        "countColumn": {
+        "CountColumn": {
           "type": "object",
           "description": "Field: countColumn (CriteriaColumn)",
           "$ref": "#/$defs/CriteriaColumn"
         },
-        "isDistinct": {
+        "IsDistinct": {
           "type": "boolean",
           "description": "Field: isDistinct (boolean)"
         },
-        "type": {
+        "Type": {
           "type": "integer",
           "description": "Field: type (int)"
         },
@@ -282,7 +261,7 @@
           "type": "integer",
           "description": "Field: EXACTLY (int)"
         },
-        "count": {
+        "Count": {
           "type": "integer",
           "description": "Field: count (int)"
         }
@@ -290,17 +269,17 @@
       "required": [
         "AT_MOST",
         "AT_LEAST",
-        "isDistinct",
-        "type",
+        "IsDistinct",
+        "Type",
         "EXACTLY",
-        "count"
+        "Count"
       ]
     },
     "DemographicCriteria": {
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.DemographicCriteria",
       "properties": {
-        "gender": {
+        "Gender": {
           "type": "array",
           "items": {
             "type": "object",
@@ -308,17 +287,17 @@
             "$ref": "#/$defs/concept"
           }
         },
-        "occurrenceEndDate": {
+        "OccurrenceEndDate": {
           "type": "object",
           "description": "Field: occurrenceEndDate (DateRange)",
           "$ref": "#/$defs/DateRange"
         },
-        "genderCS": {
+        "GenderCS": {
           "type": "object",
           "description": "Field: genderCS (ConceptSetSelection)",
           "$ref": "#/$defs/ConceptSetSelection"
         },
-        "race": {
+        "Race": {
           "type": "array",
           "items": {
             "type": "object",
@@ -326,22 +305,22 @@
             "$ref": "#/$defs/concept"
           }
         },
-        "ethnicityCS": {
+        "EthnicityCS": {
           "type": "object",
           "description": "Field: ethnicityCS (ConceptSetSelection)",
           "$ref": "#/$defs/ConceptSetSelection"
         },
-        "age": {
+        "Age": {
           "type": "object",
           "description": "Field: age (NumericRange)",
           "$ref": "#/$defs/NumericRange"
         },
-        "raceCS": {
+        "RaceCS": {
           "type": "object",
           "description": "Field: raceCS (ConceptSetSelection)",
           "$ref": "#/$defs/ConceptSetSelection"
         },
-        "ethnicity": {
+        "Ethnicity": {
           "type": "array",
           "items": {
             "type": "object",
@@ -349,7 +328,7 @@
             "$ref": "#/$defs/concept"
           }
         },
-        "occurrenceStartDate": {
+        "OccurrenceStartDate": {
           "type": "object",
           "description": "Field: occurrenceStartDate (DateRange)",
           "$ref": "#/$defs/DateRange"
@@ -360,15 +339,15 @@
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.DateRange",
       "properties": {
-        "op": {
+        "Op": {
           "type": "string",
           "description": "Field: op (String)"
         },
-        "extent": {
+        "Extent": {
           "type": "string",
           "description": "Field: extent (String)"
         },
-        "value": {
+        "Value": {
           "type": "string",
           "description": "Field: value (String)"
         }
@@ -378,11 +357,11 @@
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.ConceptSetSelection",
       "properties": {
-        "codesetId": {
+        "CodesetId": {
           "type": "integer",
           "description": "Field: codesetId (Integer)"
         },
-        "isExclusion": {
+        "IsExclusion": {
           "type": "boolean",
           "description": "Field: isExclusion (boolean)"
         }
@@ -395,19 +374,17 @@
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.NumericRange",
       "properties": {
-        "op": {
+        "Op": {
           "type": "string",
           "description": "Field: op (String)"
         },
-        "value": {
-          "type": "object",
-          "description": "Field: value (Number)",
-          "$ref": "#/$defs/Number"
+        "Value": {
+          "type": "integer",
+          "description": "Field: value (Number)"
         },
-        "extent": {
-          "type": "object",
-          "description": "Field: extent (Number)",
-          "$ref": "#/$defs/Number"
+        "Extent": {
+          "type": "integer",
+          "description": "Field: extent (Number)"
         }
       }
     },
@@ -416,9 +393,8 @@
       "description": "Java class: org.ohdsi.circe.cohortdefinition.EndStrategy",
       "properties": {
         "include": {
-          "type": "object",
-          "description": "Field: include (JsonTypeInfo.Id.NAME,)",
-          "$ref": "#/$defs/NAME,"
+          "type": "string",
+          "description": "Field: include (JsonTypeInfo.Id.NAME,)"
         }
       }
     },
@@ -426,7 +402,7 @@
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.PrimaryCriteria",
       "properties": {
-        "criteriaList": {
+        "CriteriaList": {
           "type": "array",
           "items": {
             "type": "object",
@@ -434,12 +410,12 @@
             "$ref": "#/$defs/criteria"
           }
         },
-        "observationWindow": {
+        "ObservationWindow": {
           "type": "object",
           "description": "Field: observationWindow (ObservationFilter)",
           "$ref": "#/$defs/ObservationFilter"
         },
-        "primaryLimit": {
+        "PrimaryLimit": {
           "type": "object",
           "description": "Field: primaryLimit (ResultLimit)",
           "$ref": "#/$defs/ResultLimit"
@@ -450,7 +426,7 @@
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.Criteria",
       "properties": {
-        "dateAdjustment": {
+        "DateAdjustment": {
           "type": "object",
           "description": "Field: dateAdjustment (DateAdjustment)",
           "$ref": "#/$defs/DateAdjustment"
@@ -461,9 +437,8 @@
           "$ref": "#/$defs/CriteriaGroup"
         },
         "include": {
-          "type": "object",
-          "description": "Field: include (JsonTypeInfo.Id.NAME,)",
-          "$ref": "#/$defs/NAME,"
+          "type": "string",
+          "description": "Field: include (JsonTypeInfo.Id.NAME,)"
         }
       }
     },
@@ -471,75 +446,75 @@
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.DateAdjustment",
       "properties": {
-        "startOffset": {
+        "StartOffset": {
           "type": "integer",
           "description": "Field: startOffset (int)"
         },
-        "endWith": {
+        "EndWith": {
           "type": "object",
           "description": "Field: endWith (DateType)",
           "$ref": "#/$defs/DateType"
         },
-        "startWith": {
+        "StartWith": {
           "type": "object",
           "description": "Field: startWith (DateType)",
           "$ref": "#/$defs/DateType"
         },
-        "endOffset": {
+        "EndOffset": {
           "type": "integer",
           "description": "Field: endOffset (int)"
         }
       },
       "required": [
-        "startOffset",
-        "endOffset"
+        "StartOffset",
+        "EndOffset"
       ]
     },
     "ObservationFilter": {
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.ObservationFilter",
       "properties": {
-        "priorDays": {
+        "PriorDays": {
           "type": "integer",
           "description": "Field: priorDays (int)"
         },
-        "postDays": {
+        "PostDays": {
           "type": "integer",
           "description": "Field: postDays (int)"
         }
       },
       "required": [
-        "priorDays",
-        "postDays"
+        "PriorDays",
+        "PostDays"
       ]
     },
     "CollapseSettings": {
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.CollapseSettings",
       "properties": {
-        "eraPad": {
+        "EraPad": {
           "type": "integer",
           "description": "Field: eraPad (int)"
         },
-        "collapseType": {
+        "CollapseType": {
           "type": "object",
           "description": "Field: collapseType (CollapseType)",
           "$ref": "#/$defs/CollapseType"
         }
       },
       "required": [
-        "eraPad"
+        "EraPad"
       ]
     },
     "Period": {
       "type": "object",
       "description": "Java class: org.ohdsi.circe.cohortdefinition.Period",
       "properties": {
-        "startDate": {
+        "StartDate": {
           "type": "string",
           "description": "Field: startDate (String)"
         },
-        "endDate": {
+        "EndDate": {
           "type": "string",
           "description": "Field: endDate (String)"
         }

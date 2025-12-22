@@ -64,7 +64,7 @@ class CohortExpression(BaseModel):
         validation_alias=AliasChoices("EndStrategy", "endStrategy"),
         serialization_alias="EndStrategy"
     )
-    cdm_version_range: Optional[Period] = Field(
+    cdm_version_range: Optional[str] = Field(
         default=None,
         validation_alias=AliasChoices("CdmVersionRange", "cdmVersionRange"),
         serialization_alias="CdmVersionRange"

@@ -73,9 +73,21 @@ class DateRange(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.DateRange
     """
-    op: Optional[str] = None
-    extent: Optional[str] = None
-    value: Optional[str] = None
+    op: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("Op", "op"),
+        serialization_alias="Op"
+    )
+    value: Optional[Union[str, float]] = Field(
+        default=None,
+        validation_alias=AliasChoices("Value", "value"),
+        serialization_alias="Value"
+    )
+    extent: Optional[Union[str, float]] = Field(
+        default=None,
+        validation_alias=AliasChoices("Extent", "extent"),
+        serialization_alias="Extent"
+    )
 
 
 class NumericRange(BaseModel):
@@ -176,8 +188,8 @@ class PrimaryCriteria(BaseModel):
     )
     primary_limit: Optional[ResultLimit] = Field(
         default=None,
-        validation_alias=AliasChoices("PrimaryCriteriaLimit", "primaryCriteriaLimit", "primaryLimit"),
-        serialization_alias="PrimaryCriteriaLimit"
+        validation_alias=AliasChoices("PrimaryLimit", "PrimaryCriteriaLimit", "primaryCriteriaLimit", "primaryLimit", "PrimaryLimit"),
+        serialization_alias="PrimaryLimit"
     )
 
     model_config = ConfigDict(populate_by_name=True)
@@ -272,7 +284,11 @@ class CriteriaGroup(BaseModel):
         validation_alias=AliasChoices("CriteriaList", "criteriaList"),
         serialization_alias="CriteriaList"
     )
-    count: Optional[int] = None
+    count: Optional[int] = Field(
+        default=None,
+        validation_alias=AliasChoices("Count", "count"),
+        serialization_alias="Count"
+    )
     groups: Optional[List[Any]] = None
     demographic_criteria_list: Optional[List['DemographicCriteria']] = Field(
         default=None,

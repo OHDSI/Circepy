@@ -67,13 +67,14 @@
                 "CdmVersionRange": {
                     "anyOf": [
                         {
-                            "$ref": "#/$defs/Period"
+                            "type": "string"
                         },
                         {
                             "type": "null"
                         }
                     ],
-                    "default": null
+                    "default": null,
+                    "title": "Cdmversionrange"
                 },
                 "PrimaryCriteria": {
                     "anyOf": [
@@ -166,7 +167,44 @@
             "type": "object"
         },
         "ConceptSet": {
-            "$ref": "#/$defs/ConceptSet"
+            "description": "Java equivalent: org.ohdsi.circe.cohortdefinition.ConceptSet",
+            "properties": {
+                "id": {
+                    "description": "Field: id (int)",
+                    "title": "Id",
+                    "type": "integer"
+                },
+                "name": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "description": "Field: name (String)",
+                    "title": "Name"
+                },
+                "expression": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ConceptSetExpression"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "description": "Field: expression (ConceptSetExpression)"
+                }
+            },
+            "required": [
+                "id"
+            ],
+            "title": "ConceptSet",
+            "type": "object"
         },
         "ConceptSetExpression": {
             "description": "Represents a concept set expression.\n\nJava equivalent: org.ohdsi.circe.vocabulary.ConceptSetExpression\n\nNote: isExcluded, includeMapped, includeDescendants may not be present in all Java JSONs\n(they're sometimes only on the items), so we provide defaults.",
@@ -187,31 +225,10 @@
                     "title": "Isexcluded",
                     "type": "boolean"
                 },
-                "other": {
-                    "anyOf": [
-                        {
-                            "$ref": "#/$defs/ConceptSetItem"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ],
-                    "default": null
-                },
                 "includeMapped": {
                     "default": false,
                     "title": "Includemapped",
                     "type": "boolean"
-                },
-                "JSON_MAPPER": {
-                    "anyOf": [
-                        {},
-                        {
-                            "type": "null"
-                        }
-                    ],
-                    "default": null,
-                    "title": "Json Mapper"
                 },
                 "includeDescendants": {
                     "default": false,
@@ -232,26 +249,6 @@
                     ],
                     "default": null,
                     "title": "Items"
-                },
-                "true": {
-                    "anyOf": [
-                        {},
-                        {
-                            "type": "null"
-                        }
-                    ],
-                    "default": null,
-                    "title": "True"
-                },
-                "false": {
-                    "anyOf": [
-                        {},
-                        {
-                            "type": "null"
-                        }
-                    ],
-                    "default": null,
-                    "title": "False"
                 }
             },
             "title": "ConceptSetExpression",
@@ -291,7 +288,107 @@
             "type": "object"
         },
         "Concept": {
-            "$ref": "#/$defs/Concept"
+            "description": "Represents a concept in the OMOP vocabulary.\n\nJava equivalent: org.ohdsi.circe.vocabulary.Concept\nNote: In Java, conceptId is Long (nullable), but JSON schema marks it as required.\nWe make it Optional to match Java runtime behavior while maintaining schema compatibility.",
+            "properties": {
+                "ConceptId": {
+                    "anyOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Conceptid"
+                },
+                "ConceptName": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Conceptname"
+                },
+                "ConceptCode": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Conceptcode"
+                },
+                "ConceptClassId": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Conceptclassid"
+                },
+                "StandardConcept": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Standardconcept"
+                },
+                "InvalidReason": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Invalidreason"
+                },
+                "DomainId": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Domainid"
+                },
+                "VocabularyId": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Vocabularyid"
+                }
+            },
+            "title": "Concept",
+            "type": "object"
         },
         "ResultLimit": {
             "description": "Represents a result limit for cohort expressions.\n\nJava equivalent: org.ohdsi.circe.cohortdefinition.ResultLimit",
@@ -328,7 +425,7 @@
                     "default": null,
                     "title": "Criterialist"
                 },
-                "count": {
+                "Count": {
                     "anyOf": [
                         {
                             "type": "integer"
@@ -611,7 +708,7 @@
         "DateRange": {
             "description": "Represents a date range with operation, extent, and value.\n\nJava equivalent: org.ohdsi.circe.cohortdefinition.DateRange",
             "properties": {
-                "op": {
+                "Op": {
                     "anyOf": [
                         {
                             "type": "string"
@@ -623,22 +720,13 @@
                     "default": null,
                     "title": "Op"
                 },
-                "extent": {
+                "Value": {
                     "anyOf": [
                         {
                             "type": "string"
                         },
                         {
-                            "type": "null"
-                        }
-                    ],
-                    "default": null,
-                    "title": "Extent"
-                },
-                "value": {
-                    "anyOf": [
-                        {
-                            "type": "string"
+                            "type": "number"
                         },
                         {
                             "type": "null"
@@ -646,6 +734,21 @@
                     ],
                     "default": null,
                     "title": "Value"
+                },
+                "Extent": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "number"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Extent"
                 }
             },
             "title": "DateRange",
@@ -772,7 +875,7 @@
                     ],
                     "default": null
                 },
-                "PrimaryCriteriaLimit": {
+                "PrimaryLimit": {
                     "anyOf": [
                         {
                             "$ref": "#/$defs/ResultLimit"
