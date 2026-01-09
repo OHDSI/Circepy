@@ -289,7 +289,11 @@ class CriteriaGroup(BaseModel):
         validation_alias=AliasChoices("Count", "count"),
         serialization_alias="Count"
     )
-    groups: Optional[List[Any]] = None
+    groups: Optional[List[Any]] = Field(
+        default=None,
+        validation_alias=AliasChoices("Groups", "groups"),
+        serialization_alias="Groups"
+    )
     demographic_criteria_list: Optional[List['DemographicCriteria']] = Field(
         default=None,
         validation_alias=AliasChoices("DemographicCriteriaList", "demographicCriteriaList"),
@@ -302,6 +306,35 @@ class CriteriaGroup(BaseModel):
     )
 
     model_config = ConfigDict(populate_by_name=True)
+    
+    @field_validator('groups', mode='before')
+    @classmethod
+    def deserialize_groups(cls, v: Any) -> Any:
+        """Deserialize nested CriteriaGroup objects.
+        
+        CriteriaGroup.groups contains CriteriaGroup[] in Java.
+        JSON format: [{"Type": "ANY", "CriteriaList": [...], "Groups": [...]}]
+        -> deserialize to CriteriaGroup objects recursively
+        """
+        if not v or not isinstance(v, list):
+            return v
+        
+        result = []
+        for item in v:
+            if isinstance(item, dict):
+                # Recursively deserialize as CriteriaGroup
+                # This will trigger this validator again for nested groups
+                try:
+                    group = cls.model_validate(item, strict=False)
+                    result.append(group)
+                except Exception:
+                    # If deserialization fails, keep as dict
+                    # This can happen if there are validation errors
+                    result.append(item)
+            else:
+                result.append(item)
+        
+        return result
     
     @field_validator('criteria_list', mode='before')
     @classmethod
@@ -548,23 +581,6 @@ class CriteriaGroup(BaseModel):
             
             deserialized_item = deserialize_criteria_item(item)
             deserialized.append(deserialized_item)
-        
-        return deserialized
-    
-    @field_validator('groups', mode='before')
-    @classmethod
-    def deserialize_groups(cls, v: Any) -> Any:
-        """Deserialize groups recursively."""
-        if not v or not isinstance(v, list):
-            return v
-        
-        deserialized = []
-        for group in v:
-            if isinstance(group, dict):
-                # Let Pydantic handle validation - it will call field validators
-                deserialized.append(group)
-            else:
-                deserialized.append(group)
         
         return deserialized
     

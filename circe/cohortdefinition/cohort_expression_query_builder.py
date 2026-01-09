@@ -413,14 +413,32 @@ WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id =
         """Wrap criteria query with group logic.
         
         Java equivalent: wrapCriteriaQuery()
+        
+        This creates a nested structure where:
+        1. The base query is wrapped with Q+OP join and passed as event table to criteria group
+        2. The criteria group uses this as the E alias (via @eventTable in GROUP_QUERY_TEMPLATE)
+        3. The criteria group processes nested CorrelatedCriteria (which add their own OP joins)
+        4. The outer PE wrapper just selects the final results
         """
-        event_query = self.EVENT_TABLE_EXPRESSION_TEMPLATE.replace("@eventQuery", query)
-        group_query = self.get_criteria_group_query(group, f"({event_query})")
+        # Step 1: Wrap base query with Q+OP join
+        # This will be used as the event_table (becomes E in the GROUP_QUERY_TEMPLATE)
+        q_op_query = f"""SELECT Q.person_id, Q.event_id, Q.start_date, Q.end_date, Q.visit_occurrence_id, OP.observation_period_start_date as op_start_date, OP.observation_period_end_date as op_end_date
+FROM ({query}) Q
+JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id 
+  and OP.observation_period_start_date <= Q.start_date and OP.observation_period_end_date >= Q.start_date"""
+        
+        # Step 2: Generate the criteria group query using the Q+OP query as the event table
+        # This Q+OP query will become the E alias in GROUP_QUERY_TEMPLATE
+        group_query = self.get_criteria_group_query(group, f"({q_op_query})")
         group_query = group_query.replace("@indexId", "0")
+        
+        # Step 3: Wrap with PE selector
+        # The PE wrapper just selects from the original query and joins to the group results
         wrapped_query = f"""
-        SELECT PE.person_id, PE.event_id, PE.start_date, PE.end_date, PE.visit_occurrence_id, PE.sort_date 
-        FROM ({query}) PE
-        JOIN ({group_query}) AC ON AC.person_id = PE.person_id AND AC.event_id = PE.event_id
+  select PE.person_id, PE.event_id, PE.start_date, PE.end_date, PE.visit_occurrence_id, PE.sort_date FROM ({query}) PE
+JOIN (
+{group_query}
+) AC on AC.person_id = pe.person_id and AC.event_id = pe.event_id
         """
         return wrapped_query
 
@@ -1111,6 +1129,44 @@ DROP TABLE #inclusion_rules;
             else:
                 builder_options.additional_columns.append(corelated_criteria.occurrence.count_column)
                 count_column_expression = f"cc.{corelated_criteria.occurrence.count_column.value}"
+
+        # If event_table is a query (not a temp table name like #qualified_events),
+        # wrap it with observation period join to match reference SQL structure
+        # Note: ignore_observation_period applies to window criteria, not the event table join
+        # Check if event_table is a query (contains SELECT or FROM) vs a temp table name
+        # Temp tables start with #, queries contain SELECT/FROM or are wrapped in parentheses
+        is_temp_table = event_table.strip().startswith('#')
+        is_query = not is_temp_table and ('SELECT' in event_table.upper() or 'FROM' in event_table.upper() or '(' in event_table)
+        
+        # Add observation period join to event table when it's a query (matches reference SQL)
+        # BUT only if it doesn't already have op_start_date (to avoid double-wrapping)
+        if is_query and 'op_start_date' not in event_table.lower():
+            # event_table is a query without OP join, wrap it with observation period join
+            # Remove outer parentheses if present to avoid double nesting
+            clean_event_table = event_table.strip()
+            # Remove one level of parentheses if present
+            if clean_event_table.startswith('(') and clean_event_table.endswith(')'):
+                # Count matching parentheses to ensure we remove only the outer pair
+                paren_count = 0
+                remove_outer = True
+                for i, char in enumerate(clean_event_table):
+                    if char == '(':
+                        paren_count += 1
+                    elif char == ')':
+                        paren_count -= 1
+                        if paren_count == 0 and i < len(clean_event_table) - 1:
+                            # Found closing paren before the end - don't remove outer
+                            remove_outer = False
+                            break
+                
+                if remove_outer and paren_count == 0:
+                    clean_event_table = clean_event_table[1:-1].strip()
+            
+            event_table = f"""(SELECT Q.person_id, Q.event_id, Q.start_date, Q.end_date, Q.visit_occurrence_id, OP.observation_period_start_date as op_start_date, OP.observation_period_end_date as op_end_date
+FROM ({clean_event_table}) Q
+JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id 
+  and OP.observation_period_start_date <= Q.start_date and OP.observation_period_end_date >= Q.start_date
+)"""
 
         query = self._get_windowed_criteria_query_internal(query, corelated_criteria, event_table, builder_options)
 
