@@ -37,7 +37,8 @@ class ConditionOccurrenceSqlBuilder(CriteriaSqlBuilder[ConditionOccurrence]):
     
     def get_query_template(self) -> str:
         """Get the SQL query template for condition occurrence criteria."""
-        return """-- Begin Condition Occurrence Criteria
+        return """
+-- Begin Condition Occurrence Criteria
 SELECT C.person_id, C.condition_occurrence_id as event_id, C.start_date, C.end_date,
   C.visit_occurrence_id, C.start_date as sort_date@additionalColumns
 FROM 

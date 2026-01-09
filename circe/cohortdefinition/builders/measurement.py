@@ -217,5 +217,5 @@ from
     def resolve_ordinal_expression(self, criteria: Measurement, options: Optional[BuilderOptions] = None) -> str:
         """Resolve ordinal expression for measurement criteria."""
         if criteria.first:
-            return ", ROW_NUMBER() OVER (PARTITION BY m.person_id ORDER BY m.measurement_date, m.measurement_id) ordinal"
+            return ", row_number() over (PARTITION BY m.person_id ORDER BY m.measurement_date, m.measurement_id) ordinal"
         return ""
