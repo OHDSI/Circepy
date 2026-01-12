@@ -64,10 +64,9 @@ class CohortExpression(BaseModel):
         validation_alias=AliasChoices("EndStrategy", "endStrategy"),
         serialization_alias="EndStrategy"
     )
-    cdm_version_range: Optional[Period] = Field(
+    cdm_version_range: Optional[str] = Field(
         default=None,
-        validation_alias=AliasChoices("CdmVersionRange", "cdmVersionRange"),
-        serialization_alias="CdmVersionRange"
+        alias="cdmVersionRange"
     )
     primary_criteria: Optional[PrimaryCriteria] = Field(
         default=None,
@@ -84,7 +83,11 @@ class CohortExpression(BaseModel):
         validation_alias=AliasChoices("CollapseSettings", "collapseSettings"),
         serialization_alias="CollapseSettings"
     )
-    title: Optional[str] = None
+    title: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("Title", "title"),
+        serialization_alias="Title"
+    )
     inclusion_rules: Optional[List[InclusionRule]] = Field(
         default=None,
         validation_alias=AliasChoices("InclusionRules", "inclusionRules"),
@@ -204,20 +207,10 @@ class CohortExpression(BaseModel):
     def normalize_before_validation(cls, data: Any) -> Any:
         """Normalize data before validation.
         
-        Handles cdmVersionRange as string by removing it if it's empty or invalid for Period.
+        Handles empty objects and other normalization needs.
         """
         if isinstance(data, dict):
-            # If cdmVersionRange is a string, and we now expect a Period, 
-            # we should only keep it if it can be represented as a Period or if it's not a string.
-            # Java CIRCE sometimes has cdmVersionRange as a string in older versions or specific exports.
-            cdm_v = data.get('CdmVersionRange') or data.get('cdmVersionRange')
-            if isinstance(cdm_v, str):
-                data = dict(data)
-                # If it's a string, we might just want to drop it to avoid validation error,
-                # or try to parse it. For now, dropping it matches the previous logic but safely.
-                data.pop('CdmVersionRange', None)
-                data.pop('cdmVersionRange', None)
-
+            # No longer dropping cdmVersionRange string since we now expect Optional[str]
             if 'censorWindow' in data and data['censorWindow'] == {}:
                 data = dict(data)
                 data.pop('censorWindow')

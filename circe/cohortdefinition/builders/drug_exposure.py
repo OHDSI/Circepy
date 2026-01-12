@@ -122,8 +122,12 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
             "de.person_id",
             "de.drug_exposure_id", 
             "de.drug_concept_id",
-            "de.visit_occurrence_id"
+            "de.visit_occurrence_id",
+            "days_supply",
+            "quantity",
+            "refills"
         ]
+
         
         # drugType
         if (criteria.drug_type and len(criteria.drug_type) > 0) or criteria.drug_type_cs:
@@ -136,18 +140,6 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
         # routeConcept
         if (criteria.route_concept and len(criteria.route_concept) > 0) or criteria.route_concept_cs:
             select_cols.append("de.route_concept_id")
-
-        # refills
-        if criteria.refills:
-            select_cols.append("de.refills")
-
-        # quantity
-        if criteria.quantity:
-            select_cols.append("de.quantity")
-
-        # daysSupply
-        if criteria.days_supply:
-            select_cols.append("de.days_supply")
 
         # providerSpecialty
         if (criteria.provider_specialty and len(criteria.provider_specialty) > 0) or criteria.provider_specialty_cs:
@@ -164,6 +156,7 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
             select_cols.append("de.drug_exposure_start_date as start_date, COALESCE(de.drug_exposure_end_date, DATEADD(day,de.days_supply,de.drug_exposure_start_date), DATEADD(day,1,de.drug_exposure_start_date)) as end_date")
         
         return select_cols
+
     
     def resolve_join_clauses(self, criteria: DrugExposure, options: Optional[BuilderOptions] = None) -> List[str]:
         """Resolve join clauses for drug exposure criteria.

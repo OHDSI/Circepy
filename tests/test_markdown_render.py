@@ -1651,7 +1651,7 @@ class TestRenderCohortExpression:
             inclusion_rules=[InclusionRule(name="Rule 1")],
             collapse_settings=CollapseSettings(era_pad=30, collapse_type=CollapseType.COLLAPSE),
             censor_window=Period(start_date="2020-01-01"),
-            cdm_version_range=Period(start_date="2020-01-01"),
+            cdm_version_range=">=5.0.0",
             concept_sets=[concept_set]
         )
         result = renderer.render_cohort_expression(cohort)

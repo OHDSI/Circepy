@@ -129,11 +129,6 @@ class MarkdownRender:
         if cohort_expression.censor_window:
             markdown_parts.append(self._render_censor_window(cohort_expression.censor_window))
         
-        # CDM version range
-        if cohort_expression.cdm_version_range:
-            markdown_parts.append("## CDM Version Range\n")
-            markdown_parts.append(self._render_period(cohort_expression.cdm_version_range))
-        
         # Concept sets (only if explicitly requested)
         should_include_concept_sets = include_concept_sets if include_concept_sets is not None else self._include_concept_sets
         if should_include_concept_sets and cohort_expression.concept_sets:
@@ -675,8 +670,7 @@ class MarkdownRender:
             (r',\s*(a modifier concept [^,]+?)(?=,\s*(?:starting|ending)|$)', 'modifier concept'),
             (r',\s*(with a condition status: [^,]+?)(?=,\s*(?:starting|ending)|$)', 'condition status'),
             (r',\s*(a condition status concept [^,]+?)(?=,\s*(?:starting|ending)|$)', 'condition status concept'),
-            (r',\s*(with a stop reason: [^,]+?)(?=,\s*(?:starting|ending)|$)', 'stop reason'),
-            (r'(\s*\(including [^)]+?\))', 'source concept')
+            (r',\s*(with a stop reason: [^,]+?)(?=,\s*(?:starting|ending)|$)', 'stop reason')
         ]
         
         for pattern, desc in attribute_patterns:
@@ -829,9 +823,15 @@ class MarkdownRender:
         for criteria in (criteria_group.criteria_list or []):
             from ..criteria import CorelatedCriteria
             if isinstance(criteria, CorelatedCriteria):
-                items.append(self._render_corelated_criteria_detail(criteria, index_label=index_label) + ".")
+                item = self._render_corelated_criteria_detail(criteria, index_label=index_label)
             else:
-                items.append(self._render_criteria(criteria, is_plural=True, index_label=index_label) + ".")
+                item = self._render_criteria(criteria, is_plural=True, index_label=index_label)
+            
+            if item:
+                item = item.strip()
+                if not item.endswith('.'):
+                    item += "."
+            items.append(item)
                 
         # Subgroups
         for sub_group in (criteria_group.groups or []):
@@ -1010,9 +1010,13 @@ class MarkdownRender:
                         index_label = "cohort entry"
                         if isinstance(criteria, CorelatedCriteria):
                             criteria_text = self._render_corelated_criteria_detail(criteria, index_label=index_label)
+                            if not criteria_text.endswith('.'):
+                                criteria_text += "."
                             rules_parts.append(f"Entry events {criteria_text}")
                         else:
                             criteria_text = self._render_criteria(criteria, is_plural=True, index_label=index_label)
+                            if not criteria_text.endswith('.'):
+                                criteria_text += "."
                             rules_parts.append(f"Entry events {criteria_text}")
                     elif has_groups:
                         group_str = self._render_criteria_group(group.groups[0], level=0, index_label="cohort entry")
@@ -1037,6 +1041,8 @@ class MarkdownRender:
                             criteria_text = self._render_corelated_criteria_detail(criteria, index_label="cohort entry")
                         else:
                             criteria_text = self._render_criteria(criteria, is_plural=True, index_label="cohort entry")
+                        if criteria_text and not criteria_text.strip().endswith('.'):
+                            criteria_text = criteria_text.strip() + "."
                         rules_parts.append(f"   {item_idx}. {criteria_text}")
                         item_idx += 1
                         

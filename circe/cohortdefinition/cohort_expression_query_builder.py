@@ -426,24 +426,32 @@ WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id =
         # Step 1: Wrap base query with Q+OP join
         # This will be used as the event_table (becomes E in the GROUP_QUERY_TEMPLATE)
         q_op_query = f"""SELECT Q.person_id, Q.event_id, Q.start_date, Q.end_date, Q.visit_occurrence_id, OP.observation_period_start_date as op_start_date, OP.observation_period_end_date as op_end_date
-FROM ({query}) Q
+FROM (
+{query}
+) Q
 JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id 
   and OP.observation_period_start_date <= Q.start_date and OP.observation_period_end_date >= Q.start_date"""
         
         # Step 2: Generate the criteria group query using the Q+OP query as the event table
         # This Q+OP query will become the E alias in GROUP_QUERY_TEMPLATE
-        group_query = self.get_criteria_group_query(group, f"({q_op_query})")
+        group_query = self.get_criteria_group_query(group, f"""(
+{q_op_query}
+)""")
         group_query = group_query.replace("@indexId", "0")
+
         
         # Step 3: Wrap with PE selector
         # The PE wrapper just selects from the original query and joins to the group results
         wrapped_query = f"""
-  select PE.person_id, PE.event_id, PE.start_date, PE.end_date, PE.visit_occurrence_id, PE.sort_date FROM ({query}) PE
+  select PE.person_id, PE.event_id, PE.start_date, PE.end_date, PE.visit_occurrence_id, PE.sort_date FROM (
+{query}
+) PE
 JOIN (
 {group_query}
 ) AC on AC.person_id = pe.person_id and AC.event_id = pe.event_id
         """
         return wrapped_query
+
 
     def get_codeset_query(self, concept_sets: List[Any]) -> str:
         """Get codeset query.
@@ -1166,10 +1174,13 @@ DROP TABLE #inclusion_rules;
                     clean_event_table = clean_event_table[1:-1].strip()
             
             event_table = f"""(SELECT Q.person_id, Q.event_id, Q.start_date, Q.end_date, Q.visit_occurrence_id, OP.observation_period_start_date as op_start_date, OP.observation_period_end_date as op_end_date
-FROM ({clean_event_table}) Q
+FROM (
+{clean_event_table}
+) Q
 JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id 
   and OP.observation_period_start_date <= Q.start_date and OP.observation_period_end_date >= Q.start_date
 )"""
+
 
         query = self._get_windowed_criteria_query_internal(query, corelated_criteria, event_table, builder_options)
 
@@ -1296,6 +1307,9 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
         if hasattr(criteria, 'correlated_criteria') and criteria.correlated_criteria:
             query = self.wrap_criteria_query(query, criteria.correlated_criteria)
         return query
+
+
+
 
     # IGetEndStrategySqlDispatcher implementation
     def get_date_field_for_offset_strategy(self, date_field: str) -> str:

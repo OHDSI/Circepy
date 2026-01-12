@@ -5,12 +5,17 @@ These tests run both the Python CLI and R CirceR script on the same cohorts
 and compare the generated SQL and Markdown outputs.
 """
 
-import subprocess
 import sys
+import functools
 from pathlib import Path
 import pytest
 import tempfile
 import shutil
+from unittest.mock import patch
+from io import StringIO
+from contextlib import redirect_stdout, redirect_stderr
+
+from circe.cli import main
 
 # Get list of test cohorts
 COHORTS_DIR = Path(__file__).parent / 'cohorts'
@@ -21,8 +26,10 @@ TEST_COHORTS = [
 ]
 
 
-def run_r_script(cohort_file: Path) -> tuple[str, str]:
-    """Run R CirceR script and return SQL and Markdown."""
+@functools.lru_cache(maxsize=None)
+def run_r_script_cached(cohort_file: Path) -> tuple[str, str]:
+    """Run R CirceR script and return SQL and Markdown. Cached to avoid redundant slow R calls."""
+    import subprocess
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir_path = Path(tmpdir)
         sql_output = tmpdir_path / 'output.sql'
@@ -47,41 +54,22 @@ def run_r_script(cohort_file: Path) -> tuple[str, str]:
         return sql, markdown
 
 
-def run_python_cli(cohort_file: Path) -> tuple[str, str]:
-    """Run Python CLI and return SQL and Markdown."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmpdir_path = Path(tmpdir)
-        sql_output = tmpdir_path / 'output.sql'
-        md_output = tmpdir_path / 'output.md'
-        
-        # Run Python CLI for SQL
-        result = subprocess.run(
-            [sys.executable, '-m', 'circe.cli', 'generate-sql', str(cohort_file),
-             '--output', str(sql_output), '--no-validate'],
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
-        
-        if result.returncode != 0:
-            raise RuntimeError(f"Python CLI failed: {result.stderr}")
-        
-        # Run Python CLI for Markdown
-        result = subprocess.run(
-            [sys.executable, '-m', 'circe.cli', 'render-markdown', str(cohort_file),
-             '--output', str(md_output), '--no-validate'],
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
-        
-        if result.returncode != 0:
-            raise RuntimeError(f"Python CLI failed: {result.stderr}")
-        
-        sql = sql_output.read_text()
-        markdown = md_output.read_text()
-        
-        return sql, markdown
+def run_python_cli_in_process(args: list[str]) -> tuple[int, str, str]:
+    """Run Python CLI in-process and return exit code, stdout, and stderr."""
+    stdout = StringIO()
+    stderr = StringIO()
+    
+    with patch('sys.argv', ['circe'] + args):
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            try:
+                exit_code = main() or 0
+            except SystemExit as e:
+                exit_code = e.code
+            except Exception as e:
+                print(f"Error: {e}", file=sys.stderr)
+                exit_code = 1
+                
+    return exit_code, stdout.getvalue(), stderr.getvalue()
 
 
 @pytest.mark.parametrize('cohort_name', TEST_COHORTS)
@@ -95,11 +83,18 @@ def test_sql_generation_matches_r(cohort_name):
     if not cohort_file.exists():
         pytest.skip(f"Cohort file not found: {cohort_file}")
     
-    # Get R output
-    r_sql, _ = run_r_script(cohort_file)
+    # Get R output (cached)
+    r_sql, _ = run_r_script_cached(cohort_file)
     
-    # Get Python output
-    py_sql, _ = run_python_cli(cohort_file)
+    # Get Python output (in-process)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        sql_output = Path(tmpdir) / 'output.sql'
+        exit_code, _, _ = run_python_cli_in_process([
+            'generate-sql', str(cohort_file), '--output', str(sql_output), '--no-validate'
+        ])
+        
+        assert exit_code == 0
+        py_sql = sql_output.read_text()
     
     # Compare key structural elements
     assert '#Codesets' in py_sql, "Missing #Codesets table"
@@ -126,8 +121,15 @@ def test_markdown_generation(cohort_name):
     if not cohort_file.exists():
         pytest.skip(f"Cohort file not found: {cohort_file}")
     
-    # Get Python output
-    _, py_md = run_python_cli(cohort_file)
+    # Get Python output (in-process)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        md_output = Path(tmpdir) / 'output.md'
+        exit_code, _, _ = run_python_cli_in_process([
+            'render-markdown', str(cohort_file), '--output', str(md_output), '--no-validate'
+        ])
+        
+        assert exit_code == 0
+        py_md = md_output.read_text()
     
     # Check Markdown has expected sections
     assert 'Cohort Entry Events' in py_md or 'cohort entry' in py_md.lower()
@@ -138,15 +140,10 @@ def test_validate_command():
     """Test validate command."""
     cohort_file = COHORTS_DIR / '1006.json'
     
-    result = subprocess.run(
-        [sys.executable, '-m', 'circe.cli', 'validate', str(cohort_file)],
-        capture_output=True,
-        text=True,
-        timeout=30
-    )
+    exit_code, _, _ = run_python_cli_in_process(['validate', str(cohort_file)])
     
     # Validation may return warnings (exit code 1) but as long as it doesn't crash, it's OK
-    assert result.returncode in [0, 1], f"Unexpected exit code: {result.returncode}"
+    assert exit_code in [0, 1], f"Unexpected exit code: {exit_code}"
 
 
 def test_process_command():
@@ -158,16 +155,13 @@ def test_process_command():
         sql_output = tmpdir_path / 'output.sql'
         md_output = tmpdir_path / 'output.md'
         
-        result = subprocess.run(
-            [sys.executable, '-m', 'circe.cli', 'process', str(cohort_file),
-             '--sql-output', str(sql_output),
-             '--md-output', str(md_output)],
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
+        exit_code, _, _ = run_python_cli_in_process([
+            'process', str(cohort_file),
+            '--sql-output', str(sql_output),
+            '--md-output', str(md_output)
+        ])
         
-        assert result.returncode == 0
+        assert exit_code == 0
         assert sql_output.exists()
         assert md_output.exists()
         assert len(sql_output.read_text()) > 1000

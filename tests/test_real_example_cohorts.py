@@ -126,80 +126,63 @@ def normalize_sql(sql: str) -> str:
     
     This aggressive normalization focuses on functional differences only:
     - Case insensitive
-    - All whitespace (spaces, tabs, newlines) collapsed to single spaces
-    - Comments preserved as single tokens
+    - Multi-line and single-line comments removed
     - Template markers removed
-    - Consistent spacing around keywords and operators
+    - All whitespace (spaces, tabs, newlines) collapsed to single spaces
+    - Consistent spacing around punctuation and operators
     
     This means only the actual SQL tokens matter, not formatting.
     """
+    import re
+    
     # Convert to lowercase for case-insensitive comparison
     sql = sql.lower()
     
+    # Remove multi-line comments /* ... */
+    sql = re.sub(r'/\*.*?\*/', ' ', sql, flags=re.DOTALL)
+    
+    # Remove single-line comments -- ...
+    # Be careful to handle comments at the end of the string
+    sql = re.sub(r'--.*$', '', sql, flags=re.MULTILINE)
+    
     # Remove template markers like {0 != 0}?{ and } that appear in reference SQL
     # These are artifacts of incomplete template processing in R/Java output
-    import re
-    # Remove entire conditional template blocks: {condition}?{ content }
-    # Need to handle nested braces carefully
-    # Strategy: repeatedly remove conditional blocks until none remain
     max_iterations = 10
     for _ in range(max_iterations):
         old_sql = sql
         # Match {condition}?{ ... } where condition doesn't contain ?{
-        # Use non-greedy match for content between opening and closing brace
         sql = re.sub(r'\{[^}]*\}\?\{.*?\}', '', sql, flags=re.DOTALL)
-        # Also remove orphaned closing braces on their own lines
+        # Also remove orphaned closing braces on their own lines or with leading whitespace
         sql = re.sub(r'^\s*\}\s*$', '', sql, flags=re.MULTILINE)
         if sql == old_sql:
             break
     
     # Remove orphaned template content like "-- comment... where(condition)" 
     # that appears in reference when conditional blocks aren't fully processed
-    # Pattern: "-- the matching group...inclusion_rule_mask where(...)"
     sql = re.sub(r'--\s*the matching group.*?inclusion_rule_mask\s+where\([^)]+\)', '', sql, flags=re.IGNORECASE)
     
-    # Split on newlines but preserve SQL comments
-    lines = []
-    for line in sql.splitlines():
-        line = line.strip()
-        if line:  # Skip empty lines
-            lines.append(line)
+    # Replace all whitespace sequences (including newlines) with a single space
+    sql = re.sub(r'\s+', ' ', sql)
     
-    # Join all non-empty lines with space
-    sql = ' '.join(lines)
+    # Consistency for SQL tokens: remove spaces around functional separators
+    # This helps ignore differences like "(x)" vs "( x )" or "a=b" vs "a = b"
+    sql = re.sub(r'\s*([(),=<>!]+)\s*', r'\1', sql)
     
-    # Normalize all whitespace sequences to single space
-    sql = ' '.join(sql.split())
-    
-    # Normalize some common SQL formatting differences
-    # Remove spaces around parentheses to avoid (x) vs ( x ) differences
-    sql = re.sub(r'\s*\(\s*', '(', sql)
-    sql = re.sub(r'\s*\)\s*', ')', sql)
-    # Remove spaces around commas
-    sql = re.sub(r'\s*,\s*', ',', sql)
-    # Normalize spaces around operators =, <, >, !=, but preserve SQL keywords like "and", "or"
-    sql = re.sub(r'\s*=\s*', '=', sql)
-    sql = re.sub(r'\s*!=\s*', '!=', sql)
-    sql = re.sub(r'\s*<=\s*', '<=', sql)
-    sql = re.sub(r'\s*>=\s*', '>=', sql)
-    sql = re.sub(r'\s*<\s*', '<', sql)
-    sql = re.sub(r'\s*>\s*', '>', sql)
-    
-    # Ensure keywords have consistent spacing (single space before and after)
-    # But first collapse repeated spaces from operator normalization
-    sql = ' '.join(sql.split())
-    
-    # Normalize "and" keyword - ensure space before (avoid things like "0.0000and")
-    sql = re.sub(r'(\w)and\b', r'\1 and', sql)
-    sql = re.sub(r'\band(\w)', r'and \1', sql)
-    # Same for "or"
-    sql = re.sub(r'(\w)or\b', r'\1 or', sql)
-    sql = re.sub(r'\bor(\w)', r'or \1', sql)
+    # Re-insert spaces around keywords to ensure they are tokens, 
+    # but ONLY where they were already separated by non-word characters.
+    # Actually, simpler: just ensure keywords have a single space around them 
+    # if they are preceded or followed by word characters.
+    for keyword in ['and', 'or', 'in', 'select', 'from', 'where', 'join', 'on', 'group by', 'order by', 'having', 'union all', 'case', 'when', 'then', 'else', 'end', 'as', 'coalesce', 'dateadd', 'datediff']:
+        # Only separate if it's a digit followed by keyword or keyword followed by digit
+        sql = re.sub(rf'(\d){keyword}\b', rf'\1 {keyword}', sql)
+        sql = re.sub(rf'\b{keyword}(\d)', rf'{keyword} \1', sql)
     
     # Final cleanup of multiple spaces
-    sql = ' '.join(sql.split())
+    sql = re.sub(r'\s+', ' ', sql)
     
     return sql.strip()
+
+
 
 
 def normalize_markdown(text: str) -> str:

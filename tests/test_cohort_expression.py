@@ -109,7 +109,7 @@ class TestCohortExpressionAliases(unittest.TestCase):
     def test_cdm_version_range_alias(self):
         """Test cdmVersionRange alias."""
         cohort = CohortExpression.model_validate({
-            "cdmVersionRange": {"startDate": "2020-01-01"}
+            "cdmVersionRange": ">=5.0.0"
         })
         self.assertIsNotNone(cohort.cdm_version_range)
     
@@ -268,7 +268,7 @@ class TestCohortExpressionComplexScenarios(unittest.TestCase):
             expression_limit=ResultLimit(type="All"),
             additional_criteria=CriteriaGroup(type="ALL"),
             end_strategy=EndStrategy(),
-            cdm_version_range=Period(start_date="2020-01-01"),
+            cdm_version_range=">=5.0.0",
             collapse_settings=CollapseSettings(era_pad=30, collapse_type=CollapseType.COLLAPSE),
             censor_window=Period(start_date="2020-01-01"),
             concept_sets=[],
@@ -329,7 +329,7 @@ class TestCohortExpressionComplexScenarios(unittest.TestCase):
         result = cohort.model_dump(by_alias=True)
         
         self.assertIsInstance(result, dict)
-        self.assertEqual(result["title"], "Test Cohort")
+        self.assertEqual(result["Title"], "Test Cohort")
         # Java uses PascalCase for top-level fields
         self.assertIn("PrimaryCriteria", result)
         self.assertIn("QualifiedLimit", result)
@@ -418,20 +418,16 @@ class TestCohortExpressionIntegration(unittest.TestCase):
             )
             self.assertEqual(cohort.collapse_settings.collapse_type, collapse_type)
     
-    def test_cohort_expression_with_period(self):
-        """Test CohortExpression with period objects."""
+    def test_cohort_expression_with_cdm_version_range(self):
+        """Test CohortExpression with cdm_version_range string."""
         cohort = CohortExpression(
-            cdm_version_range=Period(
-                start_date="2020-01-01",
-                end_date="2021-12-31"
-            ),
+            cdm_version_range=">=5.0.0",
             censor_window=Period(
                 start_date="2020-06-01"
             )
         )
         
-        self.assertEqual(cohort.cdm_version_range.start_date, "2020-01-01")
-        self.assertEqual(cohort.cdm_version_range.end_date, "2021-12-31")
+        self.assertEqual(cohort.cdm_version_range, ">=5.0.0")
         self.assertEqual(cohort.censor_window.start_date, "2020-06-01")
     
     def test_cohort_expression_with_criteria_group(self):
