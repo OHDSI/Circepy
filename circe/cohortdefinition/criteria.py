@@ -88,11 +88,6 @@ class CorelatedCriteria(WindowedCriteria):
         validation_alias=AliasChoices("Occurrence", "occurrence"),
         serialization_alias="Occurrence"
     )
-    ignore_observation_period: bool = Field(
-        default=True,  # Default to True for CorelatedCriteria to match Java behavior
-        validation_alias=AliasChoices("IgnoreObservationPeriod", "ignoreObservationPeriod"),
-        serialization_alias="IgnoreObservationPeriod"
-    )
     model_config = ConfigDict(populate_by_name=True)
 
 
