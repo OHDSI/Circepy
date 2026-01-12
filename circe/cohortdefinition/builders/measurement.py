@@ -24,11 +24,11 @@ class MeasurementSqlBuilder(CriteriaSqlBuilder[Measurement]):
     def get_query_template(self) -> str:
         """Get the SQL query template for measurement criteria."""
         return """-- Begin Measurement Criteria
-select C.person_id, C.measurement_id as event_id, C.start_date, C.end_date,
+SELECT C.person_id, C.measurement_id as event_id, C.start_date, C.end_date,
        C.visit_occurrence_id, C.start_date as sort_date@additionalColumns
-from 
+FROM 
 (
-  select @selectClause @ordinalExpression
+  SELECT @selectClause @ordinalExpression
   FROM @cdm_database_schema.MEASUREMENT m
 @codesetClause
 ) C
@@ -49,8 +49,8 @@ from
     def get_table_column_for_criteria_column(self, criteria_column: CriteriaColumn) -> str:
         """Get table column for criteria column."""
         column_mapping = {
-            CriteriaColumn.START_DATE: "C.measurement_date",
-            CriteriaColumn.END_DATE: "C.measurement_date",
+            CriteriaColumn.START_DATE: "C.start_date",
+            CriteriaColumn.END_DATE: "C.end_date",
             CriteriaColumn.DOMAIN_CONCEPT: "C.measurement_concept_id",
             CriteriaColumn.DURATION: "NULL",
             CriteriaColumn.VISIT_ID: "C.visit_occurrence_id",
@@ -137,19 +137,25 @@ from
         join_clauses = []
         
         # Join to PERSON if age or gender conditions are present
-        if criteria.age or (criteria.gender and len(criteria.gender) > 0) or criteria.gender_cs:
+        if criteria.age or (criteria.gender and len(criteria.gender) > 0) or (criteria.gender_cs and criteria.gender_cs.codeset_id):
             join_clauses.append("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id")
         
         # Join to VISIT_OCCURRENCE
-        if (criteria.visit_type and len(criteria.visit_type) > 0) or criteria.visit_type_cs:
+        if (criteria.visit_type and len(criteria.visit_type) > 0) or (criteria.visit_type_cs and criteria.visit_type_cs.codeset_id):
              join_clauses.append("JOIN @cdm_database_schema.VISIT_OCCURRENCE V on C.visit_occurrence_id = V.visit_occurrence_id and C.person_id = V.person_id")
 
         # Join to PROVIDER if provider specialty conditions are present
         # Use "PR" alias to avoid conflict with PERSON alias
-        if (criteria.provider_specialty and len(criteria.provider_specialty) > 0) or criteria.provider_specialty_cs:
+        if (criteria.provider_specialty and len(criteria.provider_specialty) > 0) or (criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id):
             join_clauses.append("LEFT JOIN @cdm_database_schema.PROVIDER PR on C.provider_id = PR.provider_id")
         
         return join_clauses
+
+    def resolve_ordinal_expression(self, criteria: Measurement, options: Optional[BuilderOptions] = None) -> str:
+        """Resolve ordinal expression for measurement criteria."""
+        if criteria.first:
+            return "ORDER BY m.measurement_date, m.measurement_id ASC"
+        return ""
     
     def resolve_where_clauses(self, criteria: Measurement, options: Optional[BuilderOptions] = None) -> List[str]:
         """Resolve where clauses for measurement criteria.
@@ -239,9 +245,8 @@ from
              concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.gender)
              where_clauses.append(f"P.gender_concept_id in ({','.join(map(str, concept_ids))})")
 
-        # genderCS
         if criteria.gender_cs:
-             where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.gender_cs.codeset_id, "P.gender_concept_id"))
+             where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.gender_cs.codeset_id, "P.gender_concept_id", criteria.gender_cs.is_exclusion))
         
         # providerSpecialty
         if criteria.provider_specialty and len(criteria.provider_specialty) > 0:
@@ -250,7 +255,7 @@ from
 
         # providerSpecialtyCS
         if criteria.provider_specialty_cs:
-             where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.provider_specialty_cs.codeset_id, "PR.specialty_concept_id"))
+             where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.provider_specialty_cs.codeset_id, "PR.specialty_concept_id", criteria.provider_specialty_cs.is_exclusion))
 
         # visitType
         if criteria.visit_type and len(criteria.visit_type) > 0:

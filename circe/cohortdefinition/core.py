@@ -189,7 +189,7 @@ class PrimaryCriteria(BaseModel):
     primary_limit: Optional[ResultLimit] = Field(
         default=None,
         validation_alias=AliasChoices("PrimaryLimit", "PrimaryCriteriaLimit", "primaryCriteriaLimit", "primaryLimit", "PrimaryLimit"),
-        serialization_alias="PrimaryLimit"
+        serialization_alias="PrimaryCriteriaLimit"
     )
 
     model_config = ConfigDict(populate_by_name=True)

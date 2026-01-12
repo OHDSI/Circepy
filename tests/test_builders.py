@@ -20,7 +20,7 @@ from circe.cohortdefinition.builders import (
     CriteriaSqlBuilder, ConditionOccurrenceSqlBuilder,
     DrugExposureSqlBuilder, ProcedureOccurrenceSqlBuilder
 )
-from circe.cohortdefinition.criteria import Criteria, ConditionOccurrence
+from circe.cohortdefinition.criteria import Criteria, ConditionOccurrence, DrugExposure, ProcedureOccurrence
 from circe.vocabulary.concept import Concept
 from circe.cohortdefinition.core import DateRange, DateAdjustment, NumericRange
 
@@ -444,7 +444,7 @@ class TestDrugExposureSqlBuilder(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         self.builder = DrugExposureSqlBuilder()
-        self.criteria = Criteria()
+        self.criteria = DrugExposure(first=False)
     
     def test_get_default_columns(self):
         """Test get_default_columns method."""
@@ -471,17 +471,17 @@ class TestDrugExposureSqlBuilder(unittest.TestCase):
     def test_get_table_column_for_criteria_column_duration(self):
         """Test table column mapping for duration."""
         result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.DURATION)
-        self.assertEqual(result, "(DATEDIFF(d,C.drug_exposure_start_date, C.drug_exposure_end_date))")
+        self.assertEqual(result, "(DATEDIFF(d,C.start_date, C.end_date))")
     
     def test_get_table_column_for_criteria_column_start_date(self):
         """Test table column mapping for start date."""
         result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.START_DATE)
-        self.assertEqual(result, "C.drug_exposure_start_date")
+        self.assertEqual(result, "C.start_date")
     
     def test_get_table_column_for_criteria_column_end_date(self):
         """Test table column mapping for end date."""
         result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.END_DATE)
-        self.assertEqual(result, "C.drug_exposure_end_date")
+        self.assertEqual(result, "C.end_date")
     
     def test_get_criteria_sql_basic(self):
         """Test basic SQL generation."""
@@ -507,7 +507,7 @@ class TestProcedureOccurrenceSqlBuilder(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         self.builder = ProcedureOccurrenceSqlBuilder()
-        self.criteria = Criteria()
+        self.criteria = ProcedureOccurrence(first=False)
     
     def test_get_default_columns(self):
         """Test get_default_columns method."""
@@ -539,12 +539,12 @@ class TestProcedureOccurrenceSqlBuilder(unittest.TestCase):
     def test_get_table_column_for_criteria_column_start_date(self):
         """Test table column mapping for start date."""
         result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.START_DATE)
-        self.assertEqual(result, "C.procedure_date")
+        self.assertEqual(result, "C.start_date")
     
     def test_get_table_column_for_criteria_column_end_date(self):
         """Test table column mapping for end date."""
         result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.END_DATE)
-        self.assertEqual(result, "C.procedure_date")  # Same as start date for procedures
+        self.assertEqual(result, "C.end_date")
     
     def test_get_criteria_sql_basic(self):
         """Test basic SQL generation."""
@@ -561,7 +561,7 @@ class TestProcedureOccurrenceSqlBuilder(unittest.TestCase):
         # Check that SQL structure is maintained
         self.assertIn("-- Begin Procedure Occurrence Criteria", result)
         self.assertIn("-- End Procedure Occurrence Criteria", result)
-        self.assertIn("select C.person_id", result)
+        self.assertIn("SELECT C.person_id", result)
 
 
 class TestBuilderIntegration(unittest.TestCase):

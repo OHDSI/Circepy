@@ -417,10 +417,11 @@ class MarkdownRender:
             # Special case: both in the past (coeff=-1, end_days < start_days)
             if start_coeff == -1 and end_coeff == -1 and isinstance(start_days, int) and isinstance(end_days, int) and end_days < start_days:
                 return f"{event_part} in the {start_days} days prior to {index_label} {index_part}"
-            # Special case: "anytime prior to" when start is all and end is 0 or 1 day before
-            elif start_days == "all" and isinstance(end_days, int) and end_days <= 1 and start_coeff == -1 and end_coeff == -1:
+            # Special case: "anytime prior to" when start is all and end is 1 day before
+            elif start_days == "all" and end_days == 1 and start_coeff == -1 and end_coeff == -1:
                 return f"{event_part} anytime prior to {index_label} {index_part}"
-            elif start_days == "all" and end_days == 0 and start_coeff == -1:
+            # Special case: "anytime on or before" when start is all and end is 0
+            elif start_days == "all" and end_days == 0 and start_coeff == -1 and end_coeff == -1:
                 return f"{event_part} anytime on or before {index_label} {index_part}"
             elif end_days == "all" and isinstance(start_days, int) and start_days > 0 and end_coeff == 1:
                 return f"{event_part} anytime after {start_days} days {start_dir} {index_label} {index_part}"
@@ -481,16 +482,17 @@ class MarkdownRender:
         
         return type_map.get(limit.type, limit.type)
     
-    def _format_group_type(self, group_type: str) -> str:
+    def _format_group_type(self, group_type: str, count: Optional[int] = None) -> str:
         """Format group type.
         
         Java equivalent: groupTypeOptions
         
         Args:
             group_type: Group type string (ALL, ANY, AT_LEAST, AT_MOST)
+            count: Optional count for AT_LEAST, AT_MOST
             
         Returns:
-            Formatted string like "all", "any", "at least", "at most"
+            Formatted string like "all", "any", "at least 1", "at most 1"
         """
         type_map = {
             "ALL": "all",
@@ -499,7 +501,10 @@ class MarkdownRender:
             "AT_MOST": "at most"
         }
         
-        return type_map.get(group_type, group_type.lower() if group_type else "")
+        type_name = type_map.get(group_type, group_type.lower() if group_type else "")
+        if count is not None and group_type in ("AT_LEAST", "AT_MOST"):
+            return f"{type_name} {count}"
+        return type_name
     
     def _render_description(self, cohort_expression: CohortExpression) -> str:
         """Render the description section."""
@@ -594,7 +599,7 @@ class MarkdownRender:
         if additional_criteria.criteria_list:
             for i, criteria in enumerate(additional_criteria.criteria_list, 1):
                 # Render with full details, including occurrence and windows
-                criteria_text = self._render_corelated_criteria_detail(criteria)
+                criteria_text = self._render_corelated_criteria_detail(criteria, index_label="cohort entry")
                 if criteria_text:
                     criteria_parts.append(f"   {i}. {criteria_text}")
         
@@ -609,11 +614,12 @@ class MarkdownRender:
         
         return "\n".join(criteria_parts)
     
-    def _render_corelated_criteria_detail(self, corelated_criteria: Any) -> str:
+    def _render_corelated_criteria_detail(self, corelated_criteria: Any, index_label: str = "cohort entry") -> str:
         """Render detailed text for CorelatedCriteria including occurrence and windows.
         
         Args:
             corelated_criteria: CorelatedCriteria object
+            index_label: The event name used as reference for timing (default: "cohort entry")
             
         Returns:
             Detailed criteria text like "having at least 1 drug exposure of 'X', starting between..."
@@ -621,7 +627,7 @@ class MarkdownRender:
         from ..criteria import CorelatedCriteria, Occurrence, Measurement
         
         if not isinstance(corelated_criteria, CorelatedCriteria):
-            return self._render_criteria(corelated_criteria, level=0, is_plural=True)
+            return self._render_criteria(corelated_criteria, level=0, is_plural=True, index_label=index_label)
         
         parts = []
         
@@ -644,72 +650,102 @@ class MarkdownRender:
         # Pluralize based on occurrence count: singular if count=1, plural otherwise
         inner_criteria = corelated_criteria.criteria
         should_pluralize = not (occurrence and occurrence.count == 1)
-        criteria_text = self._render_criteria(inner_criteria, level=0, is_plural=should_pluralize)
+        criteria_text = self._render_criteria(inner_criteria, level=0, is_plural=should_pluralize, index_label=index_label)
         # Strip trailing period to avoid double periods when adding window details
         if criteria_text.endswith('.'):
             criteria_text = criteria_text[:-1]
         
-        # For Measurement criteria, extract domain-specific attributes to append after window
-        measurement_attrs = []
-        if isinstance(inner_criteria, Measurement):
-            # Split criteria_text to extract measurement-specific parts
-            # Pattern: "measurements of 'X', attr1, attr2, ..." 
-            # We want to move measurement-specific attrs (numeric value, unit, etc.) to after window
-            import re
-            # Look for measurement-specific attribute patterns
-            # Use lookahead to stop at next attribute keyword or end
-            measurement_patterns = [
-                (r',\s*(numeric value [^,]+?)(?=,\s*(?:unit:|operator:|value as string|range low|range high|starting|ending)|$)', 'numeric value'),
-                (r',\s*(unit: [^,]+(?:,\s*"[^"]*")*(?:\s+or\s+"[^"]*")?)(?=,\s*(?:numeric value|operator:|value as string|range low|range high|a measurement|an operator|a unit|starting|ending)|$)', 'unit'),
-                (r',\s*(operator: [^,]+?)(?=,\s*(?:unit:|numeric value|value as string|range low|range high|starting|ending)|$)', 'operator'),
-                (r',\s*(value as string [^,]+?)(?=,\s*(?:unit:|operator:|numeric value|range low|range high|starting|ending)|$)', 'value as string'),
-                (r',\s*(range low [^,]+?)(?=,\s*(?:unit:|operator:|value as string|numeric value|range high|starting|ending)|$)', 'range low'),
-                (r',\s*(range high [^,]+?)(?=,\s*(?:unit:|operator:|value as string|range low|numeric value|starting|ending)|$)', 'range high'),
-                (r',\s*(a measurement type [^,]+?)(?=,\s*(?:unit:|operator:|starting|ending)|$)', 'measurement type'),
-                (r',\s*(an operator concept [^,]+?)(?=,\s*(?:unit:|starting|ending)|$)', 'operator concept'),
-                (r',\s*(a unit concept [^,]+?)(?=,\s*(?:starting|ending)|$)', 'unit concept')
-            ]
-            
-            for pattern, desc in measurement_patterns:
-                matches = list(re.finditer(pattern, criteria_text))
-                for match in matches:
-                    measurement_attrs.append(match.group(1))
-                criteria_text = re.sub(pattern, '', criteria_text)
+        # Extract domain-specific attributes to append after window
+        domain_attrs = []
+        from ..criteria import Measurement, ProcedureOccurrence, ConditionOccurrence
+        
+        # Look for attribute patterns: ", key: value" or ", with key: value" or " (including ...)"
+        import re
+        attribute_patterns = [
+            (r',\s*(numeric value [^,]+?)(?=,\s*(?:unit:|operator:|value as string|range low|range high|starting|ending)|$)', 'numeric value'),
+            (r',\s*(unit: [^,]+(?:,\s*"[^"]*")*(?:\s+or\s+"[^"]*")?)(?=,\s*(?:numeric value|operator:|value as string|range low|range high|a measurement|an operator|a unit|starting|ending)|$)', 'unit'),
+            (r',\s*(operator: [^,]+?)(?=,\s*(?:unit:|numeric value|value as string|range low|range high|starting|ending)|$)', 'operator'),
+            (r',\s*(value as string [^,]+?)(?=,\s*(?:unit:|operator:|numeric value|range low|range high|starting|ending)|$)', 'value as string'),
+            (r',\s*(range low [^,]+?)(?=,\s*(?:unit:|operator:|value as string|numeric value|range high|starting|ending)|$)', 'range low'),
+            (r',\s*(range high [^,]+?)(?=,\s*(?:unit:|operator:|value as string|range low|numeric value|starting|ending)|$)', 'range high'),
+            (r',\s*(a measurement type [^,]+?)(?=,\s*(?:unit:|operator:|starting|ending)|$)', 'measurement type'),
+            (r',\s*(an operator concept [^,]+?)(?=,\s*(?:unit:|starting|ending)|$)', 'operator concept'),
+            (r',\s*(a unit concept [^,]+?)(?=,\s*(?:starting|ending)|$)', 'unit concept'),
+            (r',\s*(with modifier: [^,]+?)(?=,\s*(?:starting|ending)|$)', 'modifier'),
+            (r',\s*(a modifier concept [^,]+?)(?=,\s*(?:starting|ending)|$)', 'modifier concept'),
+            (r',\s*(with a condition status: [^,]+?)(?=,\s*(?:starting|ending)|$)', 'condition status'),
+            (r',\s*(a condition status concept [^,]+?)(?=,\s*(?:starting|ending)|$)', 'condition status concept'),
+            (r',\s*(with a stop reason: [^,]+?)(?=,\s*(?:starting|ending)|$)', 'stop reason'),
+            (r'(\s*\(including [^)]+?\))', 'source concept')
+        ]
+        
+        for pattern, desc in attribute_patterns:
+            matches = list(re.finditer(pattern, criteria_text))
+            for match in matches:
+                domain_attrs.append(match.group(1).lstrip(', ').lstrip())
+            criteria_text = re.sub(pattern, '', criteria_text)
         
         parts.append(criteria_text)
         
         # Add window details
         window_parts = []
         if corelated_criteria.start_window:
-            window_text = self._format_window_criteria(corelated_criteria.start_window, "cohort entry")
+            window_text = self._format_window_criteria(corelated_criteria.start_window, index_label)
             if window_text:
                 window_parts.append(window_text)
         
         if corelated_criteria.end_window:
-            window_text = self._format_window_criteria(corelated_criteria.end_window, "cohort entry")
+            window_text = self._format_window_criteria(corelated_criteria.end_window, index_label)
             if window_text:
                 window_parts.append(window_text)
         
-        # Build result: base + window (with comma/and) + measurement attrs (with semicolons)
+        # Build result parts
         result_parts = [" ".join(parts)]
-        if window_parts:
-            # Join multiple window parts with " and " instead of ", "
-            window_text = " and ".join(window_parts)
-            result_parts.append(window_text)
-        if measurement_attrs:
-            result_parts.extend(measurement_attrs)
         
-        # Join with appropriate separators: comma for window, semicolon for measurement attrs
-        if window_parts and measurement_attrs:
-            result = result_parts[0] + ", " + result_parts[1] + "; " + "; ".join(result_parts[2:]) + "."
-        elif window_parts:
-            result = ", ".join(result_parts) + "."
-        elif measurement_attrs:
-            result = result_parts[0] + "; " + "; ".join(result_parts[1:]) + "."
+        # Add ignore observation period flag
+        obs_flag = ""
+        if getattr(corelated_criteria, 'ignore_observation_period', False):
+            obs_flag = "; allow events outside observation period"
+            
+        # For non-multiline criteria, add window after description
+        if "\n" not in result_parts[0]:
+            if window_parts:
+                window_text = " and ".join(window_parts)
+                result_parts.append(window_text)
+            if domain_attrs:
+                result_parts.extend(domain_attrs)
+                
+            if window_parts and domain_attrs:
+                result = result_parts[0] + ", " + result_parts[1] + "; " + "; ".join(result_parts[2:])
+            elif window_parts:
+                result = ", ".join(result_parts)
+            elif domain_attrs:
+                result = result_parts[0] + "; " + "; ".join(result_parts[1:])
+            else:
+                result = result_parts[0]
+            return result + obs_flag
         else:
-            result = result_parts[0] + "."
-        
-        return result
+            # For multiline criteria (like CriteriaGroup), the description is the first line
+            lines = result_parts[0].split("\n")
+            desc_line = lines[0]
+            rest = "\n".join(lines[1:])
+            
+            desc_parts = [desc_line]
+            if window_parts:
+                desc_parts.append(" and ".join(window_parts))
+            if domain_attrs:
+                desc_parts.extend(domain_attrs)
+                
+            if window_parts and domain_attrs:
+                new_desc = desc_parts[0] + ", " + desc_parts[1] + "; " + "; ".join(desc_parts[2:])
+            elif window_parts:
+                new_desc = ", ".join(desc_parts)
+            elif domain_attrs:
+                new_desc = desc_parts[0] + "; " + "; ".join(desc_parts[1:])
+            else:
+                new_desc = desc_parts[0]
+                
+            return f"{new_desc}{obs_flag}\n{rest}"
     
     def _render_censor_criteria(self, censoring_criteria: List[Any]) -> str:
         """Render censor criteria section.
@@ -770,61 +806,60 @@ class MarkdownRender:
         
         return " ".join(window_parts) + "\n" if window_parts else ""
     
-    def _render_criteria_group(self, criteria_group: CriteriaGroup, level: int = 0) -> str:
-        """Render a criteria group.
+    def _render_criteria_group(self, criteria_group: CriteriaGroup, level: int = 0, index_label: str = "cohort entry") -> str:
+        """Render a criteria group with proper multiline support and indentation.
         
         Java equivalent: criteriaTypes.ftl Group macro
-        
-        Args:
-            criteria_group: CriteriaGroup object
-            level: Indentation level for nested groups
         """
         if not criteria_group:
-            return "No criteria group specified.\n"
+            return "No criteria group specified"
         
-        group_parts = []
+        # Build group description phrase
+        count_str = self._format_group_type(criteria_group.type or "ALL", criteria_group.count)
+        phrase = f"with {count_str} of the following criteria:"
         
-        # Build group description
-        group_type = self._format_group_type(criteria_group.type or "ALL")
+        # Collect items
+        items = []
         
-        # Handle count if present
-        if criteria_group.count is not None:
-            count_str = f"{group_type} {criteria_group.count}"
-        else:
-            count_str = group_type
-        
-        # Build criteria list
-        criteria_descriptions = []
-        
-        # Add demographic criteria
-        if criteria_group.demographic_criteria_list:
-            for demo in criteria_group.demographic_criteria_list:
-                demo_str = self._render_demographic_criteria(demo)
-                if demo_str and demo_str.strip():
-                    criteria_descriptions.append(demo_str.strip())
-        
-        # Add regular criteria
-        if criteria_group.criteria_list:
-            for criteria in criteria_group.criteria_list:
-                criteria_str = self._render_criteria(criteria, level=level + 1, is_plural=True)
-                if criteria_str and criteria_str.strip():
-                    criteria_descriptions.append(criteria_str.strip())
-        
-        # Add sub-groups
-        if criteria_group.groups:
-            for sub_group in criteria_group.groups:
-                sub_str = self._render_criteria_group(sub_group, level=level + 1)
-                if sub_str and sub_str.strip():
-                    criteria_descriptions.append(sub_str.strip())
-        
-        # Build final description
-        if criteria_descriptions:
-            if len(criteria_descriptions) == 1:
-                return f"{count_str}: {criteria_descriptions[0]}"
+        # Demographic
+        for demo in (criteria_group.demographic_criteria_list or []):
+            items.append(self._render_demographic_criteria(demo) + ".")
+            
+        # Regular criteria
+        for criteria in (criteria_group.criteria_list or []):
+            from ..criteria import CorelatedCriteria
+            if isinstance(criteria, CorelatedCriteria):
+                items.append(self._render_corelated_criteria_detail(criteria, index_label=index_label) + ".")
             else:
-                return f"{count_str} of: {', '.join(criteria_descriptions)}"
-        else:
-            return count_str
+                items.append(self._render_criteria(criteria, is_plural=True, index_label=index_label) + ".")
+                
+        # Subgroups
+        for sub_group in (criteria_group.groups or []):
+            rendered_sub = self._render_criteria_group(sub_group, level=level + 1, index_label=index_label)
+            if rendered_sub:
+                items.append(rendered_sub)
+            
+        if not items:
+            return f"{phrase} [none]"
+            
+        if len(items) == 1 and not criteria_group.groups:
+            # Special case for single-item non-group: "with all of: X" -> "X" if appropriate?
+            # Actually Java often keeps the phrasing but let's stick closer to reference
+            return f"{phrase} {items[0]}"
+            
+        # Multiline format
+        indent = "   " * (level + 1)
+        formatted_items = []
+        for i, item in enumerate(items, 1):
+            if "\n" in item:
+                # Indent nested multiline items
+                nested_indent = "   "
+                indented_item = item.replace("\n", "\n" + nested_indent)
+                formatted_items.append(f"{indent}{i}. {indented_item}")
+            else:
+                formatted_items.append(f"{indent}{i}. {item}")
+                
+        return f"{phrase}\n\n" + "\n".join(formatted_items) + "\n"
     
     def _render_criteria(self, criteria: Criteria, level: int = 0, is_plural: bool = True, 
                         count_criteria: Optional[Dict] = None, index_label: str = "cohort entry") -> str:
@@ -877,6 +912,9 @@ class MarkdownRender:
             return self._render_dose_era(criteria, level, is_plural, count_criteria, index_label)
         elif isinstance(criteria, GeoCriteria):
             return self._render_geo_criteria(criteria, level, is_plural, count_criteria, index_label)
+        elif isinstance(criteria, CriteriaGroup):
+            # Special case for CriteriaGroup as individual criteria
+            return self._render_criteria_group(criteria, level=level, index_label=index_label)
         elif isinstance(criteria, CorelatedCriteria):
             # CorelatedCriteria wraps a Criteria object - render the inner criteria
             if criteria.criteria:
@@ -888,36 +926,45 @@ class MarkdownRender:
             return f"Unknown criteria type: {type(criteria).__name__}"
     
     def _render_demographic_criteria(self, demographic_criteria: DemographicCriteria) -> str:
-        """Render demographic criteria."""
+        """Render demographic criteria in natural language.
+        
+        Java equivalent: criteriaTypes.ftl DemographicCriteria macro
+        """
         if not demographic_criteria:
-            return "No demographic criteria specified.\n"
+            return "No demographic criteria specified"
         
         demo_parts = []
         
         # Age
         if demographic_criteria.age:
-            demo_parts.append(f"**Age:** {self._render_numeric_range(demographic_criteria.age)}")
+            age_range = self._format_numeric_range(demographic_criteria.age)
+            demo_parts.append(f"**Age:** {age_range} years old")
         
         # Gender
         if demographic_criteria.gender:
-            demo_parts.append(f"**Gender:** {', '.join([str(g) for g in demographic_criteria.gender])}")
+            gender_list = self._format_concept_list(demographic_criteria.gender)
+            demo_parts.append(f"**Gender:** {gender_list}")
         
         # Race
         if demographic_criteria.race:
-            demo_parts.append(f"**Race:** {', '.join([str(r) for r in demographic_criteria.race])}")
+            race_list = self._format_concept_list(demographic_criteria.race)
+            demo_parts.append(f"**Race:** {race_list}")
         
         # Ethnicity
         if demographic_criteria.ethnicity:
-            demo_parts.append(f"**Ethnicity:** {', '.join([str(e) for e in demographic_criteria.ethnicity])}")
+            ethnicity_list = self._format_concept_list(demographic_criteria.ethnicity)
+            demo_parts.append(f"**Ethnicity:** {ethnicity_list}")
         
         # Occurrence dates
         if demographic_criteria.occurrence_start_date:
-            demo_parts.append(f"**Occurrence Start Date:** {self._render_date_range(demographic_criteria.occurrence_start_date)}")
+            start_range = self._format_date_range(demographic_criteria.occurrence_start_date)
+            demo_parts.append(f"with occurrence start date {start_range}")
         
         if demographic_criteria.occurrence_end_date:
-            demo_parts.append(f"**Occurrence End Date:** {self._render_date_range(demographic_criteria.occurrence_end_date)}")
+            end_range = self._format_date_range(demographic_criteria.occurrence_end_date)
+            demo_parts.append(f"with occurrence end date {end_range}")
         
-        return "\n".join(demo_parts) + "\n" if demo_parts else "No demographic criteria specified.\n"
+        return ", ".join(demo_parts) if demo_parts else "No demographic criteria specified"
     
     def _render_inclusion_rules(self, inclusion_rules: List[InclusionRule]) -> str:
         """Render inclusion rules.
@@ -936,34 +983,69 @@ class MarkdownRender:
             rules_parts.append(f"#### {i}. {rule_name}{description}")
             rules_parts.append("")
             
-            if rule.expression and rule.expression.criteria_list:
-                # For inclusion rules, render CorelatedCriteria with detail
-                from ..criteria import CorelatedCriteria
+            if rule.expression:
+                # Java uses a specific framing for inclusion rules
+                # The expression is a CriteriaGroup
+                group = rule.expression
                 
-                # If multiple criteria, wrap with "with all of the following criteria:"
-                if len(rule.expression.criteria_list) > 1:
-                    rules_parts.append("Entry events with all of the following criteria:")
-                    rules_parts.append("")
-                    for j, criteria in enumerate(rule.expression.criteria_list, 1):
+                # Check for demographic only rules or simple rules
+                has_demographic = bool(group.demographic_criteria_list)
+                has_criteria = bool(group.criteria_list)
+                has_groups = bool(group.groups)
+                
+                total_items = (len(group.demographic_criteria_list or []) + 
+                               len(group.criteria_list or []) + 
+                               len(group.groups or []))
+                
+                if total_items == 0:
+                    rules_parts.append("Entry events without any additional criteria.")
+                elif total_items == 1:
+                    if has_demographic:
+                        demo_str = self._render_demographic_criteria(group.demographic_criteria_list[0])
+                        rules_parts.append(f"Entry events with the following event criteria: {demo_str}.")
+                    elif has_criteria:
+                        from ..criteria import CorelatedCriteria
+                        criteria = group.criteria_list[0]
+                        # For inclusion rules, we default to "cohort entry" as index
+                        index_label = "cohort entry"
                         if isinstance(criteria, CorelatedCriteria):
-                            criteria_text = self._render_corelated_criteria_detail(criteria)
-                            # Remove "Entry events " prefix since it's in the wrapper
-                            if criteria_text.startswith("having"):
-                                rules_parts.append(f"{j}. {criteria_text}")
-                            else:
-                                rules_parts.append(f"{j}. {criteria_text}")
+                            criteria_text = self._render_corelated_criteria_detail(criteria, index_label=index_label)
+                            rules_parts.append(f"Entry events {criteria_text}")
                         else:
-                            criteria_text = self._render_criteria(criteria, level=0, is_plural=True)
-                            rules_parts.append(f"{j}. {criteria_text}")
+                            criteria_text = self._render_criteria(criteria, is_plural=True, index_label=index_label)
+                            rules_parts.append(f"Entry events {criteria_text}")
+                    elif has_groups:
+                        group_str = self._render_criteria_group(group.groups[0], level=0, index_label="cohort entry")
+                        rules_parts.append(f"Entry events {group_str}")
                 else:
-                    # Single criterion - use original format
-                    for j, criteria in enumerate(rule.expression.criteria_list):
+                    # Multi-item group
+                    group_type_str = self._format_group_type(group.type or "ALL", group.count)
+                    rules_parts.append(f"Entry events with {group_type_str} of the following criteria:")
+                    rules_parts.append("")
+                    
+                    item_idx = 1
+                    # Render demographic criteria
+                    for demo in (group.demographic_criteria_list or []):
+                        demo_str = self._render_demographic_criteria(demo)
+                        rules_parts.append(f"   {item_idx}. {demo_str}.")
+                        item_idx += 1
+                        
+                    # Render criteria
+                    for criteria in (group.criteria_list or []):
+                        from ..criteria import CorelatedCriteria
                         if isinstance(criteria, CorelatedCriteria):
-                            criteria_text = self._render_corelated_criteria_detail(criteria)
-                            rules_parts.append(f"Entry events {criteria_text}")
+                            criteria_text = self._render_corelated_criteria_detail(criteria, index_label="cohort entry")
                         else:
-                            criteria_text = self._render_criteria(criteria, level=0, is_plural=True)
-                            rules_parts.append(f"Entry events {criteria_text}")
+                            criteria_text = self._render_criteria(criteria, is_plural=True, index_label="cohort entry")
+                        rules_parts.append(f"   {item_idx}. {criteria_text}")
+                        item_idx += 1
+                        
+                    # Render groups
+                    for sub_group in (group.groups or []):
+                        group_str = self._render_criteria_group(sub_group, level=1, index_label="cohort entry")
+                        rules_parts.append(f"   {item_idx}. {group_str}")
+                        item_idx += 1
+                        
                 rules_parts.append("")
         
         return "\n".join(rules_parts)
@@ -1272,7 +1354,6 @@ class MarkdownRender:
         if age:
             age_str = self._format_numeric_range(age)
             if age_str:
-                # R format: "who are >= X years old" instead of "age >= X"
                 parts.append(f"who are {age_str} years old")
         
         if age_at_end:
@@ -1283,12 +1364,12 @@ class MarkdownRender:
         if gender:
             gender_str = self._format_concept_list(gender)
             if gender_str:
-                parts.append(f"gender: {gender_str}")
+                parts.append(f"gender is {gender_str}")
         
         if gender_cs:
             gender_str = self._format_concept_set_selection(gender_cs, "any gender")
             if gender_str:
-                parts.append(f"gender concept {gender_str} concept set")
+                parts.append(f"gender concept {gender_str}")
         
         return "; ".join(parts) if parts else ""
     
@@ -1366,18 +1447,30 @@ class MarkdownRender:
             source_name = self._get_concept_set_name(criteria.condition_source_concept, "any condition")
             source_concept = f" (including {source_name} source concepts)"
         
+        if criteria.condition_status:
+            status_str = self._format_concept_list(criteria.condition_status)
+            attrs.append(f"with a condition status: {status_str}")
+            
+        if criteria.condition_status_cs:
+            status_str = self._format_concept_set_selection(criteria.condition_status_cs, "any status")
+            attrs.append(f"a condition status concept {status_str} concept set")
+            
+        if criteria.stop_reason:
+            stop_str = self._format_text_filter(criteria.stop_reason)
+            attrs.append(f"with a stop reason: {stop_str}")
+            
         # Combine attributes
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        # Correlated criteria
-        correlated = ""
-        if criteria.correlated_criteria:
-            correlated_label = self._get_concept_set_name(criteria.codeset_id, "any condition")
-            correlated = f"; {self._render_criteria_group(criteria.correlated_criteria, level=level + 1)}"
-        else:
-            correlated = "."
+        # Main criteria description
+        description = f"condition occurrence{plural} of {codeset_name}{source_concept}{first_time}{attrs_str}"
         
-        return f"condition occurrence{plural} of {codeset_name}{source_concept}{first_time}{attrs_str}{correlated}"
+        # Correlated criteria
+        if criteria.correlated_criteria:
+            correlated_text = self._render_criteria_group(criteria.correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_drug_exposure(self, criteria: DrugExposure, level: int = 0,
                              is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1467,14 +1560,16 @@ class MarkdownRender:
         
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if criteria.correlated_criteria:
-            correlated_label = self._get_concept_set_name(criteria.codeset_id, "any drug")
-            correlated = f"; {self._render_criteria_group(criteria.correlated_criteria, level=level + 1)}"
-        else:
-            correlated = "."
+        # Main description
+        description = f"drug exposure{plural} of {codeset_name}{source_concept}{first_time}{attrs_str}"
         
-        return f"drug exposure{plural} of {codeset_name}{source_concept}{first_time}{attrs_str}{correlated}"
+        # Correlated criteria
+        if criteria.correlated_criteria:
+            # Use same level for the group header
+            correlated_text = self._render_criteria_group(criteria.correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_procedure_occurrence(self, criteria: ProcedureOccurrence, level: int = 0,
                                    is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1482,20 +1577,39 @@ class MarkdownRender:
         """Render ProcedureOccurrence criteria."""
         attrs = self._build_criteria_attributes(criteria, count_criteria, index_label)
         
-        # Domain-specific attributes (similar pattern to ConditionOccurrence)
+        # Domain-specific attributes
+        if criteria.procedure_type:
+            exclude_str = "is not:" if getattr(criteria, 'procedure_type_exclude', False) else "is:"
+            type_str = self._format_concept_list(criteria.procedure_type)
+            attrs.append(f"a procedure type that {exclude_str} {type_str}")
+            
+        if criteria.procedure_type_cs:
+            type_str = self._format_concept_set_selection(criteria.procedure_type_cs, "any procedure")
+            attrs.append(f"a procedure type concept {type_str} concept set")
+            
+        if criteria.modifier:
+            modifier_str = self._format_concept_list(criteria.modifier)
+            attrs.append(f"with modifier: {modifier_str}")
+            
+        if criteria.modifier_cs:
+            modifier_str = self._format_concept_set_selection(criteria.modifier_cs, "any modifier")
+            attrs.append(f"a modifier concept {modifier_str} concept set")
+            
         codeset_name = self._get_concept_set_name(criteria.codeset_id, "any procedure")
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if criteria.correlated_criteria:
-            correlated = f"; {self._render_criteria_group(criteria.correlated_criteria, level=level + 1)}"
-        else:
-            correlated = "."
+        # Main description
+        description = f"procedure occurrence{plural} of {codeset_name}{first_time}{attrs_str}"
         
-        return f"procedure occurrence{plural} of {codeset_name}{first_time}{attrs_str}{correlated}"
+        # Correlated criteria
+        if criteria.correlated_criteria:
+            correlated_text = self._render_criteria_group(criteria.correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_death(self, criteria: Death, level: int = 0,
                      is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1511,13 +1625,15 @@ class MarkdownRender:
         
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if criteria.correlated_criteria:
-            correlated = f"; {self._render_criteria_group(criteria.correlated_criteria, level=level + 1)}"
-        else:
-            correlated = "."
+        # Main description
+        description = f"death of {codeset_name}{source_concept}{attrs_str}"
         
-        return f"death of {codeset_name}{source_concept}{attrs_str}{correlated}"
+        # Correlated criteria
+        if criteria.correlated_criteria:
+            correlated_text = self._render_criteria_group(criteria.correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_device_exposure(self, criteria: DeviceExposure, level: int = 0,
                               is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1531,13 +1647,15 @@ class MarkdownRender:
         
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if criteria.correlated_criteria:
-            correlated = f"; {self._render_criteria_group(criteria.correlated_criteria, level=level + 1)}"
-        else:
-            correlated = "."
+        # Main description
+        description = f"device exposure{plural} of {codeset_name}{first_time}{attrs_str}"
         
-        return f"device exposure{plural} of {codeset_name}{first_time}{attrs_str}{correlated}"
+        # Correlated criteria
+        if criteria.correlated_criteria:
+            correlated_text = self._render_criteria_group(criteria.correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_measurement(self, criteria: Measurement, level: int = 0,
                            is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1605,13 +1723,15 @@ class MarkdownRender:
         
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if criteria.correlated_criteria:
-            correlated = f"; {self._render_criteria_group(criteria.correlated_criteria, level=level + 1)}"
-        else:
-            correlated = "."
+        # Main description
+        description = f"measurement{plural} of {codeset_name}{first_time}{attrs_str}"
         
-        return f"measurement{plural} of {codeset_name}{first_time}{attrs_str}{correlated}"
+        # Correlated criteria
+        if criteria.correlated_criteria:
+            correlated_text = self._render_criteria_group(criteria.correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_observation(self, criteria: Observation, level: int = 0,
                            is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1625,13 +1745,15 @@ class MarkdownRender:
         
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if criteria.correlated_criteria:
-            correlated = f"; {self._render_criteria_group(criteria.correlated_criteria, level=level + 1)}"
-        else:
-            correlated = "."
+        # Main description
+        description = f"observation{plural} of {codeset_name}{first_time}{attrs_str}"
         
-        return f"observation{plural} of {codeset_name}{first_time}{attrs_str}{correlated}"
+        # Correlated criteria
+        if criteria.correlated_criteria:
+            correlated_text = self._render_criteria_group(criteria.correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_specimen(self, criteria: Specimen, level: int = 0,
                         is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1645,13 +1767,15 @@ class MarkdownRender:
         
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if criteria.correlated_criteria:
-            correlated = f"; {self._render_criteria_group(criteria.correlated_criteria, level=level + 1)}"
-        else:
-            correlated = "."
+        # Main description
+        description = f"specimen{plural} of {codeset_name}{first_time}{attrs_str}"
         
-        return f"specimen{plural} of {codeset_name}{first_time}{attrs_str}{correlated}"
+        # Correlated criteria
+        if criteria.correlated_criteria:
+            correlated_text = self._render_criteria_group(criteria.correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_visit_occurrence(self, criteria: VisitOccurrence, level: int = 0,
                                 is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1665,13 +1789,15 @@ class MarkdownRender:
         
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if criteria.correlated_criteria:
-            correlated = f"; {self._render_criteria_group(criteria.correlated_criteria, level=level + 1)}"
-        else:
-            correlated = "."
+        # Main description
+        description = f"visit occurrence{plural} of {codeset_name}{first_time}{attrs_str}"
         
-        return f"visit occurrence{plural} of {codeset_name}{first_time}{attrs_str}{correlated}"
+        # Correlated criteria
+        if criteria.correlated_criteria:
+            correlated_text = self._render_criteria_group(criteria.correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_visit_detail(self, criteria: VisitDetail, level: int = 0,
                             is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1685,13 +1811,15 @@ class MarkdownRender:
         
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if criteria.correlated_criteria:
-            correlated = f"; {self._render_criteria_group(criteria.correlated_criteria, level=level + 1)}"
-        else:
-            correlated = "."
+        # Main description
+        description = f"visit detail{plural} of {codeset_name}{first_time}{attrs_str}"
         
-        return f"visit detail{plural} of {codeset_name}{first_time}{attrs_str}{correlated}"
+        # Correlated criteria
+        if criteria.correlated_criteria:
+            correlated_text = self._render_criteria_group(criteria.correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_observation_period(self, criteria: ObservationPeriod, level: int = 0,
                                   is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1704,17 +1832,19 @@ class MarkdownRender:
         codeset_name = self._get_concept_set_name(codeset_id, "any observation period")
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if getattr(criteria, 'correlated_criteria', None):
-            correlated = f"; {self._render_criteria_group(getattr(criteria, 'correlated_criteria'), level=level + 1)}"
-        else:
-            correlated = "."
-        
-        # Don't repeat "observation period" if using default name
+        # Main description
         if codeset_name == "any observation period":
-            return f"observation period{attrs_str}{correlated}"
+            description = f"observation period{attrs_str}"
         else:
-            return f"observation period of {codeset_name}{attrs_str}{correlated}"
+            description = f"observation period of {codeset_name}{attrs_str}"
+            
+        # Correlated criteria
+        correlated_criteria = getattr(criteria, 'correlated_criteria', None)
+        if correlated_criteria:
+            correlated_text = self._render_criteria_group(correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_payer_plan_period(self, criteria: PayerPlanPeriod, level: int = 0,
                                   is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1727,13 +1857,16 @@ class MarkdownRender:
         codeset_name = self._get_concept_set_name(codeset_id, "any payer plan")
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if getattr(criteria, 'correlated_criteria', None):
-            correlated = f"; {self._render_criteria_group(getattr(criteria, 'correlated_criteria'), level=level + 1)}"
-        else:
-            correlated = "."
+        # Main description
+        description = f"payer plan period of {codeset_name}{attrs_str}"
         
-        return f"payer plan period of {codeset_name}{attrs_str}{correlated}"
+        # Correlated criteria
+        correlated_criteria = getattr(criteria, 'correlated_criteria', None)
+        if correlated_criteria:
+            correlated_text = self._render_criteria_group(correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_location_region(self, criteria: LocationRegion, level: int = 0,
                                is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1752,13 +1885,15 @@ class MarkdownRender:
         codeset_name = self._get_concept_set_name(criteria.codeset_id, "any location")
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if criteria.correlated_criteria:
-            correlated = f"; {self._render_criteria_group(criteria.correlated_criteria, level=level + 1)}"
-        else:
-            correlated = "."
+        # Main description
+        description = f"location of {codeset_name}{attrs_str}"
         
-        return f"location of {codeset_name}{attrs_str}{correlated}"
+        # Correlated criteria
+        if criteria.correlated_criteria:
+            correlated_text = self._render_criteria_group(criteria.correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_condition_era(self, criteria: ConditionEra, level: int = 0,
                               is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1781,13 +1916,15 @@ class MarkdownRender:
         
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if criteria.correlated_criteria:
-            correlated = f"; {self._render_criteria_group(criteria.correlated_criteria, level=level + 1)}"
-        else:
-            correlated = "."
+        # Main description
+        description = f"condition era{plural} of {codeset_name}{first_time}{attrs_str}"
         
-        return f"condition era{plural} of {codeset_name}{first_time}{attrs_str}{correlated}"
+        # Correlated criteria
+        if criteria.correlated_criteria:
+            correlated_text = self._render_criteria_group(criteria.correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_drug_era(self, criteria: DrugEra, level: int = 0,
                         is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1814,13 +1951,15 @@ class MarkdownRender:
         
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if criteria.correlated_criteria:
-            correlated = f"; {self._render_criteria_group(criteria.correlated_criteria, level=level + 1)}"
-        else:
-            correlated = "."
+        # Main description
+        description = f"drug era{plural} of {codeset_name}{first_time}{attrs_str}"
         
-        return f"drug era{plural} of {codeset_name}{first_time}{attrs_str}{correlated}"
+        # Correlated criteria
+        if criteria.correlated_criteria:
+            correlated_text = self._render_criteria_group(criteria.correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_dose_era(self, criteria: DoseEra, level: int = 0,
                         is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1851,13 +1990,15 @@ class MarkdownRender:
         
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if criteria.correlated_criteria:
-            correlated = f"; {self._render_criteria_group(criteria.correlated_criteria, level=level + 1)}"
-        else:
-            correlated = "."
+        # Main description
+        description = f"dose era{plural} of {codeset_name}{first_time}{attrs_str}"
         
-        return f"dose era{plural} of {codeset_name}{first_time}{attrs_str}{correlated}"
+        # Correlated criteria
+        if criteria.correlated_criteria:
+            correlated_text = self._render_criteria_group(criteria.correlated_criteria, level=level, index_label=codeset_name)
+            return f"{description}; {correlated_text}"
+        else:
+            return f"{description}."
     
     def _render_geo_criteria(self, criteria: GeoCriteria, level: int = 0,
                             is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1870,11 +2011,11 @@ class MarkdownRender:
         codeset_name = self._get_concept_set_name(codeset_id, "any location")
         attrs_str = f", {', '.join(attrs)}" if attrs else ""
         
-        correlated = ""
-        if getattr(criteria, 'correlated_criteria', None):
-            correlated = f"; {self._render_criteria_group(getattr(criteria, 'correlated_criteria'), level=level + 1)}"
+        # Correlated criteria
+        correlated_criteria = getattr(criteria, 'correlated_criteria', None)
+        if correlated_criteria:
+            correlated_text = self._render_criteria_group(correlated_criteria, level=level, index_label=codeset_name)
+            return f"geo criteria of {codeset_name}{attrs_str}; {correlated_text}"
         else:
-            correlated = "."
-        
-        return f"geo criteria of {codeset_name}{attrs_str}{correlated}"
+            return f"geo criteria of {codeset_name}{attrs_str}."
 

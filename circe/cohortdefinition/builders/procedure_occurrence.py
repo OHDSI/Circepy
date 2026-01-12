@@ -17,11 +17,11 @@ from .utils import BuilderOptions, CriteriaColumn, BuilderUtils
 # SQL template - equivalent to Java ResourceHelper.GetResourceAsString
 # Note: Uses lowercase select/from to match Java output
 PROCEDURE_OCCURRENCE_TEMPLATE = """-- Begin Procedure Occurrence Criteria
-select C.person_id, C.procedure_occurrence_id as event_id, C.start_date, C.end_date,
+SELECT C.person_id, C.procedure_occurrence_id as event_id, C.start_date, C.end_date,
        C.visit_occurrence_id, C.start_date as sort_date@additionalColumns
-from 
+FROM 
 (
-  select @selectClause @ordinalExpression
+  SELECT @selectClause @ordinalExpression
   FROM @cdm_database_schema.PROCEDURE_OCCURRENCE po
 @codesetClause
 ) C
@@ -53,7 +53,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         "po.visit_occurrence_id",
         "po.quantity",
         "po.procedure_date as start_date",
-        " DATEADD(day,1,po.procedure_date) as end_date"
+        "DATEADD(day,1,po.procedure_date) as end_date"
     ]
     
     def get_default_columns(self) -> Set[CriteriaColumn]:
@@ -80,9 +80,9 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         elif column == CriteriaColumn.DURATION:
             return "0"  # Procedures typically don't have duration
         elif column == CriteriaColumn.START_DATE:
-            return "C.procedure_date"
+            return "C.start_date"
         elif column == CriteriaColumn.END_DATE:
-            return "C.procedure_date"  # Same as start date for procedures
+            return "C.end_date"
         elif column == CriteriaColumn.VISIT_ID:
             return "C.visit_occurrence_id"
         else:

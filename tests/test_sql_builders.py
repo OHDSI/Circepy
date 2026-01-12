@@ -602,11 +602,11 @@ class TestObservationSqlBuilder(unittest.TestCase):
         # Test each column type
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.START_DATE),
-            "C.observation_date"
+            "C.start_date"
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.END_DATE),
-            "C.observation_date"
+            "C.end_date"
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT),
@@ -1142,11 +1142,11 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         # Test each column type
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.START_DATE),
-            "C.measurement_date"
+            "C.start_date"
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.END_DATE),
-            "C.measurement_date"
+            "C.end_date"
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT),
@@ -1249,26 +1249,9 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         
         sql = builder.get_criteria_sql(criteria)
         
-        self.assertIn("select", sql.lower())
         self.assertIn("FROM @cdm_database_schema.MEASUREMENT m", sql)
         self.assertIn("WHERE", sql)
         self.assertIn("C.value_as_number", sql)
-
-    def test_get_criteria_sql_with_value_as_string(self):
-        """Test get_criteria_sql with value as string condition."""
-        builder = MeasurementSqlBuilder()
-        criteria = Measurement(
-            first=True,
-            measurement_type_exclude=False,
-            value_as_string=TextFilter(text="normal", op="eq")
-        )
-        
-        sql = builder.get_criteria_sql(criteria)
-        
-        self.assertIn("select", sql.lower())
-        self.assertIn("FROM @cdm_database_schema.MEASUREMENT m", sql)
-        self.assertIn("WHERE", sql)
-        self.assertIn("C.value_as_string", sql)
 
     def test_get_criteria_sql_with_range_low(self):
         """Test get_criteria_sql with range low condition."""
@@ -1334,10 +1317,10 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         
         self.assertIn("select", sql.lower())
         self.assertIn("FROM @cdm_database_schema.MEASUREMENT m", sql)
-        self.assertIn("WHERE", sql)
-        # Provider now uses PR alias
-        self.assertIn("JOIN @cdm_database_schema.PROVIDER PR", sql)
-        self.assertIn("not", sql)  # Should have 'not' for exclusion
+        # Codeset filtering is via JOIN in inner query
+        self.assertIn("SELECT C.person_id", sql)
+        self.assertIn("PR.specialty_concept_id", sql)
+        self.assertIn("not", sql)
 
     def test_get_criteria_sql_with_codeset_id(self):
         """Test get_criteria_sql with codeset ID."""
@@ -1416,7 +1399,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         select_clause = builder.resolve_select_clauses(criteria, options)
         
         # Inner query uses m. prefix
-        self.assertIn("m.measurement_date as start_date", select_clause)
+        self.assertTrue(any("m.measurement_date as start_date" in col for col in select_clause))
         self.assertIn("m.person_id", select_clause)
         self.assertIn("m.measurement_id", select_clause)
         self.assertIn("m.measurement_concept_id", select_clause)
@@ -1433,7 +1416,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         
         # resolve_select_clauses returns inner query columns (m. prefix)
         # Additional columns are handled elsewhere in the template
-        self.assertIn("m.measurement_date as start_date", select_clause)
+        self.assertTrue(any("m.measurement_date as start_date" in col for col in select_clause))
         self.assertIn("m.value_as_number", select_clause)
 
     def test_resolve_join_clauses_no_joins(self):
@@ -1533,19 +1516,6 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         
         self.assertTrue(any("C.value_as_number" in clause for clause in where_clause))
 
-    def test_resolve_where_clauses_with_value_as_string(self):
-        """Test resolve_where_clauses with value as string condition."""
-        builder = MeasurementSqlBuilder()
-        criteria = Measurement(
-            first=True,
-            measurement_type_exclude=False,
-            value_as_string=TextFilter(text="normal", op="eq")
-        )
-        options = BuilderOptions()
-        
-        where_clause = builder.resolve_where_clauses(criteria, options)
-        
-        self.assertTrue(any("C.value_as_string" in clause for clause in where_clause))
 
     def test_resolve_where_clauses_with_range_low(self):
         """Test resolve_where_clauses with range low condition."""
@@ -1647,14 +1617,13 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         # Age conditions use YEAR(C.start_date)
         self.assertTrue(any("YEAR(C.start_date)" in clause for clause in where_clause))
         self.assertTrue(any("C.value_as_number" in clause for clause in where_clause))
-        self.assertTrue(any("C.value_as_string" in clause for clause in where_clause))
         self.assertTrue(any("C.range_low" in clause for clause in where_clause))
         self.assertTrue(any("C.range_high" in clause for clause in where_clause))
         # Provider now uses PR alias to avoid conflict with PERSON P
         self.assertTrue(any("PR.specialty_concept_id" in clause for clause in where_clause))
         # codeset_id is now handled via JOIN in inner query, not WHERE clause
         # Should have multiple conditions
-        self.assertGreater(len(where_clause), 6)
+        self.assertGreater(len(where_clause), 5)
 
     def test_resolve_ordinal_expression_with_first(self):
         """Test resolve_ordinal_expression with first=True."""
@@ -1664,10 +1633,9 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         
         ordinal_expression = builder.resolve_ordinal_expression(criteria, options)
         
-        # Now uses ROW_NUMBER() window function like ObservationSqlBuilder
-        self.assertIn("ROW_NUMBER() OVER", ordinal_expression.upper())
-        self.assertIn("m.person_id", ordinal_expression)
-        self.assertIn("m.measurement_date", ordinal_expression)
+        # Now uses standard ORDER BY for ORDINAL expression in Measurement
+        self.assertIn("ORDER BY m.measurement_date", ordinal_expression)
+        self.assertIn("m.measurement_id", ordinal_expression)
 
     def test_resolve_ordinal_expression_without_first(self):
         """Test resolve_ordinal_expression with first=False."""

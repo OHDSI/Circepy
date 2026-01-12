@@ -22,7 +22,7 @@ class Concept(BaseModel):
     concept_id: Optional[int] = Field(
         default=None,
         validation_alias=AliasChoices("ConceptId", "CONCEPT_ID", "conceptId", "ConceptID"),
-        serialization_alias="ConceptId"
+        serialization_alias="CONCEPT_ID"
     )
     concept_name: Optional[str] = Field(
         default=None,

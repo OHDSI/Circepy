@@ -149,7 +149,6 @@ circe-be/
 analyze_java_schema_simple.py
 generate_json_schema.py
 java_analysis_report.json
-java_cohort_expression_schema.json
 
 # Generated documentation files from development
 /output.md

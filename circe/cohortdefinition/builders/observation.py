@@ -24,11 +24,11 @@ class ObservationSqlBuilder(CriteriaSqlBuilder[Observation]):
     def get_query_template(self) -> str:
         """Get the SQL query template for observation criteria."""
         return """-- Begin Observation Criteria
-select C.person_id, C.observation_id as event_id, C.start_date, C.END_DATE,
+SELECT C.person_id, C.observation_id as event_id, C.start_date, C.end_date,
        C.visit_occurrence_id, C.start_date as sort_date@additionalColumns
-from 
+FROM 
 (
-  select @selectClause @ordinalExpression
+  SELECT @selectClause @ordinalExpression
   FROM @cdm_database_schema.OBSERVATION o
 @codesetClause
 ) C
@@ -49,8 +49,8 @@ from
     def get_table_column_for_criteria_column(self, criteria_column: CriteriaColumn) -> str:
         """Get table column for criteria column."""
         column_mapping = {
-            CriteriaColumn.START_DATE: "C.observation_date",
-            CriteriaColumn.END_DATE: "C.observation_date",
+            CriteriaColumn.START_DATE: "C.start_date",
+            CriteriaColumn.END_DATE: "C.end_date",
             CriteriaColumn.DOMAIN_CONCEPT: "C.observation_concept_id",
             CriteriaColumn.DURATION: "NULL",
             CriteriaColumn.VISIT_ID: "C.visit_occurrence_id",
