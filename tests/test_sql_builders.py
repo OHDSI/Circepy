@@ -1182,7 +1182,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         # Check for nested structure with lowercase keywords
         self.assertIn("select", sql.lower())
         self.assertIn("FROM @cdm_database_schema.MEASUREMENT m", sql)
-        self.assertIn("ROW_NUMBER() OVER", sql)  # first=True generates ordinal
+        self.assertIn("ROW_NUMBER() OVER", sql.upper())  # first=True generates ordinal
 
     def test_get_criteria_sql_with_options(self):
         """Test get_criteria_sql with builder options."""
@@ -1665,7 +1665,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         ordinal_expression = builder.resolve_ordinal_expression(criteria, options)
         
         # Now uses ROW_NUMBER() window function like ObservationSqlBuilder
-        self.assertIn("ROW_NUMBER() OVER", ordinal_expression)
+        self.assertIn("ROW_NUMBER() OVER", ordinal_expression.upper())
         self.assertIn("m.person_id", ordinal_expression)
         self.assertIn("m.measurement_date", ordinal_expression)
 
@@ -1703,7 +1703,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         self.assertIn("select", sql.lower())
         self.assertIn("FROM @cdm_database_schema.MEASUREMENT m", sql)
         # With first=True, generates ROW_NUMBER() OVER
-        self.assertIn("ROW_NUMBER() OVER", sql)
+        self.assertIn("ROW_NUMBER() OVER", sql.upper())
         # No JOINs to PERSON or PROVIDER since no age or provider conditions
         self.assertNotIn("JOIN @cdm_database_schema.PERSON", sql)
         self.assertNotIn("JOIN @cdm_database_schema.PROVIDER", sql)
@@ -1726,7 +1726,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         self.assertIn("select", sql.lower())
         self.assertIn("FROM @cdm_database_schema.MEASUREMENT m", sql)
         # With first=True, generates ROW_NUMBER() OVER
-        self.assertIn("ROW_NUMBER() OVER", sql)
+        self.assertIn("ROW_NUMBER() OVER", sql.upper())
 
     def test_sql_template_placeholder_replacement(self):
         """Test that all placeholders are properly replaced in SQL template."""
@@ -1752,7 +1752,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         self.assertIn("m.measurement_date as start_date", sql)  # Inner query
         self.assertIn("JOIN @cdm_database_schema.PROVIDER PR", sql)  # PR alias
         self.assertIn("C.start_date", sql)  # Outer query WHERE clause
-        self.assertIn("ROW_NUMBER() OVER", sql)  # first=True generates ordinal
+        self.assertIn("ROW_NUMBER() OVER", sql.upper())  # first=True generates ordinal
 
 
 class TestDeviceExposureSqlBuilder(unittest.TestCase):

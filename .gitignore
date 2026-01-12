@@ -143,8 +143,6 @@ Thumbs.db
 circe-be/
 
 # Temporary analysis files (keep examples/*.json)
-/*.json
-/*.sql
 /*.md.bak
 /*.R
 /*.Rout

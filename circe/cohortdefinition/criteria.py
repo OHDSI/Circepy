@@ -378,6 +378,36 @@ class DrugExposure(Criteria):
         validation_alias=AliasChoices("OccurrenceStartDate", "occurrenceStartDate"),
         serialization_alias="OccurrenceStartDate"
     )
+    dose_unit: Optional[List[Concept]] = Field(
+        default=None,
+        validation_alias=AliasChoices("DoseUnit", "doseUnit"),
+        serialization_alias="DoseUnit"
+    )
+    dose_unit_cs: Optional[ConceptSetSelection] = Field(
+        default=None,
+        validation_alias=AliasChoices("DoseUnitCS", "doseUnitCS"),
+        serialization_alias="DoseUnitCS"
+    )
+    lot_number: Optional[TextFilter] = Field(
+        default=None,
+        validation_alias=AliasChoices("LotNumber", "lotNumber"),
+        serialization_alias="LotNumber"
+    )
+    quantity: Optional[NumericRange] = Field(
+        default=None,
+        validation_alias=AliasChoices("Quantity", "quantity"),
+        serialization_alias="Quantity"
+    )
+    days_supply: Optional[NumericRange] = Field(
+        default=None,
+        validation_alias=AliasChoices("DaysSupply", "daysSupply"),
+        serialization_alias="DaysSupply"
+    )
+    refills: Optional[NumericRange] = Field(
+        default=None,
+        validation_alias=AliasChoices("Refills", "refills"),
+        serialization_alias="Refills"
+    )
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -548,6 +578,37 @@ class Measurement(Criteria):
         validation_alias=AliasChoices("CodesetId", "codesetId"),
         serialization_alias="CodesetId"
     )
+    value_as_concept: Optional[List[Concept]] = Field(
+        default=None,
+        validation_alias=AliasChoices("ValueAsConcept", "valueAsConcept"),
+        serialization_alias="ValueAsConcept"
+    )
+    value_as_concept_cs: Optional[ConceptSetSelection] = Field(
+        default=None,
+        validation_alias=AliasChoices("ValueAsConceptCS", "valueAsConceptCS"),
+        serialization_alias="ValueAsConceptCS"
+    )
+    abnormal: Optional[bool] = Field(
+        default=None,
+        validation_alias=AliasChoices("Abnormal", "abnormal"),
+        serialization_alias="Abnormal"
+    )
+    range_low_ratio: Optional[NumericRange] = Field(
+        default=None,
+        validation_alias=AliasChoices("RangeLowRatio", "rangeLowRatio"),
+        serialization_alias="RangeLowRatio"
+    )
+    range_high_ratio: Optional[NumericRange] = Field(
+        default=None,
+        validation_alias=AliasChoices("RangeHighRatio", "rangeHighRatio"),
+        serialization_alias="RangeHighRatio"
+    )
+    provider_specialty: Optional[List[Concept]] = Field(default=None, alias="ProviderSpecialty")
+    age: Optional[NumericRange] = None
+    occurrence_start_date: Optional[DateRange] = Field(default=None, alias="OccurrenceStartDate")
+    visits: Optional[List[Concept]] = None  # Placeholder if needed, but not in list
+    visit_type: Optional[List[Concept]] = Field(default=None, alias="VisitType")
+    
     first: bool = Field(
         default=False,
         validation_alias=AliasChoices("First", "first"),
