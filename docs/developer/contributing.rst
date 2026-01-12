@@ -1,7 +1,7 @@
 Contributing Guide
 ==================
 
-See :doc:`../../CONTRIBUTING` for complete contributing guidelines.
+See :doc:`../CONTRIBUTING` for complete contributing guidelines.
 
 Development Setup
 -----------------

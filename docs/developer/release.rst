@@ -1,7 +1,7 @@
 Release Process
 ===============
 
-See :doc:`../../RELEASE_CHECKLIST` for the complete release checklist.
+See :doc:`../RELEASE_CHECKLIST` for the complete release checklist.
 
 Version Numbers
 ---------------

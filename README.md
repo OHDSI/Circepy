@@ -1,10 +1,8 @@
-from build.lib.circe.cohortdefinition import BuildExpressionQueryOptions
-
 # CIRCE Python Implementation
 
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-896%20passed-brightgreen)](tests/)
-[![Coverage](https://img.shields.io/badge/coverage-71%25-brightgreen)](htmlcov/)
+[![Tests](https://img.shields.io/badge/tests-993%20passed-brightgreen)](tests/)
+[![Coverage](https://img.shields.io/badge/coverage-81%25-brightgreen)](htmlcov/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![PyPI](https://img.shields.io/badge/PyPI-ohdsi--circe-blue)](https://pypi.org/project/ohdsi-circe/)
 
@@ -24,8 +22,8 @@ CIRCE Python provides a comprehensive toolkit for working with OMOP CDM cohort d
 ## Package Status
 
 - **Version**: 1.0.0 (Beta)
-- **Tests**: 896 passing
-- **Coverage**: 71%
+- **Tests**: 993 passing
+- **Coverage**: 81%
 - **Python**: 3.8+
 - **License**: Apache 2.0
 
@@ -114,7 +112,7 @@ print(sql)
 
 This package provides a complete Python implementation of CIRCE-BE with:
 
-- **896 passing tests** with 71% code coverage
+- **993 passing tests** with 81% code coverage
 - **18+ SQL builders** for all OMOP CDM domains:
   - Condition Occurrence/Era
   - Drug Exposure/Era
@@ -306,7 +304,7 @@ pip install -e ".[dev]"
 pytest
 ```
 
-All 896 tests should pass with 71% coverage.
+All 993 tests should pass with 81% coverage.
 
 ### Code Formatting
 
