@@ -39,7 +39,12 @@ from circe.cohortdefinition import (
     Occurrence, CriteriaColumn, InclusionRule, CollapseType, DateType,
     ResultLimit, Period, DateRange, NumericRange, DateAdjustment,
     ObservationFilter, CollapseSettings, EndStrategy, PrimaryCriteria,
-    CriteriaGroup, ConceptSetSelection
+    CriteriaGroup, ConceptSetSelection, Window, TextFilter, GeoCriteria, WindowedCriteria,
+    DateOffsetStrategy, CustomEraStrategy, ConditionOccurrence, DrugExposure,
+    InclusionRule, WindowBound,
+    ProcedureOccurrence, VisitOccurrence, Observation, Measurement, DeviceExposure,
+    Specimen, Death, VisitDetail, ObservationPeriod, PayerPlanPeriod, LocationRegion,
+    ConditionEra, DrugEra, DoseEra
 )
 
 from typing import Dict
@@ -113,7 +118,32 @@ def get_json_schema() -> dict:
         "DateAdjustment": DateAdjustment,
         "ObservationFilter": ObservationFilter,
         "CollapseSettings": CollapseSettings,
-        "Period": Period
+        "Period": Period,
+        # Missing models added
+        "WindowedCriteria": WindowedCriteria,
+        "ConditionOccurrence": ConditionOccurrence,
+        "DrugExposure": DrugExposure,
+        "ProcedureOccurrence": ProcedureOccurrence,
+        "VisitOccurrence": VisitOccurrence,
+        "Observation": Observation,
+        "Measurement": Measurement,
+        "DeviceExposure": DeviceExposure,
+        "Specimen": Specimen,
+        "Death": Death,
+        "VisitDetail": VisitDetail,
+        "ObservationPeriod": ObservationPeriod,
+        "PayerPlanPeriod": PayerPlanPeriod,
+        "LocationRegion": LocationRegion,
+        "ConditionEra": ConditionEra,
+        "DrugEra": DrugEra,
+        "DoseEra": DoseEra,
+        "GeoCriteria": GeoCriteria,
+        "DateOffsetStrategy": DateOffsetStrategy,
+        "CustomEraStrategy": CustomEraStrategy,
+        "Window": Window,
+        "TextFilter": TextFilter,
+        "InclusionRule": InclusionRule,
+        "WindowBound": WindowBound
     }
 
     # Build root-level $defs with each schema

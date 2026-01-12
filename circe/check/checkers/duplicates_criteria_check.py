@@ -140,16 +140,10 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
         Returns:
             True if objects are equal, False otherwise
         """
-        if obj1 is None and obj2 is None:
-            return True
-        if obj1 is None or obj2 is None:
-            return False
-        if hasattr(obj1, '__dict__') and hasattr(obj2, '__dict__'):
-            return obj1.__dict__ == obj2.__dict__
         return obj1 == obj2
     
     def _compare_objects_reflection(self, obj1, obj2) -> bool:
-        """Compare objects using reflection (similar to Java EqualsBuilder.reflectionEquals).
+        """Compare objects using equality (Pydantic models support this).
         
         Args:
             obj1: First object
@@ -158,19 +152,6 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
         Returns:
             True if objects are equal, False otherwise
         """
-        if obj1 is None and obj2 is None:
-            return True
-        if obj1 is None or obj2 is None:
-            return False
-        if type(obj1) != type(obj2):
-            return False
-        
-        # Compare all attributes
-        if hasattr(obj1, '__dict__') and hasattr(obj2, '__dict__'):
-            dict1 = {k: v for k, v in obj1.__dict__.items() if not k.startswith('_')}
-            dict2 = {k: v for k, v in obj2.__dict__.items() if not k.startswith('_')}
-            return dict1 == dict2
-        
         return obj1 == obj2
     
     def _check_criteria(self, criteria: 'Criteria', group_name: str, reporter: WarningReporter) -> None:

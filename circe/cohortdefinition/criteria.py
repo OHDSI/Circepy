@@ -8,13 +8,14 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Any, ClassVar
-from pydantic import BaseModel, Field, ConfigDict, model_serializer, AliasChoices
+from typing import List, Optional, Any, ClassVar, Union, TYPE_CHECKING
+from pydantic import BaseModel, Field, ConfigDict, model_serializer, AliasChoices, field_validator
 from enum import Enum
 from ..vocabulary.concept import Concept
 from .core import (
-    DateAdjustment, CriteriaGroup, DateRange, NumericRange, ConceptSetSelection,
-    TextFilter, Window, WindowedCriteria, Period
+    DateAdjustment, DateRange, NumericRange, ConceptSetSelection,
+    TextFilter, Window, Period, ResultLimit, ObservationFilter,
+    CollapseSettings, EndStrategy
 )
 
 
@@ -75,6 +76,39 @@ class Occurrence(BaseModel):
 Occurrence._EXACTLY = 0
 Occurrence._AT_MOST = 1
 Occurrence._AT_LEAST = 2
+
+
+class WindowedCriteria(BaseModel):
+    """Base class for windowed criteria.
+    
+    Java equivalent: org.ohdsi.circe.cohortdefinition.WindowedCriteria
+    """
+    criteria: 'CriteriaType' = Field(
+        validation_alias=AliasChoices("Criteria", "criteria"),
+        serialization_alias="Criteria"
+    )
+    start_window: Optional[Window] = Field(
+        default=None,
+        validation_alias=AliasChoices("StartWindow", "startWindow"),
+        serialization_alias="StartWindow"
+    )
+    end_window: Optional[Window] = Field(
+        default=None,
+        validation_alias=AliasChoices("EndWindow", "endWindow"),
+        serialization_alias="EndWindow"
+    )
+    restrict_visit: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("RestrictVisit", "restrictVisit"),
+        serialization_alias="RestrictVisit"
+    )
+    ignore_observation_period: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("IgnoreObservationPeriod", "ignoreObservationPeriod"),
+        serialization_alias="IgnoreObservationPeriod"
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class CorelatedCriteria(WindowedCriteria):
@@ -155,7 +189,7 @@ class Criteria(BaseModel):
         validation_alias=AliasChoices("DateAdjustment", "dateAdjustment"),
         serialization_alias="DateAdjustment"
     )
-    correlated_criteria: Optional[CriteriaGroup] = Field(
+    correlated_criteria: Optional['CriteriaGroup'] = Field(
         default=None,
         validation_alias=AliasChoices("CorrelatedCriteria", "correlatedCriteria"),
         serialization_alias="CorrelatedCriteria"
@@ -183,7 +217,7 @@ class InclusionRule(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.InclusionRule
     """
-    expression: Optional[CriteriaGroup] = None
+    expression: Optional['CriteriaGroup'] = None
     description: Optional[str] = None
     name: Optional[str] = None
 
@@ -870,3 +904,281 @@ class GeoCriteria(Criteria):
     Java equivalent: org.ohdsi.circe.cohortdefinition.GeoCriteria
     """
     pass
+
+# =============================================================================
+# CRITERIA GROUP AND PRIMARY CRITERIA (Moved from core)
+# =============================================================================
+
+class CriteriaGroup(BaseModel):
+    """Represents a group of criteria with logical operators.
+    
+    Java equivalent: org.ohdsi.circe.cohortdefinition.CriteriaGroup
+    """
+    criteria_list: Optional[List['CorelatedCriteria']] = Field(
+        default=None,
+        validation_alias=AliasChoices("CriteriaList", "criteriaList"),
+        serialization_alias="CriteriaList"
+    )
+    count: Optional[int] = Field(
+        default=None,
+        validation_alias=AliasChoices("Count", "count"),
+        serialization_alias="Count"
+    )
+    groups: Optional[List['CriteriaGroup']] = Field(
+        default=None,
+        validation_alias=AliasChoices("Groups", "groups"),
+        serialization_alias="Groups"
+    )
+    demographic_criteria_list: Optional[List[DemographicCriteria]] = Field(
+        default=None,
+        validation_alias=AliasChoices("DemographicCriteriaList", "demographicCriteriaList"),
+        serialization_alias="DemographicCriteriaList"
+    )
+    type: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("Type", "type"),
+        serialization_alias="Type"
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    def is_empty(self) -> bool:
+        """Check if the criteria group is empty."""
+        has_criteria = self.criteria_list and len(self.criteria_list) > 0
+        has_groups = self.groups and len(self.groups) > 0
+        has_demographic = self.demographic_criteria_list and len(self.demographic_criteria_list) > 0
+        return not (has_criteria or has_groups or has_demographic)
+    
+    @field_validator('groups', mode='before')
+    @classmethod
+    def deserialize_groups(cls, v: Any) -> Any:
+        # Same Logic as before, just local
+        if not v or not isinstance(v, list):
+            return v
+        result = []
+        for item in v:
+            if isinstance(item, dict):
+                try:
+                    group = cls.model_validate(item, strict=False)
+                    result.append(group)
+                except Exception:
+                    result.append(item)
+            else:
+                result.append(item)
+        return result
+    
+    @field_validator('criteria_list', mode='before')
+    @classmethod
+    def deserialize_criteria_list(cls, v: Any) -> Any:
+        # Logic adapted for local CorelatedCriteria
+        if not v or not isinstance(v, list):
+            return v
+        
+        # Helper window normalizer (same as before)
+        def normalize_window(window_dict: dict) -> dict:
+            if not isinstance(window_dict, dict): return window_dict
+            normalized = {}
+            if 'UseEventEnd' in window_dict: normalized['useEventEnd'] = window_dict['UseEventEnd']
+            elif 'useEventEnd' in window_dict: normalized['useEventEnd'] = window_dict['useEventEnd']
+            if 'UseIndexEnd' in window_dict: normalized['useIndexEnd'] = window_dict['UseIndexEnd']
+            elif 'useIndexEnd' in window_dict: normalized['useIndexEnd'] = window_dict['useIndexEnd']
+            if 'useEventEnd' in normalized: normalized['useEventEnd'] = normalized['useEventEnd']
+            if 'useIndexEnd' in normalized: normalized['useIndexEnd'] = normalized['useIndexEnd']
+            
+            if 'Start' in window_dict:
+                start = window_dict['Start']
+                if isinstance(start, dict):
+                    coeff = start.get('Coeff') if 'Coeff' in start else start.get('coeff', 0)
+                    days = start.get('Days') if 'Days' in start else start.get('days')
+                    normalized['start'] = {'coeff': coeff, 'days': days}
+                else: normalized['start'] = start
+            if 'End' in window_dict:
+                end = window_dict['End']
+                if isinstance(end, dict):
+                    coeff = end.get('Coeff') if 'Coeff' in end else end.get('coeff', 0)
+                    days = end.get('Days') if 'Days' in end else end.get('days')
+                    normalized['end'] = {'coeff': coeff, 'days': days}
+                else: normalized['end'] = end
+            
+            if 'coeff' not in normalized and 'start' in normalized:
+                if isinstance(normalized['start'], dict) and 'coeff' in normalized['start']:
+                    normalized['coeff'] = normalized['start']['coeff']
+                else: normalized['coeff'] = 0
+            elif 'coeff' not in normalized: normalized['coeff'] = 0
+            if 'useEventEnd' not in normalized: normalized['useEventEnd'] = False
+            return normalized
+
+        deserialized = []
+        for item in v:
+            if not isinstance(item, dict):
+                deserialized.append(item)
+                continue
+            
+            item_copy = dict(item)
+            if 'StartWindow' in item_copy: item_copy['StartWindow'] = normalize_window(item_copy['StartWindow'])
+            elif 'startWindow' in item_copy:
+                item_copy['StartWindow'] = normalize_window(item_copy['startWindow'])
+                item_copy.pop('startWindow', None)
+            if 'EndWindow' in item_copy: item_copy['EndWindow'] = normalize_window(item_copy['EndWindow'])
+            elif 'endWindow' in item_copy:
+                item_copy['EndWindow'] = normalize_window(item_copy['endWindow'])
+                item_copy.pop('endWindow', None)
+
+            # Polymorphic handling for Criteria field
+            if 'Criteria' in item_copy or 'criteria' in item_copy:
+                if 'Criteria' in item_copy: item_copy['criteria'] = item_copy.pop('Criteria')
+                # Inner criteria deserialization
+                if isinstance(item_copy.get('criteria'), dict):
+                    c_dict = item_copy['criteria']
+                    c_type = next(iter(c_dict.keys()), None)
+                    if c_type and c_type in NAMES_TO_CLASSES:
+                        try:
+                            c_data = dict(c_dict[c_type])
+                            # PascalCase defaults
+                            if c_type == 'Measurement' and 'MeasurementTypeExclude' not in c_data and 'measurementTypeExclude' not in c_data:
+                                c_data['MeasurementTypeExclude'] = False
+                            if c_type == 'Observation' and 'ObservationTypeExclude' not in c_data and 'observationTypeExclude' not in c_data:
+                                c_data['ObservationTypeExclude'] = False
+                            if c_type == 'ConditionOccurrence' and 'ConditionTypeExclude' not in c_data and 'conditionTypeExclude' not in c_data:
+                                c_data['ConditionTypeExclude'] = False
+                            if 'First' not in c_data and 'first' not in c_data:
+                                c_data['First'] = False
+                            
+                            c_obj = NAMES_TO_CLASSES[c_type].model_validate(c_data, strict=False)
+                            item_copy['criteria'] = c_obj
+                        except: pass
+            
+                if 'Occurrence' in item_copy:
+                    occ = item_copy.pop('Occurrence')
+                    item_copy['occurrence'] = Occurrence.model_validate(occ) if isinstance(occ, dict) else occ
+                elif 'occurrence' not in item_copy:
+                    item_copy['occurrence'] = Occurrence(type=Occurrence._AT_LEAST, count=1, is_distinct=False)
+
+                try:
+                    deserialized.append(CorelatedCriteria.model_validate(item_copy))
+                except: deserialized.append(item)
+            
+            elif any(k in item_copy for k in ['StartWindow', 'EndWindow', 'RestrictVisit', 'IgnoreObservationPeriod']):
+                # Implicit CorelatedCriteria
+                c_type = next((k for k in item_copy.keys() if k not in ['StartWindow', 'EndWindow', 'RestrictVisit', 'IgnoreObservationPeriod', 'Occurrence', 'criteria']), None)
+                if c_type and c_type in NAMES_TO_CLASSES:
+                    c_data = item_copy[c_type]
+                    corelated_dict = {
+                        'criteria': {c_type: c_data},
+                        'Occurrence': item_copy.get('Occurrence', {'Type': Occurrence._AT_LEAST, 'Count': 1, 'IsDistinct': False})
+                    }
+                    for f in ['StartWindow', 'EndWindow', 'RestrictVisit', 'IgnoreObservationPeriod']:
+                        if f in item_copy: corelated_dict[f] = item_copy[f]
+                    try:
+                        deserialized.append(CorelatedCriteria.model_validate(corelated_dict))
+                    except: deserialized.append(item)
+                else: deserialized.append(item)
+            
+            else:
+                # Simple polymorphic wrapped in corelated
+                c_type = next(iter(item_copy.keys()), None)
+                if c_type and c_type in NAMES_TO_CLASSES:
+                    corelated_dict = {'criteria': {c_type: item_copy[c_type]}}
+                    try:
+                        deserialized.append(CorelatedCriteria.model_validate(corelated_dict))
+                    except: deserialized.append(item)
+                else: deserialized.append(item)
+
+        return deserialized
+
+
+# Define CriteriaType Union for strict typing
+CriteriaType = Union[
+    ConditionOccurrence, DrugExposure, ProcedureOccurrence,
+    VisitOccurrence, Observation, Measurement, DeviceExposure,
+    Specimen, Death, VisitDetail, ObservationPeriod,
+    PayerPlanPeriod, LocationRegion, ConditionEra,
+    DrugEra, DoseEra
+]
+
+# Map for dynamic lookup
+NAMES_TO_CLASSES = {
+    'ConditionOccurrence': ConditionOccurrence,
+    'DrugExposure': DrugExposure,
+    'ProcedureOccurrence': ProcedureOccurrence,
+    'VisitOccurrence': VisitOccurrence,
+    'Observation': Observation,
+    'Measurement': Measurement,
+    'DeviceExposure': DeviceExposure,
+    'Specimen': Specimen,
+    'Death': Death,
+    'VisitDetail': VisitDetail,
+    'ObservationPeriod': ObservationPeriod,
+    'PayerPlanPeriod': PayerPlanPeriod,
+    'LocationRegion': LocationRegion,
+    'ConditionEra': ConditionEra,
+    'DrugEra': DrugEra,
+    'DoseEra': DoseEra,
+}
+
+
+class PrimaryCriteria(BaseModel):
+    """Represents the primary criteria for cohort definition.
+    
+    Java equivalent: org.ohdsi.circe.cohortdefinition.PrimaryCriteria
+    """
+    criteria_list: Optional[List[CriteriaType]] = Field(
+        default=None,
+        validation_alias=AliasChoices("CriteriaList", "criteriaList"),
+        serialization_alias="CriteriaList"
+    )
+    observation_window: Optional[ObservationFilter] = Field(
+        default=None,
+        validation_alias=AliasChoices("ObservationWindow", "observationWindow"),
+        serialization_alias="ObservationWindow"
+    )
+    primary_limit: Optional[ResultLimit] = Field(
+        default=None,
+        validation_alias=AliasChoices("PrimaryLimit", "PrimaryCriteriaLimit", "primaryCriteriaLimit", "primaryLimit", "PrimaryLimit"),
+        serialization_alias="PrimaryCriteriaLimit"
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
+    
+    @field_validator('criteria_list', mode='before')
+    @classmethod
+    def deserialize_criteria_list(cls, v: Any) -> Any:
+        if not v or not isinstance(v, list):
+            return v
+        
+        deserialized = []
+        for item in v:
+            if not isinstance(item, dict):
+                deserialized.append(item)
+                continue
+            
+            # Find the type key (e.g. "ConditionOccurrence" or "conditionOccurrence")
+            c_type_raw = next(iter(item.keys()), None)
+            
+            # Case-insensitive lookup
+            c_type = None
+            if c_type_raw:
+                # Direct match
+                if c_type_raw in NAMES_TO_CLASSES:
+                    c_type = c_type_raw
+                # Case-insensitive match
+                else:
+                    for k in NAMES_TO_CLASSES:
+                        if k.lower() == c_type_raw.lower():
+                            c_type = k
+                            break
+            
+            if c_type:
+                try:
+                    c_data = dict(item[c_type_raw])
+                    if c_type == 'Measurement' and 'MeasurementTypeExclude' not in c_data: c_data['MeasurementTypeExclude'] = False
+                    if c_type == 'Observation' and 'ObservationTypeExclude' not in c_data: c_data['ObservationTypeExclude'] = False
+                    if c_type == 'ConditionOccurrence' and 'ConditionTypeExclude' not in c_data: c_data['ConditionTypeExclude'] = False
+                    if 'First' not in c_data: c_data['First'] = False
+                    
+                    obj = NAMES_TO_CLASSES[c_type].model_validate(c_data, strict=False)
+                    deserialized.append(obj)
+                except: deserialized.append(item)
+            else:
+                deserialized.append(item)
+        return deserialized

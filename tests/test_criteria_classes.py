@@ -17,10 +17,10 @@ from circe.cohortdefinition.criteria import (
     ConditionOccurrence, DrugExposure, ProcedureOccurrence, VisitOccurrence,
     Observation, Measurement, DeviceExposure, Specimen, Death, VisitDetail,
     ObservationPeriod, PayerPlanPeriod, LocationRegion, ConditionEra,
-    DrugEra, DoseEra, GeoCriteria
+    DrugEra, DoseEra, GeoCriteria, WindowedCriteria
 )
 from circe.cohortdefinition.core import (
-    TextFilter, WindowBound, Window, WindowedCriteria,
+    TextFilter, WindowBound, Window,
     DateOffsetStrategy, CustomEraStrategy, DateRange, NumericRange,
     ConceptSetSelection
 )

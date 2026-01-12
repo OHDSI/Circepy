@@ -15,10 +15,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from circe.cohortdefinition.cohort import CohortExpression
 from circe.cohortdefinition.core import (
-    ResultLimit, Period, CollapseSettings, EndStrategy,
-    PrimaryCriteria, CriteriaGroup, ObservationFilter,
-    CollapseType, DateType
+    ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy, CustomEraStrategy,
+    ObservationFilter, CollapseType, DateType
 )
+from circe.cohortdefinition.criteria import Criteria, PrimaryCriteria, CriteriaGroup
 from circe.vocabulary.concept import ConceptSet
 
 

@@ -12,14 +12,14 @@ import json
 from typing import List, Optional, Dict, Any, Union
 from .cohort import CohortExpression
 from .criteria import (
-    Criteria, CorelatedCriteria, DemographicCriteria, CriteriaGroup,
+    Criteria, CorelatedCriteria, DemographicCriteria, CriteriaGroup, PrimaryCriteria,
     LocationRegion, ConditionEra, ConditionOccurrence, Death, DeviceExposure,
     DoseEra, DrugEra, DrugExposure, Measurement, Observation, ObservationPeriod,
     PayerPlanPeriod, ProcedureOccurrence, Specimen, VisitOccurrence, VisitDetail,
     Occurrence
 )
 from .core import (
-    PrimaryCriteria, Period, DateOffsetStrategy, CustomEraStrategy
+    Period, DateOffsetStrategy, CustomEraStrategy
 )
 from .builders.utils import BuilderOptions, BuilderUtils, CriteriaColumn
 from .builders import (

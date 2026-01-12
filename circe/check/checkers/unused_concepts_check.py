@@ -19,14 +19,16 @@ from .criteria_checker_factory import CriteriaCheckerFactory
 try:
     from ...cohortdefinition.cohort import CohortExpression
     from ...cohortdefinition.criteria import Criteria, CorelatedCriteria
-    from ...cohortdefinition.core import CustomEraStrategy, CriteriaGroup
+    from ...cohortdefinition.core import CustomEraStrategy
+    from ...cohortdefinition.criteria import CriteriaGroup
     from ...vocabulary.concept import ConceptSet
 except ImportError:
     from typing import TYPE_CHECKING
     if TYPE_CHECKING:
         from ...cohortdefinition.cohort import CohortExpression
         from ...cohortdefinition.criteria import Criteria, CorelatedCriteria
-        from ...cohortdefinition.core import CustomEraStrategy, CriteriaGroup
+        from ...cohortdefinition.core import CustomEraStrategy
+        from ...cohortdefinition.criteria import CriteriaGroup
         from ...vocabulary.concept import ConceptSet
 
 
@@ -148,7 +150,7 @@ class UnusedConceptsCheck(BaseCheck):
             True if the concept set is used, False otherwise
         """
         # Import here to avoid circular dependencies
-        from ...cohortdefinition.core import CriteriaGroup
+        from ...cohortdefinition.criteria import CriteriaGroup
         
         if isinstance(target, CriteriaGroup):
             criteria_list = self._to_criteria_list(target.criteria_list)

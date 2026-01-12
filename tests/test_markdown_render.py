@@ -13,16 +13,18 @@ from typing import List
 from circe.cohortdefinition import CohortExpression
 from circe.cohortdefinition.printfriendly import MarkdownRender
 from circe.cohortdefinition.core import (
-    PrimaryCriteria, CriteriaGroup, Period, CollapseSettings, EndStrategy,
-    DateOffsetStrategy, CustomEraStrategy, DateRange, NumericRange,
-    CollapseType, DateType, TextFilter
+    ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy,
+    CustomEraStrategy, DateRange, NumericRange,
+    ConceptSetSelection, CollapseType, DateType, TextFilter, Window, WindowBound,
+    DateAdjustment, ObservationFilter
 )
 from circe.cohortdefinition.criteria import (
-    Criteria, DemographicCriteria, InclusionRule, ConditionOccurrence,
-    DateAdjustment, ProcedureOccurrence, Death, DeviceExposure, Measurement,
-    Observation, Specimen, VisitOccurrence, VisitDetail, ObservationPeriod,
-    PayerPlanPeriod, LocationRegion, ConditionEra, DrugEra, DoseEra, GeoCriteria,
-    DrugExposure
+    Criteria, CriteriaGroup, DemographicCriteria, InclusionRule,
+    ConditionOccurrence, DrugExposure, ProcedureOccurrence, VisitOccurrence,
+    Observation, Measurement, DeviceExposure, Specimen, Death, VisitDetail,
+    ObservationPeriod, PayerPlanPeriod, LocationRegion, ConditionEra,
+    DrugEra, DoseEra, GeoCriteria, Occurrence, CorelatedCriteria,
+    PrimaryCriteria
 )
 from circe.vocabulary.concept import (
     ConceptSet, ConceptSetExpression, ConceptSetItem, Concept
@@ -1791,7 +1793,8 @@ class TestRenderCriteriaGroup:
         renderer._concept_sets = [concept_set]
         
         criteria = ConditionOccurrence(codeset_id=1)
-        group = CriteriaGroup(criteria_list=[criteria])
+        corelated = CorelatedCriteria(criteria=criteria, start_window=None, occurrence=None)
+        group = CriteriaGroup(criteria_list=[corelated])
         result = renderer._render_criteria_group(group)
         
         # Bug fixed - should render without AttributeError

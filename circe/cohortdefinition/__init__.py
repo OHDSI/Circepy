@@ -13,6 +13,8 @@ from .cohort import CohortExpression
 from .criteria import (
     Criteria, CorelatedCriteria, DemographicCriteria, 
     Occurrence, CriteriaColumn, InclusionRule,
+    # Moved from core
+    CriteriaGroup, PrimaryCriteria, WindowedCriteria,
     # Criteria Domain Classes
     ConditionOccurrence, DrugExposure, ProcedureOccurrence,
     VisitOccurrence, Observation, Measurement, DeviceExposure,
@@ -26,10 +28,9 @@ from .criteria import (
 from .core import (
     CollapseType, DateType, ResultLimit, Period, DateRange, 
     NumericRange, DateAdjustment, ObservationFilter, 
-    CollapseSettings, EndStrategy, PrimaryCriteria, 
-    CriteriaGroup, ConceptSetSelection,
+    CollapseSettings, EndStrategy, ConceptSetSelection,
     # Supporting Classes
-    TextFilter, WindowBound, Window, WindowedCriteria,
+    TextFilter, WindowBound, Window,
     DateOffsetStrategy, CustomEraStrategy
 )
 from .cohort_expression_query_builder import CohortExpressionQueryBuilder, BuildExpressionQueryOptions
@@ -80,4 +81,7 @@ __all__ = [
 
 # Rebuild models with forward references after all imports are complete
 CriteriaGroup.model_rebuild()
+PrimaryCriteria.model_rebuild()
+WindowedCriteria.model_rebuild()
+CorelatedCriteria.model_rebuild()
 CohortExpression.model_rebuild()

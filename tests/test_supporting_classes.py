@@ -14,9 +14,12 @@ from typing import List, Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from circe.cohortdefinition.core import (
-    TextFilter, WindowBound, Window, WindowedCriteria,
-    DateOffsetStrategy, CustomEraStrategy
+    ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy,
+    CustomEraStrategy, DateRange, NumericRange,
+    ConceptSetSelection, CollapseType, DateType, TextFilter, Window, WindowBound,
+    DateAdjustment
 )
+from circe.cohortdefinition.criteria import WindowedCriteria, ConditionOccurrence
 
 
 class TestTextFilter(unittest.TestCase):
@@ -156,8 +159,8 @@ class TestWindowedCriteria(unittest.TestCase):
 
     def test_windowed_criteria_initialization(self):
         """Test basic initialization of WindowedCriteria."""
-        windowed_criteria = WindowedCriteria(criteria=None)
-        self.assertIsNone(windowed_criteria.criteria)
+        windowed_criteria = WindowedCriteria(criteria=ConditionOccurrence())
+        self.assertTrue(isinstance(windowed_criteria.criteria, ConditionOccurrence))
         self.assertIsNone(windowed_criteria.start_window)
         self.assertIsNone(windowed_criteria.end_window)
 
@@ -175,12 +178,12 @@ class TestWindowedCriteria(unittest.TestCase):
         )
         
         windowed_criteria = WindowedCriteria(
-            criteria="test_criteria",
+            criteria=ConditionOccurrence(),
             start_window=start_window,
             end_window=end_window
         )
         
-        self.assertEqual(windowed_criteria.criteria, "test_criteria")
+        self.assertTrue(isinstance(windowed_criteria.criteria, ConditionOccurrence))
         self.assertEqual(windowed_criteria.start_window.end.coeff, 1)
         self.assertEqual(windowed_criteria.start_window.end.days, 30)
         self.assertEqual(windowed_criteria.end_window.start.coeff, -1)
@@ -189,7 +192,7 @@ class TestWindowedCriteria(unittest.TestCase):
     def test_windowed_criteria_camel_case_aliases(self):
         """Test that camelCase aliases work correctly."""
         windowed_criteria = WindowedCriteria.model_validate({
-            "criteria": "test_criteria",
+            "Criteria": {"ConditionOccurrence": {}},
             "StartWindow": {
                 "useEventEnd": True,
                 "start": {"coeff": -1, "days": 0},
@@ -202,7 +205,7 @@ class TestWindowedCriteria(unittest.TestCase):
             }
         })
         
-        self.assertEqual(windowed_criteria.criteria, "test_criteria")
+        self.assertTrue(isinstance(windowed_criteria.criteria, ConditionOccurrence))
         self.assertIsNotNone(windowed_criteria.start_window)
         self.assertIsNotNone(windowed_criteria.end_window)
         self.assertTrue(windowed_criteria.start_window.use_event_end)
@@ -383,7 +386,7 @@ class TestSupportingClassesIntegration(unittest.TestCase):
         )
         
         windowed_criteria = WindowedCriteria(
-            criteria="test_criteria",
+            criteria=ConditionOccurrence(),
             start_window=start_window,
             end_window=end_window
         )
@@ -413,9 +416,10 @@ class TestSupportingClassesIntegration(unittest.TestCase):
     def test_all_supporting_classes_importable(self):
         """Test that all supporting classes can be imported."""
         from circe.cohortdefinition.core import (
-            TextFilter, WindowBound, Window, WindowedCriteria,
+            TextFilter, WindowBound, Window,
             DateOffsetStrategy, CustomEraStrategy
         )
+        from circe.cohortdefinition.criteria import WindowedCriteria
         
         # Test that all classes are importable
         self.assertTrue(TextFilter is not None)

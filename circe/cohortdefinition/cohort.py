@@ -12,9 +12,9 @@ from typing import List, Optional, Any, Union, TYPE_CHECKING
 from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator, AliasChoices
 from .core import (
     ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy, CustomEraStrategy,
-    PrimaryCriteria, CriteriaGroup, ObservationFilter, CriteriaGroup, Period, CollapseSettings
+    ObservationFilter
 )
-from .criteria import Criteria
+from .criteria import Criteria, PrimaryCriteria, CriteriaGroup, CriteriaType
 
 if TYPE_CHECKING:
     from ..check.warning import Warning
@@ -98,7 +98,7 @@ class CohortExpression(BaseModel):
         validation_alias=AliasChoices("CensorWindow", "censorWindow"),
         serialization_alias="CensorWindow"
     )
-    censoring_criteria: Optional[List[Criteria]] = Field(
+    censoring_criteria: Optional[List[CriteriaType]] = Field(
         default=None,
         validation_alias=AliasChoices("CensoringCriteria", "censoringCriteria"),
         serialization_alias="CensoringCriteria"

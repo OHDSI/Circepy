@@ -18,11 +18,12 @@ from ..criteria import (
     ConditionOccurrence, DrugExposure, ProcedureOccurrence, VisitOccurrence,
     Observation, Measurement, DeviceExposure, Specimen, Death, VisitDetail,
     ObservationPeriod, PayerPlanPeriod, LocationRegion, ConditionEra,
-    DrugEra, DoseEra, GeoCriteria, Occurrence, CorelatedCriteria
+    DrugEra, DoseEra, GeoCriteria, Occurrence, CorelatedCriteria,
+    PrimaryCriteria
 )
 from ..core import (
     ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy,
-    CustomEraStrategy, PrimaryCriteria, DateRange, NumericRange,
+    CustomEraStrategy, DateRange, NumericRange,
     ConceptSetSelection, CollapseType, DateType, TextFilter, Window, WindowBound,
     DateAdjustment, ObservationFilter
 )

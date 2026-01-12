@@ -16,14 +16,12 @@ from .warning_reporter import WarningReporter
 # Import at runtime to avoid circular dependencies
 try:
     from ...cohortdefinition.cohort import CohortExpression
-    from ...cohortdefinition.criteria import Criteria, CorelatedCriteria, DemographicCriteria
-    from ...cohortdefinition.core import PrimaryCriteria, CriteriaGroup
+    from ...cohortdefinition.criteria import Criteria, CorelatedCriteria, DemographicCriteria, PrimaryCriteria, CriteriaGroup
 except ImportError:
     from typing import TYPE_CHECKING
     if TYPE_CHECKING:
         from ...cohortdefinition.cohort import CohortExpression
-        from ...cohortdefinition.criteria import Criteria, CorelatedCriteria, DemographicCriteria
-        from ...cohortdefinition.core import PrimaryCriteria, CriteriaGroup
+        from ...cohortdefinition.criteria import Criteria, CorelatedCriteria, DemographicCriteria, PrimaryCriteria, CriteriaGroup
 
 
 class BaseValueCheck(BaseCheck):
@@ -121,7 +119,7 @@ class BaseValueCheck(BaseCheck):
         """
         # Import here to avoid circular dependencies
         from ...cohortdefinition.criteria import Criteria, CorelatedCriteria, DemographicCriteria
-        from ...cohortdefinition.core import CriteriaGroup
+        from ...cohortdefinition.criteria import CriteriaGroup
         
         # Check CriteriaGroup
         if isinstance(criteria, CriteriaGroup):

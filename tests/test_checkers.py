@@ -12,7 +12,8 @@ from pathlib import Path
 from typing import List
 
 from circe.cohortdefinition import CohortExpression
-from circe.cohortdefinition.core import CustomEraStrategy, DateOffsetStrategy, PrimaryCriteria, DateType, CriteriaGroup
+from circe.cohortdefinition.core import CustomEraStrategy, DateOffsetStrategy, DateType
+from circe.cohortdefinition.criteria import PrimaryCriteria, CriteriaGroup
 from circe.cohortdefinition.criteria import ConditionOccurrence, Occurrence, CorelatedCriteria, InclusionRule
 from circe.check import Checker
 from circe.check.checkers import (
@@ -363,8 +364,10 @@ class TestIncompleteRuleCheck:
                     "expression": {
                         "criteriaList": [
                             {
-                                "conditionOccurrence": {
-                                    "codesetId": 0
+                                "criteria": {
+                                    "conditionOccurrence": {
+                                        "codesetId": 0
+                                    }
                                 }
                             }
                         ]
@@ -474,14 +477,27 @@ class TestConceptSetCriteriaCheck:
     
     def test_check_valid_concept_set(self):
         """Test that criteria with valid concept sets produce no warnings."""
-        try:
-            expression = load_cohort_expression("checkers/conceptSetCriteriaCheckCorrect.json")
-            check = ConceptSetCriteriaCheck()
-            warnings = check.check(expression)
-            
-            assert len(warnings) == 0
-        except FileNotFoundError:
-            pytest.skip("Test resource not available")
+        expression = CohortExpression(
+            primary_criteria={
+                "criteriaList": [
+                    {
+                        "conditionOccurrence": {
+                            "codesetId": 0
+                        }
+                    }
+                ]
+            }
+        )
+        check = ConceptSetCriteriaCheck()
+        print(f"DEBUG: criteria list: {expression.primary_criteria.criteria_list}")
+        if expression.primary_criteria.criteria_list:
+            c = expression.primary_criteria.criteria_list[0]
+            print(f"DEBUG: criteria type: {type(c)}")
+            print(f"DEBUG: first criteria: {c.model_dump()}")
+            print(f"DEBUG: codeset_id: {c.codeset_id}")
+        warnings = check.check(expression)
+        
+        assert len(warnings) == 0
 
 
 class TestExitCriteriaCheck:
@@ -616,22 +632,30 @@ class TestRangeCheck:
     
     def test_check_negative_window_days(self):
         """Test that negative window days trigger warnings."""
+        from circe.cohortdefinition.criteria import CriteriaGroup, CorelatedCriteria, ConditionOccurrence
+        from circe.cohortdefinition.core import Window, WindowBound 
+        
+        # Windows are valid on CorelatedCriteria (in Inclusion Rules), not PrimaryCriteria events
         expression = CohortExpression(
-            primary_criteria={
-                "criteriaList": [
-                    {
-                        "conditionOccurrence": {
-                            "codesetId": 0
-                        },
-                        "startWindow": {
-                            "start": {
-                                "days": -5,
-                                "coeff": 1
-                            }
-                        }
-                    }
-                ]
-            }
+            inclusion_rules=[
+                {
+                    "name": "Rule with negative window",
+                    "expression": CriteriaGroup(
+                        type="ALL",
+                        criteria_list=[
+                            CorelatedCriteria(
+                                criteria=ConditionOccurrence(codeset_id=0),
+                                start_window=Window(
+                                    start=WindowBound(days=-5, coeff=1),
+                                    end=WindowBound(days=0, coeff=1),
+                                    use_event_end=False,
+                                    use_index_end=False
+                                )
+                            )
+                        ]
+                    )
+                }
+            ]
         )
         check = RangeCheck()
         warnings = check.check(expression)
@@ -875,14 +899,26 @@ class TestDuplicatesCriteriaCheck:
     
     def test_check_no_duplicates(self):
         """Test that non-duplicate criteria produce no warnings."""
-        try:
-            expression = load_cohort_expression("checkers/duplicatesCriteriaCheckCorrect.json")
-            check = DuplicatesCriteriaCheck()
-            warnings = check.check(expression)
-            
-            assert len(warnings) == 0
-        except FileNotFoundError:
-            pytest.skip("Test resource not available")
+        expression = CohortExpression(
+            primary_criteria={
+                "criteriaList": [
+                    {
+                        "conditionOccurrence": {
+                            "codesetId": 0
+                        }
+                    },
+                    {
+                        "conditionOccurrence": {
+                            "codesetId": 1
+                        }
+                    }
+                ]
+            }
+        )
+        check = DuplicatesCriteriaCheck()
+        warnings = check.check(expression)
+        
+        assert len(warnings) == 0
 
 
 class TestCriteriaContradictionsCheck:
@@ -956,14 +992,38 @@ class TestDomainTypeCheck:
     
     def test_check_valid_domain_types(self):
         """Test that valid domain types produce no warnings."""
-        try:
-            expression = load_cohort_expression("checkers/domainTypeCheckCorrect.json")
-            check = DomainTypeCheck()
-            warnings = check.check(expression)
-            
-            assert len(warnings) == 0
-        except FileNotFoundError:
-            pytest.skip("Test resource not available")
+        from circe.cohortdefinition.criteria import ConditionOccurrence, Death, DeviceExposure
+        from circe.vocabulary import Concept
+        
+        expression = CohortExpression(
+            primary_criteria={
+                "criteriaList": [
+                    {
+                        "conditionOccurrence": {
+                            "codesetId": 0,
+                            "ConditionType": [
+                                {
+                                    "CONCEPT_ID": 1,
+                                    "CONCEPT_NAME": "Test",
+                                    "STANDARD_CONCEPT": "S",
+                                    "STANDARD_CONCEPT_CAPTION": "Standard",
+                                    "INVALID_REASON": "V",
+                                    "INVALID_REASON_CAPTION": "Valid",
+                                    "CONCEPT_CODE": "Code",
+                                    "DOMAIN_ID": "Condition",
+                                    "VOCABULARY_ID": "SNOMED",
+                                    "VOCABULARY_ID_CAPTION": "SNOMED"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        )
+        check = DomainTypeCheck()
+        warnings = check.check(expression)
+        
+        assert len(warnings) == 0
 
 
 class TestDeathTimeWindowCheck:
