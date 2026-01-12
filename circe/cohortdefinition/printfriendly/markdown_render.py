@@ -375,8 +375,6 @@ class MarkdownRender:
             window: Window object
             index_label: Label for the index event (e.g., "cohort entry", "Concept Set 1")
             
-        Returns:
-            Formatted string describing the time window
         """
         if not window:
             return ""
@@ -666,18 +664,20 @@ class MarkdownRender:
             (r',\s*(a measurement type [^,]+?)(?=,\s*(?:unit:|operator:|starting|ending)|$)', 'measurement type'),
             (r',\s*(an operator concept [^,]+?)(?=,\s*(?:unit:|starting|ending)|$)', 'operator concept'),
             (r',\s*(a unit concept [^,]+?)(?=,\s*(?:starting|ending)|$)', 'unit concept'),
+            # Modifiers and status usually come last in Java/R
             (r',\s*(with modifier: [^,]+?)(?=,\s*(?:starting|ending)|$)', 'modifier'),
             (r',\s*(a modifier concept [^,]+?)(?=,\s*(?:starting|ending)|$)', 'modifier concept'),
             (r',\s*(with a condition status: [^,]+?)(?=,\s*(?:starting|ending)|$)', 'condition status'),
-            (r',\s*(a condition status concept [^,]+?)(?=,\s*(?:starting|ending)|$)', 'condition status concept'),
-            (r',\s*(with a stop reason: [^,]+?)(?=,\s*(?:starting|ending)|$)', 'stop reason')
+            (r'\s*(with a condition status: [^,]+?)(?=,\s*(?:starting|ending)|$)', 'condition status')  # Sometimes no comma
         ]
         
+        print(f"DEBUG: Before strip: '{criteria_text}'")
         for pattern, desc in attribute_patterns:
             matches = list(re.finditer(pattern, criteria_text))
             for match in matches:
                 domain_attrs.append(match.group(1).lstrip(', ').lstrip())
             criteria_text = re.sub(pattern, '', criteria_text)
+        print(f"DEBUG: After strip: '{criteria_text}'")
         
         parts.append(criteria_text)
         
@@ -693,53 +693,86 @@ class MarkdownRender:
             if window_text:
                 window_parts.append(window_text)
         
-        # Build result parts
-        result_parts = [" ".join(parts)]
-        
+        if domain_attrs:
+            # Re-add attributes that were stripped
+            pass
+            
         # Add ignore observation period flag
         obs_flag = ""
         if getattr(corelated_criteria, 'ignore_observation_period', False):
             obs_flag = "; allow events outside observation period"
+
+        # Build final string in order: Description -> Window -> Obs Flag -> Attributes
+        joined_parts = " ".join(parts)
+        # Verify if description is multiline
+        is_multiline = "\n" in joined_parts
+        
+        description_text = joined_parts
+        window_text = ""
+        if window_parts:
+            window_text = ", " + " and ".join(window_parts)
             
-        # For non-multiline criteria, add window after description
-        if "\n" not in result_parts[0]:
-            if window_parts:
-                window_text = " and ".join(window_parts)
-                result_parts.append(window_text)
-            if domain_attrs:
-                result_parts.extend(domain_attrs)
-                
-            if window_parts and domain_attrs:
-                result = result_parts[0] + ", " + result_parts[1] + "; " + "; ".join(result_parts[2:])
-            elif window_parts:
-                result = ", ".join(result_parts)
-            elif domain_attrs:
-                result = result_parts[0] + "; " + "; ".join(result_parts[1:])
-            else:
-                result = result_parts[0]
-            return result + obs_flag
-        else:
-            # For multiline criteria (like CriteriaGroup), the description is the first line
-            lines = result_parts[0].split("\n")
-            desc_line = lines[0]
+        attr_text = ""
+        if domain_attrs:
+            # Attributes are usually semicolon separated if they follow window/flag
+            attr_text = "; " + "; ".join(domain_attrs)
+
+        if is_multiline:
+            lines = description_text.split("\n")
+            first_line = lines[0]
             rest = "\n".join(lines[1:])
             
-            desc_parts = [desc_line]
-            if window_parts:
-                desc_parts.append(" and ".join(window_parts))
-            if domain_attrs:
-                desc_parts.extend(domain_attrs)
+            # Check if first_line contains a nested group phrase (plural or single item optimization)
+            nested_group_pattern = r'(;\s*(?:with .+? of the following criteria:|having .+?)\s*.*)'
+            match = re.search(nested_group_pattern, first_line)
+            
+            if match:
+                main_desc = first_line[:match.start()]
+                group_phrase = first_line[match.start():]
+                # Strip trailing period from main_desc if present, to avoid ".," before window
+                if main_desc.endswith('.'):
+                    main_desc = main_desc[:-1]
                 
-            if window_parts and domain_attrs:
-                new_desc = desc_parts[0] + ", " + desc_parts[1] + "; " + "; ".join(desc_parts[2:])
-            elif window_parts:
-                new_desc = ", ".join(desc_parts)
-            elif domain_attrs:
-                new_desc = desc_parts[0] + "; " + "; ".join(desc_parts[1:])
+                # Check if group phrase starts with semicolon, we want comma before window
+                # logic: main_desc + window + group_phrase
+                # group_phrase starts with "; ..."
+                # result: "Description, window; nested..."
+                
+                result = []
+                result.append(main_desc)
+                if window_parts:
+                    result.append(window_text)
+                
+                # We need to construct string carefully.
+                # main_desc might have been stripped of attributes already.
+                
+                # If window exists, we want: "Desc, window; nested"
+                # If obs_flag exists: "Desc, window, obs_flag; nested"
+                
+                # Direct concatenation as window_text and obs_flag already have separators
+                attr_str = ""
+                if domain_attrs:
+                     attr_str = ", " + ", ".join(domain_attrs)
+                
+                middle_str = f"{window_text}{obs_flag}{attr_str}"
+                
+                return f"{main_desc}{middle_str}{group_phrase}\n{rest}"
             else:
-                new_desc = desc_parts[0]
-                
-            return f"{new_desc}{obs_flag}\n{rest}"
+                # Insert window/flag/attributes into first line end
+                return f"{first_line}{window_text}{obs_flag}{attr_text}\n{rest}"
+        else:
+            # Check if description contains a nested group phrase
+            nested_group_pattern = r'(;\s*(?:with .+? of the following criteria:|having .+?)\s*.*)'
+            match = re.search(nested_group_pattern, description_text)
+            
+            if match:
+                 # Split at the group phrase
+                main_desc = description_text[:match.start()]
+                group_phrase = description_text[match.start():]
+                # Insert window/flag/attributes BEFORE the group phrase
+                return f"{main_desc}{window_text}{obs_flag}{attr_text}{group_phrase}"
+            else:
+                return f"{description_text}{window_text}{obs_flag}{attr_text}"
     
     def _render_censor_criteria(self, censoring_criteria: List[Any]) -> str:
         """Render censor criteria section.
@@ -843,9 +876,8 @@ class MarkdownRender:
             return f"{phrase} [none]"
             
         if len(items) == 1 and not criteria_group.groups:
-            # Special case for single-item non-group: "with all of: X" -> "X" if appropriate?
-            # Actually Java often keeps the phrasing but let's stick closer to reference
-            return f"{phrase} {items[0]}"
+            # Optimization: If only 1 item, render directly without header
+            return items[0]
             
         # Multiline format
         indent = "   " * (level + 1)
@@ -938,22 +970,22 @@ class MarkdownRender:
         # Age
         if demographic_criteria.age:
             age_range = self._format_numeric_range(demographic_criteria.age)
-            demo_parts.append(f"**Age:** {age_range} years old")
+            demo_parts.append(f"who are {age_range} years old")
         
         # Gender
         if demographic_criteria.gender:
-            gender_list = self._format_concept_list(demographic_criteria.gender)
-            demo_parts.append(f"**Gender:** {gender_list}")
+            gender_list = self._format_concept_list(demographic_criteria.gender, quote="")
+            demo_parts.append(f"who are {gender_list}")
         
         # Race
         if demographic_criteria.race:
-            race_list = self._format_concept_list(demographic_criteria.race)
-            demo_parts.append(f"**Race:** {race_list}")
+            race_list = self._format_concept_list(demographic_criteria.race, quote="")
+            demo_parts.append(f"who are {race_list}")
         
         # Ethnicity
         if demographic_criteria.ethnicity:
-            ethnicity_list = self._format_concept_list(demographic_criteria.ethnicity)
-            demo_parts.append(f"**Ethnicity:** {ethnicity_list}")
+            ethnicity_list = self._format_concept_list(demographic_criteria.ethnicity, quote="")
+            demo_parts.append(f"who are {ethnicity_list}")
         
         # Occurrence dates
         if demographic_criteria.occurrence_start_date:
@@ -1010,13 +1042,17 @@ class MarkdownRender:
                         index_label = "cohort entry"
                         if isinstance(criteria, CorelatedCriteria):
                             criteria_text = self._render_corelated_criteria_detail(criteria, index_label=index_label)
-                            if not criteria_text.endswith('.'):
-                                criteria_text += "."
+                            if criteria_text:
+                                criteria_text = criteria_text.rstrip()
+                                if not criteria_text.endswith('.'):
+                                    criteria_text += "."
                             rules_parts.append(f"Entry events {criteria_text}")
                         else:
                             criteria_text = self._render_criteria(criteria, is_plural=True, index_label=index_label)
-                            if not criteria_text.endswith('.'):
-                                criteria_text += "."
+                            if criteria_text:
+                                criteria_text = criteria_text.rstrip()
+                                if not criteria_text.endswith('.'):
+                                    criteria_text += "."
                             rules_parts.append(f"Entry events {criteria_text}")
                     elif has_groups:
                         group_str = self._render_criteria_group(group.groups[0], level=0, index_label="cohort entry")

@@ -1892,7 +1892,7 @@ class TestRenderDemographicCriteria:
         result = renderer._render_demographic_criteria(demo)
         
         assert isinstance(result, str)
-        assert "Age" in result or "age" in result
+        assert "who are > 18 years old" in result
     
     def test_render_demographic_criteria_with_gender(self):
         """Test rendering with gender."""
@@ -1901,7 +1901,8 @@ class TestRenderDemographicCriteria:
         demo = DemographicCriteria(gender=gender)
         result = renderer._render_demographic_criteria(demo)
         
-        assert "**Gender:**" in result
+        # Updated to match natural language format without quotes
+        assert "who are male" in result
     
     def test_render_demographic_criteria_with_race(self):
         """Test rendering with race."""
@@ -1910,7 +1911,8 @@ class TestRenderDemographicCriteria:
         demo = DemographicCriteria(race=race)
         result = renderer._render_demographic_criteria(demo)
         
-        assert "**Race:**" in result
+        # Updated to match natural language format without quotes
+        assert "who are white" in result
     
     def test_render_demographic_criteria_with_ethnicity(self):
         """Test rendering with ethnicity."""
@@ -1919,7 +1921,8 @@ class TestRenderDemographicCriteria:
         demo = DemographicCriteria(ethnicity=ethnicity)
         result = renderer._render_demographic_criteria(demo)
         
-        assert "**Ethnicity:**" in result
+        # Updated to match natural language format without quotes
+        assert "who are hispanic or latino" in result
     
     def test_render_demographic_criteria_with_occurrence_dates(self):
         """Test rendering with occurrence dates."""
