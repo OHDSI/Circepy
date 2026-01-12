@@ -16,11 +16,11 @@ from .utils import BuilderOptions, CriteriaColumn, BuilderUtils
 
 # SQL template - equivalent to Java ResourceHelper.GetResourceAsString
 DRUG_EXPOSURE_TEMPLATE = """-- Begin Drug Exposure Criteria
-SELECT C.person_id, C.drug_exposure_id as event_id, C.drug_exposure_start_date, C.drug_exposure_end_date,
-  C.visit_occurrence_id, C.drug_exposure_start_date as sort_date@additionalColumns
-FROM 
+select C.person_id, C.drug_exposure_id as event_id, C.start_date, C.end_date,
+  C.visit_occurrence_id, C.start_date as sort_date@additionalColumns
+from 
 (
-  SELECT @selectClause @ordinalExpression
+  select @selectClause @ordinalExpression
   FROM @cdm_database_schema.DRUG_EXPOSURE de
   @codesetClause
 ) C
@@ -47,7 +47,10 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[Criteria]):
         "de.person_id",
         "de.drug_exposure_id",
         "de.drug_concept_id",
-        "de.visit_occurrence_id"
+        "de.visit_occurrence_id",
+        "days_supply",
+        "quantity",
+        "refills"
     ]
     
     def get_default_columns(self) -> Set[CriteriaColumn]:

@@ -12,7 +12,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 from typing import List, Optional, Set
 from ..criteria import Criteria
 from .base import CriteriaSqlBuilder
-from .utils import BuilderOptions, CriteriaColumn
+from .utils import BuilderOptions, CriteriaColumn, BuilderUtils
 
 # SQL template - equivalent to Java ResourceHelper.GetResourceAsString
 # Note: Uses lowercase select/from to match Java output
@@ -88,6 +88,22 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         else:
             return f"C.{column.value}"
     
+
+
+    def embed_ordinal_expression(self, query: str, criteria: Criteria, where_clauses: List[str]) -> str:
+        """Embed ordinal expression in query.
+        
+        Java equivalent: ProcedureOccurrenceSqlBuilder.embedOrdinalExpression()
+        """
+        # first
+        if hasattr(criteria, 'first') and criteria.first:
+            where_clauses.append("C.ordinal = 1")
+            query = query.replace("@ordinalExpression", ", row_number() over (PARTITION BY po.person_id ORDER BY po.procedure_date, po.procedure_occurrence_id) as ordinal")
+        else:
+            query = query.replace("@ordinalExpression", "")
+        
+        return query
+    
     def embed_codeset_clause(self, query: str, criteria: Criteria) -> str:
         """Embed codeset clause in query.
         
@@ -103,16 +119,20 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         
         Java equivalent: ProcedureOccurrenceSqlBuilder.resolveSelectClauses()
         """
-        # This would need to be implemented based on the Java logic
-        # For now, return default select columns
-        return self.DEFAULT_SELECT_COLUMNS.copy()
+        select_cols = self.DEFAULT_SELECT_COLUMNS.copy()
+        
+        # modifier
+        if (hasattr(criteria, 'modifier') and criteria.modifier and len(criteria.modifier) > 0) or \
+           (hasattr(criteria, 'modifier_cs') and criteria.modifier_cs is not None):
+            select_cols.insert(5, "po.modifier_concept_id")
+            
+        return select_cols
     
     def resolve_join_clauses(self, criteria: Criteria, options: Optional[BuilderOptions] = None) -> List[str]:
         """Resolve join clauses for criteria.
         
         Java equivalent: ProcedureOccurrenceSqlBuilder.resolveJoinClauses()
         """
-        # This would need to be implemented based on the Java logic
         return []
     
     def resolve_where_clauses(self, criteria: Criteria, options: Optional[BuilderOptions] = None) -> List[str]:
@@ -120,5 +140,18 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         
         Java equivalent: ProcedureOccurrenceSqlBuilder.resolveWhereClauses()
         """
-        # This would need to be implemented based on the Java logic
-        return []
+        where_clauses = []
+        
+        # modifier
+        if hasattr(criteria, 'modifier') and criteria.modifier and len(criteria.modifier) > 0:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.modifier)
+            if concept_ids:
+                where_clauses.append(f"C.modifier_concept_id in ({','.join(map(str, concept_ids))})")
+                
+        # modifierCS
+        if hasattr(criteria, 'modifier_cs') and criteria.modifier_cs is not None:
+            codeset_clause = BuilderUtils.get_codeset_in_expression(criteria.modifier_cs.codeset_id, "C.modifier_concept_id")
+            if codeset_clause:
+                where_clauses.append(codeset_clause)
+                
+        return where_clauses

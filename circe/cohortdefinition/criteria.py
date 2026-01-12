@@ -88,6 +88,11 @@ class CorelatedCriteria(WindowedCriteria):
         validation_alias=AliasChoices("Occurrence", "occurrence"),
         serialization_alias="Occurrence"
     )
+    ignore_observation_period: bool = Field(
+        default=True,  # Default to True for CorelatedCriteria to match Java behavior
+        validation_alias=AliasChoices("IgnoreObservationPeriod", "ignoreObservationPeriod"),
+        serialization_alias="IgnoreObservationPeriod"
+    )
     model_config = ConfigDict(populate_by_name=True)
 
 
@@ -427,7 +432,7 @@ class ProcedureOccurrence(Criteria):
     provider_specialty_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ProviderSpecialtyCS")
     visit_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitTypeCS")
     visit_type: Optional[List[Concept]] = Field(default=None, alias="VisitType")
-    modifier: Optional[List[Concept]] = None
+    modifier: Optional[List[Concept]] = Field(default=None, alias="Modifier")
     modifier_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ModifierCS")
     codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
     first: bool = Field(

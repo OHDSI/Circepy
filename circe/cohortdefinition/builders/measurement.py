@@ -57,6 +57,20 @@ from
             CriteriaColumn.AGE: "C.value_as_number"
         }
         return column_mapping.get(criteria_column, "NULL")
+
+    def embed_ordinal_expression(self, query: str, criteria: Measurement, where_clauses: List[str]) -> str:
+        """Embed ordinal expression in query.
+        
+        Java equivalent: MeasurementSqlBuilder.embedOrdinalExpression()
+        """
+        # first
+        if criteria.first:
+            where_clauses.append("C.ordinal = 1")
+            query = query.replace("@ordinalExpression", ", row_number() over (PARTITION BY m.person_id ORDER BY m.measurement_date, m.measurement_id) as ordinal")
+        else:
+            query = query.replace("@ordinalExpression", "")
+        
+        return query
     
     def embed_codeset_clause(self, query: str, criteria: Measurement) -> str:
         """Embed codeset clause for measurement criteria."""
@@ -255,14 +269,3 @@ from
         Java equivalent: MeasurementSqlBuilder.getAdditionalColumns()
         """
         return ", ".join([f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns])
-    
-    def embed_ordinal_expression(self, query: str, criteria: Measurement, options: Optional[BuilderOptions] = None) -> str:
-        """Embed ordinal expression for measurement criteria."""
-        ordinal_expression = self.resolve_ordinal_expression(criteria, options)
-        return query.replace("@ordinalExpression", ordinal_expression)
-    
-    def resolve_ordinal_expression(self, criteria: Measurement, options: Optional[BuilderOptions] = None) -> str:
-        """Resolve ordinal expression for measurement criteria."""
-        if criteria.first:
-            return ", row_number() over (PARTITION BY m.person_id ORDER BY m.measurement_date, m.measurement_id) ordinal"
-        return ""

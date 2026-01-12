@@ -955,9 +955,9 @@ DROP TABLE #inclusion_rules;
         
         Java equivalent: getWindowedCriteriaQuery(String, WindowedCriteria, String, BuilderOptions)
         """
-        query = sql_template
         check_observation_period = not criteria.ignore_observation_period
-
+        query = sql_template
+        
         # Handle case where criteria.criteria is still a dict (shouldn't happen, but be defensive)
         inner_criteria = criteria.criteria
         if isinstance(inner_criteria, dict):
@@ -1051,7 +1051,7 @@ DROP TABLE #inclusion_rules;
             if start_window.start and start_window.start.days is not None:
                 start_expression = f"DATEADD(day,{start_window.start.coeff * start_window.start.days},{start_index_date_expression})"
             else:
-                start_expression = "P.OP_START_DATE" if start_window.start and start_window.start.coeff == -1 else "P.OP_END_DATE" if check_observation_period else None
+                start_expression = "P.OP_START_DATE" if check_observation_period and start_window.start and start_window.start.coeff == -1 else "P.OP_END_DATE" if check_observation_period else None
 
             if start_expression:
                 clauses.append(f"{start_event_date_expression} >= {start_expression}")
@@ -1059,7 +1059,7 @@ DROP TABLE #inclusion_rules;
             if start_window.end and start_window.end.days is not None:
                 end_expression = f"DATEADD(day,{start_window.end.coeff * start_window.end.days},{start_index_date_expression})"
             else:
-                end_expression = "P.OP_START_DATE" if start_window.end and start_window.end.coeff == -1 else "P.OP_END_DATE" if check_observation_period else None
+                end_expression = "P.OP_START_DATE" if check_observation_period and start_window.end and start_window.end.coeff == -1 else "P.OP_END_DATE" if check_observation_period else None
 
             if end_expression:
                 clauses.append(f"{start_event_date_expression} <= {end_expression}")
@@ -1075,7 +1075,7 @@ DROP TABLE #inclusion_rules;
             if end_window.start.days is not None:
                 start_expression = f"DATEADD(day,{end_window.start.coeff * end_window.start.days},{end_index_date_expression})"
             else:
-                start_expression = "P.OP_START_DATE" if end_window.start.coeff == -1 else "P.OP_END_DATE" if check_observation_period else None
+                start_expression = "P.OP_START_DATE" if check_observation_period and end_window.start.coeff == -1 else "P.OP_END_DATE" if check_observation_period else None
 
             if start_expression:
                 clauses.append(f"{end_event_date_expression} >= {start_expression}")
@@ -1083,7 +1083,7 @@ DROP TABLE #inclusion_rules;
             if end_window.end.days is not None:
                 end_expression = f"DATEADD(day,{end_window.end.coeff * end_window.end.days},{end_index_date_expression})"
             else:
-                end_expression = "P.OP_START_DATE" if end_window.end.coeff == -1 else "P.OP_END_DATE" if check_observation_period else None
+                end_expression = "P.OP_START_DATE" if check_observation_period and end_window.end.coeff == -1 else "P.OP_END_DATE" if check_observation_period else None
 
             if end_expression:
                 clauses.append(f"{end_event_date_expression} <= {end_expression}")

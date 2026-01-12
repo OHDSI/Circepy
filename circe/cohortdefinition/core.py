@@ -509,6 +509,14 @@ class CriteriaGroup(BaseModel):
                     # Ensure Occurrence is present if missing
                     item_copy['occurrence'] = Occurrence(type=Occurrence._AT_LEAST, count=1, is_distinct=False)
                 
+                # Ensure IgnoreObservationPeriod is present if missing (defaults to True for CorelatedCriteria)
+                # Check if it's missing OR explicitly None
+                val = item_copy.get('IgnoreObservationPeriod') 
+                val_lower = item_copy.get('ignoreObservationPeriod')
+                
+                if (val is None and val_lower is None):
+                    item_copy['IgnoreObservationPeriod'] = True
+
                 # Validate as CorelatedCriteria
                 try:
                     return CorelatedCriteria.model_validate(item_copy)
