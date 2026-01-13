@@ -77,11 +77,7 @@ def render_sql(template: str, params: Dict[str, Any], dialect: str = "tsql") -> 
 
     rendered = re.sub(r"@([A-Za-z_][A-Za-z0-9_]*)", replacer, rendered)
     
-    # Attempt to format with sqlglot, but fall back to raw if it fails
-    try:
-        return sqlglot.transpile(rendered, read=dialect, write=dialect)[0]
-    except Exception:
-        return rendered
+    return rendered
 
 def translate_sql(sql: str, target_dialect: str, source_dialect: str = "tsql") -> str:
     """Translate a SQL string from ``source_dialect`` to ``target_dialect``.
@@ -91,7 +87,7 @@ def translate_sql(sql: str, target_dialect: str, source_dialect: str = "tsql") -
     try:
         # transpile handles dialect conversion. 
         # For OHDSI SQL, 'tsql' is a good source dialect for '#temp' tables and '@var' passing.
-        translated = sqlglot.transpile(sql, read=source_dialect, write=target_dialect, identify=True)
-        return translated[0]
+        translated = sqlglot.transpile(sql, read=source_dialect, write=target_dialect)
+        return "\n\n".join(translated)
     except Exception as exc:
         raise ValueError(f"Failed to translate SQL to '{target_dialect}': {exc}")
