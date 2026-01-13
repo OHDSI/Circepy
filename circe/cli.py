@@ -35,6 +35,7 @@ def main():
     sql_parser.add_argument('--cohort-id', type=int, default=None, help='Cohort ID (default: @target_cohort_id placeholder)')
     sql_parser.add_argument('--no-validate', action='store_true', help='Skip validation')
     sql_parser.add_argument('--translate-dialect', help='Translate rendered SQL to target dialect (e.g., postgres, bigquery)')
+    sql_parser.add_argument('--temp-emulation-schema', help='Schema to use for temp table emulation')
     
     # Render markdown command
     md_parser = subparsers.add_parser('render-markdown', help='Render cohort definition as Markdown')
@@ -136,7 +137,11 @@ def generate_sql_command(args):
             # which are common in the generated templates.
             sql = render_sql(sql, {})
             # 2. Translate to target dialect
-            sql = translate_sql(sql, args.translate_dialect)
+            sql = translate_sql(
+                sql, 
+                args.translate_dialect, 
+                temp_emulation_schema=getattr(args, 'temp_emulation_schema', None)
+            )
         except Exception as e:
             print(f"Error during SQL rendering/translation to {args.translate_dialect}: {e}", file=sys.stderr)
             return 1
