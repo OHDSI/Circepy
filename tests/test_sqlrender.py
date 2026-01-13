@@ -119,3 +119,26 @@ def test_translate_sql_short_circuit():
     # But it SHOULD have comments removed
     assert "Comment" not in translated
     assert "SELECT TOP 10" in translated
+
+def test_render_sql_nested_blocks():
+    # Test nesting: {A}?{ {B}?{X} : {Y} }
+    template = "{1 != 0}?{{0 != 0}?{X}:{Y}}"
+    rendered = render_sql(template, {})
+    assert rendered.strip() == "Y"
+    
+    template = "{1 != 0}?{{1 != 0}?{X}:{Y}}"
+    rendered = render_sql(template, {})
+    assert rendered.strip() == "X"
+    
+    # Test else block nesting
+    template = "{0 != 0}?{TRUE}:{{1 != 0}?{FALSE_TRUE}:{FALSE_FALSE}}"
+    rendered = render_sql(template, {})
+    assert rendered.strip() == "FALSE_TRUE"
+
+def test_translate_sql_strip_commands():
+    sql = "INSERT INTO #table SELECT 1; UPDATE STATISTICS #table; SELECT * FROM #table;"
+    translated = translate_sql(sql, target_dialect="postgres")
+    assert "UPDATE STATISTICS" not in translated
+    # Check it still has the other parts
+    assert "INSERT INTO" in translated
+    assert "SELECT *" in translated
