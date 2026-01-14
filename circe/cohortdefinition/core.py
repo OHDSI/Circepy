@@ -111,15 +111,26 @@ class DateAdjustment(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.DateAdjustment
     """
-    start_offset: int
-    end_offset: int
-    start_with: Optional[DateType] = None
-    end_with: Optional[DateType] = None
-    
-    model_config = ConfigDict(
-        populate_by_name=True,
-        alias_generator=to_pascal_alias
+    start_offset: int = Field(
+        validation_alias=AliasChoices("startOffset", "StartOffset"),
+        serialization_alias="startOffset"
     )
+    end_offset: int = Field(
+        validation_alias=AliasChoices("endOffset", "EndOffset"),
+        serialization_alias="endOffset"
+    )
+    start_with: Optional[DateType] = Field(
+        default=None,
+        validation_alias=AliasChoices("startWith", "StartWith"),
+        serialization_alias="startWith"
+    )
+    end_with: Optional[DateType] = Field(
+        default=None,
+        validation_alias=AliasChoices("endWith", "EndWith"),
+        serialization_alias="endWith"
+    )
+    
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ObservationFilter(BaseModel):
@@ -190,8 +201,16 @@ class TextFilter(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.TextFilter
     """
-    text: Optional[str] = None
-    op: Optional[str] = None
+    text: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("Text", "text"),
+        serialization_alias="Text"
+    )
+    op: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("Op", "op"),
+        serialization_alias="Op"
+    )
 
 
 class WindowBound(BaseModel):

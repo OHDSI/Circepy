@@ -307,3 +307,27 @@ class CohortExpression(BaseModel):
         
         checker = Checker()
         return checker.check(self)
+
+    def checksum(self, algorithm: str = 'sha256') -> str:
+        """Calculate a checksum for this cohort expression.
+        
+        Args:
+            algorithm: Hash algorithm to use (default: sha256)
+            
+        Returns:
+            Hex digest of the checksum
+        """
+        import hashlib
+        import json
+        
+        # Serialize to JSON with sorted keys for stability
+        json_str = self.model_dump_json(exclude_unset=True, exclude_defaults=True)
+        # Re-load and re-dump to ensure consistent sorting of keys (model_dump_json might not sort keys by default in all versions)
+        # Actually pydantic doesn't guarantee key order in json dump?
+        # Let's use standard json dump of the dict dump
+        data = self.model_dump(exclude_unset=True, exclude_defaults=True, by_alias=True)
+        canonical_json = json.dumps(data, sort_keys=True)
+        
+        h = hashlib.new(algorithm)
+        h.update(canonical_json.encode('utf-8'))
+        return h.hexdigest()

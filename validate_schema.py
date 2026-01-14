@@ -24,7 +24,16 @@ def extract_name_and_type(schema):
             if "$ref" in prop_def:
                 model_info[prop_name] = {"$ref": prop_def["$ref"]}
             elif "type" in prop_def:
-                model_info[prop_name] = {"type": prop_def["type"]}
+                t = prop_def["type"]
+                if isinstance(t, list):
+                    # Filter out 'null' to match Pydantic's anyOf simplification behavior
+                    valid_types = [x for x in t if x != 'null']
+                    if len(valid_types) == 1:
+                        model_info[prop_name] = {"type": valid_types[0]}
+                    else:
+                        model_info[prop_name] = {"type": t}
+                else:
+                    model_info[prop_name] = {"type": t}
             elif "anyOf" in prop_def:
                 # If anyOf has a ref or type, include it (but only the first non-null)
                 any_ref = next((a["$ref"] for a in prop_def["anyOf"] if "$ref" in a), None)
