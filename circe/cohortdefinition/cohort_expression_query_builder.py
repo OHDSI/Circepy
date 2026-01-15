@@ -587,8 +587,6 @@ JOIN (
         Java equivalent: Part of generateCohort.sql template with @generateStats != 0 & @ruleTotal != 0
         """
         rule_total = len(expression.inclusion_rules) if expression.inclusion_rules else 0
-        if rule_total == 0:
-            return ""
         
         inclusion_rule_table = self.get_inclusion_rule_table_sql(expression)
         
@@ -799,8 +797,8 @@ DROP TABLE #inclusion_rules;
         if options and options.generate_stats:
             # Add censored stats wrapper (even if empty)
             inclusion_analysis_query = "{1 != 0}?{\n-- BEGIN: Censored Stats\n\ndelete from @results_database_schema.cohort_censor_stats where @cohort_id_field_name = @target_cohort_id;\n\n-- END: Censored Stats\n}\n"
-            if expression.inclusion_rules:
-                inclusion_analysis_query += self._build_inclusion_analysis_section(expression)
+            # Always generate inclusion analysis if stats are requested, even if no rules
+            inclusion_analysis_query += self._build_inclusion_analysis_section(expression)
         result_sql = result_sql.replace("@inclusionAnalysisQuery", inclusion_analysis_query)
 
         # Replace query parameters with tokens

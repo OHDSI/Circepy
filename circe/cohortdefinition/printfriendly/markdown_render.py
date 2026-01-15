@@ -19,13 +19,13 @@ from ..criteria import (
     Observation, Measurement, DeviceExposure, Specimen, Death, VisitDetail,
     ObservationPeriod, PayerPlanPeriod, LocationRegion, ConditionEra,
     DrugEra, DoseEra, GeoCriteria, Occurrence, CorelatedCriteria,
-    PrimaryCriteria
+    PrimaryCriteria, CriteriaColumn
 )
 from ..core import (
     ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy,
     CustomEraStrategy, DateRange, NumericRange,
     ConceptSetSelection, CollapseType, DateType, TextFilter, Window, WindowBound,
-    DateAdjustment, ObservationFilter
+    DateAdjustment, ObservationFilter, CirceBaseModel
 )
 from ...vocabulary.concept import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
@@ -417,9 +417,14 @@ class MarkdownRender:
             # Special case: "anytime on or before" when start is all and end is 0
             elif start_days == "all" and end_days == 0 and start_coeff == -1 and end_coeff == -1:
                 return f"{event_part} anytime on or before {index_label} {index_part}"
-            elif end_days == "all" and isinstance(start_days, int) and start_days > 0 and end_coeff == 1:
-                return f"{event_part} anytime after {start_days} days {start_dir} {index_label} {index_part}"
-            elif start_days == "all" and isinstance(end_days, int) and end_days > 0 and start_coeff == -1:
+            elif end_days == "all" and isinstance(start_days, int) and start_days > 0 and start_coeff == 1 and end_coeff == 1:
+                # Java says "starting 1 days after" for [1 after, all after]
+                return f"{event_part} {start_days} days {start_dir} {index_label} {index_part}"
+            elif start_days == "all" and isinstance(end_days, int) and end_days > 0 and start_coeff == -1 and end_coeff == -1:
+                # Java says "anytime up to X days before"
+                return f"{event_part} anytime up to {end_days} days {end_dir} {index_label} {index_part}"
+            elif start_days == "all" and isinstance(end_days, int) and end_days > 0 and start_coeff == -1 and end_coeff == 1:
+                # Java says "anytime up to X days after"
                 return f"{event_part} anytime up to {end_days} days {end_dir} {index_label} {index_part}"
             else:
                 return f"{event_part} between {start_days} days {start_dir} and {end_days} days {end_dir} {index_label} {index_part}"
@@ -647,6 +652,14 @@ class MarkdownRender:
                 parts.append(f"having at most {occurrence.count}")
             elif occurrence.type == 2:  # AT_LEAST
                 parts.append(f"having at least {occurrence.count}")
+            
+            # Handle distinct counts
+            if getattr(occurrence, 'is_distinct', False):
+                count_col = getattr(occurrence, 'count_column', None)
+                if count_col == CriteriaColumn.DOMAIN_CONCEPT:
+                    parts.append("distinct standard concepts from")
+                elif count_col == CriteriaColumn.START_DATE:
+                    parts.append("distinct start dates of")
         else:
             parts.append("having")
         
@@ -658,6 +671,10 @@ class MarkdownRender:
         # Strip trailing period to avoid double periods when adding window details
         if criteria_text.endswith('.'):
             criteria_text = criteria_text[:-1]
+        
+        # Determine separator for final parts
+        # If there are NO windows and NO observation flag, and NO domain attributes, it ends here.
+        # But usually we call this when we HAVE something to add.
         
         # Extract domain-specific attributes to append after window
         domain_attrs = []
@@ -765,7 +782,7 @@ class MarkdownRender:
                 # Direct concatenation as window_text and obs_flag already have separators
                 attr_str = ""
                 if domain_attrs:
-                     attr_str = ", " + ", ".join(domain_attrs)
+                     attr_str = "; " + "; ".join(domain_attrs)
                 
                 middle_str = f"{window_text}{obs_flag}{attr_str}"
                 
@@ -785,7 +802,7 @@ class MarkdownRender:
                 # Insert window/flag/attributes BEFORE the group phrase
                 return f"{main_desc}{window_text}{obs_flag}{attr_text}{group_phrase}"
             else:
-                return f"{description_text}{window_text}{obs_flag}{attr_text}"
+                return f"{description_text}{window_text}{obs_flag}{attr_text}."
     
     def _render_censor_criteria(self, censoring_criteria: List[Any]) -> str:
         """Render censor criteria section.
@@ -1516,7 +1533,7 @@ class MarkdownRender:
             attrs.append(f"with a stop reason: {stop_str}")
             
         # Combine attributes
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main criteria description
         description = f"condition occurrence{plural} of {codeset_name}{source_concept}{first_time}{attrs_str}"
@@ -1614,7 +1631,7 @@ class MarkdownRender:
             source_name = self._get_concept_set_name(criteria.drug_source_concept, "any drug")
             source_concept = f" (including {source_name} source concepts)"
         
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
         description = f"drug exposure{plural} of {codeset_name}{source_concept}{first_time}{attrs_str}"
@@ -1655,7 +1672,7 @@ class MarkdownRender:
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
         description = f"procedure occurrence{plural} of {codeset_name}{first_time}{attrs_str}"
@@ -1679,7 +1696,7 @@ class MarkdownRender:
             source_name = self._get_concept_set_name(criteria.death_source_concept, "any form")
             source_concept = f" (including {source_name} source concepts)"
         
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
         description = f"death of {codeset_name}{source_concept}{attrs_str}"
@@ -1701,7 +1718,7 @@ class MarkdownRender:
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
         description = f"device exposure{plural} of {codeset_name}{first_time}{attrs_str}"
@@ -1785,7 +1802,7 @@ class MarkdownRender:
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
         description = f"measurement{plural} of {codeset_name}{first_time}{attrs_str}"
@@ -1803,11 +1820,43 @@ class MarkdownRender:
         """Render Observation criteria."""
         attrs = self._build_criteria_attributes(criteria, count_criteria, index_label)
         
+        if criteria.value_as_number:
+            value_str = self._format_numeric_range(criteria.value_as_number)
+            attrs.append(f"numeric value {value_str}")
+            
+        if criteria.unit:
+            unit_str = self._format_concept_list(criteria.unit)
+            attrs.append(f"unit: {unit_str}")
+            
+        if criteria.unit_cs:
+            unit_str = self._format_concept_set_selection(criteria.unit_cs, "any unit")
+            attrs.append(f"a unit concept {unit_str} concept set")
+            
+        if criteria.value_as_string:
+            value_str = self._format_text_filter(criteria.value_as_string)
+            attrs.append(f"value as string {value_str}")
+            
+        if criteria.value_as_concept:
+            value_str = self._format_concept_list(criteria.value_as_concept)
+            attrs.append(f"with value as concept: {value_str}")
+            
+        if criteria.value_as_concept_cs:
+            value_str = self._format_concept_set_selection(criteria.value_as_concept_cs, "any value")
+            attrs.append(f"a value as concept {value_str} concept set")
+            
+        if criteria.qualifier:
+            val_str = self._format_concept_list(criteria.qualifier)
+            attrs.append(f"with qualifier: {val_str}")
+            
+        if criteria.qualifier_cs:
+            val_str = self._format_concept_set_selection(criteria.qualifier_cs, "any qualifier")
+            attrs.append(f"a qualifier concept {val_str} concept set")
+            
         codeset_name = self._get_concept_set_name(criteria.codeset_id, "any observation")
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
         description = f"observation{plural} of {codeset_name}{first_time}{attrs_str}"
@@ -1829,7 +1878,7 @@ class MarkdownRender:
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
         description = f"specimen{plural} of {codeset_name}{first_time}{attrs_str}"
@@ -1851,7 +1900,7 @@ class MarkdownRender:
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
         description = f"visit occurrence{plural} of {codeset_name}{first_time}{attrs_str}"
@@ -1873,7 +1922,7 @@ class MarkdownRender:
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
         description = f"visit detail{plural} of {codeset_name}{first_time}{attrs_str}"

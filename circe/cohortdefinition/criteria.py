@@ -293,7 +293,10 @@ class ConditionOccurrence(Criteria):
         validation_alias=AliasChoices("Age", "age"),
         serialization_alias="Age"
     )
-    gender: Optional[List[Concept]] = None
+    gender: Optional[List[Concept]] = Field(
+        default=None,
+        serialization_alias="gender"
+    )
     gender_cs: Optional[ConceptSetSelection] = Field(
         default=None,
         validation_alias=AliasChoices("GenderCS", "genderCS"),
@@ -343,7 +346,10 @@ class DrugExposure(Criteria):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.DrugExposure
     """
-    gender: Optional[List[Concept]] = None
+    gender: Optional[List[Concept]] = Field(
+        default=None,
+        serialization_alias="gender"
+    )
     occurrence_end_date: Optional[DateRange] = Field(
         default=None,
         validation_alias=AliasChoices("OccurrenceEndDate", "occurrenceEndDate"),
@@ -463,7 +469,7 @@ class ProcedureOccurrence(Criteria):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.ProcedureOccurrence
     """
-    gender: Optional[List[Concept]] = None
+    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(default=None, alias="OccurrenceEndDate")
     procedure_source_concept: Optional[int] = Field(default=None, alias="ProcedureSourceConcept")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
@@ -494,7 +500,7 @@ class VisitOccurrence(Criteria):
     """
     codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
     first: Optional[bool] = Field(default=None, alias="First")
-    gender: Optional[List[Concept]] = None
+    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(default=None, alias="OccurrenceEndDate")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     visit_type: Optional[List[Concept]] = Field(default=None, alias="VisitType")
@@ -518,7 +524,7 @@ class Observation(Criteria):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.Observation
     """
-    gender: Optional[List[Concept]] = None
+    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(
         default=None,
         validation_alias=AliasChoices("OccurrenceEndDate", "occurrenceEndDate"),
@@ -633,7 +639,7 @@ class Measurement(Criteria):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.Measurement
     """
-    gender: Optional[List[Concept]] = None
+    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(default=None, alias="OccurrenceEndDate")
     measurement_source_concept: Optional[int] = Field(default=None, alias="MeasurementSourceConcept")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
@@ -708,7 +714,7 @@ class DeviceExposure(Criteria):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.DeviceExposure
     """
-    gender: Optional[List[Concept]] = None
+    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(default=None, alias="OccurrenceEndDate")
     device_source_concept: Optional[int] = Field(default=None, alias="DeviceSourceConcept")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
@@ -737,7 +743,7 @@ class Specimen(Criteria):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.Specimen
     """
-    gender: Optional[List[Concept]] = None
+    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(default=None, alias="OccurrenceEndDate")
     specimen_source_concept: Optional[int] = Field(default=None, alias="SpecimenSourceConcept")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
@@ -767,7 +773,7 @@ class Death(Criteria):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.Death
     """
-    gender: Optional[List[Concept]] = None
+    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(default=None, alias="OccurrenceEndDate")
     death_source_concept: Optional[int] = Field(default=None, alias="DeathSourceConcept")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
@@ -805,7 +811,10 @@ class VisitDetail(Criteria):
     visit_detail_source_concept: Optional[int] = Field(default=None, alias="VisitDetailSourceConcept")
     visit_detail_length: Optional[NumericRange] = Field(default=None, alias="VisitDetailLength")
     age: Optional[NumericRange] = Field(default=None, alias="Age")
-    gender: Optional[List[Concept]] = None
+    gender: Optional[List[Concept]] = Field(
+        default=None,
+        serialization_alias="gender"
+    )
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     provider_specialty_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ProviderSpecialtyCS")
     place_of_service_cs: Optional[ConceptSetSelection] = Field(default=None, alias="PlaceOfServiceCS")
@@ -844,7 +853,7 @@ class PayerPlanPeriod(Criteria):
     period_length: Optional[NumericRange] = Field(default=None, alias="PeriodLength")
     age_at_start: Optional[NumericRange] = Field(default=None, alias="AgeAtStart")
     age_at_end: Optional[NumericRange] = Field(default=None, alias="AgeAtEnd")
-    gender: Optional[List[Concept]] = Field(default=None, alias="Gender")
+    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     payer_concept: Optional[int] = Field(default=None, alias="PayerConcept")
     plan_concept: Optional[int] = Field(default=None, alias="PlanConcept")
@@ -889,7 +898,7 @@ class ConditionEra(Criteria):
     era_length: Optional[NumericRange] = Field(default=None, alias="EraLength")
     age_at_start: Optional[NumericRange] = Field(default=None, alias="AgeAtStart")
     age_at_end: Optional[NumericRange] = Field(default=None, alias="AgeAtEnd")
-    gender: Optional[List[Concept]] = None
+    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     date_adjustment: Optional[DateAdjustment] = Field(default=None, alias="DateAdjustment")
 
@@ -914,7 +923,7 @@ class DrugEra(Criteria):
     era_length: Optional[NumericRange] = Field(default=None, alias="EraLength")
     age_at_start: Optional[NumericRange] = Field(default=None, alias="AgeAtStart")
     age_at_end: Optional[NumericRange] = Field(default=None, alias="AgeAtEnd")
-    gender: Optional[List[Concept]] = None
+    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     date_adjustment: Optional[DateAdjustment] = Field(default=None, alias="DateAdjustment")
 
@@ -936,7 +945,7 @@ class DoseEra(Criteria):
     era_length: Optional[NumericRange] = Field(default=None, alias="EraLength")
     age_at_start: Optional[NumericRange] = Field(default=None, alias="AgeAtStart")
     age_at_end: Optional[NumericRange] = Field(default=None, alias="AgeAtEnd")
-    gender: Optional[List[Concept]] = Field(default=None, alias="Gender")
+    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
 
     model_config = ConfigDict(populate_by_name=True)
