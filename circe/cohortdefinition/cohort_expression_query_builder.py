@@ -89,7 +89,7 @@ UPDATE STATISTICS #Codesets;
 
     COHORT_QUERY_TEMPLATE = """@codesetQuery
 
-@primaryEventsQuery@additionalCriteriaQuery
+@primaryEventsQuery
 --- Inclusion Rule Inserts
 
 @inclusionCohortInserts
@@ -163,7 +163,16 @@ FROM
 (
   select pe.event_id, pe.person_id, pe.start_date, pe.end_date, pe.op_start_date, pe.op_end_date, row_number() over (partition by pe.person_id order by pe.start_date @QualifiedEventSort) as ordinal, cast(pe.visit_occurrence_id as bigint) as visit_occurrence_id
   FROM (-- Begin Primary Events
-select P.ordinal as event_id, P.person_id, P.start_date, P.end_date, op_start_date, op_end_date, cast(P.visit_occurrence_id as bigint) as visit_occurrence_id
+@primaryEventsSubQuery
+-- End Primary Events
+) pe
+  @additionalCriteriaQuery
+) QE
+@QualifiedLimitFilter
+;
+"""
+
+    PRIMARY_EVENTS_SUBQUERY_TEMPLATE = """select P.ordinal as event_id, P.person_id, P.start_date, P.end_date, op_start_date, op_end_date, cast(P.visit_occurrence_id as bigint) as visit_occurrence_id
 FROM
 (
   select E.person_id, E.start_date, E.end_date,
@@ -176,14 +185,8 @@ FROM
 	JOIN @cdm_database_schema.observation_period OP on E.person_id = OP.person_id and E.start_date >=  OP.observation_period_start_date and E.start_date <= op.observation_period_end_date
   WHERE @primaryEventsFilter
 ) P
-@primaryEventLimit
--- End Primary Events
-) pe
-  @additionalCriteriaQuery
-) QE
-@QualifiedLimitFilter
-;
-"""
+@primaryEventLimit"""
+
 
     WINDOWED_CRITERIA_TEMPLATE = """
 SELECT @indexId as index_id, A.person_id, A.event_id
@@ -486,12 +489,21 @@ JOIN (
 
         return " UNION ALL ".join(criteria_queries)
 
-    def get_primary_events_query(self, primary_criteria: PrimaryCriteria) -> str:
+    def get_primary_events_query(self, primary_criteria: PrimaryCriteria, subquery: Optional[str] = None) -> str:
         """Get primary events query.
         
         Java equivalent: getPrimaryEventsQuery()
         """
+        if subquery is None:
+            subquery = self._get_primary_events_subquery(primary_criteria)
+            
         query = self.PRIMARY_EVENTS_TEMPLATE
+        query = query.replace("@primaryEventsSubQuery", subquery)
+        return query
+
+    def _get_primary_events_subquery(self, primary_criteria: PrimaryCriteria) -> str:
+        """Get the inner subquery for primary events."""
+        query = self.PRIMARY_EVENTS_SUBQUERY_TEMPLATE
 
         criteria_queries = []
         for criteria in primary_criteria.criteria_list:
@@ -661,8 +673,11 @@ DROP TABLE #inclusion_rules;
         codeset_query = self.get_codeset_query(expression.concept_sets)
         result_sql = result_sql.replace("@codesetQuery", codeset_query)
 
-        # Primary events query
-        primary_events_query = self.get_primary_events_query(expression.primary_criteria)
+        # Get inner primary events subquery (logic only)
+        primary_events_subquery = self._get_primary_events_subquery(expression.primary_criteria)
+        
+        # Primary events query (full wrapper)
+        primary_events_query = self.get_primary_events_query(expression.primary_criteria, primary_events_subquery)
         result_sql = result_sql.replace("@primaryEventsQuery", primary_events_query)
 
         # Additional criteria query - this filters primary events based on additional conditions
@@ -672,7 +687,7 @@ DROP TABLE #inclusion_rules;
             # event_id, person_id, start_date, end_date, op_start_date, op_end_date, visit_occurrence_id
             additional_criteria_group_query = self.get_criteria_group_query(
                 expression.additional_criteria,
-                "pe"  # Reference the 'pe' alias from PRIMARY_EVENTS_TEMPLATE
+                f"({primary_events_subquery})"
             )
 
             # Create a JOIN clause that filters pe events based on the additional criteria

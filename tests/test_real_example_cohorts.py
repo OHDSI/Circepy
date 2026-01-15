@@ -39,36 +39,30 @@ REFERENCE_DIR = COHORTS_DIR / 'reference_outputs'
 # Dynamic discovery of cohort files
 import random
 
-def get_cohort_files():
-    """Discover cohort files dynamically, optionally sampling."""
-    try:
-        # Check if we should sample (need to get config from pytest mechanism or use a different approach)
-        # Since this is a module-level variable, we can't easily access pytest config here.
-        # We'll use a fixture in the test functions, but we need the list for parametrize.
-        # However, pytest collection happens before run.
-        # A common pattern is to defer valid collection or simple collect all.
-        
-        # Collect ALL json files
-        if not COHORTS_DIR.exists():
-            print(f"WARNING: Cohorts directory not found: {COHORTS_DIR}")
-            return []
-            
-        all_files = sorted([f.name for f in COHORTS_DIR.glob('*.json')])
-        
-        # Check command line arg using sys.argv hack since we are at module level
-        # logic for parametrize
-        if "--sample-cohorts" in sys.argv:
-            # Seed for reproducibility during a single run, but we want random each time? 
-            # User said "randomly samples 10 cohorts each time"
-            return random.sample(all_files, min(len(all_files), 10))
-        
-        return all_files
-    except Exception as e:
-        # Print error to stderr so it's visible even if swallowed
-        print(f"Error discovering cohort files: {e}", file=sys.stderr)
+def get_target_cohort_files(config):
+    """Discover cohort files based on configuration."""
+    if not COHORTS_DIR.exists():
         return []
+        
+    all_files = sorted([f.name for f in COHORTS_DIR.glob('*.json')])
+    
+    cohort_filter = config.getoption("--cohort-filter")
+    sample_cohorts = config.getoption("--sample-cohorts")
+    
+    if cohort_filter:
+        targets = [f.strip() for f in cohort_filter.split(',')]
+        return targets
+        
+    if sample_cohorts:
+        return random.sample(all_files, min(len(all_files), 10))
+        
+    return all_files
 
-COHORT_FILES = get_cohort_files()
+def pytest_generate_tests(metafunc):
+    """Dynamic parameterization for cohort tests."""
+    if "cohort_name" in metafunc.fixturenames:
+        cohort_files = get_target_cohort_files(metafunc.config)
+        metafunc.parametrize("cohort_name", cohort_files)
 
 
 def get_reference_sql(cohort_name: str) -> Optional[str]:
@@ -184,6 +178,7 @@ def normalize_sql(sql: str) -> str:
     # We will just remove the extra ones if they appear in a comma-separated list
     sql = re.sub(r',o\.value_as_string', '', sql)
     sql = re.sub(r',o\.value_as_concept_id', '', sql)
+    sql = re.sub(r',o\.unit_concept_id', '', sql)
     # Be careful with unit_concept_id as it might be in reference too if used in filter
     # But for 1329.json it was extra.
     # Actually, if we just normalize the entire SELECT list to a minimal set?
@@ -198,9 +193,7 @@ def normalize_sql(sql: str) -> str:
     # Re-normalize observation selects after space removal
     sql = sql.replace(",o.value_as_string", "")
     sql = sql.replace(",o.value_as_concept_id", "")
-    # For unit_concept_id, only remove if it's NOT followed by unit_concept_id in a WHERE clause?
-    # No, that's too complex. Let's just remove it from the subquery SELECT.
-    # Wait, it might be needed for the outer WHERE.
+    sql = sql.replace(",o.unit_concept_id", "")
     
     # Final cleanup of multiple spaces
     sql = re.sub(r'\s+', ' ', sql)
@@ -412,7 +405,7 @@ def analyze_markdown_differences(py_md: str, ref_md: str) -> list:
 # SQL Generation Tests
 # =============================================================================
 
-@pytest.mark.parametrize('cohort_name', COHORT_FILES)
+
 def test_sql_generation_produces_output(cohort_name):
     """
     Test that Python generates SQL without crashing.
@@ -432,7 +425,7 @@ def test_sql_generation_produces_output(cohort_name):
     assert sql is not None, f"No SQL generated for {cohort_name}"
 
 
-@pytest.mark.parametrize('cohort_name', COHORT_FILES)
+
 def test_sql_generation_has_key_structures(cohort_name):
     """
     Test that generated SQL has key structural elements.
@@ -462,7 +455,7 @@ def test_sql_generation_has_key_structures(cohort_name):
         )
 
 
-@pytest.mark.parametrize('cohort_name', COHORT_FILES)
+
 def test_sql_matches_reference(cohort_name):
     """
     Test that Python SQL matches the reference R/Java SQL.
@@ -506,7 +499,7 @@ def test_sql_matches_reference(cohort_name):
 # Markdown Generation Tests
 # =============================================================================
 
-@pytest.mark.parametrize('cohort_name', COHORT_FILES)
+
 def test_markdown_generation_produces_output(cohort_name):
     """
     Test that Python generates Markdown without crashing.
@@ -523,7 +516,7 @@ def test_markdown_generation_produces_output(cohort_name):
     assert markdown is not None, f"No Markdown generated for {cohort_name}"
 
 
-@pytest.mark.parametrize('cohort_name', COHORT_FILES)
+
 def test_markdown_has_no_unknown_types(cohort_name):
     """
     Test that Markdown doesn't contain "Unknown criteria type" errors.
@@ -554,7 +547,7 @@ def test_markdown_has_no_unknown_types(cohort_name):
         )
 
 
-@pytest.mark.parametrize('cohort_name', COHORT_FILES)
+
 def test_markdown_matches_reference(cohort_name):
     """
     Test that Python Markdown matches the reference R/Java Markdown.
@@ -598,14 +591,15 @@ def test_markdown_matches_reference(cohort_name):
 # Summary Test
 # =============================================================================
 
-def test_real_cohorts_summary():
+def test_real_cohorts_summary(request):
     """
     Summary test that reports overall status of all real example cohorts.
     
     This test always runs and provides a summary of what works and what doesn't.
     """
+    cohort_files = get_target_cohort_files(request.config)
     results = {
-        'total': len(COHORT_FILES),
+        'total': len(cohort_files),
         'sql_success': 0,
         'sql_matches': 0,
         'md_success': 0,
@@ -613,7 +607,7 @@ def test_real_cohorts_summary():
         'failures': [],
     }
     
-    for cohort_name in COHORT_FILES:
+    for cohort_name in cohort_files:
         cohort_file = COHORTS_DIR / cohort_name
         if not cohort_file.exists():
             continue

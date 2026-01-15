@@ -411,6 +411,11 @@ class MarkdownRender:
             # Special case: both in the past (coeff=-1, end_days < start_days)
             # if start_coeff == -1 and end_coeff == -1 and isinstance(start_days, int) and isinstance(end_days, int) and end_days < start_days:
             #    return f"{event_part} in the {start_days} days prior to {index_label} {index_part}"
+            
+            # Special case: suppression of default "all days" window
+            if start_days == "all" and end_days == "all":
+                return ""
+
             # Special case: "anytime prior to" when start is all and end is 1 day before
             if start_days == "all" and end_days == 1 and start_coeff == -1 and end_coeff == -1:
                 return f"{event_part} anytime prior to {index_label} {index_part}"
@@ -600,7 +605,7 @@ class MarkdownRender:
             criteria_parts.append("")
         else:
             # Get the group type
-            group_type = self._format_group_type(additional_criteria.type or "ALL")
+            group_type = self._format_group_type(additional_criteria.type or "ALL", additional_criteria.count)
             criteria_parts.append(f"\nRestrict entry events to with {group_type} of the following criteria:")
             criteria_parts.append("")
             
@@ -683,22 +688,22 @@ class MarkdownRender:
         # Look for attribute patterns: ", key: value" or ", with key: value" or " (including ...)"
         import re
         attribute_patterns = [
-            (r',\s*(numeric value [^,]+?)(?=,\s*(?:unit:|operator:|value as string|range low|range high|starting|ending)|$)', 'numeric value'),
-            (r',\s*(unit: [^,]+(?:,\s*"[^"]*")*(?:\s+or\s+"[^"]*")?)(?=,\s*(?:numeric value|operator:|value as string|range low|range high|a measurement|an operator|a unit|starting|ending)|$)', 'unit'),
-            (r',\s*(operator: [^,]+?)(?=,\s*(?:unit:|numeric value|value as string|value as concept|range low|range high|starting|ending)|$)', 'operator'),
-            (r',\s*(value as string [^,]+?)(?=,\s*(?:unit:|operator:|numeric value|value as concept|range low|range high|starting|ending)|$)', 'value as string'),
-            (r',\s*(with value as concept: .*?)(?=,\s*(?:unit:|operator:|numeric value|value as string|range low|range high|starting|ending)|$)', 'value as concept'),
-            (r',\s*(a value as concept [^,]+? concept set)(?=,\s*(?:unit:|operator:|numeric value|value as string|with value as concept:|range low|range high|starting|ending)|$)', 'value as concept set'),
-            (r',\s*(range low [^,]+?)(?=,\s*(?:unit:|operator:|value as string|numeric value|range high|starting|ending)|$)', 'range low'),
-            (r',\s*(range high [^,]+?)(?=,\s*(?:unit:|operator:|value as string|range low|numeric value|starting|ending)|$)', 'range high'),
-            (r',\s*(a measurement type [^,]+?)(?=,\s*(?:unit:|operator:|starting|ending)|$)', 'measurement type'),
-            (r',\s*(an operator concept [^,]+?)(?=,\s*(?:unit:|starting|ending)|$)', 'operator concept'),
-            (r',\s*(a unit concept [^,]+?)(?=,\s*(?:starting|ending)|$)', 'unit concept'),
+            (r'[,;]\s*(numeric value [^,;]+?)(?=[,;]\s*(?:unit:|operator:|value as string|range low|range high|starting|ending)|$)', 'numeric value'),
+            (r'[,;]\s*(unit: [^,;]+(?:,\s*"[^"]*")*(?:\s+or\s+"[^"]*")?)(?=[,;]\s*(?:numeric value|operator:|value as string|range low|range high|a measurement|an operator|a unit|starting|ending)|$)', 'unit'),
+            (r'[,;]\s*(operator: [^,;]+?)(?=[,;]\s*(?:unit:|numeric value|value as string|value as concept|range low|range high|starting|ending)|$)', 'operator'),
+            (r'[,;]\s*(value as string [^,;]+?)(?=[,;]\s*(?:unit:|operator:|numeric value|value as concept|range low|range high|starting|ending)|$)', 'value as string'),
+            (r'[,;]\s*(with value as concept: .*?)(?=[,;]\s*(?:unit:|operator:|numeric value|value as string|range low|range high|starting|ending)|$)', 'value as concept'),
+            (r'[,;]\s*(a value as concept [^,;]+? concept set)(?=[,;]\s*(?:unit:|operator:|numeric value|value as string|with value as concept:|range low|range high|starting|ending)|$)', 'value as concept set'),
+            (r'[,;]\s*(range low [^,;]+?)(?=[,;]\s*(?:unit:|operator:|value as string|numeric value|range high|starting|ending)|$)', 'range low'),
+            (r'[,;]\s*(range high [^,;]+?)(?=[,;]\s*(?:unit:|operator:|value as string|range low|numeric value|starting|ending)|$)', 'range high'),
+            (r'[,;]\s*(a measurement type [^,;]+?)(?=[,;]\s*(?:unit:|operator:|starting|ending)|$)', 'measurement type'),
+            (r'[,;]\s*(an operator concept [^,;]+?)(?=[,;]\s*(?:unit:|starting|ending)|$)', 'operator concept'),
+            (r'[,;]\s*(a unit concept [^,;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'unit concept'),
             # Modifiers and status usually come last in Java/R
-            (r',\s*(with modifier: [^,]+?)(?=,\s*(?:starting|ending)|$)', 'modifier'),
-            (r',\s*(a modifier concept [^,]+?)(?=,\s*(?:starting|ending)|$)', 'modifier concept'),
-            (r',\s*(with a condition status: [^,]+?)(?=,\s*(?:starting|ending)|$)', 'condition status'),
-            (r'\s*(with a condition status: [^,]+?)(?=,\s*(?:starting|ending)|$)', 'condition status')  # Sometimes no comma
+            (r'[,;]\s*(with modifier: [^,;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'modifier'),
+            (r'[,;]\s*(a modifier concept [^,;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'modifier concept'),
+            (r'[,;]\s*(with a condition status: [^,;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'condition status'),
+            (r'\s*(with a condition status: [^,;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'condition status')  # Sometimes no comma
         ]
         
         print(f"DEBUG: Before strip: '{criteria_text}'")

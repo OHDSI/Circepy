@@ -1120,13 +1120,27 @@ class CriteriaGroup(BaseModel):
                 c_type = next((k for k in item_copy.keys() if k not in ['StartWindow', 'EndWindow', 'RestrictVisit', 'IgnoreObservationPeriod', 'Occurrence', 'criteria']), None)
                 if c_type and c_type in NAMES_TO_CLASSES:
                     c_data = item_copy[c_type]
-                    corelated_dict = {
-                        'criteria': {c_type: c_data},
-                        'Occurrence': item_copy.get('Occurrence', {'Type': Occurrence._AT_LEAST, 'Count': 1, 'IsDistinct': False})
-                    }
-                    for f in ['StartWindow', 'EndWindow', 'RestrictVisit', 'IgnoreObservationPeriod']:
-                        if f in item_copy: corelated_dict[f] = item_copy[f]
+                    # Explicitly deserialize inner criteria to avoid Pydantic union ambiguity
                     try:
+                        # PascalCase defaults for specific types
+                        if c_type == 'Measurement' and 'MeasurementTypeExclude' not in c_data and 'measurementTypeExclude' not in c_data:
+                            c_data['MeasurementTypeExclude'] = False
+                        if c_type == 'Observation' and 'ObservationTypeExclude' not in c_data and 'observationTypeExclude' not in c_data:
+                            c_data['ObservationTypeExclude'] = False
+                        if c_type == 'ConditionOccurrence' and 'ConditionTypeExclude' not in c_data and 'conditionTypeExclude' not in c_data:
+                            c_data['ConditionTypeExclude'] = False
+                        if 'First' not in c_data and 'first' not in c_data:
+                            c_data['First'] = False
+                            
+                        c_obj = NAMES_TO_CLASSES[c_type].model_validate(c_data, strict=False)
+                        
+                        corelated_dict = {
+                            'criteria': c_obj,
+                            'Occurrence': item_copy.get('Occurrence', {'Type': Occurrence._AT_LEAST, 'Count': 1, 'IsDistinct': False})
+                        }
+                        for f in ['StartWindow', 'EndWindow', 'RestrictVisit', 'IgnoreObservationPeriod']:
+                            if f in item_copy: corelated_dict[f] = item_copy[f]
+                        
                         deserialized.append(CorelatedCriteria.model_validate(corelated_dict))
                     except: deserialized.append(item)
                 else: deserialized.append(item)
@@ -1135,8 +1149,20 @@ class CriteriaGroup(BaseModel):
                 # Simple polymorphic wrapped in corelated
                 c_type = next(iter(item_copy.keys()), None)
                 if c_type and c_type in NAMES_TO_CLASSES:
-                    corelated_dict = {'criteria': {c_type: item_copy[c_type]}}
                     try:
+                        c_data = item_copy[c_type]
+                        # PascalCase defaults
+                        if c_type == 'Measurement' and 'MeasurementTypeExclude' not in c_data and 'measurementTypeExclude' not in c_data:
+                            c_data['MeasurementTypeExclude'] = False
+                        if c_type == 'Observation' and 'ObservationTypeExclude' not in c_data and 'observationTypeExclude' not in c_data:
+                            c_data['ObservationTypeExclude'] = False
+                        if c_type == 'ConditionOccurrence' and 'ConditionTypeExclude' not in c_data and 'conditionTypeExclude' not in c_data:
+                            c_data['ConditionTypeExclude'] = False
+                        if 'First' not in c_data and 'first' not in c_data:
+                            c_data['First'] = False
+
+                        c_obj = NAMES_TO_CLASSES[c_type].model_validate(c_data, strict=False)
+                        corelated_dict = {'criteria': c_obj}
                         deserialized.append(CorelatedCriteria.model_validate(corelated_dict))
                     except: deserialized.append(item)
                 else: deserialized.append(item)
