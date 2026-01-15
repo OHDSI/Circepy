@@ -381,3 +381,25 @@ class CohortExpression(CirceBaseModel):
             return [self._normalize_for_checksum(item) for item in data]
             
         return data
+
+    def _repr_markdown_(self) -> str:
+        """IPython notebook markdown representation.
+        
+        Returns:
+            Markdown string defining the cohort.
+        """
+        try:
+            # Import locally to avoid circular dependencies
+            from .printfriendly.markdown_render import MarkdownRender
+            renderer = MarkdownRender()
+            return renderer.render_cohort_expression(self)
+        except Exception as e:
+            return f"Error rendering cohort markdown: {str(e)}"
+
+    def __str__(self) -> str:
+        """String representation of the cohort.
+        
+        Returns:
+            Markdown string defining the cohort.
+        """
+        return self._repr_markdown_()
