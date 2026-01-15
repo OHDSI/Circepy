@@ -9,9 +9,26 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional, Union, Any, TYPE_CHECKING
-from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator, Discriminator, AliasChoices
+from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator, Discriminator, AliasChoices, model_serializer
 from enum import Enum
 from .utils import to_pascal_alias
+
+
+class CirceBaseModel(BaseModel):
+    """Base model for all Circe definitions to ensure consistent JSON serialization."""
+
+    def model_dump_json(self, **kwargs):
+        """Override model_dump_json to enforce Circe defaults."""
+        kwargs.setdefault('by_alias', True)
+        kwargs.setdefault('exclude_none', True)
+        return super().model_dump_json(**kwargs)
+
+    def model_dump(self, **kwargs):
+        """Override model_dump to enforce Circe defaults."""
+        kwargs.setdefault('by_alias', True)
+        kwargs.setdefault('exclude_none', True)
+        return super().model_dump(**kwargs)
+
 
 
 class CollapseType(str, Enum):
@@ -36,7 +53,7 @@ class DateType(str, Enum):
     END_DATE = "end_date"
 
 
-class ResultLimit(BaseModel):
+class ResultLimit(CirceBaseModel):
     """Represents a result limit for cohort expressions.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.ResultLimit
@@ -48,7 +65,7 @@ class ResultLimit(BaseModel):
     )
 
 
-class Period(BaseModel):
+class Period(CirceBaseModel):
     """Represents a time period with start and end dates.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.Period
@@ -62,7 +79,7 @@ class Period(BaseModel):
     )
 
 
-class DateRange(BaseModel):
+class DateRange(CirceBaseModel):
     """Represents a date range with operation, extent, and value.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.DateRange
@@ -84,7 +101,7 @@ class DateRange(BaseModel):
     )
 
 
-class NumericRange(BaseModel):
+class NumericRange(CirceBaseModel):
     """Represents a numeric range with operation, value, and extent.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.NumericRange
@@ -106,7 +123,7 @@ class NumericRange(BaseModel):
     )
 
 
-class DateAdjustment(BaseModel):
+class DateAdjustment(CirceBaseModel):
     """Represents date adjustment settings.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.DateAdjustment
@@ -133,7 +150,7 @@ class DateAdjustment(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class ObservationFilter(BaseModel):
+class ObservationFilter(CirceBaseModel):
     """Represents observation window filter settings.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.ObservationFilter
@@ -150,7 +167,7 @@ class ObservationFilter(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class CollapseSettings(BaseModel):
+class CollapseSettings(CirceBaseModel):
     """Represents collapse settings for cohort expressions.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.CollapseSettings
@@ -168,17 +185,27 @@ class CollapseSettings(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class EndStrategy(BaseModel):
+class EndStrategy(CirceBaseModel):
     """Represents the end strategy for cohort expressions.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.EndStrategy
     """
     include: Optional[str] = None  # JsonTypeInfo.Id.NAME
 
+    @model_serializer(mode='wrap')
+    def _serialize_polymorphic(self, serializer, info):
+        """Serialize with polymorphic type wrapper for Java compatibility."""
+        data = serializer(self)
+        if self.__class__.__name__ == 'DateOffsetStrategy':
+            return {'DateOffset': data}
+        if self.__class__.__name__ == 'CustomEraStrategy':
+            return {'CustomEra': data}
+        return data
 
 
 
-class ConceptSetSelection(BaseModel):
+
+class ConceptSetSelection(CirceBaseModel):
     """Represents a concept set selection.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.ConceptSetSelection
@@ -196,7 +223,7 @@ class ConceptSetSelection(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class TextFilter(BaseModel):
+class TextFilter(CirceBaseModel):
     """Represents text filtering capabilities.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.TextFilter
@@ -213,7 +240,7 @@ class TextFilter(BaseModel):
     )
 
 
-class WindowBound(BaseModel):
+class WindowBound(CirceBaseModel):
     """Represents a window bound for time windows.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.WindowBound
@@ -231,7 +258,7 @@ class WindowBound(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class Window(BaseModel):
+class Window(CirceBaseModel):
     """Represents a time window for criteria.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.Window

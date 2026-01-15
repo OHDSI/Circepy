@@ -12,7 +12,7 @@ from typing import List, Optional, Any, Union, TYPE_CHECKING
 from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator, AliasChoices
 from .core import (
     ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy, CustomEraStrategy,
-    ObservationFilter
+    ObservationFilter, CirceBaseModel
 )
 from .criteria import Criteria, PrimaryCriteria, CriteriaGroup, CriteriaType
 
@@ -38,7 +38,7 @@ else:
         InclusionRule = Any
 
 
-class CohortExpression(BaseModel):
+class CohortExpression(CirceBaseModel):
     """Main cohort expression class containing all cohort definition components.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.CohortExpression

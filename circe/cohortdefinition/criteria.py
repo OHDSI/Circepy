@@ -15,7 +15,7 @@ from ..vocabulary.concept import Concept
 from .core import (
     DateAdjustment, DateRange, NumericRange, ConceptSetSelection,
     TextFilter, Window, Period, ResultLimit, ObservationFilter,
-    CollapseSettings, EndStrategy
+    CollapseSettings, EndStrategy, CirceBaseModel
 )
 
 
@@ -46,7 +46,7 @@ class CriteriaColumn(str, Enum):
     ETHNICITY = "ethnicity"
 
 
-class Occurrence(BaseModel):
+class Occurrence(CirceBaseModel):
     """Represents occurrence settings for criteria.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.Occurrence
@@ -78,7 +78,7 @@ Occurrence._AT_MOST = 1
 Occurrence._AT_LEAST = 2
 
 
-class WindowedCriteria(BaseModel):
+class WindowedCriteria(CirceBaseModel):
     """Base class for windowed criteria.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.WindowedCriteria
@@ -125,7 +125,7 @@ class CorelatedCriteria(WindowedCriteria):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class DemographicCriteria(BaseModel):
+class DemographicCriteria(CirceBaseModel):
     """Represents demographic criteria for cohort definition.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.DemographicCriteria
@@ -179,7 +179,7 @@ class DemographicCriteria(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class Criteria(BaseModel):
+class Criteria(CirceBaseModel):
     """Represents a criteria with date adjustment and correlated criteria.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.Criteria
@@ -212,7 +212,7 @@ class Criteria(BaseModel):
         return dispatcher.get_criteria_sql(self, options)
 
 
-class InclusionRule(BaseModel):
+class InclusionRule(CirceBaseModel):
     """Represents an inclusion rule for cohort definition.
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.InclusionRule

@@ -315,8 +315,8 @@ class TestCohortExpressionComplexScenarios(unittest.TestCase):
         result = cohort.model_dump()
         
         self.assertIsInstance(result, dict)
-        self.assertEqual(result["title"], "Test Cohort")
-        self.assertIn("primary_criteria", result)
+        self.assertEqual(result["Title"], "Test Cohort")
+        self.assertIn("PrimaryCriteria", result)
     
     def test_cohort_expression_to_dict_with_aliases(self):
         """Test CohortExpression serialization with PascalCase aliases for Java compatibility."""
