@@ -36,25 +36,19 @@ class ConditionEraSqlBuilder(CriteriaSqlBuilder[ConditionEra]):
     
     def get_query_template(self) -> str:
         """Get the SQL query template for condition era criteria."""
-        return """
-        SELECT 
-            @selectClause
-        FROM (
-            SELECT 
-                ce.person_id,
-                ce.condition_era_id,
-                ce.condition_concept_id,
-                ce.condition_occurrence_count,
-                ce.condition_era_start_date,
-                ce.condition_era_end_date
-                @ordinalExpression
-            FROM @cdm_database_schema.CONDITION_ERA ce
-            @codesetClause
-        ) C
-        @joinClause
-        WHERE @whereClause
-        @additionalColumns
-        """
+        return """-- Begin Condition Era Criteria
+SELECT C.person_id, C.condition_era_id as event_id, C.start_date, C.end_date,
+    CAST(NULL as bigint) as visit_occurrence_id, C.start_date as sort_date@additionalColumns
+FROM 
+(
+  SELECT @selectClause @ordinalExpression
+  FROM @cdm_database_schema.CONDITION_ERA ce
+@codesetClause
+) C
+@joinClause
+@whereClause
+-- End Condition Era Criteria
+"""
     
     def get_default_columns(self) -> Set[CriteriaColumn]:
         """Get default columns for condition era criteria."""

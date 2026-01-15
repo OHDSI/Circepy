@@ -217,9 +217,21 @@ class InclusionRule(CirceBaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.InclusionRule
     """
-    expression: Optional['CriteriaGroup'] = None
-    description: Optional[str] = None
-    name: Optional[str] = None
+    expression: Optional['CriteriaGroup'] = Field(
+        default=None,
+        validation_alias=AliasChoices("Expression", "expression"),
+        serialization_alias="Expression"
+    )
+    description: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("Description", "description"),
+        serialization_alias="Description"
+    )
+    name: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("Name", "name"),
+        serialization_alias="Name"
+    )
 
 
 # =============================================================================
@@ -551,6 +563,41 @@ class Observation(Criteria):
         validation_alias=AliasChoices("VisitType", "visitType"),
         serialization_alias="VisitType"
     )
+    value_as_number: Optional[NumericRange] = Field(
+        default=None,
+        validation_alias=AliasChoices("ValueAsNumber", "valueAsNumber"),
+        serialization_alias="ValueAsNumber"
+    )
+    unit: Optional[List[Concept]] = Field(
+        default=None,
+        validation_alias=AliasChoices("Unit", "unit"),
+        serialization_alias="Unit"
+    )
+    unit_cs: Optional[ConceptSetSelection] = Field(
+        default=None,
+        validation_alias=AliasChoices("UnitCS", "unitCS"),
+        serialization_alias="UnitCS"
+    )
+    value_as_concept: Optional[List[Concept]] = Field(
+        default=None,
+        validation_alias=AliasChoices("ValueAsConcept", "valueAsConcept"),
+        serialization_alias="ValueAsConcept"
+    )
+    value_as_concept_cs: Optional[ConceptSetSelection] = Field(
+        default=None,
+        validation_alias=AliasChoices("ValueAsConceptCS", "valueAsConceptCS"),
+        serialization_alias="ValueAsConceptCS"
+    )
+    qualifier: Optional[List[Concept]] = Field(
+        default=None,
+        validation_alias=AliasChoices("Qualifier", "qualifier"),
+        serialization_alias="Qualifier"
+    )
+    qualifier_cs: Optional[ConceptSetSelection] = Field(
+        default=None,
+        validation_alias=AliasChoices("QualifierCS", "qualifierCS"),
+        serialization_alias="QualifierCS"
+    )
     value_as_string: Optional[TextFilter] = Field(
         default=None,
         validation_alias=AliasChoices("ValueAsString", "valueAsString"),
@@ -562,6 +609,7 @@ class Observation(Criteria):
         serialization_alias="CodesetId"
     )
     first: bool = Field(
+        default=False,
         validation_alias=AliasChoices("First", "first"),
         serialization_alias="First"
     )

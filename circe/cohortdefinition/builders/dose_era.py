@@ -38,26 +38,19 @@ class DoseEraSqlBuilder(CriteriaSqlBuilder[DoseEra]):
     
     def get_query_template(self) -> str:
         """Get the SQL query template for dose era criteria."""
-        return """
-        SELECT 
-            @selectClause
-        FROM (
-            SELECT 
-                de.person_id,
-                de.dose_era_id,
-                de.drug_concept_id,
-                de.unit_concept_id,
-                de.dose_value,
-                de.dose_era_start_date,
-                de.dose_era_end_date
-                @ordinalExpression
-            FROM @cdm_database_schema.DOSE_ERA de
-            @codesetClause
-        ) C
-        @joinClause
-        WHERE @whereClause
-        @additionalColumns
-        """
+        return """-- Begin Dose Era Criteria
+SELECT C.person_id, C.dose_era_id as event_id, C.start_date, C.end_date,
+    CAST(NULL as bigint) as visit_occurrence_id, C.start_date as sort_date@additionalColumns
+FROM 
+(
+  SELECT @selectClause @ordinalExpression
+  FROM @cdm_database_schema.DOSE_ERA de
+@codesetClause
+) C
+@joinClause
+@whereClause
+-- End Dose Era Criteria
+"""
     
     def get_default_columns(self) -> Set[CriteriaColumn]:
         """Get default columns for dose era criteria."""

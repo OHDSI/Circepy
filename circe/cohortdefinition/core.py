@@ -29,6 +29,13 @@ class CirceBaseModel(BaseModel):
         kwargs.setdefault('exclude_none', True)
         return super().model_dump(**kwargs)
 
+    model_config = ConfigDict(
+        alias_generator=to_pascal_alias,
+        populate_by_name=True,
+        # Allow extra fields to prevent validation errors on unknown fields
+        extra='ignore' 
+    )
+
 
 
 class CollapseType(str, Enum):

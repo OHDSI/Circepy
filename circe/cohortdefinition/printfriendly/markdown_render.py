@@ -409,10 +409,10 @@ class MarkdownRender:
             end_dir = "before" if end_coeff < 0 else "after"
             
             # Special case: both in the past (coeff=-1, end_days < start_days)
-            if start_coeff == -1 and end_coeff == -1 and isinstance(start_days, int) and isinstance(end_days, int) and end_days < start_days:
-                return f"{event_part} in the {start_days} days prior to {index_label} {index_part}"
+            # if start_coeff == -1 and end_coeff == -1 and isinstance(start_days, int) and isinstance(end_days, int) and end_days < start_days:
+            #    return f"{event_part} in the {start_days} days prior to {index_label} {index_part}"
             # Special case: "anytime prior to" when start is all and end is 1 day before
-            elif start_days == "all" and end_days == 1 and start_coeff == -1 and end_coeff == -1:
+            if start_days == "all" and end_days == 1 and start_coeff == -1 and end_coeff == -1:
                 return f"{event_part} anytime prior to {index_label} {index_part}"
             # Special case: "anytime on or before" when start is all and end is 0
             elif start_days == "all" and end_days == 0 and start_coeff == -1 and end_coeff == -1:
@@ -584,21 +584,31 @@ class MarkdownRender:
         
         criteria_parts = []
         
-        # Get the group type
-        group_type = self._format_group_type(additional_criteria.type or "ALL")
-        criteria_parts.append(f"\nRestrict entry events to with {group_type} of the following criteria:")
-        criteria_parts.append("")
+        # Check if single item (no groups, 1 criteria)
+        is_single_item = (additional_criteria.criteria_list and len(additional_criteria.criteria_list) == 1 and 
+                          (not additional_criteria.groups or len(additional_criteria.groups) == 0))
         
-        # Render each criteria as a numbered bullet with details
-        if additional_criteria.criteria_list:
-            for i, criteria in enumerate(additional_criteria.criteria_list, 1):
-                # Render with full details, including occurrence and windows
-                criteria_text = self._render_corelated_criteria_detail(criteria, index_label="cohort entry")
-                if criteria_text:
-                    criteria_parts.append(f"   {i}. {criteria_text}")
-        
-        criteria_parts.append("  ")
-        criteria_parts.append("")
+        if is_single_item:
+            criteria = additional_criteria.criteria_list[0]
+            criteria_text = self._render_corelated_criteria_detail(criteria, index_label="cohort entry")
+            criteria_parts.append(f"\nRestrict entry events to {criteria_text}.")
+            criteria_parts.append("")
+        else:
+            # Get the group type
+            group_type = self._format_group_type(additional_criteria.type or "ALL")
+            criteria_parts.append(f"\nRestrict entry events to with {group_type} of the following criteria:")
+            criteria_parts.append("")
+            
+            # Render each criteria as a numbered bullet with details
+            if additional_criteria.criteria_list:
+                for i, criteria in enumerate(additional_criteria.criteria_list, 1):
+                    # Render with full details, including occurrence and windows
+                    criteria_text = self._render_corelated_criteria_detail(criteria, index_label="cohort entry")
+                    if criteria_text:
+                        criteria_parts.append(f"   {i}. {criteria_text}")
+            
+            criteria_parts.append("  ")
+            criteria_parts.append("")
         
         # Add qualified limit if primary limit is "All"
         primary_limit = primary_criteria.primary_limit if primary_criteria else None
@@ -658,8 +668,10 @@ class MarkdownRender:
         attribute_patterns = [
             (r',\s*(numeric value [^,]+?)(?=,\s*(?:unit:|operator:|value as string|range low|range high|starting|ending)|$)', 'numeric value'),
             (r',\s*(unit: [^,]+(?:,\s*"[^"]*")*(?:\s+or\s+"[^"]*")?)(?=,\s*(?:numeric value|operator:|value as string|range low|range high|a measurement|an operator|a unit|starting|ending)|$)', 'unit'),
-            (r',\s*(operator: [^,]+?)(?=,\s*(?:unit:|numeric value|value as string|range low|range high|starting|ending)|$)', 'operator'),
-            (r',\s*(value as string [^,]+?)(?=,\s*(?:unit:|operator:|numeric value|range low|range high|starting|ending)|$)', 'value as string'),
+            (r',\s*(operator: [^,]+?)(?=,\s*(?:unit:|numeric value|value as string|value as concept|range low|range high|starting|ending)|$)', 'operator'),
+            (r',\s*(value as string [^,]+?)(?=,\s*(?:unit:|operator:|numeric value|value as concept|range low|range high|starting|ending)|$)', 'value as string'),
+            (r',\s*(with value as concept: .*?)(?=,\s*(?:unit:|operator:|numeric value|value as string|range low|range high|starting|ending)|$)', 'value as concept'),
+            (r',\s*(a value as concept [^,]+? concept set)(?=,\s*(?:unit:|operator:|numeric value|value as string|with value as concept:|range low|range high|starting|ending)|$)', 'value as concept set'),
             (r',\s*(range low [^,]+?)(?=,\s*(?:unit:|operator:|value as string|numeric value|range high|starting|ending)|$)', 'range low'),
             (r',\s*(range high [^,]+?)(?=,\s*(?:unit:|operator:|value as string|range low|numeric value|starting|ending)|$)', 'range high'),
             (r',\s*(a measurement type [^,]+?)(?=,\s*(?:unit:|operator:|starting|ending)|$)', 'measurement type'),
@@ -811,7 +823,8 @@ class MarkdownRender:
         if collapse_settings and collapse_settings.era_pad is not None:
             era_pad = collapse_settings.era_pad
         
-        day_word = "day" if era_pad == 1 else "days"
+        # R always uses plural 'days' regardless of count
+        day_word = "days" # "day" if era_pad == 1 else "days"
         return f"Remaining events will be combined into cohort eras if they are within {era_pad} {day_word} of each other.\n"
     
     def _render_censor_window(self, censor_window: Period) -> str:
@@ -1739,6 +1752,14 @@ class MarkdownRender:
         if criteria.unit_cs:
             unit_str = self._format_concept_set_selection(criteria.unit_cs, "any unit")
             attrs.append(f"a unit concept {unit_str} concept set")
+            
+        if criteria.value_as_concept:
+            value_str = self._format_concept_list(criteria.value_as_concept)
+            attrs.append(f"with value as concept: {value_str}")
+        
+        if criteria.value_as_concept_cs:
+            value_str = self._format_concept_set_selection(criteria.value_as_concept_cs, "any value")
+            attrs.append(f"a value as concept {value_str} concept set")
         
         if criteria.range_low:
             range_str = self._format_numeric_range(criteria.range_low)
