@@ -34,8 +34,6 @@ def main():
     sql_parser.add_argument('--target-table', default='@target_database_schema.@target_cohort_table', help='Target table')
     sql_parser.add_argument('--cohort-id', type=int, default=None, help='Cohort ID (default: @target_cohort_id placeholder)')
     sql_parser.add_argument('--no-validate', action='store_true', help='Skip validation')
-    sql_parser.add_argument('--translate-dialect', help='Translate rendered SQL to target dialect (e.g., postgres, bigquery)')
-    sql_parser.add_argument('--temp-emulation-schema', help='Schema to use for temp table emulation')
     
     # Render markdown command
     md_parser = subparsers.add_parser('render-markdown', help='Render cohort definition as Markdown')
@@ -127,24 +125,6 @@ def generate_sql_command(args):
     options.generate_stats = True  # Match R/Java default behavior
     # Generate SQL
     sql = build_cohort_query(expression, options)
-
-    # Render and Translate if requested
-    if getattr(args, 'translate_dialect', None):
-        try:
-            from .sqlrender import render_sql, translate_sql
-            # 1. Render to resolve conditional blocks and any default variables
-            # We pass an empty dict for now, but it will handle constants like {1 != 0}
-            # which are common in the generated templates.
-            sql = render_sql(sql, {})
-            # 2. Translate to target dialect
-            sql = translate_sql(
-                sql, 
-                args.translate_dialect, 
-                temp_emulation_schema=getattr(args, 'temp_emulation_schema', None)
-            )
-        except Exception as e:
-            print(f"Error during SQL rendering/translation to {args.translate_dialect}: {e}", file=sys.stderr)
-            return 1
 
     # Output
     if args.output:
