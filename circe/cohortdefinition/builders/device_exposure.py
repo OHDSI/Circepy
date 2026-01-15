@@ -23,131 +23,138 @@ class DeviceExposureSqlBuilder(CriteriaSqlBuilder[DeviceExposure]):
     
     def get_query_template(self) -> str:
         """Get the SQL query template for device exposure criteria."""
-        return """
-        SELECT 
-            @selectClause
-        FROM @cdm_database_schema.DEVICE_EXPOSURE C
-        @joinClause
-        WHERE @whereClause
-        @ordinalExpression
-        """
+        return """-- Begin Device Exposure Criteria
+SELECT C.person_id, C.device_exposure_id as event_id, C.start_date, C.end_date,
+       C.visit_occurrence_id, C.start_date as sort_date@additionalColumns
+FROM 
+(
+  SELECT @selectClause @ordinalExpression
+  FROM @cdm_database_schema.DEVICE_EXPOSURE de
+@codesetClause
+) C
+@joinClause
+@whereClause
+-- End Device Exposure Criteria"""
     
     def get_default_columns(self) -> Set[CriteriaColumn]:
         """Get default columns for device exposure criteria."""
         return {
             CriteriaColumn.START_DATE,
             CriteriaColumn.END_DATE,
-            CriteriaColumn.DOMAIN_CONCEPT,
             CriteriaColumn.VISIT_ID
         }
     
     def get_table_column_for_criteria_column(self, criteria_column: CriteriaColumn) -> str:
         """Get table column for criteria column."""
         column_mapping = {
-            CriteriaColumn.START_DATE: "C.device_exposure_start_date",
-            CriteriaColumn.END_DATE: "C.device_exposure_end_date",
+            CriteriaColumn.START_DATE: "C.start_date",
+            CriteriaColumn.END_DATE: "C.end_date",
             CriteriaColumn.DOMAIN_CONCEPT: "C.device_concept_id",
-            CriteriaColumn.DURATION: "DATEDIFF(day, C.device_exposure_start_date, C.device_exposure_end_date)",
+            CriteriaColumn.DURATION: "DATEDIFF(day, C.start_date, C.end_date)",
             CriteriaColumn.VISIT_ID: "C.visit_occurrence_id",
-            CriteriaColumn.AGE: "C.unique_device_id"
+            CriteriaColumn.QUANTITY: "C.quantity"
         }
         return column_mapping.get(criteria_column, "NULL")
-    
-    def get_criteria_sql(self, criteria: DeviceExposure, options: Optional[BuilderOptions] = None) -> str:
-        """Generate SQL for device exposure criteria."""
-        if options is None:
-            options = BuilderOptions()
         
-        # Build select clause
-        select_clause = self.resolve_select_clauses(criteria, options)
-        
-        # Build join clause
-        join_clause = self.resolve_join_clauses(criteria, options)
-        
-        # Build where clause
-        where_clause = self.resolve_where_clauses(criteria, options)
-        
-        # Build ordinal expression
-        ordinal_expression = self.resolve_ordinal_expression(criteria, options)
-        
-        # Replace placeholders in template
-        sql = self.get_query_template()
-        sql = sql.replace("@selectClause", select_clause)
-        sql = sql.replace("@joinClause", join_clause)
-        sql = sql.replace("@whereClause", where_clause)
-        sql = sql.replace("@ordinalExpression", ordinal_expression)
-        
-        return sql
-    
-    def embed_codeset_clause(self, query: str, criteria: DeviceExposure) -> str:
-        """Embed codeset clause for device exposure criteria."""
-        if criteria.codeset_id is None:
-            return query.replace("@codesetClause", "")
-        
-        codeset_clause = BuilderUtils.get_codeset_in_expression(
-            criteria.codeset_id, 
-            "C.device_concept_id",
-            not criteria.device_type_exclude if hasattr(criteria, 'device_type_exclude') else False
-        )
-        return query.replace("@codesetClause", codeset_clause)
-    
-    def resolve_select_clauses(self, criteria: DeviceExposure, options: BuilderOptions) -> str:
+    def resolve_select_clauses(self, criteria: DeviceExposure, options: BuilderOptions) -> List[str]:
         """Resolve select clauses for device exposure criteria."""
-        columns = list(self.get_default_columns())
-        if options.additional_columns:
-            columns.extend(options.additional_columns)
+        select_cols = [
+            "de.person_id",
+            "de.device_exposure_id",
+            "de.device_concept_id",
+            "de.visit_occurrence_id",
+            "de.quantity"
+        ]
         
-        select_parts = []
-        for column in columns:
-            table_column = self.get_table_column_for_criteria_column(column)
-            select_parts.append(f"{table_column} as {column.value}")
+        # Device Type
+        if (criteria.device_type and len(criteria.device_type) > 0) or \
+           (criteria.device_type_cs and criteria.device_type_cs.codeset_id):
+            select_cols.append("de.device_type_concept_id")
+
+        # unique_device_id
+        if criteria.unique_device_id:
+            select_cols.append("de.unique_device_id")
+
+        # providerSpecialty
+        if (criteria.provider_specialty and len(criteria.provider_specialty) > 0) or \
+           (criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id):
+            select_cols.append("de.provider_id")
+            
+        # dateAdjustment or default start/end dates
+        if criteria.date_adjustment:
+            select_cols.append(BuilderUtils.get_date_adjustment_expression(
+                criteria.date_adjustment,
+                "de.device_exposure_start_date" if criteria.date_adjustment.start_with == "START_DATE" else "COALESCE(de.device_exposure_end_date, DATEADD(day,1,de.device_exposure_start_date))",
+                "de.device_exposure_start_date" if criteria.date_adjustment.end_with == "START_DATE" else "COALESCE(de.device_exposure_end_date, DATEADD(day,1,de.device_exposure_start_date))"
+            ))
+        else:
+            select_cols.append("de.device_exposure_start_date as start_date, COALESCE(de.device_exposure_end_date, DATEADD(day,1,de.device_exposure_start_date)) as end_date")
         
-        return ", ".join(select_parts)
+        return select_cols
     
     def resolve_join_clauses(self, criteria: DeviceExposure, options: BuilderOptions) -> str:
         """Resolve join clauses for device exposure criteria."""
         joins = []
         
-        # Add provider specialty join if needed
-        if criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id:
-            joins.append(f"""
-            JOIN @cdm_database_schema.PROVIDER P ON C.provider_id = P.provider_id
-            """)
+        # Join to PERSON
+        if criteria.age or \
+           (criteria.gender and len(criteria.gender) > 0) or \
+           criteria.gender_cs:
+            joins.append("JOIN @cdm_database_schema.PERSON P ON C.person_id = P.person_id")
+            
+        # Join to VISIT_OCCURRENCE
+        if (criteria.visit_type and len(criteria.visit_type) > 0) or \
+           criteria.visit_type_cs:
+            joins.append("JOIN @cdm_database_schema.VISIT_OCCURRENCE V ON C.visit_occurrence_id = V.visit_occurrence_id AND C.person_id = V.person_id")
+
+        # Join to PROVIDER
+        if (criteria.provider_specialty and len(criteria.provider_specialty) > 0) or \
+           criteria.provider_specialty_cs:
+            joins.append("LEFT JOIN @cdm_database_schema.PROVIDER PR ON C.provider_id = PR.provider_id")
         
         return " ".join(joins)
     
-    def resolve_where_clauses(self, criteria: DeviceExposure, options: BuilderOptions) -> str:
+    def embed_codeset_clause(self, query: str, criteria: DeviceExposure) -> str:
+        """Embed codeset clause for device exposure criteria."""
+        return query.replace("@codesetClause", BuilderUtils.get_codeset_join_expression(
+            criteria.codeset_id, 
+            "de.device_concept_id",
+            criteria.device_source_concept,
+            "de.device_source_concept_id"
+        ))
+        
+    def resolve_where_clauses(self, criteria: DeviceExposure, options: BuilderOptions) -> List[str]:
         """Resolve where clauses for device exposure criteria."""
         conditions = []
-        
-        # Add codeset condition
-        codeset_clause = self.embed_codeset_clause("", criteria)
-        if codeset_clause:
-            conditions.append(codeset_clause)
         
         # Add date range conditions
         if criteria.occurrence_start_date:
             date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_start_date, "C.device_exposure_start_date"
+                criteria.occurrence_start_date, "C.start_date"
             )
             if date_clause:
                 conditions.append(date_clause)
         
         if criteria.occurrence_end_date:
             date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_end_date, "C.device_exposure_end_date"
+                criteria.occurrence_end_date, "C.end_date"
             )
             if date_clause:
                 conditions.append(date_clause)
         
-        # Add age condition
-        if criteria.age:
-            age_clause = BuilderUtils.build_numeric_range_clause(
-                criteria.age, "C.person_id"  # Would need age calculation
-            )
-            if age_clause:
-                conditions.append(age_clause)
-        
+        # deviceType
+        if criteria.device_type and len(criteria.device_type) > 0:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.device_type)
+            not_op = "NOT" if criteria.device_type_exclude else ""
+            conditions.append(f"C.device_type_concept_id {not_op} IN ({','.join(map(str, concept_ids))})")
+            
+        # deviceTypeCS
+        if criteria.device_type_cs and criteria.device_type_cs.codeset_id:
+             conditions.append(BuilderUtils.get_codeset_in_expression(
+                criteria.device_type_cs.codeset_id,
+                "C.device_type_concept_id"
+            ))
+
         # Add unique device ID condition
         if criteria.unique_device_id:
             device_id_clause = BuilderUtils.build_text_filter_clause(
@@ -163,21 +170,58 @@ class DeviceExposureSqlBuilder(CriteriaSqlBuilder[DeviceExposure]):
             )
             if quantity_clause:
                 conditions.append(quantity_clause)
-        
-        # Add provider specialty condition
+                
+        # Age
+        if criteria.age:
+            conditions.append(BuilderUtils.build_numeric_range_clause(
+                criteria.age, "YEAR(C.start_date) - P.year_of_birth"
+            ))
+
+        # Gender
+        if criteria.gender and len(criteria.gender) > 0:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.gender)
+            conditions.append(f"P.gender_concept_id IN ({','.join(map(str, concept_ids))})")
+            
+        # GenderCS
+        if criteria.gender_cs and criteria.gender_cs.codeset_id:
+             conditions.append(BuilderUtils.get_codeset_in_expression(
+                criteria.gender_cs.codeset_id,
+                "P.gender_concept_id"
+            ))
+            
+        # Provider Specialty
+        if criteria.provider_specialty and len(criteria.provider_specialty) > 0:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.provider_specialty)
+            conditions.append(f"PR.specialty_concept_id IN ({','.join(map(str, concept_ids))})")
+            
+        # Provider Specialty CS
         if criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id:
-            provider_clause = BuilderUtils.get_codeset_in_expression(
+             conditions.append(BuilderUtils.get_codeset_in_expression(
                 criteria.provider_specialty_cs.codeset_id,
-                "P.specialty_concept_id",
-                not criteria.provider_specialty_cs.is_exclusion
-            )
-            if provider_clause:
-                conditions.append(provider_clause)
+                "PR.specialty_concept_id"
+            ))
+
+        # Visit Type
+        if criteria.visit_type and len(criteria.visit_type) > 0:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.visit_type)
+            conditions.append(f"V.visit_concept_id IN ({','.join(map(str, concept_ids))})")
+            
+        # Visit Type CS
+        if criteria.visit_type_cs and criteria.visit_type_cs.codeset_id:
+             conditions.append(BuilderUtils.get_codeset_in_expression(
+                criteria.visit_type_cs.codeset_id,
+                "V.visit_concept_id"
+            ))
         
-        return " AND ".join(conditions) if conditions else "1=1"
+        return conditions
     
     def resolve_ordinal_expression(self, criteria: DeviceExposure, options: BuilderOptions) -> str:
         """Resolve ordinal expression for device exposure criteria."""
         if criteria.first:
-            return "ORDER BY C.device_exposure_start_date ASC"
+            return ", row_number() over (PARTITION BY de.person_id ORDER BY de.device_exposure_start_date, de.device_exposure_id) as ordinal"
         return ""
+    
+    def get_ordinal_expression_where_clause(self, criteria: DeviceExposure, options: BuilderOptions) -> List[str]:
+         if criteria.first:
+             return ["C.ordinal = 1"]
+         return []

@@ -35,6 +35,9 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         
         Java equivalent: CriteriaSqlBuilder.getCriteriaSql(T criteria, BuilderOptions options)
         """
+        if options is None:
+            options = BuilderOptions()
+            
         query = self.get_query_template()
         
         query = self.embed_codeset_clause(query, criteria)

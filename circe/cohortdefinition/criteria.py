@@ -720,7 +720,7 @@ class DeviceExposure(Criteria):
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     device_type: Optional[List[Concept]] = Field(default=None, alias="DeviceType")
     device_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="DeviceTypeCS")
-    device_type_exclude: bool = Field(alias="DeviceTypeExclude")
+    device_type_exclude: bool = Field(default=False, alias="DeviceTypeExclude")
     unique_device_id: Optional[TextFilter] = Field(default=None, alias="UniqueDeviceId")
     quantity: Optional[NumericRange] = None
     provider_specialty_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ProviderSpecialtyCS")
