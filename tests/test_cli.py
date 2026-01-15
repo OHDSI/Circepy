@@ -167,3 +167,32 @@ def test_process_command():
         assert len(sql_output.read_text()) > 1000
         assert len(md_output.read_text()) > 100
 
+        assert len(md_output.read_text()) > 100
+
+
+def test_generate_source_command():
+    """Test generate-source command."""
+    cohort_file = COHORTS_DIR / '1006.json'
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        output_file = Path(tmpdir) / 'cohort.py'
+        
+        exit_code, stdout, stderr = run_python_cli_in_process([
+            'generate-source', str(cohort_file),
+            '--output', str(output_file)
+        ])
+        
+        assert exit_code == 0
+        assert output_file.exists()
+        
+        content = output_file.read_text()
+        assert "from circe.cohortdefinition.cohort import CohortExpression" in content
+        assert "cohort =" in content
+        
+        # Also check stdout version
+        exit_code, stdout, stderr = run_python_cli_in_process([
+            'generate-source', str(cohort_file)
+        ])
+        
+        assert exit_code == 0
+        assert "cohort =" in stdout

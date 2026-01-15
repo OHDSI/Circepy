@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .api import cohort_expression_from_json, build_cohort_query, cohort_print_friendly
 from .cohortdefinition import BuildExpressionQueryOptions
+from .cohortdefinition.code_generator import to_python_code
 
 
 def main():
@@ -42,6 +43,11 @@ def main():
     md_parser.add_argument('--no-validate', action='store_true', help='Skip validation')
     md_parser.add_argument('--title', '-t', type=str, help='Title to add to markdown document')
 
+    # Generate source code command
+    source_parser = subparsers.add_parser('generate-source', help='Generate Python source code from cohort definition')
+    source_parser.add_argument('input', help='Input JSON file')
+    source_parser.add_argument('--output', '-o', help='Output Python file (default: stdout)')
+
     # Process command (all-in-one)
     process_parser = subparsers.add_parser('process', help='Validate, generate SQL and Markdown')
     process_parser.add_argument('input', help='Input JSON file')
@@ -66,6 +72,8 @@ def main():
             return render_markdown_command(args)
         elif args.command == 'process':
             return process_command(args)
+        elif args.command == 'generate-source':
+            return generate_source_command(args)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
@@ -203,6 +211,28 @@ def process_command(args):
     if args.md_output:
         Path(args.md_output).write_text(markdown)
         print(f"✓ Markdown written to {args.md_output}")
+    
+    return 0
+
+
+
+def generate_source_command(args):
+    """Generate Python source code from cohort definition."""
+    # Read JSON
+    json_str = Path(args.input).read_text()
+    
+    # Load expression
+    expression = cohort_expression_from_json(json_str)
+    
+    # Generate Source Code
+    source_code = to_python_code(expression)
+    
+    # Output
+    if args.output:
+        Path(args.output).write_text(source_code)
+        print(f"Source code written to {args.output}")
+    else:
+        print(source_code)
     
     return 0
 
