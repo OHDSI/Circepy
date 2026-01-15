@@ -1486,7 +1486,7 @@ class MarkdownRender:
         first_time = " for the first time in the person's history" if criteria.first else ""
         
         source_concept = ""
-        if criteria.condition_source_concept:
+        if criteria.condition_source_concept is not None:
             source_name = self._get_concept_set_name(criteria.condition_source_concept, "any condition")
             source_concept = f" (including {source_name} source concepts)"
         
@@ -1597,7 +1597,7 @@ class MarkdownRender:
         first_time = " for the first time in the person's history" if criteria.first else ""
         
         source_concept = ""
-        if criteria.drug_source_concept:
+        if criteria.drug_source_concept is not None:
             source_name = self._get_concept_set_name(criteria.drug_source_concept, "any drug")
             source_concept = f" (including {source_name} source concepts)"
         
@@ -1662,7 +1662,7 @@ class MarkdownRender:
         
         codeset_name = self._get_concept_set_name(criteria.codeset_id, "any form")
         source_concept = ""
-        if criteria.death_source_concept:
+        if criteria.death_source_concept is not None:
             source_name = self._get_concept_set_name(criteria.death_source_concept, "any form")
             source_concept = f" (including {source_name} source concepts)"
         
