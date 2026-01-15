@@ -9,6 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional, Any, Union, TYPE_CHECKING
+import json
 from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator, AliasChoices
 from .core import (
     ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy, CustomEraStrategy,
@@ -320,14 +321,63 @@ class CohortExpression(CirceBaseModel):
         import hashlib
         import json
         
-        # Serialize to JSON with sorted keys for stability
-        json_str = self.model_dump_json(exclude_unset=True, exclude_defaults=True)
-        # Re-load and re-dump to ensure consistent sorting of keys (model_dump_json might not sort keys by default in all versions)
-        # Actually pydantic doesn't guarantee key order in json dump?
-        # Let's use standard json dump of the dict dump
+        # 1. Dump with defaults excluded to handle implicit defaults
         data = self.model_dump(exclude_unset=True, exclude_defaults=True, by_alias=True)
-        canonical_json = json.dumps(data, sort_keys=True)
+        
+        # 2. Normalize: remove metadata, deduplicate concept sets, etc.
+        normalized_data = self._normalize_for_checksum(data)
+        
+        # 3. Serialize to canonical JSON
+        canonical_json = json.dumps(normalized_data, sort_keys=True)
         
         h = hashlib.new(algorithm)
         h.update(canonical_json.encode('utf-8'))
         return h.hexdigest()
+
+    def _normalize_for_checksum(self, data: Any) -> Any:
+        """Recursively normalize data for checksum calculation.
+        
+        Removes metadata fields from Concepts, deduplicates ConceptSet items,
+        and ensures consistent ordering.
+        """
+        if isinstance(data, dict):
+            # Handle ConceptSet Expression Items
+            if 'items' in data and isinstance(data['items'], list):
+                # Check if these look like ConceptSetItems (have 'concept')
+                if data['items'] and isinstance(data['items'][0], dict) and 'concept' in data['items'][0]:
+                    normalized_items = []
+                    seen_items = set()
+                    
+                    for item in data['items']:
+                        # Normalize the item first
+                        norm_item = self._normalize_for_checksum(item)
+                        
+                        # Create a sortable/hashable representation for deduplication
+                        # We need to sort keys to ensure tuple order is consistent
+                        item_json = json.dumps(norm_item, sort_keys=True)
+                        
+                        if item_json not in seen_items:
+                            seen_items.add(item_json)
+                            normalized_items.append(norm_item)
+                    
+                    # Sort items to ensure list order doesn't affect hash
+                    # Sort by the JSON string representation
+                    normalized_items.sort(key=lambda x: json.dumps(x, sort_keys=True))
+                    
+                    new_data = data.copy()
+                    new_data['items'] = normalized_items
+                    return new_data
+
+            # Handle Concept Objects (heuristically by fields)
+            if 'CONCEPT_ID' in data:
+                # Keep ID, remove metadata names/codes/vocab
+                # Keep only structural identifier
+                return {'CONCEPT_ID': data['CONCEPT_ID']}
+            
+            # Recurse for other dicts
+            return {k: self._normalize_for_checksum(v) for k, v in data.items()}
+            
+        elif isinstance(data, list):
+            return [self._normalize_for_checksum(item) for item in data]
+            
+        return data

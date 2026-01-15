@@ -101,7 +101,8 @@ def to_python_code(obj: Any) -> str:
             return f"{o.__class__.__name__}.{o.name}"
             
         elif isinstance(o, str):
-            return f"'{o}'" # repr(o) would add quotes, but let's be explicit and consistent
+            # Use repr to handle quotes and escaping safely
+            return repr(o)
             
         else:
             return repr(o)

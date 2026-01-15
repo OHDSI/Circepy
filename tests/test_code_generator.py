@@ -47,3 +47,18 @@ def test_simple_object_generation():
     p = Period(value=10, unit='d') # Note: Unit might be a string or enum depending on Period def
     # Let's check Period definition first, wait, I can assume it works if the main one works.
     pass 
+
+def test_string_with_quotes():
+    """Test that strings containing quotes are correctly escaped in generated code."""
+    from circe.cohortdefinition.cohort import CohortExpression
+    # Create a cohort with a title containing quotes
+    c = CohortExpression(title="Alzheimer's Disease 'quoted' \"double quoted\"")
+    
+    code = to_python_code(c)
+    
+    # Execute the code
+    exec_globals = {}
+    exec(code, exec_globals)
+    generated_cohort = exec_globals['cohort']
+    
+    assert generated_cohort.title == "Alzheimer's Disease 'quoted' \"double quoted\""
