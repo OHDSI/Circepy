@@ -32,23 +32,43 @@ from difflib import unified_diff
 
 
 # Test cohort files - these are the cohorts added in the recent commit
-COHORT_FILES = [
-    '20854.json',  # Thrombocytopenia with measurement criteria
-    '22008.json',  # Drug eras with inclusion criteria
-    '22159.json',  # ConditionSourceConcept criteria
-    '22160.json',  # Unknown structure
-    '22161.json',  # Unknown structure
-    '22162.json',  # Unknown structure
-    '22163.json',  # Unknown structure
-    '22168.json',  # Unknown structure
-    '22224.json',  # Unknown structure
-    '22225.json',  # Unknown structure
-    '20968.json'   # mCRPC
-]
-
 # Directories
 COHORTS_DIR = Path(__file__).parent / 'cohorts'
 REFERENCE_DIR = COHORTS_DIR / 'reference_outputs'
+
+# Dynamic discovery of cohort files
+import random
+
+def get_cohort_files():
+    """Discover cohort files dynamically, optionally sampling."""
+    try:
+        # Check if we should sample (need to get config from pytest mechanism or use a different approach)
+        # Since this is a module-level variable, we can't easily access pytest config here.
+        # We'll use a fixture in the test functions, but we need the list for parametrize.
+        # However, pytest collection happens before run.
+        # A common pattern is to defer valid collection or simple collect all.
+        
+        # Collect ALL json files
+        if not COHORTS_DIR.exists():
+            print(f"WARNING: Cohorts directory not found: {COHORTS_DIR}")
+            return []
+            
+        all_files = sorted([f.name for f in COHORTS_DIR.glob('*.json')])
+        
+        # Check command line arg using sys.argv hack since we are at module level
+        # logic for parametrize
+        if "--sample-cohorts" in sys.argv:
+            # Seed for reproducibility during a single run, but we want random each time? 
+            # User said "randomly samples 10 cohorts each time"
+            return random.sample(all_files, min(len(all_files), 10))
+        
+        return all_files
+    except Exception as e:
+        # Print error to stderr so it's visible even if swallowed
+        print(f"Error discovering cohort files: {e}", file=sys.stderr)
+        return []
+
+COHORT_FILES = get_cohort_files()
 
 
 def get_reference_sql(cohort_name: str) -> Optional[str]:
