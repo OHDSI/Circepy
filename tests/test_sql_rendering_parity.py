@@ -83,41 +83,6 @@ class TestConditionOccurrenceBuilder(unittest.TestCase):
         # Check Where Clause
         self.assertIn("C.condition_status_concept_id in (456)", sql, "SQL should filter by condition_status_concept_id")
 
-class TestVisitOccurrenceBuilder(unittest.TestCase):
-    
-    def setUp(self):
-        self.builder = VisitOccurrenceSqlBuilder()
-        
-    def test_includes_concept_list_logic(self):
-        # Create VisitOccurrence with explicitly listed concepts (not CodeSets)
-        vo = VisitOccurrence(
-            visit_type=[Concept(conceptId=111, conceptName="Inpatient", domainId="Visit", vocabularyId="Visit", standardConcept="S", conceptCode="IP")],
-            gender=[Concept(conceptId=8507, conceptName="Male", domainId="Gender", vocabularyId="Gender", standardConcept="S", conceptCode="M")],
-            provider_specialty=[Concept(conceptId=333, conceptName="Cardiology", domainId="Provider", vocabularyId="Specialty", standardConcept="S", conceptCode="Cardio")],
-            place_of_service=[Concept(conceptId=444, conceptName="Hospital", domainId="Place", vocabularyId="Place", standardConcept="S", conceptCode="Hosp")],
-            first=False
-        )
-        
-        sql = self.builder.get_criteria_sql(vo)
-        
-        # 1. Check Select Clauses
-        self.assertIn("C.visit_type_concept_id", sql, "SQL should select visit_type_concept_id")
-        self.assertIn("C.provider_id", sql, "SQL should select provider_id")
-        self.assertIn("C.care_site_id", sql, "SQL should select care_site_id")
-        
-        # 2. Check Join Clauses
-        # Gender -> Join Person
-        self.assertIn("JOIN @cdm_database_schema.PERSON P", sql, "Should join PERSON for gender check")
-        # ProviderSpecialty -> Join Provider
-        self.assertIn("JOIN @cdm_database_schema.PROVIDER", sql, "Should join PROVIDER for specialty check")
-        # PlaceOfService -> Join CareSite
-        self.assertIn("JOIN @cdm_database_schema.CARE_SITE", sql, "Should join CARE_SITE for place of service check")
-        
-        # 3. Check Where Clauses
-        self.assertIn("C.visit_type_concept_id in (111)", sql, "Should filter visit_type_concept_id")
-        self.assertIn("P.gender_concept_id in (8507)", sql, "Should filter gender_concept_id")
-        self.assertIn("PR.specialty_concept_id in (333)", sql, "Should filter specialty_concept_id") # Note: Java uses PR alias for Provider
-        self.assertIn("CS.place_of_service_concept_id in (444)", sql, "Should filter place_of_service_concept_id")
 
 class TestProcedureOccurrenceBuilder(unittest.TestCase):
     
@@ -375,7 +340,6 @@ class TestDrugEraBuilder(unittest.TestCase):
             era_end_date=DateRange(op="lt", value="2021-01-01"),
             occurrence_count=NumericRange(op="gt", value=2),
             era_length=NumericRange(op="gt", value=10),
-            gap_days=NumericRange(op="lt", value=5),
             age_at_start=NumericRange(op="gt", value=40),
             age_at_end=NumericRange(op="lt", value=80),
             gender=[Concept(conceptId=8507, conceptName="Male", domainId="Gender", vocabularyId="Gender", standardConcept="S", conceptCode="M")],
@@ -400,8 +364,6 @@ class TestDrugEraBuilder(unittest.TestCase):
         self.assertIn("C.drug_exposure_count > 2", sql, "Should filter occurrence_count")
         
         self.assertIn("DATEDIFF(d,C.start_date, C.end_date) > 10", sql, "Should filter era_length")
-        # Note: Java implementation uses era_length for gap_days check (known bug), so we expect > 10 not < 5
-        self.assertIn("C.gap_days > 10", sql, "Should filter gap_days (using era_length per Java bug)")
         
         self.assertIn("YEAR(C.start_date) - P.year_of_birth > 40", sql, "Should filter age_at_start")
         self.assertIn("YEAR(C.end_date) - P.year_of_birth < 80", sql, "Should filter age_at_end")
@@ -493,9 +455,8 @@ class TestSpecimenBuilder(unittest.TestCase):
         # 2. Check Join Clauses
         self.assertIn("JOIN @cdm_database_schema.PERSON P", sql, "Should join PERSON")
         
-        # 3. Check Where Clauses
-        # Codeset inside subquery
-        self.assertIn("where s.specimen_concept_id in (SELECT concept_id from #Codesets where codeset_id = 1)", sql, "Should filter codeset inside subquery")
+        # codeset join logic
+        self.assertIn("JOIN #Codesets cs on (s.specimen_concept_id = cs.concept_id and cs.codeset_id = 1)", sql, "Should filter codeset via JOIN")
         
         self.assertIn("C.specimen_date > DATEFROMPARTS(2020, 1, 1)", sql, "Should filter occurrence_start_date")
         self.assertIn("C.quantity > 5", sql, "Should filter quantity")

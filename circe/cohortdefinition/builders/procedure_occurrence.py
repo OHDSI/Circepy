@@ -187,7 +187,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         
         # occurrenceStartDate
         if hasattr(criteria, 'occurrence_start_date') and criteria.occurrence_start_date:
-            where_clauses.append(BuilderUtils.build_date_range_clause(criteria.occurrence_start_date, "C.start_date"))
+            where_clauses.append(BuilderUtils.build_date_range_clause("C.start_date", criteria.occurrence_start_date))
 
         # procedureType
         if hasattr(criteria, 'procedure_type') and criteria.procedure_type and len(criteria.procedure_type) > 0:
@@ -210,11 +210,11 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         
         # quantity
         if hasattr(criteria, 'quantity') and criteria.quantity:
-             where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.quantity, "C.quantity"))
+             where_clauses.append(BuilderUtils.build_numeric_range_clause("C.quantity", criteria.quantity))
             
         # age
         if hasattr(criteria, 'age') and criteria.age:
-             where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.age, "YEAR(C.start_date) - P.year_of_birth"))
+             where_clauses.append(BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age))
 
         # gender
         if hasattr(criteria, 'gender') and criteria.gender and len(criteria.gender) > 0:

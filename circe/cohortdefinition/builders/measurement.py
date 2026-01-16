@@ -73,12 +73,12 @@ from
     
     def embed_codeset_clause(self, query: str, criteria: Measurement) -> str:
         """Embed codeset clause for measurement criteria."""
-        if criteria.codeset_id is None:
-            return query.replace("@codesetClause", "")
-        
-        # Use JOIN syntax for codeset, not WHERE clause
-        codeset_clause = f"JOIN #Codesets cs on (m.measurement_concept_id = cs.concept_id and cs.codeset_id = {criteria.codeset_id})"
-        return query.replace("@codesetClause", codeset_clause)
+        return query.replace("@codesetClause", BuilderUtils.get_codeset_join_expression(
+            criteria.codeset_id,
+            "m.measurement_concept_id",
+            criteria.measurement_source_concept,
+            "m.measurement_source_concept_id"
+        ))
     
     def resolve_select_clauses(self, criteria: Measurement, options: Optional[BuilderOptions] = None) -> List[str]:
         """Resolve select clauses for measurement criteria.
@@ -168,7 +168,7 @@ from
         # Add occurrence start date condition
         if criteria.occurrence_start_date:
             date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_start_date, "C.start_date"
+                "C.start_date", criteria.occurrence_start_date
             )
             if date_clause:
                 where_clauses.append(date_clause)
@@ -195,7 +195,7 @@ from
         # valueAsNumber
         if criteria.value_as_number:
             # Java uses .4f
-            where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.value_as_number, "C.value_as_number", ".4f"))
+            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.value_as_number", criteria.value_as_number, ".4f"))
 
         # valueAsConcept
         if criteria.value_as_concept and len(criteria.value_as_concept) > 0:
@@ -217,19 +217,19 @@ from
             
         # rangeLow
         if criteria.range_low:
-             where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.range_low, "C.range_low", ".4f"))
+             where_clauses.append(BuilderUtils.build_numeric_range_clause("C.range_low", criteria.range_low, ".4f"))
              
         # rangeHigh
         if criteria.range_high:
-             where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.range_high, "C.range_high", ".4f"))
+             where_clauses.append(BuilderUtils.build_numeric_range_clause("C.range_high", criteria.range_high, ".4f"))
 
         # rangeLowRatio
         if criteria.range_low_ratio:
-             where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.range_low_ratio, "(C.value_as_number / NULLIF(C.range_low, 0))", ".4f"))
+             where_clauses.append(BuilderUtils.build_numeric_range_clause("(C.value_as_number / NULLIF(C.range_low, 0))", criteria.range_low_ratio, ".4f"))
 
         # rangeHighRatio
         if criteria.range_high_ratio:
-             where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.range_high_ratio, "(C.value_as_number / NULLIF(C.range_high, 0))", ".4f"))
+             where_clauses.append(BuilderUtils.build_numeric_range_clause("(C.value_as_number / NULLIF(C.range_high, 0))", criteria.range_high_ratio, ".4f"))
              
         # abnormal
         if criteria.abnormal:
@@ -237,7 +237,7 @@ from
 
         # age
         if criteria.age:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.age, "YEAR(C.start_date) - P.year_of_birth"))
+            where_clauses.append(BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age))
             
         # gender
         if criteria.gender and len(criteria.gender) > 0:

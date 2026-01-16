@@ -130,10 +130,10 @@ class BuilderUtils:
         raise RuntimeError(f"Unknown operator type: {op}")
 
     @staticmethod
-    def build_date_range_clause(date_range: Optional[DateRange], sql_expression: str) -> Optional[str]:
+    def build_date_range_clause(sql_expression: str, date_range: Optional[DateRange]) -> Optional[str]:
         """Build date range clause for SQL.
         
-        Java equivalent: BuilderUtils.buildDateRangeClause()
+        Java equivalent: BuilderUtils.buildDateRangeClause(String sqlExpression, DateRange range)
         """
         if date_range is None or date_range.op is None:
             return None
@@ -152,10 +152,11 @@ class BuilderUtils:
         return f"{sql_expression} {BuilderUtils.get_operator(op)} {BuilderUtils.date_string_to_sql(date_range.value)}"
     
     @staticmethod
-    def build_numeric_range_clause(numeric_range: Optional[NumericRange], sql_expression: str, format: Optional[str] = None) -> Optional[str]:
+    def build_numeric_range_clause(sql_expression: str, numeric_range: Optional[NumericRange], format: Optional[str] = None) -> Optional[str]:
         """Build numeric range clause for SQL.
         
-        Java equivalent: BuilderUtils.buildNumericRangeClause()
+        Java equivalent: BuilderUtils.buildNumericRangeClause(String sqlExpression, NumericRange range, String format)
+        or buildNumericRangeClause(String sqlExpression, NumericRange range)
         """
         if numeric_range is None or numeric_range.op is None:
             return None
@@ -233,17 +234,15 @@ class BuilderUtils:
         if not values:
             return "NULL"
         
-        if len(values) <= max_length:
-            return ",".join(map(str, values))
-        
         # Split into chunks
         chunks = []
         for i in range(0, len(values), max_length):
             chunk_values = values[i:i + max_length]
-            chunk_clause = f"{column_name} IN ({','.join(map(str, chunk_values))})"
+            chunk_clause = f"{column_name} in ({','.join(map(str, chunk_values))})"
             chunks.append(chunk_clause)
         
-        return " OR ".join(chunks)
+        # Java implementation always wraps the result in parentheses
+        return f"({' or '.join(chunks)})"
     
     @staticmethod
     def date_string_to_sql(date_string: str) -> str:

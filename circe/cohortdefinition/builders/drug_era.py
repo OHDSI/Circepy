@@ -129,43 +129,43 @@ from
         
         # eraStartDate
         if criteria.era_start_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(criteria.era_start_date, "C.start_date")
+            date_clause = BuilderUtils.build_date_range_clause("C.start_date", criteria.era_start_date)
             if date_clause:
                 where_clauses.append(date_clause)
         
         # eraEndDate
         if criteria.era_end_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(criteria.era_end_date, "C.end_date")
+            date_clause = BuilderUtils.build_date_range_clause("C.end_date", criteria.era_end_date)
             if date_clause:
                 where_clauses.append(date_clause)
         
         # occurrenceCount
         if criteria.occurrence_count is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(criteria.occurrence_count, "C.drug_exposure_count")
+            numeric_clause = BuilderUtils.build_numeric_range_clause("C.drug_exposure_count", criteria.occurrence_count)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
         
         # eraLength
         if criteria.era_length is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(criteria.era_length, "DATEDIFF(d,C.start_date, C.end_date)")
+            numeric_clause = BuilderUtils.build_numeric_range_clause("DATEDIFF(d,C.start_date, C.end_date)", criteria.era_length)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
         
         # gapDays - Replicating Java bug: uses era_length instead of gap_days
         if criteria.gap_days is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(criteria.era_length, "C.gap_days")
+            numeric_clause = BuilderUtils.build_numeric_range_clause("C.gap_days", criteria.era_length)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
         
         # ageAtStart
         if criteria.age_at_start is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(criteria.age_at_start, "YEAR(C.start_date) - P.year_of_birth")
+            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age_at_start)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
         
         # ageAtEnd
         if criteria.age_at_end is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(criteria.age_at_end, "YEAR(C.end_date) - P.year_of_birth")
+            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.end_date) - P.year_of_birth", criteria.age_at_end)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
         

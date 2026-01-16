@@ -122,15 +122,15 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         
         query = self.builder.build_concept_set_mapped_query(mapped_concepts, mapped_descendant_concepts)
         
-        self.assertIn("SELECT c.concept_id", query)
-        self.assertIn("@vocabulary_database_schema.CONCEPT_RELATIONSHIP", query)
+        self.assertIn("select distinct cr.concept_id_1 as concept_id", query)
+        self.assertIn("@vocabulary_database_schema.concept_relationship", query)
         self.assertIn("Maps to", query)
 
     def test_build_concept_set_query_empty_concepts(self):
         """Test build_concept_set_query with empty concepts."""
         query = self.builder.build_concept_set_query([], [], [], [])
         
-        self.assertIn("SELECT concept_id FROM @vocabulary_database_schema.CONCEPT WHERE 0=1", query)
+        self.assertIn("select concept_id from @vocabulary_database_schema.CONCEPT where 0=1", query)
 
     def test_build_concept_set_query_with_mapped_concepts(self):
         """Test build_concept_set_query with mapped concepts."""
@@ -222,7 +222,7 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         query = self.builder.build_expression_query(expression)
         
         self.assertIn("UNION", query)
-        self.assertIn("@vocabulary_database_schema.CONCEPT_RELATIONSHIP", query)
+        self.assertIn("@vocabulary_database_schema.concept_relationship", query)
 
     def test_build_expression_query_complex_scenario(self):
         """Test build_expression_query with complex scenario."""

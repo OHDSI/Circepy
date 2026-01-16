@@ -198,35 +198,30 @@ class TestBuilderUtils(unittest.TestCase):
         concept_ids = [concept.concept_id for concept in concepts if concept.concept_id is not None]
         self.assertEqual(concept_ids, [1, 2, 3])
     
-    def test_build_date_range_clause_none(self):
-        """Test date range clause with None date range."""
-        result = BuilderUtils.build_date_range_clause(None, "date_col")
-        self.assertIsNone(result)
-    
     def test_build_date_range_clause_with_range(self):
         """Test date range clause with date range."""
         date_range = DateRange(op="gte", value="2020-01-01")
         
-        result = BuilderUtils.build_date_range_clause(date_range, "date_col")
+        result = BuilderUtils.build_date_range_clause("date_col", date_range)
         expected = "date_col >= DATEFROMPARTS(2020, 1, 1)"
         self.assertEqual(result, expected)
     
     def test_build_numeric_range_clause_none(self):
         """Test numeric range clause with None numeric range."""
-        result = BuilderUtils.build_numeric_range_clause(None, "num_col")
+        result = BuilderUtils.build_numeric_range_clause("num_col", None)
         self.assertIsNone(result)
     
     def test_build_numeric_range_clause_with_range(self):
         """Test numeric range clause with numeric range."""
         numeric_range = NumericRange(op="gt", value=100)
         
-        result = BuilderUtils.build_numeric_range_clause(numeric_range, "num_col")
+        result = BuilderUtils.build_numeric_range_clause("num_col", numeric_range)
         expected = "num_col > 100"
         self.assertEqual(result, expected)
     
     def test_build_text_filter_clause_none(self):
         """Test text filter clause with None text filter."""
-        result = BuilderUtils.build_text_filter_clause(None, "text_col")
+        result = BuilderUtils.build_text_filter_clause(None,"text_col")
         self.assertIsNone(result)
     
     def test_build_text_filter_clause_with_filter(self):

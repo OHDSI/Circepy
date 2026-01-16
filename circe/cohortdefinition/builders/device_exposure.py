@@ -130,14 +130,14 @@ FROM
         # Add date range conditions
         if criteria.occurrence_start_date:
             date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_start_date, "C.start_date"
+                "C.start_date", criteria.occurrence_start_date
             )
             if date_clause:
                 conditions.append(date_clause)
         
         if criteria.occurrence_end_date:
             date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_end_date, "C.end_date"
+                "C.end_date", criteria.occurrence_end_date
             )
             if date_clause:
                 conditions.append(date_clause)
@@ -166,7 +166,7 @@ FROM
         # Add quantity condition
         if criteria.quantity:
             quantity_clause = BuilderUtils.build_numeric_range_clause(
-                criteria.quantity, "C.quantity"
+                "C.quantity", criteria.quantity
             )
             if quantity_clause:
                 conditions.append(quantity_clause)
@@ -174,7 +174,7 @@ FROM
         # Age
         if criteria.age:
             conditions.append(BuilderUtils.build_numeric_range_clause(
-                criteria.age, "YEAR(C.start_date) - P.year_of_birth"
+                "YEAR(C.start_date) - P.year_of_birth", criteria.age
             ))
 
         # Gender

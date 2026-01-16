@@ -199,14 +199,14 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
         # Add occurrence dates
         if criteria.occurrence_start_date:
             date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_start_date, "C.start_date"
+                "C.start_date", criteria.occurrence_start_date
             )
             if date_clause:
                 where_clauses.append(date_clause)
         
         if criteria.occurrence_end_date:
             date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_end_date, "C.end_date"
+                "C.end_date", criteria.occurrence_end_date
             )
             if date_clause:
                 where_clauses.append(date_clause)
@@ -249,19 +249,19 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
 
         # refills
         if criteria.refills:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.refills, "C.refills"))
+            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.refills", criteria.refills))
 
         # quantity
         if criteria.quantity:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.quantity, "C.quantity"))
+            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.quantity", criteria.quantity))
 
         # daysSupply
         if criteria.days_supply:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.days_supply, "C.days_supply"))
+            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.days_supply", criteria.days_supply))
 
         # age
         if criteria.age:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.age, "YEAR(C.start_date) - P.year_of_birth"))
+            where_clauses.append(BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age))
             
         # gender
         if criteria.gender and len(criteria.gender) > 0:

@@ -15,54 +15,54 @@ class TestBuilderUtilsNumericRanges:
         """Test bt operator uses >= and <=."""
         range_val = NumericRange(op="bt", value=10, extent=20)
         # Integer range (no format)
-        clause = BuilderUtils.build_numeric_range_clause(range_val, "age")
+        clause = BuilderUtils.build_numeric_range_clause("age", range_val)
         assert "age >= 10" in clause and "age <= 20" in clause
         
         # Double range (with format)
-        clause_decimal = BuilderUtils.build_numeric_range_clause(range_val, "age", format=".4f")
+        clause_decimal = BuilderUtils.build_numeric_range_clause("age", range_val, format=".4f")
         assert "age >= 10.0000" in clause_decimal and "age <= 20.0000" in clause_decimal
     
     def test_numeric_range_greater_than(self):
         """Test > operator."""
         range_val = NumericRange(op="gt", value=18)
-        clause = BuilderUtils.build_numeric_range_clause(range_val, "age")
+        clause = BuilderUtils.build_numeric_range_clause("age", range_val)
         assert ">" in clause
         assert "18" in clause
     
     def test_numeric_range_greater_equal(self):
         """Test >= operator."""
         range_val = NumericRange(op="gte", value=18)
-        clause = BuilderUtils.build_numeric_range_clause(range_val, "age")
+        clause = BuilderUtils.build_numeric_range_clause("age", range_val)
         assert ">=" in clause
     
     def test_numeric_range_less_than(self):
         """Test < operator."""
         range_val = NumericRange(op="lt", value=65)
-        clause = BuilderUtils.build_numeric_range_clause(range_val, "age")
+        clause = BuilderUtils.build_numeric_range_clause("age", range_val)
         assert "<" in clause
-    
+
     def test_numeric_range_less_equal(self):
         """Test <= operator."""
         range_val = NumericRange(op="lte", value=65)
-        clause = BuilderUtils.build_numeric_range_clause(range_val, "age")
+        clause = BuilderUtils.build_numeric_range_clause("age", range_val)
         assert "<=" in clause
-    
+
     def test_numeric_range_equal(self):
         """Test = operator."""
         range_val = NumericRange(op="eq", value=50)
-        clause = BuilderUtils.build_numeric_range_clause(range_val, "age")
+        clause = BuilderUtils.build_numeric_range_clause("age", range_val)
         assert "=" in clause
         assert "50" in clause
-    
+
     def test_numeric_range_not_equal(self):
         """Test != operator translates to <>."""
         range_val = NumericRange(op="!eq", value=50)
-        clause = BuilderUtils.build_numeric_range_clause(range_val, "age")
+        clause = BuilderUtils.build_numeric_range_clause("age", range_val)
         assert "<>" in clause
     
     def test_numeric_range_none(self):
         """Test None range returns None."""
-        clause = BuilderUtils.build_numeric_range_clause(None, "age")
+        clause = BuilderUtils.build_numeric_range_clause("age", None)
         assert clause is None
 
 
@@ -72,24 +72,24 @@ class TestBuilderUtilsDateRanges:
     def test_date_range_simple(self):
         """Test simple date range."""
         range_val = DateRange(op="gt", value="2020-01-01")
-        clause = BuilderUtils.build_date_range_clause(range_val, "start_date")
+        clause = BuilderUtils.build_date_range_clause("start_date", range_val)
         assert "start_date > DATEFROMPARTS(2020, 1, 1)" == clause
     
     def test_date_range_between(self):
         """Test between date range."""
         range_val = DateRange(op="bt", value="2020-01-01", extent="2020-12-31")
-        clause = BuilderUtils.build_date_range_clause(range_val, "start_date")
+        clause = BuilderUtils.build_date_range_clause("start_date", range_val)
         assert "(start_date >= DATEFROMPARTS(2020, 1, 1) and start_date <= DATEFROMPARTS(2020, 12, 31))" == clause
 
     def test_date_range_not_between(self):
         """Test not between date range."""
         range_val = DateRange(op="!bt", value="2020-01-01", extent="2020-12-31")
-        clause = BuilderUtils.build_date_range_clause(range_val, "start_date")
+        clause = BuilderUtils.build_date_range_clause("start_date", range_val)
         assert "not (start_date >= DATEFROMPARTS(2020, 1, 1) and start_date <= DATEFROMPARTS(2020, 12, 31))" == clause
     
     def test_date_range_none(self):
         """Test None date range returns None."""
-        clause = BuilderUtils.build_date_range_clause(None, "start_date")
+        clause = BuilderUtils.build_date_range_clause("start_date", None)
         assert clause is None
 
 
@@ -193,7 +193,7 @@ class TestBuilderUtilsOther:
         """Test split IN clause with small list."""
         values = [1, 2, 3, 4, 5]
         result = BuilderUtils.split_in_clause("concept_id", values)
-        assert "1,2,3,4,5" == result
+        assert "(concept_id in (1,2,3,4,5))" == result
     
     def test_split_in_clause_empty(self):
         """Test split IN clause with empty list."""

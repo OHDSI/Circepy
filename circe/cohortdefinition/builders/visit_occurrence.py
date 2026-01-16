@@ -24,101 +24,89 @@ class VisitOccurrenceSqlBuilder(CriteriaSqlBuilder[VisitOccurrence]):
     def get_query_template(self) -> str:
         """Get the SQL query template for visit occurrence criteria."""
         return """
-        SELECT 
-            @selectClause@additionalColumns
-        FROM @cdm_database_schema.VISIT_OCCURRENCE C
-        @joinClause
-        @whereClause
-        @ordinalExpression
-        """
+-- Begin Visit Occurrence Criteria
+select C.person_id, C.visit_occurrence_id as event_id, C.start_date, C.end_date,
+       C.visit_occurrence_id, C.start_date as sort_date@additionalColumns
+from 
+(
+  select @selectClause @ordinalExpression
+  FROM @cdm_database_schema.VISIT_OCCURRENCE vo
+@codesetClause
+) C
+@joinClause
+@whereClause
+-- End Visit Occurrence Criteria
+"""
     
     def get_default_columns(self) -> Set[CriteriaColumn]:
         """Get default columns for visit occurrence criteria."""
         return {
             CriteriaColumn.START_DATE,
             CriteriaColumn.END_DATE,
-            CriteriaColumn.DOMAIN_CONCEPT,
             CriteriaColumn.VISIT_ID
         }
     
     def get_table_column_for_criteria_column(self, criteria_column: CriteriaColumn) -> str:
         """Get table column for criteria column."""
-        column_mapping = {
-            CriteriaColumn.START_DATE: "C.visit_start_date",
-            CriteriaColumn.END_DATE: "C.visit_end_date",
-            CriteriaColumn.DOMAIN_CONCEPT: "C.visit_concept_id",
-            CriteriaColumn.DURATION: "DATEDIFF(day, C.visit_start_date, C.visit_end_date)",
-            CriteriaColumn.VISIT_ID: "C.visit_occurrence_id"
-        }
-        return column_mapping.get(criteria_column, "NULL")
-    
+        if criteria_column == CriteriaColumn.DOMAIN_CONCEPT:
+            return "C.visit_concept_id"
+        elif criteria_column == CriteriaColumn.DURATION:
+            return "DATEDIFF(d, C.start_date, C.end_date)"
+        elif criteria_column == CriteriaColumn.START_DATE:
+            return "C.start_date"
+        elif criteria_column == CriteriaColumn.END_DATE:
+            return "C.end_date"
+        elif criteria_column == CriteriaColumn.VISIT_ID:
+            return "C.visit_occurrence_id"
+        else:
+            raise ValueError(f"Invalid CriteriaColumn for Visit Occurrence: {criteria_column}")
     
     def embed_codeset_clause(self, query: str, criteria: VisitOccurrence) -> str:
-        """Embed codeset clause for visit occurrence criteria.
-        
-        Java equivalent: VisitOccurrenceSqlBuilder.embedCodesetClause()
-        """
+        """Embed codeset clause for visit occurrence criteria."""
         codeset_clause = BuilderUtils.get_codeset_join_expression(
             criteria.codeset_id,
-            "C.visit_concept_id",
+            "vo.visit_concept_id",
             criteria.visit_source_concept,
-            "C.visit_source_concept_id"
+            "vo.visit_source_concept_id"
         )
         return query.replace("@codesetClause", codeset_clause)
     
     def resolve_select_clauses(self, criteria: VisitOccurrence, options: Optional[BuilderOptions] = None) -> List[str]:
-        """Resolve select clauses for visit occurrence criteria.
-        
-        Java equivalent: VisitOccurrenceSqlBuilder.resolveSelectClauses()
-        """
+        """Resolve select clauses for visit occurrence criteria."""
         # Default select columns that are always returned
-        select_cols = [
-            "C.person_id",
-            "C.visit_occurrence_id", 
-            "C.visit_concept_id"
-        ]
+        select_cols = ["vo.person_id", "vo.visit_occurrence_id", "vo.visit_concept_id"]
         
-        # Add visit type column if needed
+        # visitType
         if ((criteria.visit_type and len(criteria.visit_type) > 0) or 
             (criteria.visit_type_cs and criteria.visit_type_cs.codeset_id)):
-            select_cols.append("C.visit_type_concept_id")
+            select_cols.append("vo.visit_type_concept_id")
         
-        # Add provider specialty column if needed
+        # providerSpecialty
         if ((criteria.provider_specialty and len(criteria.provider_specialty) > 0) or 
             (criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id)):
-            select_cols.append("C.provider_id")
+            select_cols.append("vo.provider_id")
         
-        # Add place of service column if needed
+        # placeOfService
         if ((criteria.place_of_service and len(criteria.place_of_service) > 0) or
             (criteria.place_of_service_cs and criteria.place_of_service_cs.codeset_id)):
-            select_cols.append("C.care_site_id")
+            select_cols.append("vo.care_site_id")
         
-        # Add date columns (start_date and end_date)
-        select_cols.append("C.visit_start_date as start_date")
-        select_cols.append("C.visit_end_date as end_date")
-        
-        # Add domain concept column
-        select_cols.append("C.visit_concept_id as domain_concept")
-        
-        # Add visit_id column
-        select_cols.append("C.visit_occurrence_id as visit_id")
-        
-        # Add additional columns from options if provided
-        if options and options.additional_columns:
-            filtered_columns = [
-                column for column in options.additional_columns 
-                if column not in self.get_default_columns()
-            ]
-            for col in filtered_columns:
-                select_cols.append(f"{self.get_table_column_for_criteria_column(col)} as {col.value}")
+        # dateAdjustment or default start/end dates
+        if criteria.date_adjustment:
+            # Note: getDateAdjustmentExpression logic in Java-land:
+            # BuilderUtils.getDateAdjustmentExpression(criteria.dateAdjustment,
+            #   criteria.dateAdjustment.startWith == DateAdjustment.DateType.START_DATE ? "vo.visit_start_date" : "vo.visit_end_date",
+            #   criteria.dateAdjustment.endWith == DateAdjustment.DateType.START_DATE ? "vo.visit_start_date" : "vo.visit_end_date")
+            start_col = "vo.visit_start_date" if criteria.date_adjustment.start_with == "START_DATE" else "vo.visit_end_date"
+            end_col = "vo.visit_start_date" if criteria.date_adjustment.end_with == "START_DATE" else "vo.visit_end_date"
+            select_cols.append(BuilderUtils.get_date_adjustment_expression(criteria.date_adjustment, start_col, end_col))
+        else:
+            select_cols.append("vo.visit_start_date as start_date, vo.visit_end_date as end_date")
         
         return select_cols
     
     def resolve_join_clauses(self, criteria: VisitOccurrence, options: Optional[BuilderOptions] = None) -> List[str]:
-        """Resolve join clauses for visit occurrence criteria.
-        
-        Java equivalent: VisitOccurrenceSqlBuilder.resolveJoinClauses()
-        """
+        """Resolve join clauses for visit occurrence criteria."""
         join_clauses = []
         
         # Join to PERSON if age or gender conditions are present
@@ -130,7 +118,7 @@ class VisitOccurrenceSqlBuilder(CriteriaSqlBuilder[VisitOccurrence]):
         # Join to CARE_SITE if place of service conditions are present
         if ((criteria.place_of_service and len(criteria.place_of_service) > 0) or
             (criteria.place_of_service_cs and criteria.place_of_service_cs.codeset_id) or 
-            criteria.place_of_service_location):
+            criteria.place_of_service_location is not None):
             join_clauses.append("JOIN @cdm_database_schema.CARE_SITE CS on C.care_site_id = CS.care_site_id")
         
         # Join to PROVIDER if provider specialty conditions are present
@@ -138,133 +126,110 @@ class VisitOccurrenceSqlBuilder(CriteriaSqlBuilder[VisitOccurrence]):
             (criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id)):
             join_clauses.append("LEFT JOIN @cdm_database_schema.PROVIDER PR on C.provider_id = PR.provider_id")
         
+        if criteria.place_of_service_location is not None:
+            self._add_filtering_by_care_site_location_region(join_clauses, criteria.place_of_service_location)
+        
         return join_clauses
     
     def resolve_where_clauses(self, criteria: VisitOccurrence, options: Optional[BuilderOptions] = None) -> List[str]:
-        """Resolve where clauses for visit occurrence criteria.
+        """Resolve where clauses for visit occurrence criteria."""
+        where_clauses = super().resolve_where_clauses(criteria, options)
         
-        Java equivalent: VisitOccurrenceSqlBuilder.resolveWhereClauses()
-        """
-        where_clauses = []
-        
-        # Add occurrence start date condition
+        # occurrenceStartDate
         if criteria.occurrence_start_date:
-            date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_start_date, "C.visit_start_date"
-            )
-            if date_clause:
-                where_clauses.append(date_clause)
+            where_clauses.append(BuilderUtils.build_date_range_clause("C.start_date", criteria.occurrence_start_date))
         
-        # Add occurrence end date condition
+        # occurrenceEndDate
         if criteria.occurrence_end_date:
-            date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_end_date, "C.visit_end_date"
-            )
-            if date_clause:
-                where_clauses.append(date_clause)
+            where_clauses.append(BuilderUtils.build_date_range_clause("C.end_date", criteria.occurrence_end_date))
         
+        # visitType
         if criteria.visit_type and len(criteria.visit_type) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.visit_type)
             exclude = "not " if criteria.visit_type_exclude else ""
             where_clauses.append(f"C.visit_type_concept_id {exclude}in ({','.join(map(str, concept_ids))})")
 
+        # visitTypeCS
         if criteria.visit_type_cs and criteria.visit_type_cs.codeset_id:
-            visit_type_clause = BuilderUtils.get_codeset_in_expression(
-                criteria.visit_type_cs.codeset_id,
-                "C.visit_type_concept_id",
-                criteria.visit_type_cs.is_exclusion
-            )
-            if visit_type_clause:
-                where_clauses.append(visit_type_clause)
+            where_clauses.append(BuilderUtils.get_codeset_in_expression(
+                criteria.visit_type_cs.codeset_id, "C.visit_type_concept_id", criteria.visit_type_cs.is_exclusion
+            ))
         
-        # Add visit length condition
+        # visitLength
         if criteria.visit_length:
-            length_clause = BuilderUtils.build_numeric_range_clause(
-                criteria.visit_length, "DATEDIFF(d,C.visit_start_date, C.visit_end_date)"
-            )
-            if length_clause:
-                where_clauses.append(length_clause)
+            where_clauses.append(BuilderUtils.build_numeric_range_clause(
+                "DATEDIFF(d,C.start_date, C.end_date)", criteria.visit_length
+            ))
         
-        # Add age condition
+        # age
         if criteria.age:
-            age_clause = BuilderUtils.build_numeric_range_clause(
-                criteria.age, "YEAR(C.visit_start_date) - P.year_of_birth"
-            )
-            if age_clause:
-                where_clauses.append(age_clause)
-                # Add person_id check for join requirement - Java doesn't explicitly add this in WHERE but usually relies on JOIN logic.
-                # However, consistent with Java BuilderUtils, we just add the range check.
-                # The JOIN is handled by resolve_join_clauses.
+            where_clauses.append(BuilderUtils.build_numeric_range_clause(
+                "YEAR(C.start_date) - P.year_of_birth", criteria.age
+            ))
         
-        # Add gender condition
+        # gender
         if criteria.gender and len(criteria.gender) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.gender)
             where_clauses.append(f"P.gender_concept_id in ({','.join(map(str, concept_ids))})")
 
+        # genderCS
         if criteria.gender_cs and criteria.gender_cs.codeset_id:
-            gender_clause = BuilderUtils.get_codeset_in_expression(
-                criteria.gender_cs.codeset_id,
-                "P.gender_concept_id",
-                criteria.gender_cs.is_exclusion
-            )
-            if gender_clause:
-                where_clauses.append(gender_clause)
+            where_clauses.append(BuilderUtils.get_codeset_in_expression(
+                criteria.gender_cs.codeset_id, "P.gender_concept_id", criteria.gender_cs.is_exclusion
+            ))
         
-        # Add provider specialty condition
+        # providerSpecialty
         if criteria.provider_specialty and len(criteria.provider_specialty) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.provider_specialty)
             where_clauses.append(f"PR.specialty_concept_id in ({','.join(map(str, concept_ids))})")
 
+        # providerSpecialtyCS
         if criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id:
-            provider_clause = BuilderUtils.get_codeset_in_expression(
-                criteria.provider_specialty_cs.codeset_id,
-                "PR.specialty_concept_id",
-                criteria.provider_specialty_cs.is_exclusion
-            )
-            if provider_clause:
-                where_clauses.append(provider_clause)
+            where_clauses.append(BuilderUtils.get_codeset_in_expression(
+                criteria.provider_specialty_cs.codeset_id, "PR.specialty_concept_id", criteria.provider_specialty_cs.is_exclusion
+            ))
         
-        # Add place of service condition
+        # placeOfService
         if criteria.place_of_service and len(criteria.place_of_service) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.place_of_service)
             where_clauses.append(f"CS.place_of_service_concept_id in ({','.join(map(str, concept_ids))})")
 
+        # placeOfServiceCS
         if criteria.place_of_service_cs and criteria.place_of_service_cs.codeset_id:
-            place_clause = BuilderUtils.get_codeset_in_expression(
-                criteria.place_of_service_cs.codeset_id,
-                "CS.place_of_service_concept_id",
-                criteria.place_of_service_cs.is_exclusion
-            )
-            if place_clause:
-                where_clauses.append(place_clause)
+            where_clauses.append(BuilderUtils.get_codeset_in_expression(
+                criteria.place_of_service_cs.codeset_id, "CS.place_of_service_concept_id", criteria.place_of_service_cs.is_exclusion
+            ))
         
-        return where_clauses if where_clauses else ["1=1"]
-    
-    def get_additional_columns(self, columns: List[CriteriaColumn]) -> str:
-        """Get additional columns string with proper aliases.
+        return where_clauses
         
-        Java equivalent: VisitOccurrenceSqlBuilder.getAdditionalColumns()
-        """
-        return ", ".join([f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns])
-    
-    def resolve_ordinal_expression(self, criteria: VisitOccurrence, options: Optional[BuilderOptions] = None) -> str:
-        """Resolve ordinal expression for visit occurrence criteria.
-        
-        Java equivalent: VisitOccurrenceSqlBuilder.resolveOrdinalExpression()
-        """
-        if criteria.first:
-            return "ORDER BY C.visit_start_date ASC"
-        return ""
+        return where_clauses
     
     def embed_ordinal_expression(self, query: str, criteria: VisitOccurrence, where_clauses: List[str]) -> str:
-        """Embed ordinal expression for visit occurrence criteria.
-        
-        Java equivalent: VisitOccurrenceSqlBuilder.embedOrdinalExpression()
-        """
-        # Check if first=True
+        """Embed ordinal expression for visit occurrence criteria."""
         if criteria.first is not None and criteria.first:
             where_clauses.append("C.ordinal = 1")
-            ordinal_expr = ", row_number() over (PARTITION BY C.person_id ORDER BY C.visit_start_date, C.visit_occurrence_id) as ordinal"
+            ordinal_expr = ", row_number() over (PARTITION BY vo.person_id ORDER BY vo.visit_start_date, vo.visit_occurrence_id) as ordinal"
             return query.replace("@ordinalExpression", ordinal_expr)
         else:
             return query.replace("@ordinalExpression", "")
+
+    def _add_filtering_by_care_site_location_region(self, join_clauses: List[str], codeset_id: int):
+        """Add joins for filtering by care site location region."""
+        join_clauses.append(self._get_location_history_join("LH", "CARE_SITE", "C.care_site_id"))
+        join_clauses.append("JOIN @cdm_database_schema.LOCATION LOC on LOC.location_id = LH.location_id")
+        join_clauses.append(
+            BuilderUtils.get_codeset_join_expression(
+                codeset_id,
+                "LOC.region_concept_id",
+                None,
+                None
+            )
+        )
+
+    def _get_location_history_join(self, alias: str, domain: str, entity_id_field: str) -> str:
+        """Get location history join expression."""
+        return ("JOIN @cdm_database_schema.LOCATION_HISTORY " + alias + " "
+                + "on " + alias + ".entity_id = " + entity_id_field + " "
+                + "AND " + alias + ".domain_id = '" + domain + "' "
+                + "AND C.visit_start_date >= " + alias + ".start_date "
+                + "AND C.visit_end_date <= ISNULL(" + alias + ".end_date, DATEFROMPARTS(2099,12,31))")

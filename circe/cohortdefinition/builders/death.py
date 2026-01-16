@@ -125,7 +125,7 @@ WHERE @whereClause
         # occurrenceStartDate
         if criteria.occurrence_start_date:
             date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_start_date, "C.start_date"
+                "C.start_date", criteria.occurrence_start_date
             )
             if date_clause:
                 where_clauses.append(date_clause)
@@ -143,7 +143,7 @@ WHERE @whereClause
         # age
         if criteria.age:
             where_clauses.append(BuilderUtils.build_numeric_range_clause(
-                criteria.age, "YEAR(C.start_date) - P.year_of_birth"
+                "YEAR(C.start_date) - P.year_of_birth", criteria.age
             ))
             
         # gender

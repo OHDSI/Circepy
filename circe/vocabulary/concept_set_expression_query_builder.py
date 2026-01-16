@@ -20,41 +20,31 @@ class ConceptSetExpressionQueryBuilder:
     """
     
     # SQL templates - equivalent to Java ResourceHelper.GetResourceAsString
-    CONCEPT_SET_QUERY_TEMPLATE = """
-    SELECT concept_id 
-    FROM @vocabulary_database_schema.CONCEPT 
-    WHERE concept_id IN (@conceptIdIn)
-    """
+    CONCEPT_SET_QUERY_TEMPLATE = "select concept_id from @vocabulary_database_schema.CONCEPT where @conceptIdIn"
     
-    CONCEPT_SET_DESCENDANTS_TEMPLATE = """
-    SELECT ca.descendant_concept_id as concept_id
-    FROM @vocabulary_database_schema.CONCEPT_ANCESTOR ca
-    WHERE ca.ancestor_concept_id IN (@conceptIdIn)
-    """
+    CONCEPT_SET_DESCENDANTS_TEMPLATE = """  select c.concept_id
+  from @vocabulary_database_schema.CONCEPT c
+  join @vocabulary_database_schema.CONCEPT_ANCESTOR ca on c.concept_id = ca.descendant_concept_id
+  WHERE c.invalid_reason is null
+  and @conceptIdIn"""
     
-    CONCEPT_SET_MAPPED_TEMPLATE = """
-    SELECT c.concept_id
-    FROM @vocabulary_database_schema.CONCEPT c
-    INNER JOIN @vocabulary_database_schema.CONCEPT_RELATIONSHIP cr
-        ON c.concept_id = cr.concept_id_2
-    INNER JOIN (@conceptsetQuery) cs
-        ON cr.concept_id_1 = cs.concept_id
-    WHERE cr.relationship_id = 'Maps to'
-        AND cr.invalid_reason IS NULL
-    """
+    CONCEPT_SET_MAPPED_TEMPLATE = """select distinct cr.concept_id_1 as concept_id
+FROM
+(
+  @conceptsetQuery
+) C
+join @vocabulary_database_schema.concept_relationship cr on C.concept_id = cr.concept_id_2 and cr.relationship_id = 'Maps to' and cr.invalid_reason IS NULL"""
     
-    CONCEPT_SET_INCLUDE_TEMPLATE = """
-    SELECT DISTINCT I.concept_id
-    FROM (@includeQuery) I
-    """
+    CONCEPT_SET_INCLUDE_TEMPLATE = """select distinct I.concept_id FROM
+( 
+  @includeQuery
+) I"""
     
-    CONCEPT_SET_EXCLUDE_TEMPLATE = """
-    LEFT JOIN
-    (
-    @excludeQuery
-    ) E ON I.concept_id = E.concept_id
-    WHERE E.concept_id IS NULL
-    """
+    CONCEPT_SET_EXCLUDE_TEMPLATE = """LEFT JOIN
+(
+  @excludeQuery
+) E ON I.concept_id = E.concept_id
+WHERE E.concept_id is null"""
     
     MAX_IN_LENGTH = 1000  # Oracle limitation
     
@@ -101,7 +91,7 @@ class ConceptSetExpressionQueryBuilder:
         Java equivalent: buildConceptSetQuery()
         """
         if not concepts:
-            return "SELECT concept_id FROM @vocabulary_database_schema.CONCEPT WHERE 0=1"
+            return "select concept_id from @vocabulary_database_schema.CONCEPT where 0=1"
         
         concept_set_query = self.build_concept_set_sub_query(concepts, descendant_concepts)
         

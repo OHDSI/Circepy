@@ -52,6 +52,16 @@ class CriteriaColumn(str, Enum):
             for member in cls:
                 if member.value.upper() == value.upper():
                     return member
+            # Try to match partial matches if needed (e.g. DOMAIN_CONCEPT for domain_concept_id)
+            if value.upper() == "DOMAIN_CONCEPT":
+                return cls.DOMAIN_CONCEPT
+            if value.upper() == "DOMAIN_SOURCE_CONCEPT":
+                return cls.DOMAIN_SOURCE_CONCEPT
+            if value.upper() == "UNIT":
+                return cls.UNIT
+            if value.upper() == "VISIT":
+                return cls.VISIT_ID
+                
         return super()._missing_(value)
 
 

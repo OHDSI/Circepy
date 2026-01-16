@@ -60,12 +60,12 @@ FROM
     
     def embed_codeset_clause(self, query: str, criteria: Observation) -> str:
         """Embed codeset clause for observation criteria."""
-        if criteria.codeset_id is None:
-            return query.replace("@codesetClause", "")
-        
-        # Use JOIN syntax for codeset, not WHERE clause
-        codeset_clause = f"JOIN #Codesets cs on (o.observation_concept_id = cs.concept_id and cs.codeset_id = {criteria.codeset_id})"
-        return query.replace("@codesetClause", codeset_clause)
+        return query.replace("@codesetClause", BuilderUtils.get_codeset_join_expression(
+            criteria.codeset_id,
+            "o.observation_concept_id",
+            criteria.observation_source_concept,
+            "o.observation_source_concept_id"
+        ))
     
     def resolve_select_clauses(self, criteria: Observation, options: Optional[BuilderOptions] = None) -> List[str]:
         """Resolve select clauses for observation criteria.
@@ -131,14 +131,14 @@ FROM
         # Add date range conditions
         if criteria.occurrence_start_date:
             date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_start_date, "C.start_date"
+                "C.start_date", criteria.occurrence_start_date
             )
             if date_clause:
                 where_clauses.append(date_clause)
         
         if criteria.occurrence_end_date:
             date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_end_date, "C.end_date"
+                "C.end_date", criteria.occurrence_end_date
             )
             if date_clause:
                 where_clauses.append(date_clause)
@@ -155,7 +155,7 @@ FROM
 
         # valueAsNumber
         if hasattr(criteria, 'value_as_number') and criteria.value_as_number:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.value_as_number, "C.value_as_number", ".4f"))
+            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.value_as_number", criteria.value_as_number, ".4f"))
 
         # valueAsString
         if criteria.value_as_string:
@@ -190,7 +190,7 @@ FROM
 
         # age
         if criteria.age:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.age, "YEAR(C.start_date) - P.year_of_birth"))
+            where_clauses.append(BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age))
             
         # gender
         if criteria.gender and len(criteria.gender) > 0:

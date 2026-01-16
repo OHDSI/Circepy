@@ -152,13 +152,13 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
         
         # occurrenceStartDate
         if criteria.visit_detail_start_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(criteria.visit_detail_start_date, "C.start_date")
+            date_clause = BuilderUtils.build_date_range_clause("C.start_date", criteria.visit_detail_start_date)
             if date_clause:
                 where_clauses.append(date_clause)
         
         # occurrenceEndDate
         if criteria.visit_detail_end_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(criteria.visit_detail_end_date, "C.end_date")
+            date_clause = BuilderUtils.build_date_range_clause("C.end_date", criteria.visit_detail_end_date)
             if date_clause:
                 where_clauses.append(date_clause)
         
@@ -168,13 +168,13 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
         
         # visitLength
         if criteria.visit_detail_length is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(criteria.visit_detail_length, "DATEDIFF(d,C.start_date, C.end_date)")
+            numeric_clause = BuilderUtils.build_numeric_range_clause("DATEDIFF(d,C.start_date, C.end_date)", criteria.visit_detail_length)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
         
         # age
         if criteria.age is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(criteria.age, "YEAR(C.end_date) - P.year_of_birth")
+            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.end_date) - P.year_of_birth", criteria.age)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
         

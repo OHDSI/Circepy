@@ -60,10 +60,12 @@ FROM
     
     def embed_codeset_clause(self, query: str, criteria: Specimen) -> str:
         """Embed codeset clause for specimen criteria."""
-        codeset_clause = ""
-        if criteria.codeset_id is not None:
-             codeset_clause = f"where s.specimen_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.codeset_id})"
-        return query.replace("@codesetClause", codeset_clause)
+        return query.replace("@codesetClause", BuilderUtils.get_codeset_join_expression(
+            criteria.codeset_id,
+            "s.specimen_concept_id",
+            criteria.specimen_source_concept,
+            "s.specimen_source_concept_id"
+        ))
     
     def embed_ordinal_expression(self, query: str, criteria: Specimen, where_clauses: List[str]) -> str:
         """Embed ordinal expression in query."""
@@ -93,7 +95,7 @@ FROM
         # occurrenceStartDate
         if criteria.occurrence_start_date:
             date_clause = BuilderUtils.build_date_range_clause(
-                criteria.occurrence_start_date, "C.specimen_date"
+                "C.specimen_date", criteria.occurrence_start_date
             )
             if date_clause:
                 where_clauses.append(date_clause)
@@ -110,7 +112,7 @@ FROM
 
         # quantity
         if criteria.quantity:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.quantity, "C.quantity", ".4f"))
+            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.quantity", criteria.quantity, ".4f"))
 
         # unit
         if criteria.unit and len(criteria.unit) > 0:
@@ -146,7 +148,7 @@ FROM
         # age
         if criteria.age:
             where_clauses.append(BuilderUtils.build_numeric_range_clause(
-                criteria.age, "YEAR(C.specimen_date) - P.year_of_birth"
+                "YEAR(C.specimen_date) - P.year_of_birth", criteria.age
             ))
             
         # gender

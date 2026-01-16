@@ -970,7 +970,7 @@ DROP TABLE #inclusion_rules;
         # Age
         if criteria.age:
             where_clauses.append(
-                BuilderUtils.build_numeric_range_clause(criteria.age, "YEAR(E.start_date) - P.year_of_birth"))
+                BuilderUtils.build_numeric_range_clause("YEAR(E.start_date) - P.year_of_birth", criteria.age))
 
         # Gender
         if criteria.gender:
@@ -1007,11 +1007,11 @@ DROP TABLE #inclusion_rules;
 
         # OccurrenceStartDate
         if criteria.occurrence_start_date:
-            where_clauses.append(BuilderUtils.build_date_range_clause(criteria.occurrence_start_date, "E.start_date"))
+            where_clauses.append(BuilderUtils.build_date_range_clause("E.start_date", criteria.occurrence_start_date))
 
         # OccurrenceEndDate
         if criteria.occurrence_end_date:
-            where_clauses.append(BuilderUtils.build_date_range_clause(criteria.occurrence_end_date, "E.end_date"))
+            where_clauses.append(BuilderUtils.build_date_range_clause("E.end_date", criteria.occurrence_end_date))
 
         if where_clauses:
             query = query.replace("@whereClause", "WHERE " + " AND ".join(where_clauses))

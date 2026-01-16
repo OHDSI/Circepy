@@ -154,13 +154,13 @@ FROM
         
         # occurrenceStartDate
         if criteria.occurrence_start_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(criteria.occurrence_start_date, "C.start_date")
+            date_clause = BuilderUtils.build_date_range_clause("C.start_date", criteria.occurrence_start_date)
             if date_clause:
                 where_clauses.append(date_clause)
         
         # occurrenceEndDate
         if criteria.occurrence_end_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(criteria.occurrence_end_date, "C.end_date")
+            date_clause = BuilderUtils.build_date_range_clause("C.end_date", criteria.occurrence_end_date)
             if date_clause:
                 where_clauses.append(date_clause)
         
@@ -185,7 +185,7 @@ FROM
         
         # age
         if criteria.age is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(criteria.age, "YEAR(C.start_date) - P.year_of_birth")
+            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
         
