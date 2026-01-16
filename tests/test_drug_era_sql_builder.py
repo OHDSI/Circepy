@@ -57,9 +57,7 @@ class TestDrugEraSqlBuilder:
         result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.VISIT_ID)
         assert result == "NULL"
         
-        # Test unknown column
-        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.AGE)
-        assert result == "NULL"
+
     
     def test_get_query_template(self):
         """Test get_query_template method."""

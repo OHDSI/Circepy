@@ -35,10 +35,6 @@ class TestCriteriaColumn(unittest.TestCase):
         self.assertEqual(CriteriaColumn.VISIT_ID.value, "visit_occurrence_id")
         self.assertEqual(CriteriaColumn.DOMAIN_CONCEPT.value, "domain_concept_id")
         self.assertEqual(CriteriaColumn.DURATION.value, "duration")
-        self.assertEqual(CriteriaColumn.AGE.value, "age")
-        self.assertEqual(CriteriaColumn.GENDER.value, "gender")
-        self.assertEqual(CriteriaColumn.RACE.value, "race")
-        self.assertEqual(CriteriaColumn.ETHNICITY.value, "ethnicity")
         self.assertEqual(CriteriaColumn.ERA_OCCURRENCES.value, "occurrence_count")
         self.assertEqual(CriteriaColumn.GAP_DAYS.value, "gap_days")
         self.assertEqual(CriteriaColumn.UNIT.value, "unit_concept_id")
@@ -68,11 +64,11 @@ class TestBuilderOptions(unittest.TestCase):
     def test_builder_options_additional_columns(self):
         """Test setting additional columns."""
         options = BuilderOptions()
-        options.additional_columns = [CriteriaColumn.AGE, CriteriaColumn.GENDER]
+        options.additional_columns = [CriteriaColumn.DOMAIN_CONCEPT, CriteriaColumn.DURATION]
         
         self.assertEqual(len(options.additional_columns), 2)
-        self.assertIn(CriteriaColumn.AGE, options.additional_columns)
-        self.assertIn(CriteriaColumn.GENDER, options.additional_columns)
+        self.assertIn(CriteriaColumn.DOMAIN_CONCEPT, options.additional_columns)
+        self.assertIn(CriteriaColumn.DURATION, options.additional_columns)
     
     def test_builder_options_empty_additional_columns(self):
         """Test that additional columns can be empty."""
@@ -338,8 +334,9 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
     
     def test_get_table_column_for_criteria_column_other(self):
         """Test table column mapping for other columns."""
-        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.AGE)
-        self.assertEqual(result, "NULL")
+        # Using DOMAIN_CONCEPT as other column instead of removed AGE
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT)
+        self.assertEqual(result, "C.condition_concept_id")
     
     def test_embed_codeset_clause(self):
         """Test codeset clause embedding."""
@@ -391,12 +388,12 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
     def test_get_criteria_sql_with_options(self):
         """Test SQL generation with builder options."""
         options = BuilderOptions()
-        options.additional_columns = [CriteriaColumn.AGE, CriteriaColumn.GENDER]
+        options.additional_columns = [CriteriaColumn.DOMAIN_CONCEPT]
         
         result = self.builder.get_criteria_sql_with_options(self.criteria, options)
         
-        # Check that additional columns are included as NULL
-        self.assertIn("NULL", result)
+        # Check that additional columns are included
+        self.assertIn("C.condition_concept_id as domain_concept_id", result)
     
     def test_get_criteria_sql_with_options_no_additional(self):
         """Test SQL generation with builder options but no additional columns."""
@@ -414,14 +411,14 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
         # Add default columns (should be filtered out)
         options.additional_columns = [
             CriteriaColumn.START_DATE,  # Default column
-            CriteriaColumn.AGE          # Non-default column
+            CriteriaColumn.DURATION     # Non-default column
         ]
         
         result = self.builder.get_criteria_sql_with_options(self.criteria, options)
         
         # Only non-default columns should be added as additional columns
         # START_DATE is already in the template, so it shouldn't be duplicated
-        self.assertIn("NULL", result)
+        self.assertIn("DATEDIFF", result)
         # The template already includes C.start_date, so we just check it's there
         self.assertIn("C.start_date", result)
 
@@ -579,14 +576,13 @@ class TestBuilderIntegration(unittest.TestCase):
         ]
         
         options = BuilderOptions()
-        options.additional_columns = [CriteriaColumn.AGE, CriteriaColumn.GENDER]
+        options.additional_columns = [CriteriaColumn.DOMAIN_CONCEPT, CriteriaColumn.DURATION]
         
         for builder, criteria in builders_and_criteria:
             result = builder.get_criteria_sql_with_options(criteria, options)
             
             # All builders should include additional columns
-            # Some builders add NULL, others add column references
-            self.assertTrue("NULL" in result or "C.age" in result)
+            self.assertTrue("domain_concept_id" in result or "duration" in result)
     
     def test_criteria_column_consistency_across_builders(self):
         """Test that criteria columns are handled consistently across builders."""

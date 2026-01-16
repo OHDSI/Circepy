@@ -62,7 +62,10 @@ def pytest_generate_tests(metafunc):
     """Dynamic parameterization for cohort tests."""
     if "cohort_name" in metafunc.fixturenames:
         cohort_files = get_target_cohort_files(metafunc.config)
-        metafunc.parametrize("cohort_name", cohort_files)
+        params = []
+        for f in cohort_files:
+            params.append(f)
+        metafunc.parametrize("cohort_name", params)
 
 
 def get_reference_sql(cohort_name: str) -> Optional[str]:
@@ -555,6 +558,8 @@ def test_markdown_matches_reference(cohort_name):
     This test is expected to fail for cohorts with unsupported features.
     The failure message will help identify what needs to be fixed.
     """
+    # Removed xfail to investigate failure
+
     cohort_file = COHORTS_DIR / cohort_name
     if not cohort_file.exists():
         pytest.skip(f"Cohort file not found: {cohort_file}")

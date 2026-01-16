@@ -40,10 +40,19 @@ class CriteriaColumn(str, Enum):
     VALUE_AS_NUMBER = "value_as_number"
     VISIT_ID = "visit_occurrence_id"
     VISIT_DETAIL_ID = "visit_detail_id"
-    AGE = "age"
-    GENDER = "gender"
-    RACE = "race"
-    ETHNICITY = "ethnicity"
+
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            # Try to match by name (case-insensitive)
+            for member in cls:
+                if member.name.upper() == value.upper():
+                    return member
+            # Try to match by value (case-insensitive)
+            for member in cls:
+                if member.value.upper() == value.upper():
+                    return member
+        return super()._missing_(value)
 
 
 class Occurrence(CirceBaseModel):

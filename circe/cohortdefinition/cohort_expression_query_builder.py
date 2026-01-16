@@ -356,15 +356,54 @@ from @eventTable;
 """
 
     CUSTOM_ERA_STRATEGY_TEMPLATE = """
-CREATE TABLE #strategy_ends (event_id bigint, person_id bigint, end_date date);
-INSERT INTO #strategy_ends (event_id, person_id, end_date)
-SELECT E.event_id, E.person_id, DATEADD(day, @offset, @drugExposureEndDateExpression) as end_date
-FROM (@eventTable) E
-INNER JOIN @cdm_database_schema.DRUG_EXPOSURE DE ON E.person_id = DE.person_id
-WHERE DE.drug_concept_id IN (SELECT concept_id FROM #Codesets WHERE codeset_id = @drugCodesetId)
-    AND DE.drug_exposure_start_date <= E.end_date
-    AND DATEADD(day, @gapDays, DE.drug_exposure_end_date) >= E.start_date;
-    """
+-- custom era strategy
+
+with ctePersons(person_id) as (
+	select distinct person_id from @eventTable
+)
+
+select person_id, drug_exposure_start_date, drug_exposure_end_date
+INTO #drugTarget
+FROM (
+	select de.PERSON_ID, DRUG_EXPOSURE_START_DATE, @drugExposureEndDateExpression as DRUG_EXPOSURE_END_DATE 
+	FROM @cdm_database_schema.DRUG_EXPOSURE de
+	JOIN ctePersons p on de.person_id = p.person_id
+	JOIN #Codesets cs on cs.codeset_id = @drugCodesetId AND de.drug_concept_id = cs.concept_id
+
+	UNION ALL
+
+	select de.PERSON_ID, DRUG_EXPOSURE_START_DATE, @drugExposureEndDateExpression as DRUG_EXPOSURE_END_DATE 
+	FROM @cdm_database_schema.DRUG_EXPOSURE de
+	JOIN ctePersons p on de.person_id = p.person_id
+	JOIN #Codesets cs on cs.codeset_id = @drugCodesetId AND de.drug_source_concept_id = cs.concept_id
+) E
+;
+
+select et.event_id, et.person_id, ERAS.era_end_date as end_date
+INTO #strategy_ends
+from @eventTable et
+JOIN 
+(
+
+  select person_id, min(start_date) as era_start_date, DATEADD(day,-1 * @gapDays, max(end_date)) as era_end_date
+  from (
+    select person_id, start_date, end_date, sum(is_start) over (partition by person_id order by start_date, is_start desc rows unbounded preceding) group_idx
+    from (
+      select person_id, start_date, end_date, 
+        case when max(end_date) over (partition by person_id order by start_date rows between unbounded preceding and 1 preceding) >= start_date then 0 else 1 end is_start
+      from (
+        select person_id, drug_exposure_start_date as start_date, DATEADD(day,(@gapDays + @offset),DRUG_EXPOSURE_END_DATE) as end_date
+        FROM #drugTarget
+      ) DT
+    ) ST
+  ) GR
+  group by person_id, group_idx
+) ERAS on ERAS.person_id = et.person_id 
+WHERE et.start_date between ERAS.era_start_date and ERAS.era_end_date;
+
+TRUNCATE TABLE #drugTarget;
+DROP TABLE #drugTarget;
+"""
 
     DEFAULT_DRUG_EXPOSURE_END_DATE_EXPRESSION = "COALESCE(DRUG_EXPOSURE_END_DATE, DATEADD(day,DAYS_SUPPLY,DRUG_EXPOSURE_START_DATE), DATEADD(day,1,DRUG_EXPOSURE_START_DATE))"
     DEFAULT_COHORT_ID_FIELD_NAME = "cohort_definition_id"
@@ -1370,10 +1409,6 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
             return ""
 
         column_mappings = {
-            CriteriaColumn.AGE: "age",
-            CriteriaColumn.GENDER: "gender",
-            CriteriaColumn.RACE: "race",
-            CriteriaColumn.ETHNICITY: "ethnicity",
             CriteriaColumn.DOMAIN_CONCEPT: "domain_concept"
         }
 
@@ -1381,6 +1416,8 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
         for column in columns:
             if column in column_mappings:
                 column_clauses.append(f"{table_alias}{column_mappings[column]}")
+            else:
+                column_clauses.append(f"{table_alias}{column.value}")
 
         return ", ".join(column_clauses)
 

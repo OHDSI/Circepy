@@ -330,11 +330,12 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
 
     def test_get_additional_columns(self):
         """Test _get_additional_columns method."""
-        columns = [CriteriaColumn.AGE, CriteriaColumn.GENDER]
+        print("DEBUG: Inside test_get_additional_columns")
+        columns = [CriteriaColumn.START_DATE, CriteriaColumn.END_DATE]
         result = self.builder._get_additional_columns(columns, "A.")
         
-        self.assertIn("A.age", result)
-        self.assertIn("A.gender", result)
+        self.assertIn("A.start_date", result)
+        self.assertIn("A.end_date", result)
 
     def test_get_codeset_query_empty(self):
         """Test get_codeset_query with empty concept sets."""

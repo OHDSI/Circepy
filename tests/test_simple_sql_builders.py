@@ -139,10 +139,7 @@ class TestBasicSqlBuilderFunctionality:
             CriteriaColumn.DURATION,
             CriteriaColumn.UNIT,
             CriteriaColumn.VALUE_AS_NUMBER,
-            CriteriaColumn.AGE,
-            CriteriaColumn.GENDER,
-            CriteriaColumn.RACE,
-            CriteriaColumn.ETHNICITY
+
         }
         
         for column in required_columns:
@@ -153,7 +150,7 @@ class TestBasicSqlBuilderFunctionality:
         options = BuilderOptions()
         assert isinstance(options.additional_columns, list)
         
-        options.additional_columns = [CriteriaColumn.AGE, CriteriaColumn.GENDER]
+        options.additional_columns = [CriteriaColumn.START_DATE, CriteriaColumn.END_DATE]
         assert len(options.additional_columns) == 2
-        assert CriteriaColumn.AGE in options.additional_columns
-        assert CriteriaColumn.GENDER in options.additional_columns
+        assert CriteriaColumn.START_DATE in options.additional_columns
+        assert CriteriaColumn.END_DATE in options.additional_columns

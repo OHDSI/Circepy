@@ -63,11 +63,7 @@ FROM
             CriteriaColumn.DURATION: "(DATEDIFF(d,C.start_date, C.end_date))",
             CriteriaColumn.START_DATE: "C.start_date",
             CriteriaColumn.END_DATE: "C.end_date",
-            CriteriaColumn.VISIT_ID: "C.visit_occurrence_id",
-            CriteriaColumn.AGE: "NULL",
-            CriteriaColumn.GENDER: "NULL",
-            CriteriaColumn.RACE: "NULL",
-            CriteriaColumn.ETHNICITY: "NULL"
+            CriteriaColumn.VISIT_ID: "C.visit_occurrence_id"
         }
         return column_mapping.get(criteria_column, "NULL")
     

@@ -81,10 +81,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
         result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.VISIT_ID)
         self.assertEqual(result, "C.visit_occurrence_id")
     
-    def test_get_table_column_for_criteria_column_other(self):
-        """Test table column mapping for other columns."""
-        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.AGE)
-        self.assertEqual(result, "NULL")
+
     
     def test_embed_codeset_clause_with_codeset_id(self):
         """Test codeset clause embedding with codeset_id."""
@@ -445,12 +442,12 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
     def test_get_criteria_sql_with_options(self):
         """Test SQL generation with builder options."""
         options = BuilderOptions()
-        options.additional_columns = [CriteriaColumn.AGE, CriteriaColumn.GENDER]
+        options.additional_columns = [CriteriaColumn.DOMAIN_CONCEPT]
         
         result = self.builder.get_criteria_sql_with_options(self.criteria, options)
         
         # Check that additional columns are included as NULL
-        self.assertIn("NULL", result)
+        self.assertIn("C.condition_concept_id as domain_concept_id", result)
     
     def test_get_criteria_sql_with_options_none(self):
         """Test SQL generation with None options."""

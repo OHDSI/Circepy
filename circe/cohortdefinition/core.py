@@ -50,6 +50,14 @@ class CollapseType(str, Enum):
     COLLAPSE = "collapse"
     NO_COLLAPSE = "no_collapse"
 
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            for member in cls:
+                if member.name.upper() == value.upper() or member.value.upper() == value.upper():
+                    return member
+        return super()._missing_(value)
+
 
 class DateType(str, Enum):
     """Enumeration for date types.
@@ -58,6 +66,14 @@ class DateType(str, Enum):
     """
     START_DATE = "start_date"
     END_DATE = "end_date"
+
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            for member in cls:
+                if member.name.upper() == value.upper() or member.value.upper() == value.upper():
+                    return member
+        return super()._missing_(value)
 
 
 class ResultLimit(CirceBaseModel):

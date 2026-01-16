@@ -20,9 +20,11 @@ from circe.cli import main
 # Get list of test cohorts
 COHORTS_DIR = Path(__file__).parent / 'cohorts'
 TEST_COHORTS = [
-    '1006.json',  # Simple cohort
-    '10.json',    # Multiple criteria
-    '1195.json',  # Complex cohort
+    '22161.json',  # Simple cohort
+    '20854.json',  # Multiple criteria
+    '22008.json',  # Complex cohort
+    'isolated_immune_thrombocytopenia.json',
+    '20968.json',
 ]
 
 
@@ -138,7 +140,7 @@ def test_markdown_generation(cohort_name):
 
 def test_validate_command():
     """Test validate command."""
-    cohort_file = COHORTS_DIR / '1006.json'
+    cohort_file = COHORTS_DIR / '22161.json'
     
     exit_code, _, _ = run_python_cli_in_process(['validate', str(cohort_file)])
     
@@ -148,7 +150,7 @@ def test_validate_command():
 
 def test_process_command():
     """Test process command."""
-    cohort_file = COHORTS_DIR / '1006.json'
+    cohort_file = COHORTS_DIR / '22161.json'
     
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir_path = Path(tmpdir)
@@ -172,7 +174,7 @@ def test_process_command():
 
 def test_generate_source_command():
     """Test generate-source command."""
-    cohort_file = COHORTS_DIR / '1006.json'
+    cohort_file = COHORTS_DIR / '22161.json'
     
     with tempfile.TemporaryDirectory() as tmpdir:
         output_file = Path(tmpdir) / 'cohort.py'

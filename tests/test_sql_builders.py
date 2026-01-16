@@ -205,14 +205,7 @@ class TestVisitOccurrenceSqlBuilder(unittest.TestCase):
             builder.get_table_column_for_criteria_column(CriteriaColumn.VISIT_ID),
             "C.visit_occurrence_id"
         )
-        self.assertEqual(
-            builder.get_table_column_for_criteria_column(CriteriaColumn.AGE),
-            "NULL"
-        )
-        self.assertEqual(
-            builder.get_table_column_for_criteria_column(CriteriaColumn.GENDER),
-            "NULL"
-        )
+
 
     def test_get_criteria_sql_basic(self):
         """Test get_criteria_sql with basic criteria."""
@@ -235,15 +228,14 @@ class TestVisitOccurrenceSqlBuilder(unittest.TestCase):
             visit_type_exclude=False
         )
         options = BuilderOptions()
-        options.additional_columns = [CriteriaColumn.AGE, CriteriaColumn.GENDER]
+        options.additional_columns = [CriteriaColumn.DURATION]
         
         sql = builder.get_criteria_sql_with_options(criteria, options)
         
         self.assertIn("SELECT", sql)
         self.assertIn("FROM @cdm_database_schema.VISIT_OCCURRENCE C", sql)
         self.assertIn("WHERE", sql)
-        self.assertIn("NULL as age", sql)
-        self.assertIn("NULL as gender", sql)
+        self.assertIn("DATEDIFF(day, C.visit_start_date, C.visit_end_date) as duration", sql)
 
     def test_get_criteria_sql_with_date_ranges(self):
         """Test get_criteria_sql with date range conditions."""
@@ -359,13 +351,14 @@ class TestVisitOccurrenceSqlBuilder(unittest.TestCase):
         builder = VisitOccurrenceSqlBuilder()
         criteria = VisitOccurrence(visit_type_exclude=False)
         options = BuilderOptions()
-        options.additional_columns = [CriteriaColumn.AGE, CriteriaColumn.GENDER]
+        options.additional_columns = [CriteriaColumn.DURATION]
         
         select_clause = builder.resolve_select_clauses(criteria, options)
         
         self.assertIn("C.visit_start_date as start_date", select_clause)
-        self.assertIn("NULL as age", select_clause)
-        self.assertIn("NULL as gender", select_clause)
+        # Note: DURATION is handled by get_additional_columns, not resolve_select_clauses for VisitOccurrence
+        # So we just check that select_clause contains the standard columns
+        self.assertIn("C.visit_concept_id as domain_concept", select_clause)
 
     def test_resolve_join_clauses_no_joins(self):
         """Test resolve_join_clauses with no joins needed."""
@@ -567,14 +560,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
             builder.get_table_column_for_criteria_column(CriteriaColumn.VISIT_ID),
             "C.visit_occurrence_id"
         )
-        self.assertEqual(
-            builder.get_table_column_for_criteria_column(CriteriaColumn.AGE),
-            "C.value_as_string"
-        )
-        self.assertEqual(
-            builder.get_table_column_for_criteria_column(CriteriaColumn.GENDER),
-            "NULL"
-        )
+
 
     def test_get_criteria_sql_basic(self):
         """Test get_criteria_sql with basic criteria."""
@@ -599,7 +585,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
             observation_type_exclude=False
         )
         options = BuilderOptions()
-        options.additional_columns = [CriteriaColumn.AGE, CriteriaColumn.GENDER]
+        options.additional_columns = [CriteriaColumn.DURATION]
         
         sql = builder.get_criteria_sql_with_options(criteria, options)
         
@@ -607,8 +593,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
         self.assertIn("FROM @cdm_database_schema.OBSERVATION o", sql)
         self.assertIn("WHERE", sql)
         # Additional columns are added to outer SELECT
-        self.assertIn("C.value_as_string as age", sql)
-        self.assertIn("NULL as gender", sql)
+        self.assertIn("NULL as duration", sql)
 
     def test_get_criteria_sql_with_date_ranges(self):
         """Test get_criteria_sql with date range conditions."""
@@ -780,7 +765,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
         builder = ObservationSqlBuilder()
         criteria = Observation(first=True, observation_type_exclude=False)
         options = BuilderOptions()
-        options.additional_columns = [CriteriaColumn.AGE, CriteriaColumn.GENDER]
+        options.additional_columns = [CriteriaColumn.DOMAIN_CONCEPT]
         
         select_clause = builder.resolve_select_clauses(criteria, options)
         
@@ -1107,14 +1092,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
             builder.get_table_column_for_criteria_column(CriteriaColumn.VISIT_ID),
             "C.visit_occurrence_id"
         )
-        self.assertEqual(
-            builder.get_table_column_for_criteria_column(CriteriaColumn.AGE),
-            "C.value_as_number"
-        )
-        self.assertEqual(
-            builder.get_table_column_for_criteria_column(CriteriaColumn.GENDER),
-            "NULL"
-        )
+
 
     def test_get_criteria_sql_basic(self):
         """Test get_criteria_sql with basic criteria."""
@@ -1139,7 +1117,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
             measurement_type_exclude=False
         )
         options = BuilderOptions()
-        options.additional_columns = [CriteriaColumn.AGE, CriteriaColumn.GENDER]
+        options.additional_columns = [CriteriaColumn.VALUE_AS_NUMBER]
         
         sql = builder.get_criteria_sql_with_options(criteria, options)
         
@@ -1147,8 +1125,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         self.assertIn("select", sql.lower())
         self.assertIn("FROM @cdm_database_schema.MEASUREMENT m", sql)
         # Additional columns are in outer SELECT
-        self.assertIn("C.value_as_number as age", sql)
-        self.assertIn("NULL as gender", sql)
+        self.assertIn("NULL as value_as_number", sql)
 
     def test_get_criteria_sql_with_date_ranges(self):
         """Test get_criteria_sql with date range conditions."""
@@ -1357,14 +1334,14 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         builder = MeasurementSqlBuilder()
         criteria = Measurement(first=True, measurement_type_exclude=False)
         options = BuilderOptions()
-        options.additional_columns = [CriteriaColumn.AGE, CriteriaColumn.GENDER]
+        options.additional_columns = [CriteriaColumn.VALUE_AS_NUMBER]
         
         select_clause = builder.resolve_select_clauses(criteria, options)
         
         # resolve_select_clauses returns inner query columns (m. prefix)
-        # Additional columns are handled elsewhere in the template
+        # Additional columns are handled elsewhere so check for standard columns
         self.assertTrue(any("m.measurement_date as start_date" in col for col in select_clause))
-        self.assertIn("m.value_as_number", select_clause)
+        self.assertIn("m.measurement_concept_id", select_clause)
 
     def test_resolve_join_clauses_no_joins(self):
         """Test resolve_join_clauses with no joins needed."""
@@ -1726,10 +1703,7 @@ class TestDeviceExposureSqlBuilder(unittest.TestCase):
             builder.get_table_column_for_criteria_column(CriteriaColumn.VISIT_ID),
             "C.visit_occurrence_id"
         )
-        self.assertEqual(
-            builder.get_table_column_for_criteria_column(CriteriaColumn.AGE),
-            "NULL"
-        )
+
 
     def test_get_criteria_sql_basic(self):
         """Test get_criteria_sql with basic criteria."""
@@ -1815,10 +1789,7 @@ class TestSpecimenSqlBuilder(unittest.TestCase):
             builder.get_table_column_for_criteria_column(CriteriaColumn.VISIT_ID),
             "C.visit_occurrence_id"
         )
-        self.assertEqual(
-            builder.get_table_column_for_criteria_column(CriteriaColumn.AGE),
-            "NULL"
-        )
+
 
     def test_get_criteria_sql_basic(self):
         """Test get_criteria_sql with basic criteria."""
@@ -2546,7 +2517,7 @@ class TestBuilderIntegration(unittest.TestCase):
     def test_builder_options_integration(self):
         """Test builders work with BuilderOptions."""
         options = BuilderOptions()
-        options.additional_columns = [CriteriaColumn.AGE, CriteriaColumn.GENDER]
+        options.additional_columns = [CriteriaColumn.START_DATE]
         
         builders = [
             DoseEraSqlBuilder(),

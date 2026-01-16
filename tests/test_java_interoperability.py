@@ -301,7 +301,7 @@ class TestJavaExportCompatibility(unittest.TestCase):
         """Test that Python export matches Java JSON structure."""
         # Load a Java JSON file
         test_dir = Path(__file__).parent
-        java_json_path = test_dir / "cohorts" / "1006.json"
+        java_json_path = test_dir / "cohorts" / "22159.json"
         
         if not java_json_path.exists():
             self.skipTest(f"Java JSON file not found: {java_json_path}")

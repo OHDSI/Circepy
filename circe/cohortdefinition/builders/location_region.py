@@ -60,11 +60,7 @@ class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
             CriteriaColumn.DOMAIN_CONCEPT: "C.region_concept_id",
             CriteriaColumn.START_DATE: "C.start_date",
             CriteriaColumn.END_DATE: "C.end_date",
-            CriteriaColumn.VISIT_ID: "NULL",
-            CriteriaColumn.AGE: "NULL",
-            CriteriaColumn.GENDER: "NULL",
-            CriteriaColumn.RACE: "NULL",
-            CriteriaColumn.ETHNICITY: "NULL"
+            CriteriaColumn.VISIT_ID: "NULL"
         }
         return column_mapping.get(criteria_column, "NULL")
     

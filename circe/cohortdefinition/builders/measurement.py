@@ -53,8 +53,7 @@ FROM
             CriteriaColumn.END_DATE: "C.end_date",
             CriteriaColumn.DOMAIN_CONCEPT: "C.measurement_concept_id",
             CriteriaColumn.DURATION: "NULL",
-            CriteriaColumn.VISIT_ID: "C.visit_occurrence_id",
-            CriteriaColumn.AGE: "C.value_as_number"
+            CriteriaColumn.VISIT_ID: "C.visit_occurrence_id"
         }
         return column_mapping.get(criteria_column, "NULL")
 

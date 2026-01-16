@@ -706,13 +706,23 @@ class MarkdownRender:
             (r'\s*(with a condition status: [^,;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'condition status')  # Sometimes no comma
         ]
         
-        print(f"DEBUG: Before strip: '{criteria_text}'")
+        # Protect nested group phrases from attribute stripping
+        nested_group_pattern = r'(;\s*(?:with .+? of the following criteria:|having .+?)\s*.*)'
+        match = re.search(nested_group_pattern, criteria_text)
+        nested_part = ""
+        
+        if match:
+             nested_part = criteria_text[match.start():]
+             criteria_text = criteria_text[:match.start()]
+
         for pattern, desc in attribute_patterns:
             matches = list(re.finditer(pattern, criteria_text))
             for match in matches:
                 domain_attrs.append(match.group(1).lstrip(', ').lstrip())
             criteria_text = re.sub(pattern, '', criteria_text)
-        print(f"DEBUG: After strip: '{criteria_text}'")
+        
+        # Restore nested part
+        criteria_text += nested_part
         
         parts.append(criteria_text)
         

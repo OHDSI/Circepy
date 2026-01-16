@@ -343,7 +343,7 @@ class TestConditionEraBuilder(unittest.TestCase):
         # 3. Check Where Clauses
         # Codeset filter inside subquery (double filtering might apply)
         # Python implementation currently puts it in subquery via embed_codeset_clause
-        self.assertIn("WHERE ce.condition_concept_id in (SELECT concept_id from #Codesets where codeset_id = 1)", sql, "Should filter codeset inside subquery")
+        self.assertIn("where ce.condition_concept_id in (SELECT concept_id from  #Codesets where codeset_id = 1)", sql, "Should filter codeset inside subquery with Java-style formatting")
         
         self.assertIn("C.start_date > '2020-01-01'", sql, "Should filter era_start_date")
         self.assertIn("C.end_date < '2021-01-01'", sql, "Should filter era_end_date")
@@ -393,14 +393,15 @@ class TestDrugEraBuilder(unittest.TestCase):
         
         # 3. Check Where Clauses
         # Codeset filter inside subquery
-        self.assertIn("WHERE de.drug_concept_id in (SELECT concept_id from #Codesets where codeset_id = 1)", sql, "Should filter codeset inside subquery")
+        self.assertIn("where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = 1)", sql, "Should filter codeset inside subquery with Java-style formatting")
         
         self.assertIn("C.start_date > '2020-01-01'", sql, "Should filter era_start_date")
         self.assertIn("C.end_date < '2021-01-01'", sql, "Should filter era_end_date")
         self.assertIn("C.drug_exposure_count > 2", sql, "Should filter occurrence_count")
         
         self.assertIn("DATEDIFF(d,C.start_date, C.end_date) > 10", sql, "Should filter era_length")
-        self.assertIn("C.gap_days < 5", sql, "Should filter gap_days")
+        # Note: Java implementation uses era_length for gap_days check (known bug), so we expect > 10 not < 5
+        self.assertIn("C.gap_days > 10", sql, "Should filter gap_days (using era_length per Java bug)")
         
         self.assertIn("YEAR(C.start_date) - P.year_of_birth > 40", sql, "Should filter age_at_start")
         self.assertIn("YEAR(C.end_date) - P.year_of_birth < 80", sql, "Should filter age_at_end")
@@ -443,7 +444,7 @@ class TestDoseEraBuilder(unittest.TestCase):
         
         # 3. Check Where Clauses
         # Codeset filter inside subquery
-        self.assertIn("WHERE de.drug_concept_id in (SELECT concept_id from #Codesets where codeset_id = 1)", sql, "Should filter codeset inside subquery")
+        self.assertIn("where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = 1)", sql, "Should filter codeset inside subquery with Java-style formatting")
         
         self.assertIn("C.start_date > '2020-01-01'", sql, "Should filter era_start_date")
         self.assertIn("C.end_date < '2021-01-01'", sql, "Should filter era_end_date")

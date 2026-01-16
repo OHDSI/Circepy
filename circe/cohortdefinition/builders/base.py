@@ -162,4 +162,4 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         
         Java equivalent: CriteriaSqlBuilder.getAdditionalColumns()
         """
-        return ", ".join([self.get_table_column_for_criteria_column(col) for col in columns])
+        return ", ".join([f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns])

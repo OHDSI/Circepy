@@ -48,11 +48,7 @@ class VisitOccurrenceSqlBuilder(CriteriaSqlBuilder[VisitOccurrence]):
             CriteriaColumn.END_DATE: "C.visit_end_date",
             CriteriaColumn.DOMAIN_CONCEPT: "C.visit_concept_id",
             CriteriaColumn.DURATION: "DATEDIFF(day, C.visit_start_date, C.visit_end_date)",
-            CriteriaColumn.VISIT_ID: "C.visit_occurrence_id",
-            CriteriaColumn.AGE: "NULL",
-            CriteriaColumn.GENDER: "NULL",
-            CriteriaColumn.RACE: "NULL",
-            CriteriaColumn.ETHNICITY: "NULL"
+            CriteriaColumn.VISIT_ID: "C.visit_occurrence_id"
         }
         return column_mapping.get(criteria_column, "NULL")
     
