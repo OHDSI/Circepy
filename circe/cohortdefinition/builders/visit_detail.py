@@ -56,7 +56,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
             @codesetClause
         ) C
         @joinClause
-        WHERE @whereClause
+        @whereClause
         @additionalColumns
         """
     

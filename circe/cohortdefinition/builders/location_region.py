@@ -34,12 +34,15 @@ class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
             @selectClause
         FROM (
             SELECT 
-                l.location_id,
+                lh.entity_id as person_id,
+                lh.location_id,
                 l.region_concept_id,
-                l.location_start_date,
-                l.location_end_date
+                lh.start_date as start_date,
+                lh.end_date as end_date
                 @ordinalExpression
-            FROM @cdm_database_schema.LOCATION l
+            FROM @cdm_database_schema.LOCATION_HISTORY lh
+            JOIN @cdm_database_schema.LOCATION l on lh.location_id = l.location_id
+            WHERE lh.domain_id = 'PERSON'
             @codesetClause
         ) C
         @joinClause
@@ -67,12 +70,10 @@ class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
     
     def embed_codeset_clause(self, query: str, criteria: LocationRegion) -> str:
         """Embed codeset clause in query."""
-        codeset_clause = BuilderUtils.get_codeset_join_expression(
-            criteria.codeset_id,
-            "l.region_concept_id",
-            None,
-            None
-        )
+        codeset_clause = ""
+        if criteria.codeset_id is not None:
+             # Use explicit AND because of the WHERE clause in the template
+             codeset_clause = f"AND l.region_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.codeset_id})"
         return query.replace("@codesetClause", codeset_clause)
     
     def embed_ordinal_expression(self, query: str, criteria: LocationRegion, where_clauses: List[str]) -> str:
@@ -80,10 +81,7 @@ class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
         return query.replace("@ordinalExpression", "")
     
     def resolve_select_clauses(self, criteria: LocationRegion, options: Optional[BuilderOptions] = None) -> List[str]:
-        """Resolve select clauses for location region criteria.
-        
-        Java equivalent: LocationRegionSqlBuilder.resolveSelectClauses()
-        """
+        """Resolve select clauses for location region criteria."""
         # Default select columns that are always returned
         select_cols = [
             "C.person_id",
@@ -91,9 +89,9 @@ class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
             "C.region_concept_id"
         ]
         
-        # Add date columns (start_date and end_date) - location region doesn't have dates, so use NULL
-        select_cols.append("NULL as start_date")
-        select_cols.append("NULL as end_date")
+        # Add date columns
+        select_cols.append("C.start_date")
+        select_cols.append("C.end_date")
         
         # Add domain concept column
         select_cols.append("C.region_concept_id as domain_concept")

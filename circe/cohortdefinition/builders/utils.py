@@ -146,9 +146,32 @@ class BuilderUtils:
         if date_range is None:
             return None
         
-        # This would need to be implemented based on the Java logic
-        # For now, return a placeholder
-        return f"{column_name} {date_range.op} '{date_range.value}'"
+        op = date_range.op
+        value = date_range.value
+        extent = date_range.extent
+        
+        # Handle "bt" (between) operator
+        if op == "bt" and extent is not None:
+            return f"({column_name} >= '{value}' and {column_name} <= '{extent}')"
+        if op == "!bt" and extent is not None:
+            return f"({column_name} < '{value}' or {column_name} > '{extent}')"
+        
+        # Handle other operators
+        if op == "lt":
+            return f"{column_name} < '{value}'"
+        elif op == "lte":
+            return f"{column_name} <= '{value}'"
+        elif op == "gt":
+            return f"{column_name} > '{value}'"
+        elif op == "gte":
+            return f"{column_name} >= '{value}'"
+        elif op == "eq":
+            return f"{column_name} = '{value}'"
+        elif op == "!eq":
+            return f"{column_name} != '{value}'"
+        else:
+            # Fallback for unknown operators
+            return f"{column_name} {op} '{value}'"
     
     @staticmethod
     def build_numeric_range_clause(numeric_range: Optional[NumericRange], column_name: str) -> Optional[str]:
@@ -186,7 +209,7 @@ class BuilderUtils:
             return f"{column_name} {op} {value}"
     
     @staticmethod
-    def build_text_filter_clause(text_filter: Optional[str], column_name: str) -> Optional[str]:
+    def build_text_filter_clause(text_filter: Optional[Any], column_name: str) -> Optional[str]:
         """Build text filter clause for SQL.
         
         Java equivalent: BuilderUtils.buildTextFilterClause()
@@ -194,7 +217,36 @@ class BuilderUtils:
         if text_filter is None:
             return None
         
-        return f"{column_name} LIKE '%{text_filter}%'"
+        # Handle simple string (legacy/direct usage)
+        if isinstance(text_filter, str):
+            return f"{column_name} LIKE '%{text_filter}%'"
+            
+        # Handle TextFilter object
+        # Note: We use hasattr/getattr because we might not have the type imported directly involved in circular imports
+        text = getattr(text_filter, 'text', None)
+        op = getattr(text_filter, 'op', 'contains')
+        
+        if text is None:
+            return None
+            
+        # Escape single quotes in text
+        text = text.replace("'", "''")
+        
+        if op == "eq": 
+             return f"{column_name} = '{text}'"
+        elif op == "!eq":
+             return f"{column_name} <> '{text}'"
+        elif op == "startsWith":
+             return f"{column_name} LIKE '{text}%'"
+        elif op == "endsWith":
+             return f"{column_name} LIKE '%{text}'"
+        elif op == "contains":
+             return f"{column_name} LIKE '%{text}%'"
+        elif op == "!contains":
+             return f"{column_name} NOT LIKE '%{text}%'"
+        else:
+             # Default to exact match
+             return f"{column_name} = '{text}'"
     
     @staticmethod
     def split_in_clause(column_name: str, values: List[int], max_length: int = 1000) -> str:

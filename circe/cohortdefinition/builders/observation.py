@@ -121,7 +121,7 @@ FROM
         
         # Join to VISIT_OCCURRENCE if visit type conditions are present
         if (criteria.visit_type and len(criteria.visit_type) > 0) or (criteria.visit_type_cs and criteria.visit_type_cs.codeset_id):
-            join_clauses.append("JOIN @cdm_database_schema.VISIT_OCCURRENCE VO on C.visit_occurrence_id = VO.visit_occurrence_id")
+            join_clauses.append("JOIN @cdm_database_schema.VISIT_OCCURRENCE V on C.visit_occurrence_id = V.visit_occurrence_id and C.person_id = V.person_id")
         
         return join_clauses
     
@@ -213,11 +213,11 @@ FROM
         # visitType
         if criteria.visit_type and len(criteria.visit_type) > 0:
              concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.visit_type)
-             where_clauses.append(f"VO.visit_concept_id in ({','.join(map(str, concept_ids))})")
+             where_clauses.append(f"V.visit_concept_id in ({','.join(map(str, concept_ids))})")
              
         # visitTypeCS
         if criteria.visit_type_cs:
-             where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.visit_type_cs.codeset_id, "VO.visit_concept_id"))
+             where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.visit_type_cs.codeset_id, "V.visit_concept_id"))
         
         return where_clauses
     

@@ -144,6 +144,14 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
         # providerSpecialty
         if (criteria.provider_specialty and len(criteria.provider_specialty) > 0) or criteria.provider_specialty_cs:
             select_cols.append("de.provider_id")
+
+        # doseUnit
+        if (criteria.dose_unit and len(criteria.dose_unit) > 0) or criteria.dose_unit_cs:
+            select_cols.append("de.dose_unit_concept_id")
+
+        # LotNumber
+        if criteria.lot_number:
+            select_cols.append("de.lot_number")
         
         # dateAdjustment or default start/end dates
         if criteria.date_adjustment:
@@ -225,6 +233,19 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
         # routeConceptCS
         if criteria.route_concept_cs:
             where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.route_concept_cs.codeset_id, "C.route_concept_id"))
+
+        # doseUnit
+        if criteria.dose_unit and len(criteria.dose_unit) > 0:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.dose_unit)
+            where_clauses.append(f"C.dose_unit_concept_id in ({','.join(map(str, concept_ids))})")
+
+        # doseUnitCS
+        if criteria.dose_unit_cs:
+            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.dose_unit_cs.codeset_id, "C.dose_unit_concept_id"))
+
+        # LotNumber
+        if criteria.lot_number:
+            where_clauses.append(BuilderUtils.build_text_filter_clause(criteria.lot_number, "C.lot_number"))
 
         # refills
         if criteria.refills:

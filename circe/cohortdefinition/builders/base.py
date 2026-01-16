@@ -98,7 +98,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return query.replace("@codesetClause", "")
     
-    def resolve_select_clauses(self, criteria: T) -> List[str]:
+    def resolve_select_clauses(self, criteria: T, options: Optional[BuilderOptions] = None) -> List[str]:
         """Resolve select clauses for criteria.
         
         Java equivalent: CriteriaSqlBuilder.resolveSelectClauses()
@@ -106,7 +106,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return []
     
-    def resolve_join_clauses(self, criteria: T) -> List[str]:
+    def resolve_join_clauses(self, criteria: T, options: Optional[BuilderOptions] = None) -> List[str]:
         """Resolve join clauses for criteria.
         
         Java equivalent: CriteriaSqlBuilder.resolveJoinClauses()
@@ -114,7 +114,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return []
     
-    def resolve_where_clauses(self, criteria: T) -> List[str]:
+    def resolve_where_clauses(self, criteria: T, options: Optional[BuilderOptions] = None) -> List[str]:
         """Resolve where clauses for criteria.
         
         Java equivalent: CriteriaSqlBuilder.resolveWhereClauses()

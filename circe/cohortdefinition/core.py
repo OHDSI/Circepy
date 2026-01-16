@@ -223,6 +223,7 @@ class ConceptSetSelection(CirceBaseModel):
         serialization_alias="CodesetId"
     )
     is_exclusion: bool = Field(
+        default=False,
         validation_alias=AliasChoices("IsExclusion", "isExclusion"),
         serialization_alias="IsExclusion"
     )

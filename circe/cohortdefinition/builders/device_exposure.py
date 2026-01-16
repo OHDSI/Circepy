@@ -92,27 +92,27 @@ FROM
         
         return select_cols
     
-    def resolve_join_clauses(self, criteria: DeviceExposure, options: BuilderOptions) -> str:
+    def resolve_join_clauses(self, criteria: DeviceExposure, options: BuilderOptions) -> List[str]:
         """Resolve join clauses for device exposure criteria."""
         joins = []
         
         # Join to PERSON
         if criteria.age or \
            (criteria.gender and len(criteria.gender) > 0) or \
-           criteria.gender_cs:
+           (criteria.gender_cs and criteria.gender_cs.codeset_id):
             joins.append("JOIN @cdm_database_schema.PERSON P ON C.person_id = P.person_id")
             
         # Join to VISIT_OCCURRENCE
         if (criteria.visit_type and len(criteria.visit_type) > 0) or \
-           criteria.visit_type_cs:
+           (criteria.visit_type_cs and criteria.visit_type_cs.codeset_id):
             joins.append("JOIN @cdm_database_schema.VISIT_OCCURRENCE V ON C.visit_occurrence_id = V.visit_occurrence_id AND C.person_id = V.person_id")
 
         # Join to PROVIDER
         if (criteria.provider_specialty and len(criteria.provider_specialty) > 0) or \
-           criteria.provider_specialty_cs:
+           (criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id):
             joins.append("LEFT JOIN @cdm_database_schema.PROVIDER PR ON C.provider_id = PR.provider_id")
         
-        return " ".join(joins)
+        return joins
     
     def embed_codeset_clause(self, query: str, criteria: DeviceExposure) -> str:
         """Embed codeset clause for device exposure criteria."""
@@ -145,8 +145,8 @@ FROM
         # deviceType
         if criteria.device_type and len(criteria.device_type) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.device_type)
-            not_op = "NOT" if criteria.device_type_exclude else ""
-            conditions.append(f"C.device_type_concept_id {not_op} IN ({','.join(map(str, concept_ids))})")
+            op = "NOT IN" if criteria.device_type_exclude else "IN"
+            conditions.append(f"C.device_type_concept_id {op} ({','.join(map(str, concept_ids))})")
             
         # deviceTypeCS
         if criteria.device_type_cs and criteria.device_type_cs.codeset_id:

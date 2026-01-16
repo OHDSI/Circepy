@@ -488,6 +488,7 @@ class ProcedureOccurrence(Criteria):
     )
     provider_specialty: Optional[List[Concept]] = Field(default=None, alias="ProviderSpecialty")
     age: Optional[NumericRange] = None
+    quantity: Optional[NumericRange] = Field(default=None, alias="Quantity")
     occurrence_start_date: Optional[DateRange] = Field(default=None, alias="OccurrenceStartDate")
 
     model_config = ConfigDict(populate_by_name=True)
@@ -551,6 +552,7 @@ class Observation(Criteria):
         serialization_alias="ObservationTypeCS"
     )
     observation_type_exclude: bool = Field(
+        default=False,
         validation_alias=AliasChoices("ObservationTypeExclude", "observationTypeExclude"),
         serialization_alias="ObservationTypeExclude"
     )
@@ -746,10 +748,11 @@ class Specimen(Criteria):
     gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(default=None, alias="OccurrenceEndDate")
     specimen_source_concept: Optional[int] = Field(default=None, alias="SpecimenSourceConcept")
+    source_id: Optional[TextFilter] = Field(default=None, alias="SourceId")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     specimen_type: Optional[List[Concept]] = Field(default=None, alias="SpecimenType")
     specimen_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="SpecimenTypeCS")
-    specimen_type_exclude: bool = Field(alias="SpecimenTypeExclude")
+    specimen_type_exclude: bool = Field(default=False, alias="SpecimenTypeExclude")
     unit: Optional[List[Concept]] = None
     unit_cs: Optional[ConceptSetSelection] = Field(default=None, alias="UnitCS")
     anatomic_site: Optional[List[Concept]] = Field(default=None, alias="AnatomicSite")

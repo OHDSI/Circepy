@@ -84,7 +84,7 @@ from
         """
         codeset_clause = ""
         if criteria.codeset_id is not None:
-            codeset_clause = f"where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = {criteria.codeset_id})"
+            codeset_clause = f"WHERE de.drug_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.codeset_id})"
         return query.replace("@codesetClause", codeset_clause)
     
     def embed_ordinal_expression(self, query: str, criteria: DrugEra, where_clauses: List[str]) -> str:

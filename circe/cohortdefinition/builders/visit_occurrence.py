@@ -28,7 +28,7 @@ class VisitOccurrenceSqlBuilder(CriteriaSqlBuilder[VisitOccurrence]):
             @selectClause@additionalColumns
         FROM @cdm_database_schema.VISIT_OCCURRENCE C
         @joinClause
-        WHERE @whereClause
+        @whereClause
         @ordinalExpression
         """
     
@@ -83,15 +83,18 @@ class VisitOccurrenceSqlBuilder(CriteriaSqlBuilder[VisitOccurrence]):
         ]
         
         # Add visit type column if needed
-        if criteria.visit_type_cs and criteria.visit_type_cs.codeset_id:
+        if ((criteria.visit_type and len(criteria.visit_type) > 0) or 
+            (criteria.visit_type_cs and criteria.visit_type_cs.codeset_id)):
             select_cols.append("C.visit_type_concept_id")
         
         # Add provider specialty column if needed
-        if criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id:
+        if ((criteria.provider_specialty and len(criteria.provider_specialty) > 0) or 
+            (criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id)):
             select_cols.append("C.provider_id")
         
         # Add place of service column if needed
-        if criteria.place_of_service_cs and criteria.place_of_service_cs.codeset_id:
+        if ((criteria.place_of_service and len(criteria.place_of_service) > 0) or
+            (criteria.place_of_service_cs and criteria.place_of_service_cs.codeset_id)):
             select_cols.append("C.care_site_id")
         
         # Add date columns (start_date and end_date)
@@ -123,16 +126,21 @@ class VisitOccurrenceSqlBuilder(CriteriaSqlBuilder[VisitOccurrence]):
         join_clauses = []
         
         # Join to PERSON if age or gender conditions are present
-        if criteria.age or (criteria.gender_cs and criteria.gender_cs.codeset_id):
+        if (criteria.age or 
+            (criteria.gender and len(criteria.gender) > 0) or
+            (criteria.gender_cs and criteria.gender_cs.codeset_id)):
             join_clauses.append("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id")
         
         # Join to CARE_SITE if place of service conditions are present
-        if (criteria.place_of_service_cs and criteria.place_of_service_cs.codeset_id) or criteria.place_of_service_location:
+        if ((criteria.place_of_service and len(criteria.place_of_service) > 0) or
+            (criteria.place_of_service_cs and criteria.place_of_service_cs.codeset_id) or 
+            criteria.place_of_service_location):
             join_clauses.append("JOIN @cdm_database_schema.CARE_SITE CS on C.care_site_id = CS.care_site_id")
         
         # Join to PROVIDER if provider specialty conditions are present
-        if criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id:
-            join_clauses.append("JOIN @cdm_database_schema.PROVIDER P on C.provider_id = P.provider_id")
+        if ((criteria.provider_specialty and len(criteria.provider_specialty) > 0) or 
+            (criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id)):
+            join_clauses.append("LEFT JOIN @cdm_database_schema.PROVIDER PR on C.provider_id = PR.provider_id")
         
         return join_clauses
     
@@ -159,7 +167,11 @@ class VisitOccurrenceSqlBuilder(CriteriaSqlBuilder[VisitOccurrence]):
             if date_clause:
                 where_clauses.append(date_clause)
         
-        # Add visit type condition
+        if criteria.visit_type and len(criteria.visit_type) > 0:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.visit_type)
+            exclude = "not " if criteria.visit_type_exclude else ""
+            where_clauses.append(f"C.visit_type_concept_id {exclude}in ({','.join(map(str, concept_ids))})")
+
         if criteria.visit_type_cs and criteria.visit_type_cs.codeset_id:
             visit_type_clause = BuilderUtils.get_codeset_in_expression(
                 criteria.visit_type_cs.codeset_id,
@@ -184,10 +196,15 @@ class VisitOccurrenceSqlBuilder(CriteriaSqlBuilder[VisitOccurrence]):
             )
             if age_clause:
                 where_clauses.append(age_clause)
-                # Add person_id check for join requirement
-                where_clauses.append("C.person_id = P.person_id")
+                # Add person_id check for join requirement - Java doesn't explicitly add this in WHERE but usually relies on JOIN logic.
+                # However, consistent with Java BuilderUtils, we just add the range check.
+                # The JOIN is handled by resolve_join_clauses.
         
         # Add gender condition
+        if criteria.gender and len(criteria.gender) > 0:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.gender)
+            where_clauses.append(f"P.gender_concept_id in ({','.join(map(str, concept_ids))})")
+
         if criteria.gender_cs and criteria.gender_cs.codeset_id:
             gender_clause = BuilderUtils.get_codeset_in_expression(
                 criteria.gender_cs.codeset_id,
@@ -198,16 +215,24 @@ class VisitOccurrenceSqlBuilder(CriteriaSqlBuilder[VisitOccurrence]):
                 where_clauses.append(gender_clause)
         
         # Add provider specialty condition
+        if criteria.provider_specialty and len(criteria.provider_specialty) > 0:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.provider_specialty)
+            where_clauses.append(f"PR.specialty_concept_id in ({','.join(map(str, concept_ids))})")
+
         if criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id:
             provider_clause = BuilderUtils.get_codeset_in_expression(
                 criteria.provider_specialty_cs.codeset_id,
-                "P.specialty_concept_id",
+                "PR.specialty_concept_id",
                 criteria.provider_specialty_cs.is_exclusion
             )
             if provider_clause:
                 where_clauses.append(provider_clause)
         
         # Add place of service condition
+        if criteria.place_of_service and len(criteria.place_of_service) > 0:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.place_of_service)
+            where_clauses.append(f"CS.place_of_service_concept_id in ({','.join(map(str, concept_ids))})")
+
         if criteria.place_of_service_cs and criteria.place_of_service_cs.codeset_id:
             place_clause = BuilderUtils.get_codeset_in_expression(
                 criteria.place_of_service_cs.codeset_id,
