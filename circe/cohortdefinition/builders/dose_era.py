@@ -74,10 +74,13 @@ FROM
         return column_mapping.get(criteria_column, "NULL")
     
     def embed_codeset_clause(self, query: str, criteria: DoseEra) -> str:
-        """Embed codeset clause in query."""
+        """Embed codeset clause in query.
+        
+        Note: Reference uses lowercase 'where' and double space before #Codesets
+        """
         codeset_clause = ""
         if criteria.codeset_id is not None:
-            codeset_clause = f"WHERE de.drug_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.codeset_id})"
+            codeset_clause = f"where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = {criteria.codeset_id})"
         return query.replace("@codesetClause", codeset_clause)
     
     def embed_ordinal_expression(self, query: str, criteria: DoseEra, where_clauses: List[str]) -> str:

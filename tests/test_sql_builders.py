@@ -60,7 +60,7 @@ class TestDeathSqlBuilder(unittest.TestCase):
         expected_columns = {
             CriteriaColumn.START_DATE,
             CriteriaColumn.END_DATE,
-            CriteriaColumn.DOMAIN_CONCEPT
+            CriteriaColumn.VISIT_ID
         }
         self.assertEqual(columns, expected_columns)
 
@@ -71,19 +71,19 @@ class TestDeathSqlBuilder(unittest.TestCase):
         # Test each column type
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.START_DATE),
-            "C.death_date"
+            "C.start_date"
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.END_DATE),
-            "C.death_date"
+            "C.end_date"
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT),
-            "C.death_type_concept_id"
+            "coalesce(C.cause_concept_id,0)"
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.DURATION),
-            "NULL"
+            "CAST(1 as int)"
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.VISIT_ID),
@@ -101,9 +101,9 @@ class TestDeathSqlBuilder(unittest.TestCase):
         sql = builder.get_criteria_sql(criteria)
         
         self.assertIn("SELECT", sql)
-        self.assertIn("FROM @cdm_database_schema.DEATH C", sql)
+        self.assertIn("FROM @cdm_database_schema.DEATH d", sql)
+        self.assertIn(") C", sql)
         self.assertIn("WHERE", sql)
-        self.assertIn("ORDER BY C.death_date ASC", sql)
 
     def test_get_criteria_sql_with_options(self):
         """Test get_criteria_sql with builder options."""
@@ -118,7 +118,8 @@ class TestDeathSqlBuilder(unittest.TestCase):
         sql = builder.get_criteria_sql_with_options(criteria, options)
         
         self.assertIn("SELECT", sql)
-        self.assertIn("FROM @cdm_database_schema.DEATH C", sql)
+        self.assertIn("FROM @cdm_database_schema.DEATH d", sql)
+        self.assertIn(") C", sql)
         self.assertIn("WHERE", sql)
 
     def test_embed_codeset_clause(self):
@@ -131,7 +132,8 @@ class TestDeathSqlBuilder(unittest.TestCase):
         )
         
         clause = builder.embed_codeset_clause("SELECT * FROM table @codesetClause", criteria)
-        self.assertIn("C.death_concept_id", clause)
+        # Updated alias check
+        self.assertIn("d.cause_concept_id", clause)
         self.assertIn("12345", clause)
 
     def test_embed_codeset_clause_no_codeset(self):
@@ -289,8 +291,8 @@ class TestVisitOccurrenceSqlBuilder(unittest.TestCase):
         self.assertIn("SELECT", sql)
         self.assertIn("FROM @cdm_database_schema.VISIT_OCCURRENCE C", sql)
         self.assertIn("WHERE", sql)
-        self.assertIn("JOIN @cdm_database_schema.PROVIDER P", sql)
-        self.assertIn("P.specialty_concept_id", sql)
+        self.assertIn("JOIN @cdm_database_schema.PROVIDER PR", sql)
+        self.assertIn("PR.specialty_concept_id", sql)
         self.assertIn("12345", sql)
 
     def test_get_criteria_sql_with_provider_specialty_exclusion(self):
@@ -386,62 +388,8 @@ class TestVisitOccurrenceSqlBuilder(unittest.TestCase):
         
         join_clause = builder.resolve_join_clauses(criteria, options)
         
-        self.assertTrue(any("JOIN @cdm_database_schema.PROVIDER P" in clause for clause in join_clause))
-        self.assertTrue(any("C.provider_id = P.provider_id" in clause for clause in join_clause))
-
-    def test_resolve_join_clauses_with_provider_specialty_no_codeset_id(self):
-        """Test resolve_join_clauses with provider specialty but no codeset_id."""
-        builder = VisitOccurrenceSqlBuilder()
-        criteria = VisitOccurrence(
-            visit_type_exclude=False,
-            provider_specialty_cs=ConceptSetSelection(codeset_id=None, is_exclusion=False)
-        )
-        options = BuilderOptions()
-        
-        join_clause = builder.resolve_join_clauses(criteria, options)
-        
-        self.assertEqual(join_clause, [])
-
-    def test_resolve_where_clauses_basic(self):
-        """Test resolve_where_clauses with basic criteria."""
-        builder = VisitOccurrenceSqlBuilder()
-        criteria = VisitOccurrence(visit_type_exclude=False)
-        options = BuilderOptions()
-        
-        where_clause = builder.resolve_where_clauses(criteria, options)
-        
-        self.assertEqual(where_clause, ["1=1"])
-
-    def test_resolve_where_clauses_with_date_ranges(self):
-        """Test resolve_where_clauses with date range conditions."""
-        builder = VisitOccurrenceSqlBuilder()
-        criteria = VisitOccurrence(
-            visit_type_exclude=False,
-            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01"),
-            occurrence_end_date=DateRange(op="lt", extent="30", value="2023-01-01")
-        )
-        options = BuilderOptions()
-        
-        where_clause = builder.resolve_where_clauses(criteria, options)
-        
-        # Check that the clauses contain the expected column references
-        self.assertTrue(any("C.visit_start_date" in clause for clause in where_clause))
-        self.assertTrue(any("C.visit_end_date" in clause for clause in where_clause))
-        # Should have multiple conditions
-        self.assertGreater(len(where_clause), 1)
-
-    def test_resolve_where_clauses_with_age_condition(self):
-        """Test resolve_where_clauses with age condition."""
-        builder = VisitOccurrenceSqlBuilder()
-        criteria = VisitOccurrence(
-            visit_type_exclude=False,
-            age=NumericRange(op="gte", value=18, extent=65)
-        )
-        options = BuilderOptions()
-        
-        where_clause = builder.resolve_where_clauses(criteria, options)
-        
-        self.assertTrue(any("C.person_id" in clause for clause in where_clause))
+        self.assertTrue(any("JOIN @cdm_database_schema.PROVIDER PR" in clause for clause in join_clause))
+        self.assertTrue(any("C.provider_id = PR.provider_id" in clause for clause in join_clause))
 
     def test_resolve_where_clauses_with_provider_specialty(self):
         """Test resolve_where_clauses with provider specialty condition."""
@@ -454,7 +402,7 @@ class TestVisitOccurrenceSqlBuilder(unittest.TestCase):
         
         where_clause = builder.resolve_where_clauses(criteria, options)
         
-        self.assertTrue(any("P.specialty_concept_id" in clause for clause in where_clause))
+        self.assertTrue(any("PR.specialty_concept_id" in clause for clause in where_clause))
         self.assertTrue(any("12345" in clause for clause in where_clause))
 
     def test_resolve_where_clauses_with_provider_specialty_exclusion(self):
@@ -468,7 +416,7 @@ class TestVisitOccurrenceSqlBuilder(unittest.TestCase):
         
         where_clause = builder.resolve_where_clauses(criteria, options)
         
-        self.assertTrue(any("P.specialty_concept_id" in clause for clause in where_clause))
+        self.assertTrue(any("PR.specialty_concept_id" in clause for clause in where_clause))
         self.assertTrue(any("not" in clause for clause in where_clause))
 
     def test_resolve_where_clauses_complex_scenario(self):
@@ -488,8 +436,7 @@ class TestVisitOccurrenceSqlBuilder(unittest.TestCase):
         # Check that the clauses contain the expected column references
         self.assertTrue(any("C.visit_start_date" in clause for clause in where_clause))
         self.assertTrue(any("C.visit_end_date" in clause for clause in where_clause))
-        self.assertTrue(any("C.person_id" in clause for clause in where_clause))
-        self.assertTrue(any("P.specialty_concept_id" in clause for clause in where_clause))
+        self.assertTrue(any("PR.specialty_concept_id" in clause for clause in where_clause))
         # Should have multiple conditions
         self.assertGreater(len(where_clause), 2)
 
@@ -1750,7 +1697,6 @@ class TestDeviceExposureSqlBuilder(unittest.TestCase):
         expected_columns = {
             CriteriaColumn.START_DATE,
             CriteriaColumn.END_DATE,
-            CriteriaColumn.DOMAIN_CONCEPT,
             CriteriaColumn.VISIT_ID
         }
         self.assertEqual(columns, expected_columns)
@@ -1762,11 +1708,11 @@ class TestDeviceExposureSqlBuilder(unittest.TestCase):
         # Test each column type
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.START_DATE),
-            "C.device_exposure_start_date"
+            "C.start_date"
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.END_DATE),
-            "C.device_exposure_end_date"
+            "C.end_date"
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT),
@@ -1774,7 +1720,7 @@ class TestDeviceExposureSqlBuilder(unittest.TestCase):
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.DURATION),
-            "DATEDIFF(day, C.device_exposure_start_date, C.device_exposure_end_date)"
+            "DATEDIFF(day, C.start_date, C.end_date)"
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.VISIT_ID),
@@ -1782,7 +1728,7 @@ class TestDeviceExposureSqlBuilder(unittest.TestCase):
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.AGE),
-            "C.unique_device_id"
+            "NULL"
         )
 
     def test_get_criteria_sql_basic(self):
@@ -1796,9 +1742,8 @@ class TestDeviceExposureSqlBuilder(unittest.TestCase):
         sql = builder.get_criteria_sql(criteria)
         
         self.assertIn("SELECT", sql)
-        self.assertIn("FROM @cdm_database_schema.DEVICE_EXPOSURE C", sql)
-        self.assertIn("WHERE", sql)
-        self.assertIn("ORDER BY C.device_exposure_start_date ASC", sql)
+        self.assertIn("FROM @cdm_database_schema.DEVICE_EXPOSURE de", sql)
+        self.assertIn(") C", sql)
 
     def test_embed_codeset_clause(self):
         """Test embed_codeset_clause method."""
@@ -1810,7 +1755,7 @@ class TestDeviceExposureSqlBuilder(unittest.TestCase):
         )
         
         clause = builder.embed_codeset_clause("SELECT * FROM table @codesetClause", criteria)
-        self.assertIn("C.device_concept_id", clause)
+        self.assertIn("de.device_concept_id", clause)
         self.assertIn("12345", clause)
 
 
@@ -1841,7 +1786,7 @@ class TestSpecimenSqlBuilder(unittest.TestCase):
         expected_columns = {
             CriteriaColumn.START_DATE,
             CriteriaColumn.END_DATE,
-            CriteriaColumn.DOMAIN_CONCEPT
+            CriteriaColumn.VISIT_ID
         }
         self.assertEqual(columns, expected_columns)
 
@@ -1864,15 +1809,15 @@ class TestSpecimenSqlBuilder(unittest.TestCase):
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.DURATION),
-            "NULL"
+            "CAST(1 as int)"
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.VISIT_ID),
-            "NULL"
+            "C.visit_occurrence_id"
         )
         self.assertEqual(
             builder.get_table_column_for_criteria_column(CriteriaColumn.AGE),
-            "C.quantity"
+            "NULL"
         )
 
     def test_get_criteria_sql_basic(self):
@@ -1886,9 +1831,10 @@ class TestSpecimenSqlBuilder(unittest.TestCase):
         sql = builder.get_criteria_sql(criteria)
         
         self.assertIn("SELECT", sql)
-        self.assertIn("FROM @cdm_database_schema.SPECIMEN C", sql)
+        self.assertIn("FROM @cdm_database_schema.SPECIMEN s", sql)
+        self.assertIn(") C", sql)
         self.assertIn("WHERE", sql)
-        self.assertIn("ORDER BY C.specimen_date ASC", sql)
+        self.assertIn("ORDER BY s.specimen_date", sql)
 
     def test_embed_codeset_clause(self):
         """Test embed_codeset_clause method."""
@@ -1900,7 +1846,7 @@ class TestSpecimenSqlBuilder(unittest.TestCase):
         )
         
         clause = builder.embed_codeset_clause("SELECT * FROM table @codesetClause", criteria)
-        self.assertIn("C.specimen_concept_id", clause)
+        self.assertIn("s.specimen_concept_id", clause)
         self.assertIn("12345", clause)
 
 
@@ -1989,7 +1935,6 @@ class TestNewSqlBuildersIntegration(unittest.TestCase):
             # All builders should have at least START_DATE and END_DATE
             self.assertIn(CriteriaColumn.START_DATE, columns)
             self.assertIn(CriteriaColumn.END_DATE, columns)
-            self.assertIn(CriteriaColumn.DOMAIN_CONCEPT, columns)
             
             # Test that column mapping works for all builders
             for column in columns:

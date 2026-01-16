@@ -14,33 +14,7 @@ from enum import Enum
 from abc import ABC, abstractmethod
 from ..core import DateRange, DateAdjustment, NumericRange, ConceptSetSelection
 from ...vocabulary.concept import Concept
-
-
-class CriteriaColumn(str, Enum):
-    """Enumeration for criteria columns.
-    
-    Java equivalent: org.ohdsi.circe.cohortdefinition.builders.CriteriaColumn
-    """
-    DAYS_SUPPLY = "days_supply"
-    DOMAIN_CONCEPT = "domain_concept"
-    DOMAIN_SOURCE_CONCEPT = "domain_source_concept"
-    DURATION = "duration"
-    END_DATE = "end_date"
-    ERA_OCCURRENCES = "occurrence_count"
-    GAP_DAYS = "gap_days"
-    QUANTITY = "quantity"
-    RANGE_HIGH = "range_high"
-    RANGE_LOW = "range_low"
-    REFILLS = "refills"
-    START_DATE = "start_date"
-    UNIT = "unit_concept_id"
-    VALUE_AS_NUMBER = "value_as_number"
-    VISIT_ID = "visit_occurrence_id"
-    VISIT_DETAIL_ID = "visit_detail_id"
-    AGE = "age"
-    GENDER = "gender"
-    RACE = "race"
-    ETHNICITY = "ethnicity"
+from ..criteria import CriteriaColumn
 
 
 class BuilderOptions:

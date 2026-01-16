@@ -410,10 +410,8 @@ class TestDeath(unittest.TestCase):
     def test_death_initialization(self):
         """Test basic initialization of Death."""
         death = Death(
-            first=True,
             death_type_exclude=False
         )
-        self.assertTrue(death.first)
         self.assertFalse(death.death_type_exclude)
         self.assertIsNone(death.gender)
         self.assertIsNone(death.codeset_id)
@@ -431,7 +429,6 @@ class TestDeath(unittest.TestCase):
             cause_source_concept=67890,
             cause_source_concept_cs=ConceptSetSelection(codeset_id=3, is_exclusion=False),
             codeset_id=100,
-            first=True,
             age=NumericRange(op="gte", value=18, extent=65),
             occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01")
         )

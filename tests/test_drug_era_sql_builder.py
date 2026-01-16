@@ -261,13 +261,17 @@ class TestDrugEraSqlBuilder:
         assert "DATEDIFF(d,C.start_date, C.end_date)" in result[0]
     
     def test_resolve_where_clauses_with_gap_days(self):
-        """Test resolve_where_clauses with gap_days."""
-        criteria = DrugEra(gap_days=NumericRange(op="<=", value=30))
+        """Test resolve_where_clauses with gap_days.
+        
+        Note: Replicating Java bug where gap_days filter uses era_length value.
+        """
+        criteria = DrugEra(gap_days=NumericRange(op="<=", value=30), era_length=NumericRange(op="<=", value=60))
         
         result = self.builder.resolve_where_clauses(criteria)
         
-        assert len(result) == 1
-        assert "C.gap_days" in result[0]
+        assert len(result) == 2 # gap_days and era_length
+        assert "C.gap_days" in result[1]
+        assert "60" in result[1] # Should use era_length value
     
     def test_resolve_where_clauses_with_age_at_start(self):
         """Test resolve_where_clauses with age_at_start."""
@@ -393,12 +397,16 @@ class TestDrugEraSqlBuilder:
         assert "YEAR(C.start_date) - P.year_of_birth" in result
     
     def test_get_criteria_sql_with_gap_days(self):
-        """Test get_criteria_sql with gap_days."""
-        criteria = DrugEra(gap_days=NumericRange(op="<=", value=30))
+        """Test get_criteria_sql with gap_days.
+        
+        Note: Replicating Java bug where gap_days filter uses era_length value.
+        """
+        criteria = DrugEra(gap_days=NumericRange(op="<=", value=30), era_length=NumericRange(op="<=", value=60))
         
         result = self.builder.get_criteria_sql(criteria)
         
         assert "C.gap_days" in result
+        assert "60" in result # Should use era_length value
     
     def test_get_criteria_sql_with_options(self):
         """Test get_criteria_sql_with_options."""

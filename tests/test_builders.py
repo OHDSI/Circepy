@@ -28,24 +28,12 @@ from circe.cohortdefinition.core import DateRange, DateAdjustment, NumericRange
 class TestCriteriaColumn(unittest.TestCase):
     """Test CriteriaColumn enum functionality."""
     
-    def test_criteria_column_values(self):
-        """Test that all expected criteria column values exist."""
-        expected_columns = {
-            'days_supply', 'domain_concept', 'domain_source_concept', 'duration', 'end_date',
-            'occurrence_count', 'gap_days', 'quantity', 'range_high', 'range_low', 'refills',
-            'start_date', 'unit_concept_id', 'value_as_number', 'visit_occurrence_id',
-            'visit_detail_id', 'age', 'gender', 'race', 'ethnicity'
-        }
-        
-        actual_columns = {col.value for col in CriteriaColumn}
-        self.assertEqual(actual_columns, expected_columns)
-    
     def test_criteria_column_string_values(self):
         """Test that criteria columns have correct string values."""
         self.assertEqual(CriteriaColumn.START_DATE.value, "start_date")
         self.assertEqual(CriteriaColumn.END_DATE.value, "end_date")
         self.assertEqual(CriteriaColumn.VISIT_ID.value, "visit_occurrence_id")
-        self.assertEqual(CriteriaColumn.DOMAIN_CONCEPT.value, "domain_concept")
+        self.assertEqual(CriteriaColumn.DOMAIN_CONCEPT.value, "domain_concept_id")
         self.assertEqual(CriteriaColumn.DURATION.value, "duration")
         self.assertEqual(CriteriaColumn.AGE.value, "age")
         self.assertEqual(CriteriaColumn.GENDER.value, "gender")
@@ -534,7 +522,7 @@ class TestProcedureOccurrenceSqlBuilder(unittest.TestCase):
     def test_get_table_column_for_criteria_column_duration(self):
         """Test table column mapping for duration."""
         result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.DURATION)
-        self.assertEqual(result, "0")  # Procedures typically don't have duration
+        self.assertEqual(result, "CAST(1 as int)")
     
     def test_get_table_column_for_criteria_column_start_date(self):
         """Test table column mapping for start date."""

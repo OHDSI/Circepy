@@ -1673,6 +1673,10 @@ class MarkdownRender:
             modifier_str = self._format_concept_set_selection(criteria.modifier_cs, "any modifier")
             attrs.append(f"a modifier concept {modifier_str} concept set")
             
+        if getattr(criteria, 'quantity', None):
+            quantity_str = self._format_numeric_range(getattr(criteria, 'quantity'))
+            attrs.append(f"with quantity {quantity_str}")
+            
         codeset_name = self._get_concept_set_name(criteria.codeset_id, "any procedure")
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
@@ -1879,14 +1883,61 @@ class MarkdownRender:
         """Render Specimen criteria."""
         attrs = self._build_criteria_attributes(criteria, count_criteria, index_label)
         
+        # Domain-specific attributes
+        if criteria.specimen_type:
+            exclude_str = "is not:" if getattr(criteria, 'specimen_type_exclude', False) else "is:"
+            type_str = self._format_concept_list(criteria.specimen_type)
+            attrs.append(f"a specimen type that {exclude_str} {type_str}")
+        
+        if criteria.specimen_type_cs:
+            type_str = self._format_concept_set_selection(criteria.specimen_type_cs, "any specimen")
+            attrs.append(f"a specimen type concept {type_str} concept set")
+            
+        if criteria.quantity:
+            quantity_str = self._format_numeric_range(criteria.quantity)
+            attrs.append(f"with quantity {quantity_str}")
+            
+        if criteria.unit:
+            unit_str = self._format_concept_list(criteria.unit)
+            attrs.append(f"unit: {unit_str}")
+            
+        if criteria.unit_cs:
+            unit_str = self._format_concept_set_selection(criteria.unit_cs, "any unit")
+            attrs.append(f"a unit concept {unit_str} concept set")
+            
+        if criteria.anatomic_site:
+            site_str = self._format_concept_list(criteria.anatomic_site)
+            attrs.append(f"with anatomic site: {site_str}")
+            
+        if criteria.anatomic_site_cs:
+            site_str = self._format_concept_set_selection(criteria.anatomic_site_cs, "any anatomic site")
+            attrs.append(f"an anatomic site concept {site_str} concept set")
+            
+        if criteria.disease_status:
+            status_str = self._format_concept_list(criteria.disease_status)
+            attrs.append(f"with disease status: {status_str}")
+            
+        if criteria.disease_status_cs:
+            status_str = self._format_concept_set_selection(criteria.disease_status_cs, "any disease status")
+            attrs.append(f"a disease status concept {status_str} concept set")
+            
+        if criteria.source_id:
+            source_str = self._format_text_filter(criteria.source_id)
+            attrs.append(f"with source id {source_str}")
+        
         codeset_name = self._get_concept_set_name(criteria.codeset_id, "any specimen")
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
+        source_concept = ""
+        if criteria.specimen_source_concept is not None:
+            source_name = self._get_concept_set_name(criteria.specimen_source_concept, "any specimen")
+            source_concept = f" (including {source_name} source concepts)"
+        
         attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
-        description = f"specimen{plural} of {codeset_name}{first_time}{attrs_str}"
+        description = f"specimen{plural} of {codeset_name}{source_concept}{first_time}{attrs_str}"
         
         # Correlated criteria
         if criteria.correlated_criteria:
@@ -1901,14 +1952,53 @@ class MarkdownRender:
         """Render VisitOccurrence criteria."""
         attrs = self._build_criteria_attributes(criteria, count_criteria, index_label)
         
+        # Domain-specific attributes
+        if criteria.visit_type:
+            exclude_str = "is not:" if getattr(criteria, 'visit_type_exclude', False) else "is:"
+            type_str = self._format_concept_list(criteria.visit_type)
+            attrs.append(f"a visit type that {exclude_str} {type_str}")
+        
+        if criteria.visit_type_cs:
+            type_str = self._format_concept_set_selection(criteria.visit_type_cs, "any visit type")
+            attrs.append(f"a visit type concept {type_str} concept set")
+            
+        if criteria.provider_specialty:
+            provider_str = self._format_concept_list(criteria.provider_specialty)
+            attrs.append(f"a provider specialty that is: {provider_str}")
+            
+        if criteria.provider_specialty_cs:
+            provider_str = self._format_concept_set_selection(criteria.provider_specialty_cs, "any specialty")
+            attrs.append(f"a provider specialty concept {provider_str} concept set")
+            
+        if criteria.visit_length:
+            length_str = self._format_numeric_range(criteria.visit_length)
+            attrs.append(f"with visit length {length_str}")
+            
+        if criteria.place_of_service:
+            pos_str = self._format_concept_list(criteria.place_of_service)
+            attrs.append(f"a place of service that is: {pos_str}")
+            
+        if criteria.place_of_service_cs:
+            pos_str = self._format_concept_set_selection(criteria.place_of_service_cs, "any place of service")
+            attrs.append(f"a place of service concept {pos_str} concept set")
+            
+        if criteria.place_of_service_location:
+            # Assumed to be location ID or filtering
+            pass 
+        
         codeset_name = self._get_concept_set_name(criteria.codeset_id, "any visit")
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
+        source_concept = ""
+        if criteria.visit_source_concept is not None:
+             source_name = self._get_concept_set_name(criteria.visit_source_concept, "any visit")
+             source_concept = f" (including {source_name} source concepts)"
+        
         attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
-        description = f"visit occurrence{plural} of {codeset_name}{first_time}{attrs_str}"
+        description = f"visit occurrence{plural} of {codeset_name}{source_concept}{first_time}{attrs_str}"
         
         # Correlated criteria
         if criteria.correlated_criteria:
@@ -1923,14 +2013,57 @@ class MarkdownRender:
         """Render VisitDetail criteria."""
         attrs = self._build_criteria_attributes(criteria, count_criteria, index_label)
         
-        codeset_name = self._get_concept_set_name(criteria.codeset_id, "any visit")
+        # Domain-specific attributes
+        if criteria.visit_detail_type:
+            exclude_str = "is not:" if getattr(criteria, 'visit_detail_type_exclude', False) else "is:"
+            type_str = self._format_concept_list(criteria.visit_detail_type)
+            attrs.append(f"a visit detail type that {exclude_str} {type_str}")
+        
+        if criteria.visit_detail_type_cs:
+            type_str = self._format_concept_set_selection(criteria.visit_detail_type_cs, "any visit detail type")
+            attrs.append(f"a visit detail type concept {type_str} concept set")
+            
+        if criteria.provider_specialty:
+            provider_str = self._format_concept_list(criteria.provider_specialty)
+            attrs.append(f"a provider specialty that is: {provider_str}")
+            
+        if criteria.provider_specialty_cs:
+            provider_str = self._format_concept_set_selection(criteria.provider_specialty_cs, "any specialty")
+            attrs.append(f"a provider specialty concept {provider_str} concept set")
+            
+        if criteria.visit_detail_length:
+            length_str = self._format_numeric_range(criteria.visit_detail_length)
+            attrs.append(f"with visit detail length {length_str}")
+            
+        if criteria.place_of_service:
+            pos_str = self._format_concept_list(criteria.place_of_service)
+            attrs.append(f"a place of service that is: {pos_str}")
+            
+        if criteria.place_of_service_cs:
+            pos_str = self._format_concept_set_selection(criteria.place_of_service_cs, "any place of service")
+            attrs.append(f"a place of service concept {pos_str} concept set")
+        
+        if criteria.discharge_to:
+            discharge_str = self._format_concept_list(criteria.discharge_to)
+            attrs.append(f"with discharge to: {discharge_str}")
+            
+        if criteria.discharge_to_cs:
+            discharge_str = self._format_concept_set_selection(criteria.discharge_to_cs, "any discharge to")
+            attrs.append(f"a discharge to concept {discharge_str} concept set")
+            
+        codeset_name = self._get_concept_set_name(criteria.codeset_id, "any visit detail")
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
+        
+        source_concept = ""
+        if criteria.visit_detail_source_concept is not None:
+             source_name = self._get_concept_set_name(criteria.visit_detail_source_concept, "any visit detail")
+             source_concept = f" (including {source_name} source concepts)"
         
         attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
-        description = f"visit detail{plural} of {codeset_name}{first_time}{attrs_str}"
+        description = f"visit detail{plural} of {codeset_name}{source_concept}{first_time}{attrs_str}"
         
         # Correlated criteria
         if criteria.correlated_criteria:
@@ -1945,16 +2078,51 @@ class MarkdownRender:
         """Render ObservationPeriod criteria."""
         attrs = self._build_criteria_attributes(criteria, count_criteria, index_label)
         
-        # Use getattr to maintain compatibility with Java fields that may not exist in Python model
+        if criteria.user_defined_period:
+            period_str = self._render_period(criteria.user_defined_period)
+            attrs.append(f"using the period: {period_str}")
+            
+        if criteria.period_type:
+            type_str = self._format_concept_list(criteria.period_type)
+            attrs.append(f"a period type that is: {type_str}")
+            
+        if criteria.period_type_cs:
+             type_str = self._format_concept_set_selection(criteria.period_type_cs, "any period type")
+             attrs.append(f"a period type concept {type_str} concept set")
+             
+        if criteria.period_length:
+            length_str = self._format_numeric_range(criteria.period_length)
+            attrs.append(f"with period length {length_str}")
+            
+        if criteria.age_at_start:
+             age_str = self._format_numeric_range(criteria.age_at_start)
+             attrs.append(f"with age at start {age_str}")
+             
+        if criteria.age_at_end:
+             age_str = self._format_numeric_range(criteria.age_at_end)
+             attrs.append(f"with age at end {age_str}")
+             
+        if criteria.period_start_date:
+            date_str = self._format_date_range(criteria.period_start_date)
+            attrs.append(f"start date {date_str}")
+            
+        if criteria.period_end_date:
+            date_str = self._format_date_range(criteria.period_end_date)
+            attrs.append(f"end date {date_str}")
+
         codeset_id = getattr(criteria, 'codeset_id', None)
         codeset_name = self._get_concept_set_name(codeset_id, "any observation period")
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        
+        plural = "s" if (is_plural and not criteria.first) else ""
+        first_time = " for the first time in the person's history" if criteria.first else ""
+        
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
         if codeset_name == "any observation period":
-            description = f"observation period{attrs_str}"
+             description = f"observation period{plural}{first_time}{attrs_str}"
         else:
-            description = f"observation period of {codeset_name}{attrs_str}"
+             description = f"observation period{plural} of {codeset_name}{first_time}{attrs_str}"
             
         # Correlated criteria
         correlated_criteria = getattr(criteria, 'correlated_criteria', None)
@@ -1965,27 +2133,44 @@ class MarkdownRender:
             return f"{description}."
     
     def _render_payer_plan_period(self, criteria: PayerPlanPeriod, level: int = 0,
-                                  is_plural: bool = True, count_criteria: Optional[Dict] = None,
-                                  index_label: str = "cohort entry") -> str:
+                                 is_plural: bool = True, count_criteria: Optional[Dict] = None,
+                                 index_label: str = "cohort entry") -> str:
         """Render PayerPlanPeriod criteria."""
         attrs = self._build_criteria_attributes(criteria, count_criteria, index_label)
         
-        # Use getattr to maintain compatibility with Java fields that may not exist in Python model
-        codeset_id = getattr(criteria, 'codeset_id', None)
-        codeset_name = self._get_concept_set_name(codeset_id, "any payer plan")
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        if criteria.period_length:
+            length_str = self._format_numeric_range(criteria.period_length)
+            attrs.append(f"with period length {length_str}")
+            
+        if criteria.user_defined_period:
+            period_str = self._render_period(criteria.user_defined_period)
+            attrs.append(f"using the period: {period_str}")
+            
+        if criteria.payer_concept:
+            # PayerConcept is int?
+            # Assuming logic similar to concept set but for single concept ID if needed?
+            # Or usually excluded in print friendly if not a list?
+            pass
+            
+        # ... Other attributes
         
-        # Main description
-        description = f"payer plan period of {codeset_name}{attrs_str}"
+        codeset_name = self._get_concept_set_name(None, "any payer plan period")
+        # PayerPlanPeriod usually doesn't have codeset_id in the same way? 
+        # Java uses "payer plan period"
         
-        # Correlated criteria
-        correlated_criteria = getattr(criteria, 'correlated_criteria', None)
-        if correlated_criteria:
-            correlated_text = self._render_criteria_group(correlated_criteria, level=level, index_label=codeset_name)
+        plural = "s" if (is_plural and not criteria.first) else ""
+        first_time = " for the first time in the person's history" if criteria.first else ""
+        
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
+        
+        description = f"payer plan period{plural} of {codeset_name}{first_time}{attrs_str}"
+        
+        if criteria.correlated_criteria:
+            correlated_text = self._render_criteria_group(criteria.correlated_criteria, level=level, index_label="payer plan")
             return f"{description}; {correlated_text}"
         else:
             return f"{description}."
-    
+            
     def _render_location_region(self, criteria: LocationRegion, level: int = 0,
                                is_plural: bool = True, count_criteria: Optional[Dict] = None,
                                index_label: str = "cohort entry") -> str:

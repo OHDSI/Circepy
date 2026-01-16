@@ -34,7 +34,7 @@ class TestDeviceExposureSql(unittest.TestCase):
         join_clauses = builder.resolve_join_clauses(criteria, options)
         
         # Check join to PERSON
-        self.assertIn("JOIN @cdm_database_schema.PERSON P", join_clauses, "Should join to PERSON when age is used")
+        self.assertTrue(any("JOIN @cdm_database_schema.PERSON P" in c for c in join_clauses), "Should join to PERSON when age is used")
         
         # Check date diff logic for age
         age_logic_present = any("YEAR(C.start_date) - P.year_of_birth" in c for c in where_clauses)
@@ -50,8 +50,8 @@ class TestDeviceExposureSql(unittest.TestCase):
         
         join_clauses = builder.resolve_join_clauses(criteria, options)
         
-        self.assertIn("JOIN @cdm_database_schema.VISIT_OCCURRENCE V", join_clauses, "Should join to VISIT_OCCURRENCE")
-        self.assertIn("JOIN @cdm_database_schema.PROVIDER PR", join_clauses, "Should join to PROVIDER")
+        self.assertTrue(any("JOIN @cdm_database_schema.VISIT_OCCURRENCE V" in c for c in join_clauses), "Should join to VISIT_OCCURRENCE")
+        self.assertTrue(any("JOIN @cdm_database_schema.PROVIDER PR" in c for c in join_clauses), "Should join to PROVIDER")
 
 if __name__ == '__main__':
     unittest.main()

@@ -4,6 +4,10 @@ Java Class Mappings for CIRCE Python Implementation
 This document provides a comprehensive mapping of Python classes to their equivalent
 Java CIRCE-BE classes, showing the 1:1 correspondence between implementations.
 
+Source code can be found in the circe-be folder of this project. 
+If it is not there, the repository https://github.com/OHDSI/circe-be should be cloned there.
+Do not search the internet for java class references.
+
 ## Cohort Definition Classes
 
 ### Core Classes (`circe.cohortdefinition.core`)

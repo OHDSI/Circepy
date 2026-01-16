@@ -84,7 +84,7 @@ from
         """
         codeset_clause = ""
         if criteria.codeset_id is not None:
-            codeset_clause = f"WHERE de.drug_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.codeset_id})"
+            codeset_clause = f"where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = {criteria.codeset_id})"
         return query.replace("@codesetClause", codeset_clause)
     
     def embed_ordinal_expression(self, query: str, criteria: DrugEra, where_clauses: List[str]) -> str:
@@ -154,9 +154,9 @@ from
             if numeric_clause:
                 where_clauses.append(numeric_clause)
         
-        # gapDays
+        # gapDays - Replicating Java bug: uses era_length instead of gap_days
         if criteria.gap_days is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(criteria.gap_days, "C.gap_days")
+            numeric_clause = BuilderUtils.build_numeric_range_clause(criteria.era_length, "C.gap_days")
             if numeric_clause:
                 where_clauses.append(numeric_clause)
         

@@ -24,26 +24,26 @@ class CriteriaColumn(str, Enum):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.builders.CriteriaColumn
     """
-    DAYS_SUPPLY = "DAYS_SUPPLY"
-    DOMAIN_CONCEPT = "DOMAIN_CONCEPT"
-    DOMAIN_SOURCE_CONCEPT = "DOMAIN_SOURCE_CONCEPT"
-    DURATION = "DURATION"
-    END_DATE = "END_DATE"
-    ERA_OCCURRENCES = "ERA_OCCURRENCES"
-    GAP_DAYS = "GAP_DAYS"
-    QUANTITY = "QUANTITY"
-    RANGE_HIGH = "RANGE_HIGH"
-    RANGE_LOW = "RANGE_LOW"
-    REFILLS = "REFILLS"
-    START_DATE = "START_DATE"
-    UNIT = "UNIT"
-    VALUE_AS_NUMBER = "VALUE_AS_NUMBER"
-    VISIT_ID = "VISIT_ID"
-    VISIT_DETAIL_ID = "VISIT_DETAIL_ID"
-    AGE = "AGE"
-    GENDER = "GENDER"
-    RACE = "RACE"
-    ETHNICITY = "ETHNICITY"
+    DAYS_SUPPLY = "days_supply"
+    DOMAIN_CONCEPT = "domain_concept_id"
+    DOMAIN_SOURCE_CONCEPT = "domain_source_concept_id"
+    DURATION = "duration"
+    END_DATE = "end_date"
+    ERA_OCCURRENCES = "occurrence_count"
+    GAP_DAYS = "gap_days"
+    QUANTITY = "quantity"
+    RANGE_HIGH = "range_high"
+    RANGE_LOW = "range_low"
+    REFILLS = "refills"
+    START_DATE = "start_date"
+    UNIT = "unit_concept_id"
+    VALUE_AS_NUMBER = "value_as_number"
+    VISIT_ID = "visit_occurrence_id"
+    VISIT_DETAIL_ID = "visit_detail_id"
+    AGE = "age"
+    GENDER = "gender"
+    RACE = "race"
+    ETHNICITY = "ethnicity"
 
 
 class Occurrence(CirceBaseModel):
@@ -415,7 +415,8 @@ class DrugExposure(Criteria):
         validation_alias=AliasChoices("CodesetId", "codesetId"),
         serialization_alias="CodesetId"
     )
-    first: bool = Field(
+    first: Optional[bool] = Field(
+        default=None,
         validation_alias=AliasChoices("First", "first"),
         serialization_alias="First"
     )
@@ -482,7 +483,8 @@ class ProcedureOccurrence(Criteria):
     modifier: Optional[List[Concept]] = Field(default=None, alias="Modifier")
     modifier_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ModifierCS")
     codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
-    first: bool = Field(
+    first: Optional[bool] = Field(
+        default=None,
         validation_alias=AliasChoices("First", "first"),
         serialization_alias="First"
     )
@@ -616,8 +618,8 @@ class Observation(Criteria):
         validation_alias=AliasChoices("CodesetId", "codesetId"),
         serialization_alias="CodesetId"
     )
-    first: bool = Field(
-        default=False,
+    first: Optional[bool] = Field(
+        default=None,
         validation_alias=AliasChoices("First", "first"),
         serialization_alias="First"
     )
@@ -699,8 +701,8 @@ class Measurement(Criteria):
     visits: Optional[List[Concept]] = None  # Placeholder if needed, but not in list
     visit_type: Optional[List[Concept]] = Field(default=None, alias="VisitType")
     
-    first: bool = Field(
-        default=False,
+    first: Optional[bool] = Field(
+        default=None,
         validation_alias=AliasChoices("First", "first"),
         serialization_alias="First"
     )
@@ -729,12 +731,13 @@ class DeviceExposure(Criteria):
     visit_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitTypeCS")
     visit_type: Optional[List[Concept]] = Field(default=None, alias="VisitType")
     codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
-    first: bool = Field(
+    first: Optional[bool] = Field(
+        default=None,
         validation_alias=AliasChoices("First", "first"),
         serialization_alias="First"
     )
     provider_specialty: Optional[List[Concept]] = Field(default=None, alias="ProviderSpecialty")
-    age: Optional[NumericRange] = None
+    age: Optional[NumericRange] = Field(default=None, alias="Age")
     occurrence_start_date: Optional[DateRange] = Field(default=None, alias="OccurrenceStartDate")
 
     model_config = ConfigDict(populate_by_name=True)
@@ -761,7 +764,8 @@ class Specimen(Criteria):
     disease_status_cs: Optional[ConceptSetSelection] = Field(default=None, alias="DiseaseStatusCS")
     quantity: Optional[NumericRange] = None
     codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
-    first: bool = Field(
+    first: Optional[bool] = Field(
+        default=None,
         validation_alias=AliasChoices("First", "first"),
         serialization_alias="First"
     )
@@ -790,10 +794,7 @@ class Death(Criteria):
     cause_source_concept: Optional[int] = Field(default=None, alias="CauseSourceConcept")
     cause_source_concept_cs: Optional[ConceptSetSelection] = Field(default=None, alias="CauseSourceConceptCS")
     codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
-    first: bool = Field(
-        validation_alias=AliasChoices("First", "first"),
-        serialization_alias="First"
-    )
+
     age: Optional[NumericRange] = None
     occurrence_start_date: Optional[DateRange] = Field(default=None, alias="OccurrenceStartDate")
 
@@ -809,6 +810,7 @@ class VisitDetail(Criteria):
     first: Optional[bool] = Field(default=None, alias="First")
     visit_detail_start_date: Optional[DateRange] = Field(default=None, alias="VisitDetailStartDate")
     visit_detail_end_date: Optional[DateRange] = Field(default=None, alias="VisitDetailEndDate")
+    visit_detail_type: Optional[List[Concept]] = Field(default=None, alias="VisitDetailType")
     visit_detail_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitDetailTypeCS")
     visit_detail_type_exclude: bool = Field(default=False, alias="VisitDetailTypeExclude")
     visit_detail_source_concept: Optional[int] = Field(default=None, alias="VisitDetailSourceConcept")
@@ -819,9 +821,13 @@ class VisitDetail(Criteria):
         serialization_alias="gender"
     )
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
+    provider_specialty: Optional[List[Concept]] = Field(default=None, alias="ProviderSpecialty")
     provider_specialty_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ProviderSpecialtyCS")
+    place_of_service: Optional[List[Concept]] = Field(default=None, alias="PlaceOfService")
     place_of_service_cs: Optional[ConceptSetSelection] = Field(default=None, alias="PlaceOfServiceCS")
     place_of_service_location: Optional[int] = Field(default=None, alias="PlaceOfServiceLocation")
+    discharge_to: Optional[List[Concept]] = Field(default=None, alias="DischargeTo")
+    discharge_to_cs: Optional[ConceptSetSelection] = Field(default=None, alias="DischargeToCS")
 
     model_config = ConfigDict(populate_by_name=True)
 

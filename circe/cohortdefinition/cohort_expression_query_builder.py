@@ -1383,3 +1383,4 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
                 column_clauses.append(f"{table_alias}{column_mappings[column]}")
 
         return ", ".join(column_clauses)
+

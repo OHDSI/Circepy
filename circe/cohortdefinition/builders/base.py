@@ -23,12 +23,12 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
     Java equivalent: org.ohdsi.circe.cohortdefinition.builders.CriteriaSqlBuilder
     """
     
-    def get_criteria_sql(self, criteria: T) -> str:
+    def get_criteria_sql(self, criteria: T, options: Optional[BuilderOptions] = None) -> str:
         """Get SQL query for criteria.
         
         Java equivalent: CriteriaSqlBuilder.getCriteriaSql(T criteria)
         """
-        return self.get_criteria_sql_with_options(criteria, None)
+        return self.get_criteria_sql_with_options(criteria, options)
     
     def get_criteria_sql_with_options(self, criteria: T, options: Optional[BuilderOptions]) -> str:
         """Get SQL query for criteria with builder options.

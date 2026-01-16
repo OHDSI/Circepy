@@ -49,7 +49,9 @@ WHERE @whereClause
         """Get table column for criteria column."""
         column_mapping = {
             CriteriaColumn.DOMAIN_CONCEPT: "coalesce(C.cause_concept_id,0)",
-            CriteriaColumn.DURATION: "CAST(1 as int)"
+            CriteriaColumn.DURATION: "CAST(1 as int)",
+            CriteriaColumn.START_DATE: "C.start_date",
+            CriteriaColumn.END_DATE: "C.end_date"
         }
         return column_mapping.get(criteria_column, "NULL")
     
