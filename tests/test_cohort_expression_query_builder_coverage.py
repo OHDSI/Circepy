@@ -82,7 +82,7 @@ class TestCohortExpressionQueryBuilderCoverage(unittest.TestCase):
         
         # Verify censoring logic
         self.assertIn("-- censor events", sql)
-        self.assertIn("select person_id, event_id, start_date as end_date", sql) # CENSORING_QUERY_TEMPLATE
+        self.assertIn("select i.event_id, i.person_id", sql.lower()) # CENSORING_QUERY_TEMPLATE
         # Should call get_criteria_sql for checking death/obs tables
         self.assertIn("from cdm.death", sql) 
         self.assertIn("from cdm.observation", sql)

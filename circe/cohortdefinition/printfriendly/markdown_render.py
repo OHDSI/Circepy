@@ -224,6 +224,24 @@ class MarkdownRender:
             return date_string
         except (ValueError, AttributeError):
             return "_invalid date_"
+
+    def _format_number(self, value: Union[int, float]) -> str:
+        """Format number with thousands separators and handle integer/float logic.
+        
+        Args:
+            value: Number to format
+            
+        Returns:
+            Formatted string (e.g. "1,500" or "1.5")
+        """
+        if value is None:
+            return ""
+            
+        # If matches integer, convert to int for clean formatting
+        if isinstance(value, float) and value.is_integer():
+            value = int(value)
+            
+        return f"{value:,}"
     
     def _format_numeric_range(self, numeric_range: NumericRange) -> str:
         """Format numeric range with proper operators.
@@ -252,9 +270,9 @@ class MarkdownRender:
         op_name = op_map.get(numeric_range.op, numeric_range.op)
         
         if numeric_range.op.endswith("bt") and numeric_range.value is not None and numeric_range.extent is not None:
-            return f"{op_name} {numeric_range.value} and {numeric_range.extent}"
+            return f"{op_name} {self._format_number(numeric_range.value)} and {self._format_number(numeric_range.extent)}"
         elif numeric_range.value is not None:
-            return f"{op_name} {numeric_range.value}"
+            return f"{op_name} {self._format_number(numeric_range.value)}"
         else:
             return op_name
     
@@ -688,22 +706,22 @@ class MarkdownRender:
         # Look for attribute patterns: ", key: value" or ", with key: value" or " (including ...)"
         import re
         attribute_patterns = [
-            (r'[,;]\s*(numeric value [^,;]+?)(?=[,;]\s*(?:unit:|operator:|value as string|range low|range high|starting|ending)|$)', 'numeric value'),
-            (r'[,;]\s*(unit: [^,;]+(?:,\s*"[^"]*")*(?:\s+or\s+"[^"]*")?)(?=[,;]\s*(?:numeric value|operator:|value as string|range low|range high|a measurement|an operator|a unit|starting|ending)|$)', 'unit'),
-            (r'[,;]\s*(operator: [^,;]+?)(?=[,;]\s*(?:unit:|numeric value|value as string|value as concept|range low|range high|starting|ending)|$)', 'operator'),
-            (r'[,;]\s*(value as string [^,;]+?)(?=[,;]\s*(?:unit:|operator:|numeric value|value as concept|range low|range high|starting|ending)|$)', 'value as string'),
-            (r'[,;]\s*(with value as concept: .*?)(?=[,;]\s*(?:unit:|operator:|numeric value|value as string|range low|range high|starting|ending)|$)', 'value as concept'),
-            (r'[,;]\s*(a value as concept [^,;]+? concept set)(?=[,;]\s*(?:unit:|operator:|numeric value|value as string|with value as concept:|range low|range high|starting|ending)|$)', 'value as concept set'),
-            (r'[,;]\s*(range low [^,;]+?)(?=[,;]\s*(?:unit:|operator:|value as string|numeric value|range high|starting|ending)|$)', 'range low'),
-            (r'[,;]\s*(range high [^,;]+?)(?=[,;]\s*(?:unit:|operator:|value as string|range low|numeric value|starting|ending)|$)', 'range high'),
-            (r'[,;]\s*(a measurement type [^,;]+?)(?=[,;]\s*(?:unit:|operator:|starting|ending)|$)', 'measurement type'),
-            (r'[,;]\s*(an operator concept [^,;]+?)(?=[,;]\s*(?:unit:|starting|ending)|$)', 'operator concept'),
-            (r'[,;]\s*(a unit concept [^,;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'unit concept'),
+            (r'[,;]\s*(numeric value [^;]+?)(?=[,;]\s*(?:unit:|operator:|value as string|low range|high range|starting|ending)|$)', 'numeric value'),
+            (r'[,;]\s*(unit: [^;]+(?:,\s*"[^"]*")*(?:\s+or\s+"[^"]*")?)(?=[,;]\s*(?:numeric value|operator:|value as string|low range|high range|a measurement|an operator|a unit|starting|ending)|$)', 'unit'),
+            (r'[,;]\s*(operator: [^;]+?)(?=[,;]\s*(?:unit:|numeric value|value as string|value as concept|low range|high range|starting|ending)|$)', 'operator'),
+            (r'[,;]\s*(value as string [^;]+?)(?=[,;]\s*(?:unit:|operator:|numeric value|value as concept|low range|high range|starting|ending)|$)', 'value as string'),
+            (r'[,;]\s*(with value as concept: .*?)(?=[,;]\s*(?:unit:|operator:|numeric value|value as string|low range|high range|starting|ending)|$)', 'value as concept'),
+            (r'[,;]\s*(a value as concept [^;]+? concept set)(?=[,;]\s*(?:unit:|operator:|numeric value|value as string|with value as concept:|low range|high range|starting|ending)|$)', 'value as concept set'),
+            (r'[,;]\s*(low range [^;]+?)(?=[,;]\s*(?:unit:|operator:|value as string|numeric value|high range|starting|ending)|$)', 'low range'),
+            (r'[,;]\s*(high range [^;]+?)(?=[,;]\s*(?:unit:|operator:|value as string|low range|numeric value|starting|ending)|$)', 'high range'),
+            (r'[,;]\s*(a measurement type [^;]+?)(?=[,;]\s*(?:unit:|operator:|starting|ending)|$)', 'measurement type'),
+            (r'[,;]\s*(an operator concept [^;]+?)(?=[,;]\s*(?:unit:|starting|ending)|$)', 'operator concept'),
+            (r'[,;]\s*(a unit concept [^;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'unit concept'),
             # Modifiers and status usually come last in Java/R
-            (r'[,;]\s*(with modifier: [^,;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'modifier'),
-            (r'[,;]\s*(a modifier concept [^,;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'modifier concept'),
-            (r'[,;]\s*(with a condition status: [^,;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'condition status'),
-            (r'\s*(with a condition status: [^,;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'condition status')  # Sometimes no comma
+            (r'[,;]\s*(with modifier: [^;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'modifier'),
+            (r'[,;]\s*(a modifier concept [^;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'modifier concept'),
+            (r'[,;]\s*(with a condition status: [^;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'condition status'),
+            (r'\s*(with a condition status: [^;]+?)(?=[,;]\s*(?:starting|ending)|$)', 'condition status')  # Sometimes no comma
         ]
         
         # Protect nested group phrases from attribute stripping
@@ -831,13 +849,11 @@ class MarkdownRender:
             return ""
         
         criteria_parts = []
-        # R always shows this line first
-        criteria_parts.append("The person exits the cohort at the end of continuous observation.")
         criteria_parts.append("The person exits the cohort when encountering any of the following events:")
         criteria_parts.append("")
         
         for i, criteria in enumerate(censoring_criteria, 1):
-            criteria_parts.append(f"{i}. {self._render_criteria(criteria, level=0, is_plural=False)}")
+            criteria_parts.append(f"{i}. {self._render_criteria(criteria, level=0, is_plural=True)}")
             criteria_parts.append("")
         
         return "\n".join(criteria_parts)
@@ -1799,11 +1815,11 @@ class MarkdownRender:
         
         if criteria.range_low:
             range_str = self._format_numeric_range(criteria.range_low)
-            attrs.append(f"range low {range_str}")
+            attrs.append(f"low range {range_str}")
         
         if criteria.range_high:
             range_str = self._format_numeric_range(criteria.range_high)
-            attrs.append(f"range high {range_str}")
+            attrs.append(f"high range {range_str}")
         
         if criteria.provider_specialty_cs:
             provider_str = self._format_concept_set_selection(criteria.provider_specialty_cs, "any specialty")

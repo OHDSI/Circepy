@@ -21,9 +21,8 @@ Reference outputs were generated using R CirceR package and are stored in
 tests/cohorts/reference_outputs/
 """
 
-import subprocess
-import sys
-import tempfile
+from circe.api import cohort_expression_from_json, build_cohort_query, cohort_print_friendly
+from circe.cohortdefinition import BuildExpressionQueryOptions
 from pathlib import Path
 from typing import Optional, Tuple
 import pytest
@@ -86,55 +85,41 @@ def get_reference_markdown(cohort_name: str) -> Optional[str]:
 
 def generate_python_outputs(cohort_file: Path) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """
-    Run Python CLI and return SQL, Markdown, and any error message.
+    Run Python reference implementation to generate SQL and Markdown.
     
     Returns:
         Tuple of (sql, markdown, error_message)
         If successful, error_message is None
         If failed, sql and markdown may be None
     """
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmpdir_path = Path(tmpdir)
-        sql_output = tmpdir_path / 'output.sql'
-        md_output = tmpdir_path / 'output.md'
-        
-        # Run Python CLI for SQL
-        result_sql = subprocess.run(
-            [sys.executable, '-m', 'circe.cli', 'generate-sql', str(cohort_file),
-             '--output', str(sql_output), '--no-validate'],
-            capture_output=True,
-            text=True,
-            timeout=60
-        )
-        
-        sql = None
-        sql_error = None
-        if result_sql.returncode != 0:
-            sql_error = f"SQL generation failed: {result_sql.stderr}"
-        elif sql_output.exists():
-            sql = sql_output.read_text()
-        
-        # Run Python CLI for Markdown
-        result_md = subprocess.run(
-            [sys.executable, '-m', 'circe.cli', 'render-markdown', str(cohort_file),
-             '--output', str(md_output), '--no-validate'],
-            capture_output=True,
-            text=True,
-            timeout=60
-        )
-        
-        markdown = None
-        md_error = None
-        if result_md.returncode != 0:
-            md_error = f"Markdown generation failed: {result_md.stderr}"
-        elif md_output.exists():
-            markdown = md_output.read_text()
-        
-        error = None
-        if sql_error or md_error:
-            error = "; ".join(filter(None, [sql_error, md_error]))
-        
-        return sql, markdown, error
+    sql = None
+    markdown = None
+    errors = []
+
+    try:
+        # Read and parse JSON
+        json_str = cohort_file.read_text()
+        expression = cohort_expression_from_json(json_str)
+
+        # Generate SQL
+        try:
+            options = BuildExpressionQueryOptions()
+            options.generate_stats = True
+            sql = build_cohort_query(expression, options)
+        except Exception as e:
+            errors.append(f"SQL generation failed: {str(e)}")
+
+        # Generate Markdown
+        try:
+            markdown = cohort_print_friendly(expression)
+        except Exception as e:
+            errors.append(f"Markdown generation failed: {str(e)}")
+
+    except Exception as e:
+        errors.append(f"JSON parsing failed: {str(e)}")
+
+    error_msg = "; ".join(errors) if errors else None
+    return sql, markdown, error_msg
 
 
 def normalize_sql(sql: str) -> str:

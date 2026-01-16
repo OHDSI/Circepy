@@ -260,8 +260,13 @@ from (
 """
 
     CENSORING_QUERY_TEMPLATE = """
-SELECT person_id, event_id, start_date as end_date
-FROM (@criteriaQuery) C
+select i.event_id, i.person_id, MIN(c.start_date) as end_date
+FROM #included_events i
+JOIN
+(
+@criteriaQuery
+) C on C.person_id = I.person_id and C.start_date >= I.start_date and C.START_DATE <= I.op_end_date
+GROUP BY i.event_id, i.person_id
     """
 
     EVENT_TABLE_EXPRESSION_TEMPLATE = """
@@ -824,22 +829,25 @@ DROP TABLE #inclusion_rules;
                                                 expression.end_strategy.accept(self, "#included_events"))
                 result_sql = result_sql.replace("@strategy_ends_cleanup",
                                                 "TRUNCATE TABLE #strategy_ends;\nDROP TABLE #strategy_ends;\n")
-                end_date_selects.append(
-                    "-- End Date Strategy\nSELECT event_id, person_id, end_date FROM #strategy_ends")
+                
+                strategy_select = "SELECT event_id, person_id, end_date FROM #strategy_ends"
+                end_date_selects.append(f"-- End Date Strategy\n{strategy_select}")
             else:
-                # Base EndStrategy doesn't have accept method - use default
                 result_sql = result_sql.replace("@strategy_ends_temp_tables", "")
                 result_sql = result_sql.replace("@strategy_ends_cleanup", "")
         else:
             result_sql = result_sql.replace("@strategy_ends_temp_tables", "")
             result_sql = result_sql.replace("@strategy_ends_cleanup", "")
-
+            
         if expression.censoring_criteria:
-            end_date_selects.append(
-                f"-- Censor Events\n{self.get_censoring_events_query(expression.censoring_criteria)}")
+            end_date_selects.append(f"-- Censor Events\n{self.get_censoring_events_query(expression.censoring_criteria)}")
 
-        result_sql = result_sql.replace("@finalCohortQuery", self.get_final_cohort_query(expression.censor_window))
-        result_sql = result_sql.replace("@cohort_end_unions", " UNION ALL ".join(end_date_selects))
+        final_cohort_query = self.get_final_cohort_query(expression.censor_window)
+        result_sql = result_sql.replace("@finalCohortQuery", final_cohort_query)
+        
+        result_sql = result_sql.replace("@cohort_end_unions", "\nUNION ALL\n".join(end_date_selects))
+
+
 
         # Handle optional collapse_settings
         era_pad = "0"
