@@ -1007,11 +1007,11 @@ DROP TABLE #inclusion_rules;
 
         # OccurrenceStartDate
         if criteria.occurrence_start_date:
-            where_clauses.append(BuilderUtils.build_date_range_clause("E.start_date", criteria.occurrence_start_date))
+            where_clauses.append(BuilderUtils.build_date_range_clause(criteria.occurrence_start_date, "E.start_date"))
 
         # OccurrenceEndDate
         if criteria.occurrence_end_date:
-            where_clauses.append(BuilderUtils.build_date_range_clause("E.end_date", criteria.occurrence_end_date))
+            where_clauses.append(BuilderUtils.build_date_range_clause(criteria.occurrence_end_date, "E.end_date"))
 
         if where_clauses:
             query = query.replace("@whereClause", "WHERE " + " AND ".join(where_clauses))
