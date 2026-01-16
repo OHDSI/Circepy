@@ -2022,7 +2022,7 @@ class TestDoseEraSqlBuilder(unittest.TestCase):
     def test_resolve_join_clauses_with_person(self):
         """Test join clauses resolution with person join."""
         builder = DoseEraSqlBuilder()
-        criteria = DoseEra(first=False, age_at_start=NumericRange(op=">=", value=18))
+        criteria = DoseEra(first=False, age_at_start=NumericRange(op="gte", value=18))
         
         join_clauses = builder.resolve_join_clauses(criteria)
         
@@ -2043,8 +2043,8 @@ class TestDoseEraSqlBuilder(unittest.TestCase):
         builder = DoseEraSqlBuilder()
         criteria = DoseEra(
             first=False,
-            era_start_date=DateRange(op=">=", value="2020-01-01"),
-            dose_value=NumericRange(op=">", value=100)
+            era_start_date=DateRange(op="gte", value="2020-01-01"),
+            dose_value=NumericRange(op="gt", value=100)
         )
         
         where_clauses = builder.resolve_where_clauses(criteria)
@@ -2132,7 +2132,7 @@ class TestObservationPeriodSqlBuilder(unittest.TestCase):
     def test_resolve_join_clauses_with_person(self):
         """Test join clauses resolution with person join."""
         builder = ObservationPeriodSqlBuilder()
-        criteria = ObservationPeriod(age_at_start=NumericRange(op=">=", value=18))
+        criteria = ObservationPeriod(age_at_start=NumericRange(op="gte", value=18))
         
         join_clauses = builder.resolve_join_clauses(criteria)
         
@@ -2152,8 +2152,8 @@ class TestObservationPeriodSqlBuilder(unittest.TestCase):
         """Test where clauses resolution with filters."""
         builder = ObservationPeriodSqlBuilder()
         criteria = ObservationPeriod(
-            period_start_date=DateRange(op=">=", value="2020-01-01"),
-            age_at_start=NumericRange(op=">", value=30)
+            period_start_date=DateRange(op="gte", value="2020-01-01"),
+            age_at_start=NumericRange(op="gt", value=30)
         )
         
         where_clauses = builder.resolve_where_clauses(criteria)
@@ -2254,7 +2254,7 @@ class TestPayerPlanPeriodSqlBuilder(unittest.TestCase):
     def test_resolve_join_clauses_with_person(self):
         """Test join clauses resolution with person join."""
         builder = PayerPlanPeriodSqlBuilder()
-        criteria = PayerPlanPeriod(age_at_start=NumericRange(op=">=", value=18))
+        criteria = PayerPlanPeriod(age_at_start=NumericRange(op="gte", value=18))
         
         join_clauses = builder.resolve_join_clauses(criteria)
         
@@ -2275,7 +2275,7 @@ class TestPayerPlanPeriodSqlBuilder(unittest.TestCase):
         """Test where clauses resolution with filters."""
         builder = PayerPlanPeriodSqlBuilder()
         criteria = PayerPlanPeriod(
-            period_start_date=DateRange(op=">=", value="2020-01-01"),
+            period_start_date=DateRange(op="gte", value="2020-01-01"),
             payer_source_concept=123
         )
         
@@ -2368,7 +2368,7 @@ class TestVisitDetailSqlBuilder(unittest.TestCase):
     def test_resolve_join_clauses_with_person(self):
         """Test join clauses resolution with person join."""
         builder = VisitDetailSqlBuilder()
-        criteria = VisitDetail(visit_detail_type_exclude=False, age=NumericRange(op=">=", value=18))
+        criteria = VisitDetail(visit_detail_type_exclude=False, age=NumericRange(op="gte", value=18))
         
         join_clauses = builder.resolve_join_clauses(criteria)
         
@@ -2402,8 +2402,8 @@ class TestVisitDetailSqlBuilder(unittest.TestCase):
         builder = VisitDetailSqlBuilder()
         criteria = VisitDetail(
             visit_detail_type_exclude=False,
-            visit_detail_start_date=DateRange(op=">=", value="2020-01-01"),
-            age=NumericRange(op=">", value=1)
+            visit_detail_start_date=DateRange(op="gte", value="2020-01-01"),
+            age=NumericRange(op="gt", value=1)
         )
         
         where_clauses = builder.resolve_where_clauses(criteria)
@@ -2535,6 +2535,12 @@ class TestBuilderIntegration(unittest.TestCase):
                 mock_criteria = DoseEra(first=False)
             elif builder.__class__.__name__ == "VisitDetailSqlBuilder":
                 mock_criteria = VisitDetail(visit_detail_type_exclude=False)
+            elif builder.__class__.__name__ == "ObservationPeriodSqlBuilder":
+                mock_criteria = ObservationPeriod(first=False)
+            elif builder.__class__.__name__ == "PayerPlanPeriodSqlBuilder":
+                mock_criteria = PayerPlanPeriod(first=False)
+            elif builder.__class__.__name__ == "LocationRegionSqlBuilder":
+                mock_criteria = LocationRegion()
             else:
                 mock_criteria = Mock()
             

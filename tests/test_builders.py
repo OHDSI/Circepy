@@ -205,10 +205,10 @@ class TestBuilderUtils(unittest.TestCase):
     
     def test_build_date_range_clause_with_range(self):
         """Test date range clause with date range."""
-        date_range = DateRange(op=">=", value="2020-01-01")
+        date_range = DateRange(op="gte", value="2020-01-01")
         
         result = BuilderUtils.build_date_range_clause(date_range, "date_col")
-        expected = "date_col >= '2020-01-01'"
+        expected = "date_col >= DATEFROMPARTS(2020, 1, 1)"
         self.assertEqual(result, expected)
     
     def test_build_numeric_range_clause_none(self):
@@ -218,7 +218,7 @@ class TestBuilderUtils(unittest.TestCase):
     
     def test_build_numeric_range_clause_with_range(self):
         """Test numeric range clause with numeric range."""
-        numeric_range = NumericRange(op=">", value=100)
+        numeric_range = NumericRange(op="gt", value=100)
         
         result = BuilderUtils.build_numeric_range_clause(numeric_range, "num_col")
         expected = "num_col > 100"

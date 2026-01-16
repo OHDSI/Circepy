@@ -155,7 +155,7 @@ FROM
 
         # valueAsNumber
         if hasattr(criteria, 'value_as_number') and criteria.value_as_number:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.value_as_number, "C.value_as_number"))
+            where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.value_as_number, "C.value_as_number", ".4f"))
 
         # valueAsString
         if criteria.value_as_string:

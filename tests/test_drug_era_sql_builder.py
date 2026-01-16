@@ -167,7 +167,7 @@ class TestDrugEraSqlBuilder:
     
     def test_resolve_join_clauses_with_age_at_start(self):
         """Test resolve_join_clauses with age_at_start."""
-        criteria = DrugEra(age_at_start=NumericRange(op=">=", value=18))
+        criteria = DrugEra(age_at_start=NumericRange(op="gte", value=18))
         
         result = self.builder.resolve_join_clauses(criteria)
         
@@ -176,7 +176,7 @@ class TestDrugEraSqlBuilder:
     
     def test_resolve_join_clauses_with_age_at_end(self):
         """Test resolve_join_clauses with age_at_end."""
-        criteria = DrugEra(age_at_end=NumericRange(op="<=", value=65))
+        criteria = DrugEra(age_at_end=NumericRange(op="lte", value=65))
         
         result = self.builder.resolve_join_clauses(criteria)
         
@@ -204,7 +204,7 @@ class TestDrugEraSqlBuilder:
     def test_resolve_join_clauses_with_multiple_conditions(self):
         """Test resolve_join_clauses with multiple conditions."""
         criteria = DrugEra(
-            age_at_start=NumericRange(op=">=", value=18),
+            age_at_start=NumericRange(op="gte", value=18),
             gender=[Concept(concept_id=8507)],
             gender_cs=ConceptSetSelection(codeset_id=123, is_exclusion=False)
         )
@@ -224,7 +224,7 @@ class TestDrugEraSqlBuilder:
     
     def test_resolve_where_clauses_with_era_start_date(self):
         """Test resolve_where_clauses with era_start_date."""
-        criteria = DrugEra(era_start_date=DateRange(op=">=", value="2020-01-01"))
+        criteria = DrugEra(era_start_date=DateRange(op="gte", value="2020-01-01"))
         
         result = self.builder.resolve_where_clauses(criteria)
         
@@ -233,7 +233,7 @@ class TestDrugEraSqlBuilder:
     
     def test_resolve_where_clauses_with_era_end_date(self):
         """Test resolve_where_clauses with era_end_date."""
-        criteria = DrugEra(era_end_date=DateRange(op="<=", value="2023-12-31"))
+        criteria = DrugEra(era_end_date=DateRange(op="lte", value="2023-12-31"))
         
         result = self.builder.resolve_where_clauses(criteria)
         
@@ -242,7 +242,7 @@ class TestDrugEraSqlBuilder:
     
     def test_resolve_where_clauses_with_occurrence_count(self):
         """Test resolve_where_clauses with occurrence_count."""
-        criteria = DrugEra(occurrence_count=NumericRange(op=">=", value=2))
+        criteria = DrugEra(occurrence_count=NumericRange(op="gte", value=2))
         
         result = self.builder.resolve_where_clauses(criteria)
         
@@ -251,7 +251,7 @@ class TestDrugEraSqlBuilder:
     
     def test_resolve_where_clauses_with_era_length(self):
         """Test resolve_where_clauses with era_length."""
-        criteria = DrugEra(era_length=NumericRange(op=">=", value=30))
+        criteria = DrugEra(era_length=NumericRange(op="gte", value=30))
         
         result = self.builder.resolve_where_clauses(criteria)
         
@@ -263,7 +263,7 @@ class TestDrugEraSqlBuilder:
         
         Note: Replicating Java bug where gap_days filter uses era_length value.
         """
-        criteria = DrugEra(gap_days=NumericRange(op="<=", value=30), era_length=NumericRange(op="<=", value=60))
+        criteria = DrugEra(gap_days=NumericRange(op="lte", value=30), era_length=NumericRange(op="lte", value=60))
         
         result = self.builder.resolve_where_clauses(criteria)
         
@@ -273,7 +273,7 @@ class TestDrugEraSqlBuilder:
     
     def test_resolve_where_clauses_with_age_at_start(self):
         """Test resolve_where_clauses with age_at_start."""
-        criteria = DrugEra(age_at_start=NumericRange(op=">=", value=18))
+        criteria = DrugEra(age_at_start=NumericRange(op="gte", value=18))
         
         result = self.builder.resolve_where_clauses(criteria)
         
@@ -282,7 +282,7 @@ class TestDrugEraSqlBuilder:
     
     def test_resolve_where_clauses_with_age_at_end(self):
         """Test resolve_where_clauses with age_at_end."""
-        criteria = DrugEra(age_at_end=NumericRange(op="<=", value=65))
+        criteria = DrugEra(age_at_end=NumericRange(op="lte", value=65))
         
         result = self.builder.resolve_where_clauses(criteria)
         
@@ -311,13 +311,13 @@ class TestDrugEraSqlBuilder:
     def test_resolve_where_clauses_with_multiple_conditions(self):
         """Test resolve_where_clauses with multiple conditions."""
         criteria = DrugEra(
-            era_start_date=DateRange(op=">=", value="2020-01-01"),
-            era_end_date=DateRange(op="<=", value="2023-12-31"),
-            occurrence_count=NumericRange(op=">=", value=2),
-            era_length=NumericRange(op=">=", value=30),
-            gap_days=NumericRange(op="<=", value=30),
-            age_at_start=NumericRange(op=">=", value=18),
-            age_at_end=NumericRange(op="<=", value=65),
+            era_start_date=DateRange(op="gte", value="2020-01-01"),
+            era_end_date=DateRange(op="lte", value="2023-12-31"),
+            occurrence_count=NumericRange(op="gte", value=2),
+            era_length=NumericRange(op="gte", value=30),
+            gap_days=NumericRange(op="lte", value=30),
+            age_at_start=NumericRange(op="gte", value=18),
+            age_at_end=NumericRange(op="lte", value=65),
             gender=[Concept(concept_id=8507)],
             gender_cs=ConceptSetSelection(codeset_id=123, is_exclusion=False)
         )
@@ -387,7 +387,7 @@ class TestDrugEraSqlBuilder:
     
     def test_get_criteria_sql_with_person_join(self):
         """Test get_criteria_sql with person join."""
-        criteria = DrugEra(age_at_start=NumericRange(op=">=", value=18))
+        criteria = DrugEra(age_at_start=NumericRange(op="gte", value=18))
         
         result = self.builder.get_criteria_sql(criteria)
         
@@ -399,7 +399,7 @@ class TestDrugEraSqlBuilder:
         
         Note: Replicating Java bug where gap_days filter uses era_length value.
         """
-        criteria = DrugEra(gap_days=NumericRange(op="<=", value=30), era_length=NumericRange(op="<=", value=60))
+        criteria = DrugEra(gap_days=NumericRange(op="lte", value=30), era_length=NumericRange(op="lte", value=60))
         
         result = self.builder.get_criteria_sql(criteria)
         
@@ -446,8 +446,8 @@ class TestDrugEraSqlBuilder:
     def test_edge_case_date_range_none_values(self):
         """Test edge case with None date range values."""
         criteria = DrugEra(
-            era_start_date=DateRange(op=">=", value=None),
-            era_end_date=DateRange(op="<=", value=None)
+            era_start_date=DateRange(op="gte", value=None),
+            era_end_date=DateRange(op="lte", value=None)
         )
         
         result = self.builder.resolve_where_clauses(criteria)
@@ -458,9 +458,9 @@ class TestDrugEraSqlBuilder:
     def test_edge_case_numeric_range_none_values(self):
         """Test edge case with None numeric range values."""
         criteria = DrugEra(
-            occurrence_count=NumericRange(op=">=", value=None),
-            era_length=NumericRange(op="<=", value=None),
-            gap_days=NumericRange(op="<=", value=None)
+            occurrence_count=NumericRange(op="gte", value=None),
+            era_length=NumericRange(op="lte", value=None),
+            gap_days=NumericRange(op="lte", value=None)
         )
         
         result = self.builder.resolve_where_clauses(criteria)
@@ -480,13 +480,13 @@ class TestDrugEraSqlBuilder:
         criteria = DrugEra(
             codeset_id=456,
             first=True,
-            era_start_date=DateRange(op=">=", value="2020-01-01"),
-            era_end_date=DateRange(op="<=", value="2023-12-31"),
-            occurrence_count=NumericRange(op=">=", value=1),
-            era_length=NumericRange(op=">=", value=7),
-            gap_days=NumericRange(op="<=", value=30),
-            age_at_start=NumericRange(op=">=", value=18),
-            age_at_end=NumericRange(op="<=", value=80),
+            era_start_date=DateRange(op="gte", value="2020-01-01"),
+            era_end_date=DateRange(op="lte", value="2023-12-31"),
+            occurrence_count=NumericRange(op="gte", value=1),
+            era_length=NumericRange(op="gte", value=7),
+            gap_days=NumericRange(op="lte", value=30),
+            age_at_start=NumericRange(op="gte", value=18),
+            age_at_end=NumericRange(op="lte", value=80),
             gender=[Concept(concept_id=8507)],
             gender_cs=ConceptSetSelection(codeset_id=789, is_exclusion=False),
             date_adjustment=date_adjustment

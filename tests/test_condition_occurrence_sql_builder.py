@@ -214,7 +214,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
     
     def test_resolve_join_clauses_with_age(self):
         """Test join clauses with age criteria."""
-        criteria = ConditionOccurrence(age=NumericRange(min_value=18, max_value=65))
+        criteria = ConditionOccurrence(age=NumericRange(op="gte", value=18, extent=65))
         result = self.builder.resolve_join_clauses(criteria)
         self.assertIn("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id", result)
     
@@ -257,7 +257,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
     def test_resolve_join_clauses_with_multiple_conditions(self):
         """Test join clauses with multiple conditions."""
         criteria = ConditionOccurrence(
-            age=NumericRange(min_value=18, max_value=65),
+            age=NumericRange(op="gte", value=18, extent=65),
             visit_type=[Concept(concept_id=1)],
             provider_specialty=[Concept(concept_id=1)]
         )
@@ -274,13 +274,13 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
     
     def test_resolve_where_clauses_with_occurrence_start_date(self):
         """Test where clauses with occurrence_start_date."""
-        criteria = ConditionOccurrence(occurrence_start_date=DateRange(start_date="2020-01-01", end_date="2020-12-31"))
+        criteria = ConditionOccurrence(occurrence_start_date=DateRange(op="gte", value="2020-01-01", extent="2020-12-31"))
         result = self.builder.resolve_where_clauses(criteria)
         self.assertTrue(any("C.start_date" in clause for clause in result))
     
     def test_resolve_where_clauses_with_occurrence_end_date(self):
         """Test where clauses with occurrence_end_date."""
-        criteria = ConditionOccurrence(occurrence_end_date=DateRange(start_date="2020-01-01", end_date="2020-12-31"))
+        criteria = ConditionOccurrence(occurrence_end_date=DateRange(op="gte", value="2020-01-01", extent="2020-12-31"))
         result = self.builder.resolve_where_clauses(criteria)
         self.assertTrue(any("C.end_date" in clause for clause in result))
     
@@ -313,7 +313,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
     
     def test_resolve_where_clauses_with_age(self):
         """Test where clauses with age criteria."""
-        criteria = ConditionOccurrence(age=NumericRange(min_value=18, max_value=65))
+        criteria = ConditionOccurrence(age=NumericRange(op="gte", value=18, extent=65))
         result = self.builder.resolve_where_clauses(criteria)
         self.assertTrue(any("YEAR(C.start_date) - P.year_of_birth" in clause for clause in result))
     
@@ -368,8 +368,8 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
     def test_resolve_where_clauses_with_multiple_conditions(self):
         """Test where clauses with multiple conditions."""
         criteria = ConditionOccurrence(
-            occurrence_start_date=DateRange(start_date="2020-01-01", end_date="2020-12-31"),
-            age=NumericRange(min_value=18, max_value=65),
+            occurrence_start_date=DateRange(op="gte", value="2020-01-01", extent="2020-12-31"),
+            age=NumericRange(op="gte", value=18, extent=65),
             gender=[Concept(concept_id=1)]
         )
         result = self.builder.resolve_where_clauses(criteria)
@@ -433,7 +433,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
     
     def test_get_criteria_sql_with_person_join(self):
         """Test SQL generation with person join."""
-        criteria = ConditionOccurrence(age=NumericRange(min_value=18, max_value=65))
+        criteria = ConditionOccurrence(age=NumericRange(op="gte", value=18, extent=65))
         result = self.builder.get_criteria_sql(criteria)
         
         # Should contain person join
@@ -476,14 +476,14 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
     
     def test_edge_case_date_range_none_values(self):
         """Test edge case with date range containing None values."""
-        criteria = ConditionOccurrence(occurrence_start_date=DateRange(start_date=None, end_date=None))
+        criteria = ConditionOccurrence(occurrence_start_date=DateRange(op="gte", value=None, extent=None))
         result = self.builder.resolve_where_clauses(criteria)
         # Should handle None values gracefully
         self.assertIsInstance(result, list)
     
     def test_edge_case_numeric_range_none_values(self):
         """Test edge case with numeric range containing None values."""
-        criteria = ConditionOccurrence(age=NumericRange(min_value=None, max_value=None))
+        criteria = ConditionOccurrence(age=NumericRange(op="gte", value=None, extent=None))
         result = self.builder.resolve_where_clauses(criteria)
         # Should handle None values gracefully
         self.assertIsInstance(result, list)
@@ -493,12 +493,12 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
         criteria = ConditionOccurrence(
             codeset_id=123,
             first=True,
-            occurrence_start_date=DateRange(start_date="2020-01-01", end_date="2020-12-31"),
-            occurrence_end_date=DateRange(start_date="2020-01-01", end_date="2020-12-31"),
+            occurrence_start_date=DateRange(op="gte", value="2020-01-01", extent="2020-12-31"),
+            occurrence_end_date=DateRange(op="gte", value="2020-01-01", extent="2020-12-31"),
             condition_type=[Concept(concept_id=1)],
             condition_type_exclude=False,
             stop_reason=TextFilter(text="test"),
-            age=NumericRange(min_value=18, max_value=65),
+            age=NumericRange(op="gte", value=18, extent=65),
             gender=[Concept(concept_id=1)],
             visit_type=[Concept(concept_id=1)],
             provider_specialty=[Concept(concept_id=1)],

@@ -110,7 +110,7 @@ FROM
 
         # quantity
         if criteria.quantity:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.quantity, "C.quantity"))
+            where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.quantity, "C.quantity", ".4f"))
 
         # unit
         if criteria.unit and len(criteria.unit) > 0:

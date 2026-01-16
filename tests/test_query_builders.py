@@ -726,8 +726,8 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
         query = self.builder.build_expression_query(expression, options)
         
         self.assertIn("CASE WHEN", query)
-        self.assertIn("2020-01-01", query)
-        self.assertIn("2023-01-01", query)
+        self.assertIn("DATEFROMPARTS(2020, 1, 1)", query)
+        self.assertIn("DATEFROMPARTS(2023, 1, 1)", query)
 
 
 if __name__ == '__main__':

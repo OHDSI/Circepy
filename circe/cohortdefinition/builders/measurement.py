@@ -195,7 +195,7 @@ from
         # valueAsNumber
         if criteria.value_as_number:
             # Java uses .4f
-            where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.value_as_number, "C.value_as_number"))
+            where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.value_as_number, "C.value_as_number", ".4f"))
 
         # valueAsConcept
         if criteria.value_as_concept and len(criteria.value_as_concept) > 0:
@@ -217,19 +217,19 @@ from
             
         # rangeLow
         if criteria.range_low:
-             where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.range_low, "C.range_low"))
+             where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.range_low, "C.range_low", ".4f"))
              
         # rangeHigh
         if criteria.range_high:
-             where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.range_high, "C.range_high"))
+             where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.range_high, "C.range_high", ".4f"))
 
         # rangeLowRatio
         if criteria.range_low_ratio:
-             where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.range_low_ratio, "(C.value_as_number / NULLIF(C.range_low, 0))"))
+             where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.range_low_ratio, "(C.value_as_number / NULLIF(C.range_low, 0))", ".4f"))
 
         # rangeHighRatio
         if criteria.range_high_ratio:
-             where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.range_high_ratio, "(C.value_as_number / NULLIF(C.range_high, 0))"))
+             where_clauses.append(BuilderUtils.build_numeric_range_clause(criteria.range_high_ratio, "(C.value_as_number / NULLIF(C.range_high, 0))", ".4f"))
              
         # abnormal
         if criteria.abnormal:

@@ -112,75 +112,77 @@ class BuilderUtils:
         return [concept.concept_id for concept in concepts if concept.concept_id is not None]
     
     @staticmethod
-    def build_date_range_clause(date_range: Optional[DateRange], column_name: str) -> Optional[str]:
+    def get_operator(op: str) -> str:
+        """Get SQL operator for range comparison.
+        
+        Java equivalent: BuilderUtils.getOperator(String op)
+        """
+        operators = {
+            "lt": "<",
+            "lte": "<=",
+            "eq": "=",
+            "!eq": "<>",
+            "gt": ">",
+            "gte": ">="
+        }
+        if op in operators:
+            return operators[op]
+        raise RuntimeError(f"Unknown operator type: {op}")
+
+    @staticmethod
+    def build_date_range_clause(date_range: Optional[DateRange], sql_expression: str) -> Optional[str]:
         """Build date range clause for SQL.
         
         Java equivalent: BuilderUtils.buildDateRangeClause()
         """
-        if date_range is None:
+        if date_range is None or date_range.op is None:
             return None
         
-        op = date_range.op
-        value = date_range.value
-        extent = date_range.extent
+        op = date_range.op.lower()
         
         # Handle "bt" (between) operator
-        if op == "bt" and extent is not None:
-            return f"({column_name} >= '{value}' and {column_name} <= '{extent}')"
-        if op == "!bt" and extent is not None:
-            return f"({column_name} < '{value}' or {column_name} > '{extent}')"
+        if op.endswith("bt"):
+            negation = "not " if op.startswith("!") else ""
+            return f"{negation}({sql_expression} >= {BuilderUtils.date_string_to_sql(date_range.value)} and {sql_expression} <= {BuilderUtils.date_string_to_sql(date_range.extent)})"
         
         # Handle other operators
-        if op == "lt":
-            return f"{column_name} < '{value}'"
-        elif op == "lte":
-            return f"{column_name} <= '{value}'"
-        elif op == "gt":
-            return f"{column_name} > '{value}'"
-        elif op == "gte":
-            return f"{column_name} >= '{value}'"
-        elif op == "eq":
-            return f"{column_name} = '{value}'"
-        elif op == "!eq":
-            return f"{column_name} != '{value}'"
-        else:
-            # Fallback for unknown operators
-            return f"{column_name} {op} '{value}'"
+        if date_range.value is None:
+            return None
+            
+        return f"{sql_expression} {BuilderUtils.get_operator(op)} {BuilderUtils.date_string_to_sql(date_range.value)}"
     
     @staticmethod
-    def build_numeric_range_clause(numeric_range: Optional[NumericRange], column_name: str) -> Optional[str]:
+    def build_numeric_range_clause(numeric_range: Optional[NumericRange], sql_expression: str, format: Optional[str] = None) -> Optional[str]:
         """Build numeric range clause for SQL.
         
         Java equivalent: BuilderUtils.buildNumericRangeClause()
         """
-        if numeric_range is None:
+        if numeric_range is None or numeric_range.op is None:
             return None
         
-        op = numeric_range.op
-        value = numeric_range.value
-        extent = numeric_range.extent
+        op = numeric_range.op.lower()
         
-        # Handle "bt" (between) operator
-        if op == "bt" and extent is not None:
-            # Always format with 4 decimal places to match R/Java output
-            return f"({column_name} >= {float(value):.4f} and {column_name} <= {float(extent):.4f})"
-        
-        # Handle other operators
-        if op == "lt":
-            return f"{column_name} < {value}"
-        elif op == "lte":
-            return f"{column_name} <= {value}"
-        elif op == "gt":
-            return f"{column_name} > {value}"
-        elif op == "gte":
-            return f"{column_name} >= {value}"
-        elif op == "eq":
-            return f"{column_name} = {value}"
-        elif op == "!eq":
-            return f"{column_name} != {value}"
+        if op.endswith("bt"):
+            if numeric_range.value is None or numeric_range.extent is None:
+                return None
+            negation = "not " if op.startswith("!") else ""
+            if format:
+                # Double range (decimal)
+                val_str = f"{float(numeric_range.value):{format}}"
+                extent_str = f"{float(numeric_range.extent):{format}}"
+                return f"{negation}({sql_expression} >= {val_str} and {sql_expression} <= {extent_str})"
+            else:
+                # Integer range
+                return f"{negation}({sql_expression} >= {int(numeric_range.value)} and {sql_expression} <= {int(numeric_range.extent)})"
         else:
-            # Fallback for unknown operators
-            return f"{column_name} {op} {value}"
+            if numeric_range.value is None:
+                return None
+                
+            if format:
+                val_str = f"{float(numeric_range.value):{format}}"
+                return f"{sql_expression} {BuilderUtils.get_operator(op)} {val_str}"
+            else:
+                return f"{sql_expression} {BuilderUtils.get_operator(op)} {int(numeric_range.value)}"
     
     @staticmethod
     def build_text_filter_clause(text_filter: Optional[Any], column_name: str) -> Optional[str]:
@@ -245,8 +247,11 @@ class BuilderUtils:
     
     @staticmethod
     def date_string_to_sql(date_string: str) -> str:
-        """Convert date string to SQL format.
+        """Convert date string to SQL format (DATEFROMPARTS).
         
         Java equivalent: BuilderUtils.dateStringToSql()
         """
-        return f"'{date_string}'"
+        parts = date_string.split('-')
+        if len(parts) != 3:
+            raise ValueError(f"Invalid date format: {date_string}. Expected YYYY-MM-DD.")
+        return f"DATEFROMPARTS({int(parts[0])}, {int(parts[1])}, {int(parts[2])})"

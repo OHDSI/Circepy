@@ -147,7 +147,7 @@ FROM
         
         # doseValue
         if criteria.dose_value is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(criteria.dose_value, "C.dose_value")
+            numeric_clause = BuilderUtils.build_numeric_range_clause(criteria.dose_value, "C.dose_value", ".4f")
             if numeric_clause:
                 where_clauses.append(numeric_clause)
         
