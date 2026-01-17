@@ -28,7 +28,8 @@ from typing import Optional, Tuple
 import pytest
 import re
 from difflib import unified_diff
-
+import textwrap
+import difflib
 
 # Test cohort files - these are the cohorts added in the recent commit
 # Directories
@@ -443,45 +444,71 @@ def test_sql_generation_has_key_structures(cohort_name):
         )
 
 
+def generate_token_diff(ref_norm, gen_norm):
+    """
+    Diffs two normalized SQL strings word-by-word.
+    This makes specific missing columns or keywords obvious.
+    """
+    # Split by space to get a list of tokens (since your normalizer handles punctuation)
+    ref_tokens = ref_norm.split(' ')
+    gen_tokens = gen_norm.split(' ')
 
+    diff = difflib.unified_diff(
+        ref_tokens,
+        gen_tokens,
+        fromfile='Reference (Normalized)',
+        tofile='Generated (Normalized)',
+        lineterm=''
+    )
+
+    # Filter out lines that are just context (start with space)
+    # to focus strictly on what changed.
+    changes = [line for line in diff if line.startswith(('-', '+'))]
+
+    return "\n".join(changes[:30])  # Show first 30 changes
+
+
+# --- The Updated Test ---
 def test_sql_matches_reference(cohort_name):
     """
-    Test that Python SQL matches the reference R/Java SQL.
-    
-    This test is expected to fail for cohorts with unsupported features.
-    The failure message will help identify what needs to be fixed.
+    Test that Python SQL matches the reference R/Java SQL, ignoring formatting.
     """
     cohort_file = COHORTS_DIR / cohort_name
     if not cohort_file.exists():
         pytest.skip(f"Cohort file not found: {cohort_file}")
-    
+
+    # 1. Generate
     sql, _, error = generate_python_outputs(cohort_file)
     if error or sql is None:
         pytest.fail(f"SQL generation failed: {error}")
-    
+
+    # 2. Load Reference
     ref_sql = get_reference_sql(cohort_name)
     if ref_sql is None:
         pytest.skip(f"No reference SQL for {cohort_name}")
-    
-    comparison = compare_outputs(sql, ref_sql, "SQL")
-    
-    if not comparison['is_identical']:
-        # Analyze differences
-        issues = analyze_sql_differences(sql, ref_sql)
-        
-        # Create detailed failure message
-        diff_preview = '\n'.join(comparison['diff'][:30])
-        
-        pytest.fail(
-            f"SQL does not match reference for {cohort_name}\n\n"
-            f"Summary:\n"
-            f"  Python lines: {comparison['python_lines']}, Reference lines: {comparison['reference_lines']}\n"
-            f"  Diff lines: {comparison['diff_lines']}\n\n"
-            f"Issues found:\n" +
-            ("\n".join(f"  - {issue}" for issue in issues) if issues else "  (no specific issues identified)") +
-            f"\n\nFirst 30 lines of diff:\n{diff_preview}"
-        )
 
+    # 3. NORMALIZE BOTH (The Key Step)
+    norm_gen = normalize_sql(sql)
+    norm_ref = normalize_sql(ref_sql)
+
+    # 4. Compare Normalized Versions
+    if norm_gen != norm_ref:
+        # Generate a clean, token-based diff
+        diff_output = generate_token_diff(norm_ref, norm_gen)
+
+        failure_msg = f"""
+        ====================== SQL LOGIC MISMATCH ======================
+        Cohort: {cohort_name}
+
+        The generated SQL is functionally different from the reference.
+        (Formatting and whitespace differences have been ignored)
+
+        --- MISMATCH DETAILS (Word-by-Word Diff) ---
+        {diff_output}
+
+        ================================================================
+        """
+        pytest.fail(textwrap.dedent(failure_msg))
 
 # =============================================================================
 # Markdown Generation Tests

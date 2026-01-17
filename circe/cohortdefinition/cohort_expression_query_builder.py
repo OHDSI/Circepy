@@ -198,7 +198,7 @@ WHERE @windowCriteria@additionalColumns
     # Correlated criteria templates - must match Java structure with nested cc alias
     ADDITIONAL_CRITERIA_INNER_TEMPLATE = """-- Begin Correlated Criteria
 select @indexId as index_id, cc.person_id, cc.event_id
-from (SELECT p.person_id, p.event_id 
+from (SELECT p.person_id, p.event_id
 FROM @eventTable P
 JOIN (
   @criteriaQuery
