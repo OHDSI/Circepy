@@ -240,7 +240,15 @@ class TestRangeCheckerFactoryCoverage(unittest.TestCase):
         # Unhandled criteria should just return (noop)
         # Must inherit from Criteria to bypass BaseCheckerFactory check and reach _get_check_criteria
         from circe.cohortdefinition.criteria import Criteria
+        from pydantic import BaseModel
         
+        # Pydantic requires forward references to be resolved.
+        # Since 'Criteria' definition refers to 'CriteriaGroup', we need to mock it
+        # or at least ensure it's available for the new subclass to be built.
+        # We'll define a dummy CriteriaGroup to satisfy the forward ref.
+        class CriteriaGroup(BaseModel):
+            pass
+
         class UnknownCriteria(Criteria):
             pass
             
