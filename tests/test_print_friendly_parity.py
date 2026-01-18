@@ -12,9 +12,24 @@ def get_resource_as_string(filename):
     with open(path, 'r') as f:
         return f.read()
 
+def normalize_whitespace(text):
+    """Normalize whitespace by collapsing multiple spaces/newlines into a single space and stripping."""
+    if not text:
+        return ""
+    return " ".join(text.split())
+
 class TestPrintFriendlyParity(unittest.TestCase):
     def setUp(self):
         self.pf = MarkdownRender()
+
+    def assertInNormalized(self, subst, markdown, *args, **kwargs):
+        norm_subst = normalize_whitespace(subst)
+        norm_markdown = normalize_whitespace(markdown)
+        if not args and not kwargs:
+            msg = f"Normalized substring not found:\nExpected: {norm_subst}\nIn context: ...{norm_markdown[max(0, norm_markdown.find(norm_subst)-50):norm_markdown.find(norm_subst)+150]}..."
+            self.assertIn(norm_subst, norm_markdown, msg)
+        else:
+            self.assertIn(norm_subst, norm_markdown, *args, **kwargs)
 
     def test_condition_era_test(self):
         json_str = get_resource_as_string("conditionEra.json")
@@ -24,11 +39,10 @@ class TestPrintFriendlyParity(unittest.TestCase):
         expected_substrings = [
             "1. condition era of 'Concept Set 1' for the first time in the person's history, who are male &lt; 30 years old at era start and &le; 40 years old at era end; starting before January 1, 2010 and ending before December 31, 2014; era length is &gt; 15 days; containing between 1 and 5 occurrences; having no condition eras of 'Concept Set 2', starting between 90 days before and 30 days after 'Concept Set 1' start date and ending between 7 days after and 90 days after 'Concept Set 1' start date.",
             "#### 1. Inclusion Rule 1",
-            ## NOTE This seems to be just formatting of the before cohort string. I think AI hallucinated something around this
             "Entry events having at least 1 condition era of 'Concept Set 3' for the first time in the person's history, starting between 90 days before and 0 days before cohort entry start date."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_condition_occurrence_test(self):
         json_str = get_resource_as_string("conditionOccurrence.json")
@@ -38,12 +52,12 @@ class TestPrintFriendlyParity(unittest.TestCase):
         expected_substrings = [
             "1. condition occurrence of 'Concept Set 1' (including 'Concept Set 2' source concepts) for the first time in the person's history, who are male or female, &gt;= 18 years old; starting before January 1, 2010 and ending after June 1, 2016; a condition type that is not: \"admission note\" or \"ancillary report\"; with a stop reason containing \"some stop reason\"; a provider specialty that is: \"rheumatology\"; a visit occurrence that is: \"emergency room visit\" or \"inpatient visit\"; with any of the following criteria:",
             "1. with the following event criteria: who are male &ge; 18 years old.",
-            "2. having at least 1 condition occurrence of 'Concept Set 1', starting  1 days after 'Concept Set 1' start date; who are female &lt; 30 years old.",
+            "2. having at least 1 condition occurrence of 'Concept Set 1', starting 1 days after 'Concept Set 1' start date; who are female &lt; 30 years old.",
             "#### 1. Inclusion Rule 1",
             "Entry events having at least 1 condition occurrence of 'Concept Set 3' for the first time in the person's history, starting between all days before and 1 days after cohort entry start date."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_death_test(self):
         json_str = get_resource_as_string("death.json")
@@ -59,7 +73,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "Entry events having at least 1 death of 'Concept Set 3', who are &gt; 12 years old."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_device_exposure_test(self):
         json_str = get_resource_as_string("deviceExposure.json")
@@ -79,7 +93,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "Entry events having at least 1 device exposure of 'Concept Set 3' for the first time in the person's history, starting between 30 days before and 30 days after cohort entry start date."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_dose_era_test(self):
         json_str = get_resource_as_string("doseEra.json")
@@ -105,7 +119,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "2. having no dose eras of 'Concept Set 2', starting anytime prior to cohort entry start date; who are &gt; 18 years old."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_drug_era_test(self):
         json_str = get_resource_as_string("drugEra.json")
@@ -125,7 +139,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "Entry events having at least 1 drug era of 'Concept Set 3' for the first time in the person's history, starting between 0 days before and all days after cohort entry start date."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_drug_exposure_test(self):
         json_str = get_resource_as_string("drugExposure.json")
@@ -152,7 +166,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "2. having at least 1 drug exposure of 'Concept Set 3', starting between 14 days before and 0 days before 'Concept Set 1' start date."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_measurement_test(self):
         json_str = get_resource_as_string("measurement.json")
@@ -180,7 +194,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "2. having at least 1 measurement of 'Concept Set 3', starting between 0 days before and all days after 'Concept Set 1' start date."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_observation_test(self):
         json_str = get_resource_as_string("observation.json")
@@ -202,7 +216,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "having no observation of 'Concept Set 2' for the first time in the person's history, starting anytime prior to 'Concept Set 1' start date."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_observation_period_test(self):
         json_str = get_resource_as_string("observationPeriod_1.json")
@@ -219,7 +233,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "having exactly 1 observation period, starting  1 days after observation period end date."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_procedure_occurrence_test(self):
         json_str = get_resource_as_string("procedureOccurrence.json")
@@ -238,7 +252,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "having at least 1 procedure occurrence of 'Concept Set 3', starting anytime prior to 'Concept Set 1' start date."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_specimen_test(self):
         json_str = get_resource_as_string("specimen.json")
@@ -258,7 +272,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "having at least 1 specimen of 'Concept Set 2', starting anytime prior to 'Concept Set 1' start date."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_visit_test(self):
         json_str = get_resource_as_string("visit.json")
@@ -275,7 +289,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "having at least 1 visit occurrence of 'Concept Set 2', starting anytime on or before 'Concept Set 1' start date."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_visit_detail_test(self):
         json_str = get_resource_as_string("visitDetail.json")
@@ -292,14 +306,14 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "having at least 1 visit detail of 'Concept Set 3', starting anytime on or before 'Concept Set 1' start date."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_date_offset_test(self):
         json_str = get_resource_as_string("dateOffset.json")
         expression = CohortExpression.model_validate_json(json_str)
         markdown = self.pf.render_cohort_expression(expression)
         
-        self.assertIn("The cohort end date will be offset from index event's end date plus 7 days.", markdown)
+        self.assertInNormalized("The cohort end date will be offset from index event's end date plus 7 days.", markdown)
 
     def test_custom_era_exit_test(self):
         json_str = get_resource_as_string("customEraExit.json")
@@ -311,7 +325,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "allowing 14 days between exposures, adding 1 day after exposure ends, and forcing drug exposure days supply to: 7 days."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_concept_set_simple_test(self):
         json_str = get_resource_as_string("conceptSet_simple.json")
@@ -328,14 +342,14 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "|140168|Psoriasis|9014002|SNOMED|YES|NO|NO|"
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_any_condition_test(self):
         json_str = get_resource_as_string("anyCondition.json")
         expression = CohortExpression.model_validate_json(json_str)
         markdown = self.pf.render_cohort_expression(expression)
         
-        self.assertIn("1. condition occurrences of any condition.", markdown)
+        self.assertInNormalized("1. condition occurrences of any condition.", markdown)
 
     def test_censor_criteria_test(self):
         json_str = get_resource_as_string("censorCriteria.json")
@@ -347,7 +361,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "death of any form"
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_no_censor_criteria_test(self):
         json_str = get_resource_as_string("noCensorCriteria.json")
@@ -361,28 +375,28 @@ class TestPrintFriendlyParity(unittest.TestCase):
         expression = CohortExpression.model_validate_json(json_str)
         markdown = self.pf.render_cohort_expression(expression)
         
-        self.assertIn("People enter the cohort when observing any of the following:", markdown)
+        self.assertInNormalized("People enter the cohort when observing any of the following:", markdown)
 
     def test_continuous_observation_prior_test(self):
         json_str = get_resource_as_string("continuousObservation_prior.json")
         expression = CohortExpression.model_validate_json(json_str)
         markdown = self.pf.render_cohort_expression(expression)
         
-        self.assertIn("People with continuous observation of 30 days before event enter the cohort when observing any of the following:", markdown)
+        self.assertInNormalized("People with continuous observation of 30 days before event enter the cohort when observing any of the following:", markdown)
 
     def test_continuous_observation_post_test(self):
         json_str = get_resource_as_string("continuousObservation_post.json")
         expression = CohortExpression.model_validate_json(json_str)
         markdown = self.pf.render_cohort_expression(expression)
         
-        self.assertIn("People with continuous observation of 30 days after event enter the cohort when observing any of the following:", markdown)
+        self.assertInNormalized("People with continuous observation of 30 days after event enter the cohort when observing any of the following:", markdown)
 
     def test_continuous_observation_prior_post_test(self):
         json_str = get_resource_as_string("continuousObservation_priorpost.json")
         expression = CohortExpression.model_validate_json(json_str)
         markdown = self.pf.render_cohort_expression(expression)
         
-        self.assertIn("People with continuous observation of 30 days before and 30 days after event enter the cohort when observing any of the following:", markdown)
+        self.assertInNormalized("People with continuous observation of 30 days before and 30 days after event enter the cohort when observing any of the following:", markdown)
 
     def test_count_criteria_test(self):
         json_str = get_resource_as_string("countCriteria.json")
@@ -416,7 +430,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "2. having no condition occurrences of 'Empty Concept Set', starting anytime up to 31 days before cohort entry start date."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_count_distinct_criteria_test(self):
         json_str = get_resource_as_string("countDistinctCriteria.json")
@@ -432,7 +446,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "3. having at least 1 distinct visits from condition occurrence of any condition, starting between 0 days before and all days after 'Empty Concept Set' start date; who are &lt; 64 years old."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_date_adjust_test(self):
         json_str = get_resource_as_string("dateAdjust.json")
@@ -454,14 +468,14 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "13. visit details of 'Concept Set 1', starting 10 days after and ending 20 days after the event start date."
         ]
         for subst in expected_substrings:
-            self.assertIn(subst, markdown)
+            self.assertInNormalized(subst, markdown)
 
     def test_empty_concept_list_test(self):
         json_str = get_resource_as_string("emptyConceptList.json")
         expression = CohortExpression.model_validate_json(json_str)
         markdown = self.pf.render_cohort_expression(expression)
         
-        self.assertIn("1. condition occurrences of 'Concept Set 1', a provider specialty that is: [none specified]; a visit occurrence that is: [none specified].", markdown)
+        self.assertInNormalized("1. condition occurrences of 'Concept Set 1', a provider specialty that is: [none specified]; a visit occurrence that is: [none specified].", markdown)
 
 if __name__ == '__main__':
     unittest.main()

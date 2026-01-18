@@ -1,0 +1,95 @@
+{#
+  Main cohort expression template
+  Direct port from Java's cohortExpression.ftl
+  
+  Note: Jinja2 and markdown are EXTREMELY sensitive to whitespace.
+  The {%- and -%} syntax strips whitespace. Be careful when editing!
+#}
+
+{%- import 'utils.j2' as utils -%}
+{%- import 'input_types.j2' as inputTypes -%}
+{%- import 'criteria_types.j2' as ct -%}
+{%- import 'end_strategy_types.j2' as st -%}
+
+### Cohort Entry Events
+
+{% if cohort.primary_criteria and cohort.primary_criteria.criteria_list %}
+  {%- set pc = cohort.primary_criteria -%}
+  People{% if (pc.observation_window.prior_days or 0) > 0 or (pc.observation_window.post_days or 0) > 0 %} with continuous observation of{% if (pc.observation_window.prior_days or 0) > 0 %} {{ pc.observation_window.prior_days }} days before{% if (pc.observation_window.post_days or 0) > 0 %} and{% endif %}{% endif %}{% if (pc.observation_window.post_days or 0) > 0 %} {{ pc.observation_window.post_days }} days after{% endif %} event{% endif %}{% if (cohort.inclusion_rules|length > 0) or cohort.additional_criteria %} may{% endif %} enter the cohort when observing any of the following:
+
+  {%- for pc_item in pc.criteria_list %}
+
+{{ loop.index }}. {{ ct.Criteria(pc_item) }}
+  {%- endfor -%}
+{%- endif -%}
+
+{% if cohort.primary_criteria and cohort.primary_criteria.primary_limit and cohort.primary_criteria.primary_limit.type != "All" %}
+
+Limit cohort entry events to the {{ inputTypes.Limit(cohort.primary_criteria.primary_limit) }} per person.
+{%- endif -%}
+
+{% if cohort.additional_criteria %}
+
+Restrict entry events to {{ ct.Group(cohort.additional_criteria) }}
+  {%- if cohort.primary_criteria and cohort.primary_criteria.primary_limit and cohort.primary_criteria.primary_limit.type == "All" and cohort.qualified_limit and cohort.qualified_limit.type != "All" %}
+
+Limit these restricted entry events to the {{ inputTypes.Limit(cohort.qualified_limit) }} per person.
+  {%- endif -%}
+{%- endif %}
+
+{% if cohort.inclusion_rules and cohort.inclusion_rules|length > 0 %}
+
+### Inclusion Criteria
+
+  {%- for rule in cohort.inclusion_rules %}
+
+#### {{ loop.index }}. {{ rule.name or "Unnamed Rule" }}
+    {%- if rule.description %}: {{ rule.description }}  {% endif %}
+
+Entry events {{ ct.Group(rule.expression) }}
+  {%- endfor -%}
+{%- endif -%}
+
+{% if cohort.primary_criteria and cohort.primary_criteria.primary_limit and cohort.primary_criteria.primary_limit.type == "All" and (not cohort.additional_criteria or (cohort.qualified_limit and cohort.qualified_limit.type == "All")) and cohort.expression_limit and cohort.expression_limit.type != "All" %}
+
+Limit qualifying entry events to the {{ inputTypes.Limit(cohort.expression_limit) }} per person.
+{%- endif %}
+
+### Cohort Exit
+
+{% if cohort.end_strategy -%}
+{{ st.Strategy(cohort.end_strategy) }}
+{%- else -%}
+The person exits the cohort at the end of continuous observation.
+{%- endif -%}
+
+{% if cohort.censoring_criteria and cohort.censoring_criteria|length > 0 %}
+
+The person exits the cohort when encountering any of the following events:
+  {%- for cc in cohort.censoring_criteria %}
+
+{{ loop.index }}. {{ ct.Criteria(cc) }}
+  {%- endfor -%}
+{%- endif %}
+
+### Cohort Eras
+
+{% if cohort.collapse_settings %}
+Remaining events will be combined into cohort eras if they are within {{ cohort.collapse_settings.era_pad or 0 }} days of each other.
+{%- endif %}
+
+{% if cohort.censor_window %}
+  {%- if cohort.censor_window.start_date -%}
+    Left censor cohort start dates to {{ cohort.censor_window.start_date }}.  
+  {%- endif -%}
+  {%- if cohort.censor_window.end_date -%}
+    Right censor cohort end dates to {{ cohort.censor_window.end_date }}
+  {%- endif -%}
+{%- endif -%}
+
+{% if include_concept_sets %}
+
+## Concept Sets
+
+{% include 'concept_set.j2' %}
+{%- endif -%}

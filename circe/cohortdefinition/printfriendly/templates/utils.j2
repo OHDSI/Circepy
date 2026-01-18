@@ -1,0 +1,32 @@
+{# 
+  Jinja2 utility macros and filters
+  Direct port from Java's utils.ftl
+#}
+
+{# Helper macro for indentation #}
+{%- macro indent(level=0) -%}
+  {%- for x in range(level * 4) %} {% endfor -%}
+{%- endmacro -%}
+
+{# Macro for count column display #}
+{%- macro count_column(col) -%}
+  {%- if col|upper == "DOMAIN_CONCEPT" -%}
+    standard concepts
+  {%- elif col|upper == "START_DATE" -%}
+    start dates
+  {%- elif col|upper == "VISIT_ID" -%}
+    visits
+  {%- else -%}
+    {{ col }}
+  {%- endif -%}
+{%- endmacro -%}
+
+{# Helper to check if value is truthy #}
+{%- macro render_checkbox(value) -%}
+  {%- if value %}YES{% else %}NO{% endif -%}
+{%- endmacro -%}
+
+{# Formatting macro for values with units #}
+{%- macro format_value(value, unit="") -%}
+  {{ format_number(value) }}{%- if unit -%}{{ " " }}{{ unit }}{%- if value != 1 -%}s{%- endif -%}{%- endif -%}
+{%- endmacro -%}

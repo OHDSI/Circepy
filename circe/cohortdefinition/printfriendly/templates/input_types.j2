@@ -1,0 +1,152 @@
+{# 
+  Jinja2 template for input type formatting
+  Direct port from Java's inputTypes.ftl
+  
+  Note: Jinja2 and markdown are both EXTREMELY sensitive to whitespace.
+  The {%- and -%} syntax strips whitespace. Be careful when editing!
+#}
+
+{# ============================================
+   Window Macro - DIRECT PORT FROM JAVA
+   ============================================ #}
+{%- macro Window(w, indexLabel="cohort entry") -%}
+  {%- set eventPart = "ending" if w.use_event_end else "starting" -%}
+  {%- set indexPart = "end date" if w.use_index_end else "start date" -%}
+  {%- set startCoeff = w.start.coeff if w.start else 1 -%}
+  {%- set endCoeff = w.end.coeff if w.end else 1 -%}
+  {%- set startDays = w.start.days if w.start and w.start.days is not none else none -%}
+  {%- set endDays = w.end.days if w.end and w.end.days is not none else none -%}
+  
+  {{ eventPart }}
+  {%- if startDays is none and endDays == 0 and startCoeff == -1 -%}
+    {{ " " }}anytime on or before {{ indexLabel }} {{ indexPart }}
+  {%- elif endDays == 1 and startCoeff == -1 and endCoeff == -1 -%}
+    {{ " " }}{% if startDays is not none %}in the {{ startDays }} days{% else %}anytime{% endif %} prior to {{ indexLabel }} {{ indexPart }}
+  {%- elif startDays is none and (endDays or 0) > 1 and startCoeff == -1 -%}
+    {{ " " }}anytime up to {{ endDays }} days {{ "before" if endCoeff < 0 else "after" }} {{ indexLabel }} {{ indexPart }}
+  {%- elif endDays is none and (startDays or 0) > 0 and endCoeff == 1 -%}
+    {{ " " }}{{ startDays }} days {{ "before" if startCoeff < 0 else "after" }} {{ indexLabel }} {{ indexPart }}
+  {%- else -%}
+    {{ " " }}between {{ startDays if startDays is not none else "all" }} days {{ "before" if startCoeff < 0 else "after" }} and {{ endDays if endDays is not none else "all" }} days {{ "before" if endCoeff < 0 else "after" }} {{ indexLabel }} {{ indexPart }}
+  {%- endif -%}
+{%- endmacro -%}
+
+{# ============================================
+   NumericRange Macro
+   ============================================ #}
+{%- macro NumericRange(range) -%}
+  {%- set ops = {
+    "lt": "&lt;",
+    "lte": "&le;",
+    "eq": "=",
+    "gt": "&gt;",
+    "gte": "&ge;",
+    "bt": "between",
+    "!bt": "not Between"
+  } -%}
+  {%- set opName = ops[range.op] if range.op in ops else range.op -%}
+  {{ opName }} {{ range.value if range.value is not none else "" }}
+  {%- if range.op.endswith("bt") %} and {{ range.extent if range.extent is not none else "" }}{% endif -%}
+{%- endmacro -%}
+
+{# ============================================
+   DateRange Macro  
+   ============================================ #}
+{%- macro DateRange(range) -%}
+  {%- set ops = {
+    "lt": "before",
+    "lte": "on or Before",
+    "eq": "on",
+    "gt": "after",
+    "gte": "on or after",
+    "bt": "between",
+    "!bt": "not between"
+  } -%}
+  {%- set opName = ops[range.op] if range.op in ops else range.op -%}
+  {{- opName }}
+  {%- if range.value %} {{ format_date(range.value) }}{% endif -%}
+  {%- if range.op.endswith("bt") and range.extent %} and {{ format_date(range.extent) }}{% endif -%}
+{%- endmacro -%}
+
+{# ============================================
+   ConceptList Macro
+   ============================================ #}
+{%- macro ConceptList(list, quote='"') -%}
+  {%- if list and list|length > 0 -%}
+    {%- set quoted = [] -%}
+    {%- for concept in list -%}
+      {%- if concept and (concept.conceptName or concept.concept_name) -%}
+        {%- set name = concept.conceptName or concept.concept_name -%}
+        {%- if name -%}
+          {%- set math_map = {"<=": "&le;", ">=": "&ge;", "<": "&lt;", ">": "&gt;"} -%}
+          {%- set display_name = math_map[name] if name in math_map else name|lower -%}
+          {%- set _ = quoted.append(quote ~ display_name ~ quote) -%}
+        {%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+    {%- if quoted|length == 1 -%}
+      {{ quoted[0] }}
+    {%- elif quoted|length == 2 -%}
+      {{ quoted[0] }} or {{ quoted[1] }}
+    {%- elif quoted|length > 2 -%}
+      {{ quoted[:-1]|join(", ") }} or {{ quoted[-1] }}
+    {%- else -%}
+      [none specified]
+    {%- endif -%}
+  {%- else -%}
+    [none specified]
+  {%- endif -%}
+{%- endmacro -%}
+
+{# ============================================
+   ConceptSetSelection Macro
+   ============================================ #}
+{%- macro ConceptSetSelection(selection, defaultName="any") -%}
+  {%- if selection.is_excluded -%}not {% endif -%}
+  in {{ codeset_name(selection.codeset_id, defaultName) }}
+{%- endmacro -%}
+
+{# ============================================
+   TextFilter Macro
+   ============================================ #}
+{%- macro TextFilter(filter) -%}
+  {%- set ops = {
+    "startsWith": "starting with",
+    "contains": "containing",
+    "endsWith": "ending with",
+    "!startsWith": "not starting with",
+    "!contains": "not containing",
+    "!endsWith": "not ending with"
+  } -%}
+  {%- set opName = ops[filter.op] if filter.op in ops else filter.op -%}
+  {{- opName }} "{{ filter.text if filter.text else "" }}"
+{%- endmacro -%}
+
+{# ============================================
+   Limit Macro
+   ============================================ #}
+{%- macro Limit(limit) -%}
+  {%- set limits = {
+    "All": "all events",
+    "First": "earliest event",
+    "Last": "latest event"
+  } -%}
+  {{- limits[limit.type] if limit.type in limits else limit.type -}}
+{%- endmacro -%}
+
+{%- macro UserDefinedPeriod(p) -%}
+  {%- if p.start_date -%}a user defiend start date of {{ format_date(p.start_date) }}{%- if p.end_date -%} and{%- endif -%}{%- endif -%}
+  {%- if p.end_date -%}{%- if not p.start_date %}a user defined{% endif %} end date of {{ format_date(p.end_date) }}{%- endif -%}
+{%- endmacro -%}
+
+{%- macro DateAdjustment(da) -%}
+  {%- if da -%}
+    {%- set startDir = "before" if da.start_offset < 0 else "after" -%}
+    {%- set endDir = "before" if da.end_offset < 0 else "after" -%}
+    {%- set startPart = (da.start_offset|abs ~ " days " ~ startDir) if da.start_offset != 0 else "on" -%}
+    {%- set endPart = (da.end_offset|abs ~ " days " ~ endDir) if da.end_offset != 0 else "on" -%}
+    {%- set start_with = "start date" if da.start_with|upper == "START_DATE" else "end date" -%}
+    {%- set end_with = "start date" if da.end_with|upper == "START_DATE" else "end date" -%}
+    starting {{ startPart }}{% if da.start_with|upper != da.end_with|upper %} the event {{ start_with }}{% endif %} and ending {{ endPart }} the event {{ end_with }}
+  {%- endif -%}
+{%- endmacro -%}

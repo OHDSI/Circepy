@@ -1,0 +1,38 @@
+{# 
+  Cohort exit strategy rendering templates
+  Direct port from Java's endStrategyTypes.ftl
+#}
+
+{%- import 'utils.j2' as utils -%}
+
+{%- macro Strategy(s) -%}
+  {%- if not s -%}
+    {{ DefaultExit() }}
+  {%- elif s.__class__.__name__ == "DateOffsetStrategy" -%}
+    {{ DateOffsetStrategy(s) }}
+  {%- elif s.__class__.__name__ == "CustomEraStrategy" -%}
+    {{ CustomEraStrategy(s) }}
+  {%- else -%}
+    Unknown cohort exit strategy type: {{ s.__class__.__name__ }}
+  {%- endif -%}
+{%- endmacro -%}
+
+{%- macro DefaultExit() -%}
+The person exits the cohort at the end of continuous observation.
+{%- endmacro -%}
+
+{# Date Offset Strategy #}
+{%- macro DateOffsetStrategy(s) -%}
+  {%- set dateOffsetFieldOptions = {"StartDate": "start date", "EndDate": "end date"} -%}
+  The cohort end date will be offset from index event's {{ dateOffsetFieldOptions[s.date_field] if s.date_field in dateOffsetFieldOptions else s.date_field }} plus {{ utils.format_value(s.offset, "day") }}.
+{%- endmacro -%}
+
+{%- macro CustomEraStrategy(s) -%}
+  The cohort end date will be based on a continuous exposure to {{ codeset_name(s.drug_codeset_id, "_invalid drug specified_") }}:
+  allowing {{ s.gap_days }} days between exposures, adding {{ utils.format_value(s.offset, "day") }} after exposure ends, and 
+  {%- if s.days_supply_override is not none -%}
+    forcing drug exposure days supply to: {{ utils.format_value(s.days_supply_override, "day") }}.
+  {%- else -%}
+    using days supply and exposure end date for exposure duration.
+  {%- endif -%}
+{%- endmacro -%}
