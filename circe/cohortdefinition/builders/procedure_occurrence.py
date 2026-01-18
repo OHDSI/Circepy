@@ -109,15 +109,13 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         
         Java equivalent: ProcedureOccurrenceSqlBuilder.embedCodesetClause()
         """
-        codeset_join = ""
-        if hasattr(criteria, 'codeset_id') and criteria.codeset_id is not None:
-            codeset_join = BuilderUtils.get_codeset_join_expression(
-                criteria.codeset_id,
-                "po.procedure_concept_id",
-                criteria.procedure_source_concept if hasattr(criteria, 'procedure_source_concept') else None,
-                "po.procedure_source_concept_id"
-            )
-        return query.replace("@codesetClause", codeset_join)
+        return query.replace("@codesetClause",
+                           BuilderUtils.get_codeset_join_expression(
+                               criteria.codeset_id if hasattr(criteria, 'codeset_id') else None,
+                               "po.procedure_concept_id",
+                               criteria.procedure_source_concept if hasattr(criteria, 'procedure_source_concept') else None,
+                               "po.procedure_source_concept_id"
+                           ))
     
     def resolve_select_clauses(self, criteria: Criteria, options: Optional[BuilderOptions] = None) -> List[str]:
         """Resolve select clauses for criteria.

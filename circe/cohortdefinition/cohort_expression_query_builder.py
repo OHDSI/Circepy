@@ -189,16 +189,16 @@ FROM
 
 
     WINDOWED_CRITERIA_TEMPLATE = """
-SELECT @indexId as index_id, A.person_id, A.event_id
+SELECT @indexId as index_id, A.person_id, A.event_id@additionalColumns
 FROM (@eventTable) P
 INNER JOIN (@criteriaQuery) A ON A.person_id = P.person_id
-WHERE @windowCriteria@additionalColumns
+WHERE @windowCriteria
     """
 
     # Correlated criteria templates - must match Java structure with nested cc alias
     ADDITIONAL_CRITERIA_INNER_TEMPLATE = """-- Begin Correlated Criteria
 select @indexId as index_id, cc.person_id, cc.event_id
-from (SELECT p.person_id, p.event_id
+from (SELECT p.person_id, p.event_id@additionalColumns
 FROM @eventTable P
 JOIN (
   @criteriaQuery
@@ -212,7 +212,7 @@ GROUP BY cc.person_id, cc.event_id
 select @indexId as index_id, p.person_id, p.event_id
 from @eventTable p
 LEFT JOIN (
-SELECT p.person_id, p.event_id 
+SELECT p.person_id, p.event_id@additionalColumns
 FROM @eventTable P
 JOIN (
 @criteriaQuery

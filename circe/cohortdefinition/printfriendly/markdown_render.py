@@ -220,7 +220,9 @@ class MarkdownRender:
             # Parse YYYY-MM-DD format
             if isinstance(date_string, str) and len(date_string) == 10:
                 dt = datetime.strptime(date_string, "%Y-%m-%d")
-                return dt.strftime("%B %d, %Y")
+                # Use %-d for non-zero-padded day on Unix, or manual lstrip
+                day = dt.strftime("%d").lstrip("0")
+                return f"{dt.strftime('%B')} {day}, {dt.strftime('%Y')}"
             return date_string
         except (ValueError, AttributeError):
             return "_invalid date_"
@@ -259,12 +261,12 @@ class MarkdownRender:
         
         op_map = {
             "lt": "&lt;",
-            "lte": "&lt;=",
+            "lte": "&le;",
             "eq": "=",
             "gt": "&gt;",
-            "gte": "&gt;=",
+            "gte": "&ge;",
             "bt": "between",
-            "!bt": "not Between"
+            "!bt": "not between"
         }
         
         op_name = op_map.get(numeric_range.op, numeric_range.op)
@@ -355,7 +357,7 @@ class MarkdownRender:
         if not concepts or len(concepts) == 0:
             return "[none specified]"
         
-        quoted = [f'{quote}{c.concept_name.lower()}{quote}' for c in concepts if c and c.concept_name]
+        quoted = [f'{quote}{c.concept_name.lower().replace("<=", "&le;").replace(">=", "&ge;").replace("<", "&lt;").replace(">", "&gt;")}{quote}' for c in concepts if c and c.concept_name]
         
         if len(quoted) == 1:
             return quoted[0]
@@ -426,6 +428,14 @@ class MarkdownRender:
             start_dir = "before" if start_coeff < 0 else "after"
             end_dir = "before" if end_coeff < 0 else "after"
             
+            end_dir = "before" if end_coeff < 0 else "after"
+            
+            # # Special case: "in the X days prior to" (Java Window macro)
+            ## IS THIS AN HALUNICATION?
+            # # If both coefficients are -1 (before) and start > end
+            # if isinstance(start_days, int) and isinstance(end_days, int) and start_coeff == -1 and end_coeff == -1 and start_days > end_days:
+            #      return f"{event_part} in the {start_days} days prior to {index_label} {index_part}"
+            
             # Special case: both in the past (coeff=-1, end_days < start_days)
             # if start_coeff == -1 and end_coeff == -1 and isinstance(start_days, int) and isinstance(end_days, int) and end_days < start_days:
             #    return f"{event_part} in the {start_days} days prior to {index_label} {index_part}"
@@ -442,7 +452,7 @@ class MarkdownRender:
                 return f"{event_part} anytime on or before {index_label} {index_part}"
             elif end_days == "all" and isinstance(start_days, int) and start_days > 0 and start_coeff == 1 and end_coeff == 1:
                 # Java says "starting 1 days after" for [1 after, all after]
-                return f"{event_part} {start_days} days {start_dir} {index_label} {index_part}"
+                return f"{event_part}  {start_days} days {start_dir} {index_label} {index_part}"
             elif start_days == "all" and isinstance(end_days, int) and end_days > 0 and start_coeff == -1 and end_coeff == -1:
                 # Java says "anytime up to X days before"
                 return f"{event_part} anytime up to {end_days} days {end_dir} {index_label} {index_part}"
@@ -1201,15 +1211,17 @@ class MarkdownRender:
         if not period:
             return "No period specified.\n"
         
-        period_parts = []
-        
+        result_parts = []
         if period.start_date:
-            period_parts.append(f"**Start Date:** {period.start_date}")
-        
+            result_parts.append(f"a user defiend start date of {self._format_date(period.start_date)}")
+            
         if period.end_date:
-            period_parts.append(f"**End Date:** {period.end_date}")
-        
-        return "\n".join(period_parts) + "\n"
+            result_parts.append(f"end date of {self._format_date(period.end_date)}")
+            
+        if not result_parts:
+             return ""
+             
+        return " and ".join(result_parts)
     
     def _render_date_range(self, date_range: DateRange) -> str:
         """Render a date range."""
@@ -1452,30 +1464,80 @@ class MarkdownRender:
                           age_at_end: Optional[NumericRange] = None,
                           gender: Optional[List[Concept]] = None,
                           gender_cs: Optional[ConceptSetSelection] = None) -> str:
-        """Format age and gender criteria."""
+        """Format age and gender criteria.
+        
+        Java equivalent: InputTypes.ftl (ageGender macro)
+        """
         parts = []
         
+        gender_text = ""
+        if gender:
+            gender_text = self._format_concept_list(gender, quote="")
+        elif gender_cs:
+            gender_text = self._format_concept_set_selection(gender_cs, "any gender")
+            if gender_text.startswith("in "):
+                 gender_text = "gender " + gender_text
+
+        if gender_text:
+            parts.append(gender_text)
+            
+        age_text = ""
         if age:
             age_str = self._format_numeric_range(age)
-            if age_str:
-                parts.append(f"who are {age_str} years old")
-        
+            if age_at_end:
+                 age_text = f"{age_str} years old at era start"
+            else:
+                 age_text = f"{age_str} years old"
+                 
+        if age_text:
+            if gender_text:
+                 # Check for comma or " or " to determine separator
+                 if "," in gender_text or " or " in gender_text:
+                     parts.append(f", {age_text}")
+                 else:
+                     parts.append(f" {age_text}")
+            else:
+                 parts.append(age_text)
+                 
         if age_at_end:
-            age_str = self._format_numeric_range(age_at_end)
-            if age_str:
-                parts.append(f"age at end {age_str}")
+            age_end_str = self._format_numeric_range(age_at_end)
+            attrs_text = f"{age_end_str} years old at era end"
+            if age_text:
+                # If we had start age, join with " and " (no parts append needed if we modify last part?
+                # Actually parts is list of strings.
+                # Let's rebuild for simplicity.
+                pass
+                
+        # Simpler reconstruction to avoid parts confusion
+        result = ""
         
-        if gender:
-            gender_str = self._format_concept_list(gender)
-            if gender_str:
-                parts.append(f"gender is {gender_str}")
-        
-        if gender_cs:
-            gender_str = self._format_concept_set_selection(gender_cs, "any gender")
-            if gender_str:
-                parts.append(f"gender concept {gender_str}")
-        
-        return "; ".join(parts) if parts else ""
+        # 1. Gender
+        if gender_text:
+            result = gender_text
+            
+        # 2. Age (Start)
+        if age_text:
+            if result:
+                 if "," in result or " or " in result:
+                     result += f", {age_text}"
+                 else:
+                     result += f" {age_text}"
+            else:
+                result = age_text
+                
+        # 3. Age (End)
+        if age_at_end:
+            age_end_str = self._format_numeric_range(age_at_end)
+            end_text = f"{age_end_str} years old at era end"
+            if result:
+                result += f" and {end_text}"
+            else:
+                result = end_text
+                
+        if not result:
+            return ""
+            
+        return f"who are {result}"
     
     def _format_event_dates(self, start_date: Optional[DateRange] = None,
                            end_date: Optional[DateRange] = None) -> str:
@@ -1485,14 +1547,14 @@ class MarkdownRender:
         if start_date:
             date_str = self._format_date_range(start_date)
             if date_str:
-                parts.append(f"occurrence start date {date_str}")
+                parts.append(f"starting {date_str}")
         
         if end_date:
             date_str = self._format_date_range(end_date)
             if date_str:
-                parts.append(f"occurrence end date {date_str}")
+                parts.append(f"ending {date_str}")
         
-        return "; ".join(parts) if parts else ""
+        return " and ".join(parts) if parts else ""
     
     def _render_condition_occurrence(self, criteria: ConditionOccurrence, level: int = 0,
                                      is_plural: bool = True, count_criteria: Optional[Dict] = None,
@@ -1517,7 +1579,7 @@ class MarkdownRender:
             stop_str = self._format_text_filter(criteria.stop_reason)
             attrs.append(f"with a stop reason {stop_str}")
         
-        if criteria.provider_specialty:
+        if criteria.provider_specialty is not None:
             provider_str = self._format_concept_list(criteria.provider_specialty)
             attrs.append(f"a provider specialty that is: {provider_str}")
         
@@ -1533,7 +1595,7 @@ class MarkdownRender:
             status_str = self._format_concept_set_selection(criteria.condition_status_cs, "any status")
             attrs.append(f"a condition status concept {status_str} concept set")
         
-        if criteria.visit_type:
+        if criteria.visit_type is not None:
             visit_str = self._format_concept_list(criteria.visit_type)
             attrs.append(f"a visit occurrence that is: {visit_str}")
         
@@ -1662,6 +1724,10 @@ class MarkdownRender:
             source_name = self._get_concept_set_name(criteria.drug_source_concept, "any drug")
             source_concept = f" (including {source_name} source concepts)"
         
+        if getattr(criteria, 'effective_drug_dose', None):
+            dose_str = self._format_numeric_range(criteria.effective_drug_dose)
+            attrs.append(f"with effective drug dose {dose_str}")
+        
         attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
@@ -1703,14 +1769,39 @@ class MarkdownRender:
             quantity_str = self._format_numeric_range(getattr(criteria, 'quantity'))
             attrs.append(f"with quantity {quantity_str}")
             
+        if getattr(criteria, 'quantity', None):
+            quantity_str = self._format_numeric_range(getattr(criteria, 'quantity'))
+            attrs.append(f"with quantity {quantity_str}")
+            
+        if criteria.provider_specialty:
+            provider_str = self._format_concept_list(criteria.provider_specialty)
+            attrs.append(f"a provider specialty that is: {provider_str}")
+
+        if criteria.provider_specialty_cs:
+            provider_str = self._format_concept_set_selection(criteria.provider_specialty_cs, "any specialty")
+            attrs.append(f"a provider specialty concept {provider_str} concept set")
+
+        if criteria.visit_type:
+            visit_str = self._format_concept_list(criteria.visit_type)
+            attrs.append(f"a visit occurrence that is: {visit_str}")
+
+        if criteria.visit_type_cs:
+            visit_str = self._format_concept_set_selection(criteria.visit_type_cs, "any visit")
+            attrs.append(f"a visit concept {visit_str} concept set")
+            
         codeset_name = self._get_concept_set_name(criteria.codeset_id, "any procedure")
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
+        source_concept = ""
+        if criteria.procedure_source_concept:
+             source_name = self._get_concept_set_name(criteria.procedure_source_concept, "any procedure")
+             source_concept = f" (including {source_name} source concepts)"
+        
         attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
-        description = f"procedure occurrence{plural} of {codeset_name}{first_time}{attrs_str}"
+        description = f"procedure occurrence{plural} of {codeset_name}{source_concept}{first_time}{attrs_str}"
         
         # Correlated criteria
         if criteria.correlated_criteria:
@@ -1749,14 +1840,52 @@ class MarkdownRender:
         """Render DeviceExposure criteria."""
         attrs = self._build_criteria_attributes(criteria, count_criteria, index_label)
         
+        if criteria.device_type:
+             exclude_str = "is not:" if getattr(criteria, 'device_type_exclude', False) else "is:"
+             type_str = self._format_concept_list(criteria.device_type)
+             attrs.append(f"a device type that {exclude_str} {type_str}")
+        
+        if criteria.device_type_cs:
+             type_str = self._format_concept_set_selection(criteria.device_type_cs, "any type")
+             attrs.append(f"a device type concept {type_str} concept set")
+             
+        if criteria.unique_device_id:
+             ids = ", ".join([f'"{uid}"' for uid in criteria.unique_device_id])
+             attrs.append(f"with unique device id: {ids}")
+             
+        if criteria.quantity:
+             quantity_str = self._format_numeric_range(criteria.quantity)
+             attrs.append(f"with quantity {quantity_str}")
+             
+        if criteria.provider_specialty:
+            provider_str = self._format_concept_list(criteria.provider_specialty)
+            attrs.append(f"a provider specialty that is: {provider_str}")
+
+        if criteria.provider_specialty_cs:
+            provider_str = self._format_concept_set_selection(criteria.provider_specialty_cs, "any specialty")
+            attrs.append(f"a provider specialty concept {provider_str} concept set")
+
+        if criteria.visit_type:
+            visit_str = self._format_concept_list(criteria.visit_type)
+            attrs.append(f"a visit occurrence that is: {visit_str}")
+
+        if criteria.visit_type_cs:
+            visit_str = self._format_concept_set_selection(criteria.visit_type_cs, "any visit")
+            attrs.append(f"a visit concept {visit_str} concept set")
+        
         codeset_name = self._get_concept_set_name(criteria.codeset_id, "any device")
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
+        source_concept = ""
+        if criteria.device_source_concept:
+             source_name = self._get_concept_set_name(criteria.device_source_concept, "any device")
+             source_concept = f" (including {source_name} source concepts)"
+        
         attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
-        description = f"device exposure{plural} of {codeset_name}{first_time}{attrs_str}"
+        description = f"device exposure{plural} of {codeset_name}{source_concept}{first_time}{attrs_str}"
         
         # Correlated criteria
         if criteria.correlated_criteria:
@@ -1783,7 +1912,7 @@ class MarkdownRender:
         
         if criteria.operator:
             operator_str = self._format_concept_list(criteria.operator)
-            attrs.append(f"operator: {operator_str}")
+            attrs.append(f"with operator: {operator_str}")
         
         if criteria.operator_cs:
             operator_str = self._format_concept_set_selection(criteria.operator_cs, "any operator")
@@ -1821,6 +1950,17 @@ class MarkdownRender:
             range_str = self._format_numeric_range(criteria.range_high)
             attrs.append(f"high range {range_str}")
         
+        if getattr(criteria, 'range_low_ratio', None):
+            range_str = self._format_numeric_range(criteria.range_low_ratio)
+            attrs.append(f"low range-to-value ratio {range_str}")
+            
+        if getattr(criteria, 'range_high_ratio', None):
+            range_str = self._format_numeric_range(criteria.range_high_ratio)
+            attrs.append(f"high range-to-value ratio {range_str}")
+            
+        if getattr(criteria, 'abnormal', False):
+            attrs.append("with abnormal result")
+        
         if criteria.provider_specialty_cs:
             provider_str = self._format_concept_set_selection(criteria.provider_specialty_cs, "any specialty")
             attrs.append(f"a provider specialty concept {provider_str} concept set")
@@ -1837,10 +1977,15 @@ class MarkdownRender:
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
+        source_concept = ""
+        if criteria.measurement_source_concept:
+             source_name = self._get_concept_set_name(criteria.measurement_source_concept, "any measurement")
+             source_concept = f" (including {source_name} source concepts)"
+        
         attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
-        description = f"measurement{plural} of {codeset_name}{first_time}{attrs_str}"
+        description = f"measurement{plural} of {codeset_name}{source_concept}{first_time}{attrs_str}"
         
         # Correlated criteria
         if criteria.correlated_criteria:
@@ -1855,6 +2000,16 @@ class MarkdownRender:
         """Render Observation criteria."""
         attrs = self._build_criteria_attributes(criteria, count_criteria, index_label)
         
+        # Domain-specific attributes
+        if criteria.observation_type:
+            exclude_str = "is not:" if getattr(criteria, 'observation_type_exclude', False) else "is:"
+            type_str = self._format_concept_list(criteria.observation_type)
+            attrs.append(f"an observation type that {exclude_str} {type_str}")
+        
+        if criteria.observation_type_cs:
+            type_str = self._format_concept_set_selection(criteria.observation_type_cs, "any observation type")
+            attrs.append(f"an observation type concept {type_str} concept set")
+            
         if criteria.value_as_number:
             value_str = self._format_numeric_range(criteria.value_as_number)
             attrs.append(f"numeric value {value_str}")
@@ -1869,7 +2024,7 @@ class MarkdownRender:
             
         if criteria.value_as_string:
             value_str = self._format_text_filter(criteria.value_as_string)
-            attrs.append(f"value as string {value_str}")
+            attrs.append(f"with value as string {value_str}")
             
         if criteria.value_as_concept:
             value_str = self._format_concept_list(criteria.value_as_concept)
@@ -1886,6 +2041,22 @@ class MarkdownRender:
         if criteria.qualifier_cs:
             val_str = self._format_concept_set_selection(criteria.qualifier_cs, "any qualifier")
             attrs.append(f"a qualifier concept {val_str} concept set")
+            
+        if criteria.provider_specialty:
+            provider_str = self._format_concept_list(criteria.provider_specialty)
+            attrs.append(f"a provider specialty that is: {provider_str}")
+            
+        if criteria.provider_specialty_cs:
+            provider_str = self._format_concept_set_selection(criteria.provider_specialty_cs, "any specialty")
+            attrs.append(f"a provider specialty concept {provider_str} concept set")
+
+        if criteria.visit_type:
+            visit_str = self._format_concept_list(criteria.visit_type)
+            attrs.append(f"a visit occurrence that is: {visit_str}")
+            
+        if criteria.visit_type_cs:
+            visit_str = self._format_concept_set_selection(criteria.visit_type_cs, "any visit")
+            attrs.append(f"a visit concept {visit_str} concept set")
             
         codeset_name = self._get_concept_set_name(criteria.codeset_id, "any observation")
         plural = "s" if (is_plural and not criteria.first) else ""
@@ -1925,7 +2096,7 @@ class MarkdownRender:
             
         if criteria.unit:
             unit_str = self._format_concept_list(criteria.unit)
-            attrs.append(f"unit: {unit_str}")
+            attrs.append(f"with unit: {unit_str}")
             
         if criteria.unit_cs:
             unit_str = self._format_concept_set_selection(criteria.unit_cs, "any unit")
@@ -1949,7 +2120,7 @@ class MarkdownRender:
             
         if criteria.source_id:
             source_str = self._format_text_filter(criteria.source_id)
-            attrs.append(f"with source id {source_str}")
+            attrs.append(f"with source ID {source_str}")
         
         codeset_name = self._get_concept_set_name(criteria.codeset_id, "any specimen")
         plural = "s" if (is_plural and not criteria.first) else ""
@@ -1998,7 +2169,7 @@ class MarkdownRender:
             
         if criteria.visit_length:
             length_str = self._format_numeric_range(criteria.visit_length)
-            attrs.append(f"with visit length {length_str}")
+            attrs.append(f"with length {length_str} days")
             
         if criteria.place_of_service:
             pos_str = self._format_concept_list(criteria.place_of_service)
@@ -2039,6 +2210,13 @@ class MarkdownRender:
         """Render VisitDetail criteria."""
         attrs = self._build_criteria_attributes(criteria, count_criteria, index_label)
         
+        attrs = self._build_criteria_attributes(criteria, count_criteria, index_label)
+
+        if criteria.visit_detail_start_date or criteria.visit_detail_end_date:
+            ds = self._format_event_dates(criteria.visit_detail_start_date, criteria.visit_detail_end_date)
+            if ds:
+                attrs.append(ds)
+        
         # Domain-specific attributes
         if criteria.visit_detail_type:
             exclude_str = "is not:" if getattr(criteria, 'visit_detail_type_exclude', False) else "is:"
@@ -2059,7 +2237,7 @@ class MarkdownRender:
             
         if criteria.visit_detail_length:
             length_str = self._format_numeric_range(criteria.visit_detail_length)
-            attrs.append(f"with visit detail length {length_str}")
+            attrs.append(f"with length {length_str} days")
             
         if criteria.place_of_service:
             pos_str = self._format_concept_list(criteria.place_of_service)
@@ -2110,7 +2288,7 @@ class MarkdownRender:
             
         if criteria.period_type:
             type_str = self._format_concept_list(criteria.period_type)
-            attrs.append(f"a period type that is: {type_str}")
+            attrs.append(f"period type is: {type_str}")
             
         if criteria.period_type_cs:
              type_str = self._format_concept_set_selection(criteria.period_type_cs, "any period type")
@@ -2118,26 +2296,23 @@ class MarkdownRender:
              
         if criteria.period_length:
             length_str = self._format_numeric_range(criteria.period_length)
-            attrs.append(f"with period length {length_str}")
+            attrs.append(f"with a length {length_str} days")
             
-        if criteria.age_at_start:
-             age_str = self._format_numeric_range(criteria.age_at_start)
-             attrs.append(f"with age at start {age_str}")
+
              
-        if criteria.age_at_end:
-             age_str = self._format_numeric_range(criteria.age_at_end)
-             attrs.append(f"with age at end {age_str}")
-             
-        if criteria.period_start_date:
+        if criteria.period_start_date and criteria.period_end_date:
+            start_str = self._format_date_range(criteria.period_start_date)
+            end_str = self._format_date_range(criteria.period_end_date)
+            attrs.append(f"starting {start_str} and ending {end_str}")
+        elif criteria.period_start_date:
             date_str = self._format_date_range(criteria.period_start_date)
-            attrs.append(f"start date {date_str}")
-            
-        if criteria.period_end_date:
-            date_str = self._format_date_range(criteria.period_end_date)
-            attrs.append(f"end date {date_str}")
+            attrs.append(f"starting {date_str}")
+        elif criteria.period_end_date:
+             date_str = self._format_date_range(criteria.period_end_date)
+             attrs.append(f"ending {date_str}")
 
         codeset_id = getattr(criteria, 'codeset_id', None)
-        codeset_name = self._get_concept_set_name(codeset_id, "any observation period")
+        codeset_name = self._get_concept_set_name(codeset_id, "observation period")
         
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
@@ -2145,10 +2320,18 @@ class MarkdownRender:
         attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
-        if codeset_name == "any observation period":
-             description = f"observation period{plural}{first_time}{attrs_str}"
+        if codeset_name == "observation period":
+             if criteria.first is True:
+                 description = f"observation period (first obsrvation period in person's history){attrs_str}"
+             else:
+                 description = f"observation period{plural}{first_time}{attrs_str}"
         else:
-             description = f"observation period{plural} of {codeset_name}{first_time}{attrs_str}"
+             if criteria.first is True:
+                 # Logic for first with codeset name? Java might not support codeset name check here cleanly or handles it uniquely
+                 # For now, match the "any observation period" case which corresponds to ObservationPeriod test
+                  description = f"observation period (first obsrvation period in person's history) of {codeset_name}{attrs_str}"
+             else:
+                  description = f"observation period{plural} of {codeset_name}{first_time}{attrs_str}"
             
         # Correlated criteria
         correlated_criteria = getattr(criteria, 'correlated_criteria', None)
@@ -2243,7 +2426,7 @@ class MarkdownRender:
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
         description = f"condition era{plural} of {codeset_name}{first_time}{attrs_str}"
@@ -2278,7 +2461,7 @@ class MarkdownRender:
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
         description = f"drug era{plural} of {codeset_name}{first_time}{attrs_str}"
@@ -2317,7 +2500,7 @@ class MarkdownRender:
         plural = "s" if (is_plural and not criteria.first) else ""
         first_time = " for the first time in the person's history" if criteria.first else ""
         
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Main description
         description = f"dose era{plural} of {codeset_name}{first_time}{attrs_str}"
@@ -2338,7 +2521,7 @@ class MarkdownRender:
         # Use getattr to maintain compatibility with Java fields that may not exist in Python model
         codeset_id = getattr(criteria, 'codeset_id', None)
         codeset_name = self._get_concept_set_name(codeset_id, "any location")
-        attrs_str = f", {', '.join(attrs)}" if attrs else ""
+        attrs_str = f", {'; '.join(attrs)}" if attrs else ""
         
         # Correlated criteria
         correlated_criteria = getattr(criteria, 'correlated_criteria', None)

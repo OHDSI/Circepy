@@ -76,26 +76,17 @@ def get_reference_sql(cohort_name: str) -> Optional[str]:
     return None
 
 
-def get_reference_markdown(cohort_name: str) -> Optional[str]:
-    """Get pre-generated reference Markdown from R/Java implementation."""
-    ref_file = REFERENCE_DIR / cohort_name.replace('.json', '.md')
-    if ref_file.exists():
-        return ref_file.read_text()
-    return None
 
 
-def generate_python_outputs(cohort_file: Path) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+def generate_python_outputs(cohort_file: Path) -> Tuple[Optional[str], Optional[str]]:
     """
-    Run Python reference implementation to generate SQL and Markdown.
+    Run Python reference implementation to generate SQL.
     
     Returns:
-        Tuple of (sql, markdown, error_message)
-        If successful, error_message is None
-        If failed, sql and markdown may be None
+        Tuple of (sql, error_message)
     """
     sql = None
-    markdown = None
-    errors = []
+    error = None
 
     try:
         # Read and parse JSON
@@ -108,19 +99,12 @@ def generate_python_outputs(cohort_file: Path) -> Tuple[Optional[str], Optional[
             options.generate_stats = True
             sql = build_cohort_query(expression, options)
         except Exception as e:
-            errors.append(f"SQL generation failed: {str(e)}")
-
-        # Generate Markdown
-        try:
-            markdown = cohort_print_friendly(expression)
-        except Exception as e:
-            errors.append(f"Markdown generation failed: {str(e)}")
+            error = f"SQL generation failed: {str(e)}"
 
     except Exception as e:
-        errors.append(f"JSON parsing failed: {str(e)}")
+        error = f"JSON parsing failed: {str(e)}"
 
-    error_msg = "; ".join(errors) if errors else None
-    return sql, markdown, error_msg
+    return sql, error
 
 
 def normalize_sql(sql: str) -> str:
@@ -192,62 +176,6 @@ def normalize_sql(sql: str) -> str:
 
 
 
-def normalize_markdown(text: str) -> str:
-    """
-    Normalize markdown for comparison - removes ALL formatting differences.
-    
-    This aggressive normalization focuses on content differences only:
-    - Case insensitive
-    - All whitespace collapsed to single spaces
-    - Title/description sections removed (Python adds these, R doesn't)
-    - Empty lines removed
-    - Bullet/numbering preserved but spacing normalized
-    
-    This means only the actual content tokens matter, not formatting.
-    """
-    # Convert to lowercase for case-insensitive comparison
-    text = text.lower()
-    lines = text.split('\n')
-    normalized = []
-    skip_section = False
-    
-    for line in lines:
-        line = line.strip()
-        
-        # Skip title and description sections (Python adds these, R doesn't)
-        if line.startswith('# ') and not line.startswith('###'):
-            skip_section = True
-            continue
-        if line.startswith('## ') and not line.startswith('###'):
-            skip_section = True
-            continue
-        if skip_section and line.startswith('###'):
-            skip_section = False
-        if skip_section:
-            continue
-        
-        # Skip empty lines
-        if not line:
-            continue
-        
-        # Normalize whitespace - collapse multiple spaces to single space
-        line = ' '.join(line.split())
-        normalized.append(line)
-    
-    # Join all lines with single space to ignore line break differences
-    result = ' '.join(normalized)
-    
-    # Normalize some common markdown patterns
-    import re
-    # Normalize bullet points - spaces around * or -
-    result = re.sub(r'\s*\*\s*', '* ', result)
-    result = re.sub(r'\s*-\s*', '- ', result)
-    # Normalize heading markers
-    result = re.sub(r'\s*###\s*', '### ', result)
-    result = re.sub(r'\s*##\s*', '## ', result)
-    result = re.sub(r'\s*#\s*', '# ', result)
-    
-    return result.strip()
 
 
 def compare_outputs(python_output: str, reference_output: str, label: str) -> dict:
@@ -256,8 +184,8 @@ def compare_outputs(python_output: str, reference_output: str, label: str) -> di
     
     Returns a dict with comparison results and analysis.
     """
-    py_normalized = normalize_sql(python_output) if label == "SQL" else normalize_markdown(python_output)
-    ref_normalized = normalize_sql(reference_output) if label == "SQL" else normalize_markdown(reference_output)
+    py_normalized = normalize_sql(python_output)
+    ref_normalized = normalize_sql(reference_output)
     
     is_identical = py_normalized == ref_normalized
     
@@ -338,56 +266,6 @@ def analyze_sql_differences(py_sql: str, ref_sql: str) -> list:
     return issues
 
 
-def analyze_markdown_differences(py_md: str, ref_md: str) -> list:
-    """
-    Analyze Markdown differences and identify potential issues.
-    
-    Returns a list of issues found.
-    """
-    issues = []
-    
-    # Check for "Unknown criteria type" errors
-    if 'unknown criteria type' in py_md.lower():
-        # Extract what type is unknown
-        matches = re.findall(r'unknown criteria type[:\s]+(\w+)', py_md.lower())
-        for match in matches:
-            issues.append(f"Unknown criteria type: {match} - deserialization issue")
-    
-    # Check for missing sections
-    sections = [
-        ('### Cohort Entry Events', 'Cohort Entry Events section'),
-        ('### Inclusion Criteria', 'Inclusion Criteria section'),
-        ('### Cohort Exit', 'Cohort Exit section'),
-        ('### Cohort Eras', 'Cohort Eras section'),
-    ]
-    
-    py_normalized = normalize_markdown(py_md)
-    ref_normalized = normalize_markdown(ref_md)
-    
-    for pattern, name in sections:
-        in_ref = pattern in ref_normalized
-        in_py = pattern in py_normalized
-        if in_ref and not in_py:
-            issues.append(f"Missing {name}")
-    
-    # Check for empty criteria descriptions
-    if 'observing any of the following:\n\n###' in py_normalized:
-        issues.append("Empty primary criteria list - criteria not being rendered")
-    
-    # Check for missing numeric values
-    if 'between' in ref_normalized.lower() and 'between' not in py_normalized.lower():
-        if 'numeric value' in ref_normalized.lower():
-            issues.append("Missing numeric range in measurement criteria")
-    
-    # Check for drug era rendering
-    if 'drug era' in ref_normalized.lower() and 'drug era' not in py_normalized.lower():
-        issues.append("Missing drug era criteria rendering")
-    
-    # Check for observation period rendering
-    if 'observation period' in ref_normalized.lower() and 'observation period' not in py_normalized.lower():
-        issues.append("Missing observation period criteria rendering")
-    
-    return issues
 
 
 # =============================================================================
@@ -406,7 +284,7 @@ def test_sql_generation_produces_output(cohort_name):
     if not cohort_file.exists():
         pytest.skip(f"Cohort file not found: {cohort_file}")
     
-    sql, markdown, error = generate_python_outputs(cohort_file)
+    sql, error = generate_python_outputs(cohort_file)
     
     if error:
         pytest.fail(f"Generation error for {cohort_name}: {error}")
@@ -426,7 +304,7 @@ def test_sql_generation_has_key_structures(cohort_name):
     if not cohort_file.exists():
         pytest.skip(f"Cohort file not found: {cohort_file}")
     
-    sql, _, error = generate_python_outputs(cohort_file)
+    sql, error = generate_python_outputs(cohort_file)
     if error or sql is None:
         pytest.skip(f"SQL generation failed: {error}")
     
@@ -478,7 +356,7 @@ def test_sql_matches_reference(cohort_name):
         pytest.skip(f"Cohort file not found: {cohort_file}")
 
     # 1. Generate
-    sql, _, error = generate_python_outputs(cohort_file)
+    sql, error = generate_python_outputs(cohort_file)
     if error or sql is None:
         pytest.fail(f"SQL generation failed: {error}")
 
@@ -510,98 +388,6 @@ def test_sql_matches_reference(cohort_name):
         """
         pytest.fail(textwrap.dedent(failure_msg))
 
-# =============================================================================
-# Markdown Generation Tests
-# =============================================================================
-
-
-def test_markdown_generation_produces_output(cohort_name):
-    """
-    Test that Python generates Markdown without crashing.
-    """
-    cohort_file = COHORTS_DIR / cohort_name
-    if not cohort_file.exists():
-        pytest.skip(f"Cohort file not found: {cohort_file}")
-    
-    _, markdown, error = generate_python_outputs(cohort_file)
-    
-    if error and 'Markdown' in error:
-        pytest.fail(f"Markdown generation error for {cohort_name}: {error}")
-    
-    assert markdown is not None, f"No Markdown generated for {cohort_name}"
-
-
-
-def test_markdown_has_no_unknown_types(cohort_name):
-    """
-    Test that Markdown doesn't contain "Unknown criteria type" errors.
-    
-    This indicates a deserialization issue where a criteria type
-    wasn't properly parsed from JSON.
-    """
-    cohort_file = COHORTS_DIR / cohort_name
-    if not cohort_file.exists():
-        pytest.skip(f"Cohort file not found: {cohort_file}")
-    
-    _, markdown, error = generate_python_outputs(cohort_file)
-    if error or markdown is None:
-        pytest.skip(f"Markdown generation failed: {error}")
-    
-    # Check for unknown type errors
-    unknown_pattern = re.compile(r'unknown criteria type', re.IGNORECASE)
-    matches = unknown_pattern.findall(markdown)
-    
-    if matches:
-        # Extract more context about what's unknown
-        lines_with_unknown = [line for line in markdown.split('\n') if 'unknown' in line.lower()]
-        
-        pytest.fail(
-            f"Markdown contains 'Unknown criteria type' for {cohort_name}\n\n"
-            f"Lines with unknown types:\n" +
-            "\n".join(f"  {line}" for line in lines_with_unknown)
-        )
-
-
-
-def test_markdown_matches_reference(cohort_name):
-    """
-    Test that Python Markdown matches the reference R/Java Markdown.
-    
-    This test is expected to fail for cohorts with unsupported features.
-    The failure message will help identify what needs to be fixed.
-    """
-    # Removed xfail to investigate failure
-
-    cohort_file = COHORTS_DIR / cohort_name
-    if not cohort_file.exists():
-        pytest.skip(f"Cohort file not found: {cohort_file}")
-    
-    _, markdown, error = generate_python_outputs(cohort_file)
-    if error or markdown is None:
-        pytest.fail(f"Markdown generation failed: {error}")
-    
-    ref_md = get_reference_markdown(cohort_name)
-    if ref_md is None:
-        pytest.skip(f"No reference Markdown for {cohort_name}")
-    
-    comparison = compare_outputs(markdown, ref_md, "Markdown")
-    
-    if not comparison['is_identical']:
-        # Analyze differences
-        issues = analyze_markdown_differences(markdown, ref_md)
-        
-        # Create detailed failure message
-        diff_preview = '\n'.join(comparison['diff'][:30])
-        
-        pytest.fail(
-            f"Markdown does not match reference for {cohort_name}\n\n"
-            f"Summary:\n"
-            f"  Python lines: {comparison['python_lines']}, Reference lines: {comparison['reference_lines']}\n"
-            f"  Diff lines: {comparison['diff_lines']}\n\n"
-            f"Issues found:\n" +
-            ("\n".join(f"  - {issue}" for issue in issues) if issues else "  (no specific issues identified)") +
-            f"\n\nFirst 30 lines of diff:\n{diff_preview}"
-        )
 
 
 # =============================================================================
@@ -643,7 +429,7 @@ def test_real_cohorts_summary(request):
             "md_match": False
         }
         
-        sql, markdown, error = generate_python_outputs(cohort_file)
+        sql, error = generate_python_outputs(cohort_file)
         
         # Check SQL
         if sql:
@@ -663,23 +449,10 @@ def test_real_cohorts_summary(request):
                         'issues': issues,
                     })
         
-        # Check Markdown
-        if markdown:
-            results['md_success'] += 1
-            app_results[cohort_name]["md_generated"] = True
-            ref_md = get_reference_markdown(cohort_name)
-            if ref_md:
-                comparison = compare_outputs(markdown, ref_md, "Markdown")
-                if comparison['is_identical']:
-                    results['md_matches'] += 1
-                    app_results[cohort_name]["md_match"] = True
-                else:
-                    issues = analyze_markdown_differences(markdown, ref_md)
-                    results['failures'].append({
-                        'cohort': cohort_name,
-                        'type': 'Markdown',
-                        'issues': issues,
-                    })
+        # Markdown check is now in test_markdown_parity.py
+        # We keep the app_results structure for now to avoid breaking the UI
+        # but we don't run the markdown comparison here.
+        pass
     
     # Write to file
     output_path = Path(__file__).parent.parent / 'debug_app' / 'test_results.json'

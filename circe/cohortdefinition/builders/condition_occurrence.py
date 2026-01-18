@@ -68,20 +68,17 @@ FROM
         return column_mapping.get(criteria_column, "NULL")
     
     def embed_codeset_clause(self, query: str, criteria: ConditionOccurrence) -> str:
-        """Embed codeset clause in query."""
-        join_clauses = []
+        """Embed codeset clause in query.
         
-        if criteria.codeset_id is not None or criteria.condition_source_concept is not None:
-            codeset_join = BuilderUtils.get_codeset_join_expression(
-                criteria.codeset_id,
-                "co.condition_concept_id",
-                criteria.condition_source_concept,
-                "co.condition_source_concept_id"
-            )
-            if codeset_join:
-                join_clauses.append(codeset_join)
-        
-        return query.replace("@codesetClause", "\n".join(join_clauses))
+        Java equivalent: ConditionOccurrenceSqlBuilder.embedCodesetClause()
+        """
+        return query.replace("@codesetClause",
+                           BuilderUtils.get_codeset_join_expression(
+                               criteria.codeset_id,
+                               "co.condition_concept_id",
+                               criteria.condition_source_concept,
+                               "co.condition_source_concept_id"
+                           ))
     
     def embed_ordinal_expression(self, query: str, criteria: ConditionOccurrence, where_clauses: List[str]) -> str:
         """Embed ordinal expression in query."""
