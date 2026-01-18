@@ -122,7 +122,7 @@
   {%- endif -%}
   
   death of {{ codeset_name(c.codeset_id, "any form") -}}
-  {% if c.death_source_concept %} (including {{ codeset_name(c.death_source_concept, "any form") }} source concepts){% endif -%}
+  {% if c.death_source_concept is not none %} (including {{ codeset_name(c.death_source_concept, "any form") }} source concepts){% endif -%}
   {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
   {%- if c.correlated_criteria -%}; {{ Group(c.correlated_criteria, level, indexLabel=codeset_name(c.codeset_id, "any form")) }}{%- else -%}.{%- endif -%}
 {%- endmacro -%}
@@ -398,7 +398,7 @@
   {%- endif -%}
   
   condition occurrence{% if isPlural and not c.first %}s{% endif %} of {{ codeset_name(c.codeset_id, "any condition") -}}
-  {% if c.condition_source_concept %} (including {{ codeset_name(c.condition_source_concept, "any condition") }} source concepts){% endif -%}
+  {% if c.condition_source_concept is not none %} (including {{ codeset_name(c.condition_source_concept, "any condition") }} source concepts){% endif -%}
   {%- if c.first %} for the first time in the person's history{% endif -%}
   {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
   {%- if c.correlated_criteria -%}; {{ Group(c.correlated_criteria, level, indexLabel=codeset_name(c.codeset_id, "any condition")) }}{%- else -%}.{%- endif -%}
@@ -501,7 +501,7 @@
   {%- endif -%}
   
   drug exposure{% if isPlural and not c.first %}s{% endif %} of {{ codeset_name(c.codeset_id, "any drug") -}}
-  {% if c.drug_source_concept %} (including {{ codeset_name(c.drug_source_concept, "any drug") }} source concepts){% endif -%}
+  {% if c.drug_source_concept is not none %} (including {{ codeset_name(c.drug_source_concept, "any drug") }} source concepts){% endif -%}
   {%- if c.first %} for the first time in the person's history{% endif -%}
   {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
   {%- if c.correlated_criteria -%}; {{ Group(c.correlated_criteria, level, indexLabel=codeset_name(c.codeset_id, "any drug")) }}{%- else -%}.{%- endif -%}
@@ -564,7 +564,7 @@
   {%- endif -%}
   
   device exposure{% if isPlural and not c.first %}s{% endif %} of {{ codeset_name(c.codeset_id, "any device") -}}
-  {% if c.device_source_concept %} (including {{ codeset_name(c.device_source_concept, "any condition") }} source concepts){% endif -%}
+  {% if c.device_source_concept is not none %} (including {{ codeset_name(c.device_source_concept, "any condition") }} source concepts){% endif -%}
   {%- if c.first %} for the first time in the person's history{% endif -%}
   {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
   {%- if c.correlated_criteria -%}; {{ Group(c.correlated_criteria, level, indexLabel=codeset_name(c.codeset_id, "any device")) }}{%- else -%}.{%- endif -%}
@@ -632,7 +632,7 @@
   {%- endif -%}
   
   procedure occurrence{% if isPlural and not c.first %}s{% endif %} of {{ codeset_name(c.codeset_id, "any procedure") -}}
-  {% if c.procedure_source_concept %} (including {{ codeset_name(c.procedure_source_concept, "any procedure") }} source concepts){% endif -%}
+  {% if c.procedure_source_concept is not none %} (including {{ codeset_name(c.procedure_source_concept, "any procedure") }} source concepts){% endif -%}
   {%- if c.first %} for the first time in the person's history{% endif -%}
   {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
   {%- if c.correlated_criteria -%}; {{ Group(c.correlated_criteria, level, indexLabel=codeset_name(c.codeset_id, "any procedure")) }}{%- else -%}.{%- endif -%}
@@ -745,7 +745,7 @@
   {%- endif -%}
   
   measurement{% if isPlural and not c.first %}s{% endif %} of {{ codeset_name(c.codeset_id, "any measurement") -}}
-  {% if c.measurement_source_concept %} (including {{ codeset_name(c.measurement_source_concept, "any measurement") }} source concepts){% endif -%}
+  {% if c.measurement_source_concept is not none %} (including {{ codeset_name(c.measurement_source_concept, "any measurement") }} source concepts){% endif -%}
   {%- if c.first %} for the first time in the person's history{% endif -%}
   {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
   {%- if c.correlated_criteria -%}; {{ Group(c.correlated_criteria, level, indexLabel=codeset_name(c.codeset_id, "any measurement")) }}{%- else -%}.{%- endif -%}
@@ -838,7 +838,7 @@
   {%- endif -%}
   
   observation{% if isPlural and not c.first %}s{% endif %} of {{ codeset_name(c.codeset_id, "any observation") -}}
-  {% if c.observation_source_concept %} (including {{ codeset_name(c.observation_source_concept, "any observation") }} source concepts){% endif -%}
+  {% if c.observation_source_concept is not none %} (including {{ codeset_name(c.observation_source_concept, "any observation") }} source concepts){% endif -%}
   {%- if c.first %} for the first time in the person's history{% endif -%}
   {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
   {%- if c.correlated_criteria -%}; {{ Group(c.correlated_criteria, level, indexLabel=codeset_name(c.codeset_id, "any observation")) }}{%- else -%}.{%- endif -%}
@@ -953,7 +953,7 @@
   {%- endif -%}
   
   specimen{% if isPlural and not c.first %}s{% endif %} of {{ codeset_name(c.codeset_id, "any specimen") -}}
-  {% if c.specimen_source_concept %} (including {{ codeset_name(c.specimen_source_concept, "any specimen") }} source concepts){% endif -%}
+  {% if c.specimen_source_concept is not none %} (including {{ codeset_name(c.specimen_source_concept, "any specimen") }} source concepts){% endif -%}
   {%- if c.first %} for the first time in the person's history{% endif -%}
   {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
   {%- if c.correlated_criteria -%}; {{ Group(c.correlated_criteria, level, indexLabel=codeset_name(c.codeset_id, "any specimen")) }}{%- else -%}.{%- endif -%}
@@ -1006,7 +1006,7 @@
   {%- endif -%}
   
   visit occurrence{% if isPlural and not c.first %}s{% endif %} of {{ codeset_name(c.codeset_id, "any visit") -}}
-  {% if c.visit_source_concept %} (including {{ codeset_name(c.visit_source_concept, "any visit") }} source concepts){% endif -%}
+  {% if c.visit_source_concept is not none %} (including {{ codeset_name(c.visit_source_concept, "any visit") }} source concepts){% endif -%}
   {%- if c.first %} for the first time in the person's history{% endif -%}
   {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
   {%- if c.correlated_criteria -%}; {{ Group(c.correlated_criteria, level, indexLabel=codeset_name(c.codeset_id, "any visit")) }}{%- else -%}.{%- endif -%}
@@ -1049,7 +1049,7 @@
   {%- endif -%}
   
   visit detail{% if isPlural and not c.first %}s{% endif %} of {{ codeset_name(c.codeset_id, "any visit detail") -}}
-  {% if c.visit_detail_source_concept %} (including {{ codeset_name(c.visit_detail_source_concept, "any visit") }} source concepts){% endif -%}
+  {% if c.visit_detail_source_concept is not none %} (including {{ codeset_name(c.visit_detail_source_concept, "any visit") }} source concepts){% endif -%}
   {%- if c.first %} for the first time in the person's history{% endif -%}
   {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
   {%- if c.correlated_criteria -%}; {{ Group(c.correlated_criteria, level, indexLabel=codeset_name(c.codeset_id, "any visit detail")) }}{%- else -%}.{%- endif -%}

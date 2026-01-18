@@ -50,9 +50,15 @@ Entry events {{ ct.Group(rule.expression) }}
   {%- endfor -%}
 {%- endif -%}
 
-{% if cohort.primary_criteria and cohort.primary_criteria.primary_limit and cohort.primary_criteria.primary_limit.type == "All" and (not cohort.additional_criteria or (cohort.qualified_limit and cohort.qualified_limit.type == "All")) and cohort.expression_limit and cohort.expression_limit.type != "All" %}
+{% if cohort.primary_criteria and cohort.primary_criteria.primary_limit and cohort.primary_criteria.primary_limit.type == "All" and (not cohort.additional_criteria) and cohort.qualified_limit and cohort.qualified_limit.type != "All" and cohort.expression_limit and cohort.expression_limit.type != "All" %}
 
 Limit qualifying entry events to the {{ inputTypes.Limit(cohort.expression_limit) }} per person.
+{%- elif cohort.primary_criteria and cohort.primary_criteria.primary_limit and cohort.primary_criteria.primary_limit.type == "All" and (not cohort.additional_criteria) and cohort.qualified_limit and cohort.qualified_limit.type == "All" and cohort.expression_limit and cohort.expression_limit.type != "All" %}
+
+Limit qualifying entry events to the {{ inputTypes.Limit(cohort.qualified_limit) }} per person.
+{%- elif cohort.primary_criteria and cohort.primary_criteria.primary_limit and cohort.primary_criteria.primary_limit.type == "All" and cohort.additional_criteria and cohort.qualified_limit and cohort.qualified_limit.type == "All" and cohort.expression_limit and cohort.expression_limit.type != "All" %}
+
+Limit qualifying entry events to the {{ inputTypes.Limit(cohort.qualified_limit) }} per person.
 {%- endif %}
 
 ### Cohort Exit

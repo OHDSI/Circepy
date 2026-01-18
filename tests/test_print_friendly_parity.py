@@ -37,7 +37,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
         markdown = self.pf.render_cohort_expression(expression)
         
         expected_substrings = [
-            "1. condition era of 'Concept Set 1' for the first time in the person's history, who are male &lt; 30 years old at era start and &le; 40 years old at era end; starting before January 1, 2010 and ending before December 31, 2014; era length is &gt; 15 days; containing between 1 and 5 occurrences; having no condition eras of 'Concept Set 2', starting between 90 days before and 30 days after 'Concept Set 1' start date and ending between 7 days after and 90 days after 'Concept Set 1' start date.",
+            "1. condition era of 'Concept Set 1' for the first time in the person's history, who are male &lt; 30 years old at era start and &lt;= 40 years old at era end; starting before January 1, 2010 and ending before December 31, 2014; era length is &gt; 15 days; containing between 1 and 5 occurrences; having no condition eras of 'Concept Set 2', starting between 90 days before and 30 days after 'Concept Set 1' start date and ending between 7 days after and 90 days after 'Concept Set 1' start date.",
             "#### 1. Inclusion Rule 1",
             "Entry events having at least 1 condition era of 'Concept Set 3' for the first time in the person's history, starting between 90 days before and 0 days before cohort entry start date."
         ]
@@ -51,7 +51,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
         
         expected_substrings = [
             "1. condition occurrence of 'Concept Set 1' (including 'Concept Set 2' source concepts) for the first time in the person's history, who are male or female, &gt;= 18 years old; starting before January 1, 2010 and ending after June 1, 2016; a condition type that is not: \"admission note\" or \"ancillary report\"; with a stop reason containing \"some stop reason\"; a provider specialty that is: \"rheumatology\"; a visit occurrence that is: \"emergency room visit\" or \"inpatient visit\"; with any of the following criteria:",
-            "1. with the following event criteria: who are male &ge; 18 years old.",
+            "1. with the following event criteria: who are male &gt;= 18 years old.",
             "2. having at least 1 condition occurrence of 'Concept Set 1', starting 1 days after 'Concept Set 1' start date; who are female &lt; 30 years old.",
             "#### 1. Inclusion Rule 1",
             "Entry events having at least 1 condition occurrence of 'Concept Set 3' for the first time in the person's history, starting between all days before and 1 days after cohort entry start date."
@@ -128,7 +128,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
         
         expected_substrings = [
             "1. drug era of 'Concept Set 1' for the first time in the person's history,",
-            "who are female or male, &ge; 18 years old at era start and &le; 64 years old at era end;",
+            "who are female or male, &gt;= 18 years old at era start and &lt;= 64 years old at era end;",
             "starting before February 1, 2014 and ending after April 1, 2014;",
             "with era length &gt; 90 days;",
             "with occurrence count between 4 and 6;",
@@ -152,7 +152,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "starting after January 1, 2010 and ending before January 1, 2016;",
             "a drug type that is: \"admission note\" or \"ancillary report\";",
             "with refills = 2;",
-            "with quantity &ge; 15;",
+            "with quantity &gt;= 15;",
             "with days supply &lt; 30 days;",
             "with effective drug dose &lt; 15;",
             "dose unit: \"per 24 hours\";",
@@ -178,7 +178,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
             "who are female or male, &gt; 18 years old;",
             "starting on or after January 1, 2016;",
             "a measurement type that is: \"admission note\" or \"ancillary report\";",
-            "with operator: \"=\" or \"&le;\";",
+            "with operator: \"=\" or \"&lt;=\";",
             "numeric value between 5 and 10;",
             "unit: \"per billion\";",
             "with value as concept: \"good\" or \"significant change\";",

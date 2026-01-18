@@ -21,13 +21,13 @@
   {%- if startDays is none and endDays == 0 and startCoeff == -1 -%}
     {{ " " }}anytime on or before {{ indexLabel }} {{ indexPart }}
   {%- elif endDays == 1 and startCoeff == -1 and endCoeff == -1 -%}
-    {{ " " }}{% if startDays is not none %}in the {{ startDays }} days{% else %}anytime{% endif %} prior to {{ indexLabel }} {{ indexPart }}
+    {{ " " }}{% if startDays is not none %}in the {{ format_number(startDays) }} days{% else %}anytime{% endif %} prior to {{ indexLabel }} {{ indexPart }}
   {%- elif startDays is none and (endDays or 0) > 1 and startCoeff == -1 -%}
-    {{ " " }}anytime up to {{ endDays }} days {{ "before" if endCoeff < 0 else "after" }} {{ indexLabel }} {{ indexPart }}
+    {{ " " }}anytime up to {{ format_number(endDays) }} days {{ "before" if endCoeff < 0 else "after" }} {{ indexLabel }} {{ indexPart }}
   {%- elif endDays is none and (startDays or 0) > 0 and endCoeff == 1 -%}
-    {{ " " }}{{ startDays }} days {{ "before" if startCoeff < 0 else "after" }} {{ indexLabel }} {{ indexPart }}
+    {{ " " }}{{ format_number(startDays) }} days {{ "before" if startCoeff < 0 else "after" }} {{ indexLabel }} {{ indexPart }}
   {%- else -%}
-    {{ " " }}between {{ startDays if startDays is not none else "all" }} days {{ "before" if startCoeff < 0 else "after" }} and {{ endDays if endDays is not none else "all" }} days {{ "before" if endCoeff < 0 else "after" }} {{ indexLabel }} {{ indexPart }}
+    {{ " " }}between {{ format_number(startDays) if startDays is not none else "all" }} days {{ "before" if startCoeff < 0 else "after" }} and {{ format_number(endDays) if endDays is not none else "all" }} days {{ "before" if endCoeff < 0 else "after" }} {{ indexLabel }} {{ indexPart }}
   {%- endif -%}
 {%- endmacro -%}
 
@@ -37,16 +37,16 @@
 {%- macro NumericRange(range) -%}
   {%- set ops = {
     "lt": "&lt;",
-    "lte": "&le;",
+    "lte": "&lt;=",
     "eq": "=",
     "gt": "&gt;",
-    "gte": "&ge;",
+    "gte": "&gt;=",
     "bt": "between",
     "!bt": "not Between"
   } -%}
   {%- set opName = ops[range.op] if range.op in ops else range.op -%}
-  {{ opName }} {{ range.value if range.value is not none else "" }}
-  {%- if range.op.endswith("bt") %} and {{ range.extent if range.extent is not none else "" }}{% endif -%}
+  {{ opName }} {{ format_number(range.value) if range.value is not none else "" }}
+  {%- if range.op.endswith("bt") %} and {{ format_number(range.extent) if range.extent is not none else "" }}{% endif -%}
 {%- endmacro -%}
 
 {# ============================================
@@ -78,7 +78,7 @@
       {%- if concept and (concept.conceptName or concept.concept_name) -%}
         {%- set name = concept.conceptName or concept.concept_name -%}
         {%- if name -%}
-          {%- set math_map = {"<=": "&le;", ">=": "&ge;", "<": "&lt;", ">": "&gt;"} -%}
+          {%- set math_map = {"<=": "&lt;=", ">=": "&gt;=", "<": "&lt;", ">": "&gt;"} -%}
           {%- set display_name = math_map[name] if name in math_map else name|lower -%}
           {%- set _ = quoted.append(quote ~ display_name ~ quote) -%}
         {%- endif -%}
