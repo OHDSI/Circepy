@@ -615,29 +615,46 @@ def test_real_cohorts_summary(request):
     This test always runs and provides a summary of what works and what doesn't.
     """
     cohort_files = get_target_cohort_files(request.config)
+    
+    # Save results to JSON for the Debug App
+    import json
+    
+    # Re-implementing the loop logic to capture statuses correctly
     results = {
         'total': len(cohort_files),
-        'sql_success': 0,
-        'sql_matches': 0,
+        'sql_success': 0, # Generation success
+        'sql_matches': 0, # Content match
         'md_success': 0,
         'md_matches': 0,
         'failures': [],
     }
     
+    app_results = {}
+
     for cohort_name in cohort_files:
         cohort_file = COHORTS_DIR / cohort_name
         if not cohort_file.exists():
             continue
+            
+        app_results[cohort_name] = {
+            "sql_generated": False,
+            "sql_match": False,
+            "md_generated": False,
+            "md_match": False
+        }
         
         sql, markdown, error = generate_python_outputs(cohort_file)
         
+        # Check SQL
         if sql:
             results['sql_success'] += 1
+            app_results[cohort_name]["sql_generated"] = True
             ref_sql = get_reference_sql(cohort_name)
             if ref_sql:
                 comparison = compare_outputs(sql, ref_sql, "SQL")
                 if comparison['is_identical']:
                     results['sql_matches'] += 1
+                    app_results[cohort_name]["sql_match"] = True
                 else:
                     issues = analyze_sql_differences(sql, ref_sql)
                     results['failures'].append({
@@ -646,13 +663,16 @@ def test_real_cohorts_summary(request):
                         'issues': issues,
                     })
         
+        # Check Markdown
         if markdown:
             results['md_success'] += 1
+            app_results[cohort_name]["md_generated"] = True
             ref_md = get_reference_markdown(cohort_name)
             if ref_md:
                 comparison = compare_outputs(markdown, ref_md, "Markdown")
                 if comparison['is_identical']:
                     results['md_matches'] += 1
+                    app_results[cohort_name]["md_match"] = True
                 else:
                     issues = analyze_markdown_differences(markdown, ref_md)
                     results['failures'].append({
@@ -661,6 +681,18 @@ def test_real_cohorts_summary(request):
                         'issues': issues,
                     })
     
+    # Write to file
+    output_path = Path(__file__).parent.parent / 'debug_app' / 'test_results.json'
+    try:
+        if not output_path.parent.exists():
+            output_path.parent.mkdir(parents=True)
+        
+        with open(output_path, 'w') as f:
+            json.dump(app_results, f, indent=2)
+        print(f"\nSaved test results to {output_path}")
+    except Exception as e:
+        print(f"\nFailed to save test results: {e}")
+
     # Print summary
     print("\n" + "=" * 70)
     print("REAL EXAMPLE COHORTS TEST SUMMARY")

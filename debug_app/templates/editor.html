@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{ filename }} - Debugger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Libraries (Load these BEFORE Monaco loader prevents them from registering globally) -->
+
+    <!-- 1. Highlight.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/styles/github.min.css" />
+
+    <!-- 2. Diff2Html -->
+    <link rel="stylesheet" type="text/css"
+        href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css" />
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"></script>
+
+    <!-- 3. JSDiff (Global 'Diff' object) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.1.0/diff.min.js"></script>
+
+    <!-- 4. Marked for markdown rendering (Must be before Monaco) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- 5. Monaco Editor (AMD Loader) - Must be last to avoid hijacking 'define' -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
+
+    <style>
+        body {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: #f3f4f6;
+        }
+
+        #header {
+            padding: 10px 20px;
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        #main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #top-pane {
+            height: 40%;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #bottom-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: white;
+            min-height: 100px;
+        }
+
+        /* Splitter Handle */
+        #splitter {
+            height: 8px;
+            background: #e5e7eb;
+            cursor: row-resize;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-top: 1px solid #d1d5db;
+            border-bottom: 1px solid #d1d5db;
+            flex-shrink: 0;
+        }
+
+        #splitter:hover {
+            background: #d1d5db;
+        }
+
+        #splitter::after {
+            content: "";
+            width: 40px;
+            height: 4px;
+            background: #9ca3af;
+            border-radius: 2px;
+        }
+
+        #editor-container {
+            flex: 1;
+        }
+
+        #diff-controls {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+            background: #f9fafb;
+            align-items: center;
+        }
+
+        #diff-content {
+            flex: 1;
+            overflow: auto;
+            padding: 0;
+        }
+
+        /* Diff2Html Tweaks */
+        .d2h-file-header {
+            display: none;
+        }
+
+        .d2h-file-wrapper {
+            border: none;
+            margin-bottom: 0;
+        }
+
+        .d2h-wrapper {
+            font-size: 13px;
+        }
+
+        #ai-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- AI Response Modal -->
+    <div id="ai-modal">
+        <div class="bg-white rounded-lg shadow-xl w-3/4 max-w-4xl max-h-[80vh] flex flex-col">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
+                <h3 class="font-bold text-lg text-purple-700 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    AI Diff Analysis
+                </h3>
+                <button onclick="closeAiModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto font-sans text-gray-800 leading-relaxed prose max-w-none" id="ai-content">
+                <!-- Content goes here -->
+            </div>
+            <div class="p-4 border-t bg-gray-50 rounded-b-lg text-right">
+                <button onclick="closeAiModal()"
+                    class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded text-gray-800 font-medium">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="header">
+        <div class="font-bold flex items-center gap-4 text-gray-800">
+            <span class="text-xl">{{ filename }}</span>
+            <label
+                class="flex items-center gap-2 cursor-pointer ml-4 bg-gray-100 px-3 py-1 rounded border border-gray-200 hover:bg-gray-200 transition">
+                <input type="checkbox" id="user-ok-toggle" class="form-checkbox h-4 w-4 text-blue-600 rounded" {% if
+                    is_user_ok %}checked{% endif %} onchange="toggleFileOverride(this.checked)">
+                <span class="text-sm font-medium text-gray-700 select-none">Mark as User OK</span>
+            </label>
+        </div>
+        <div class="flex gap-3">
+            <button id="ai-btn"
+                class="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700 transition font-medium flex items-center gap-2"
+                onclick="explainDiff()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+                Explain with AI
+            </button>
+            <button id="run-btn"
+                class="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700 transition font-medium">Run
+                Python Code</button>
+        </div>
+    </div>
+
+    <div id="main-container">
+        <!-- Top Pane: Editor -->
+        <div id="top-pane">
+            <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase">Python
+                Source (Editable)</div>
+            <div id="editor-container"></div>
+        </div>
+
+        <!-- Draggable Splitter -->
+        <div id="splitter"></div>
+
+        <!-- Bottom Pane: Diff -->
+        <div id="bottom-pane">
+            <div id="diff-controls">
+                <div class="flex bg-gray-200 rounded p-1">
+                    <button
+                        class="px-3 py-1 rounded text-sm font-medium transition bg-white shadow text-blue-600 border border-blue-200"
+                        id="tab-sql" onclick="switchTab('sql')">SQL Diff</button>
+                    <button
+                        class="px-3 py-1 rounded text-sm font-medium transition text-gray-600 hover:text-gray-900 border border-transparent"
+                        id="tab-md" onclick="switchTab('md')">Markdown Diff</button>
+                </div>
+                <div class="text-sm text-gray-500 ml-auto flex items-center gap-2">
+                    <span class="w-3 h-3 bg-red-200 border border-red-300 inline-block"></span> R Output
+                    <span class="w-3 h-3 bg-green-200 border border-green-300 inline-block"></span> Python Output
+                    <span class="ml-4 text-xs italic font-bold text-orange-600">(Showing Normalized Diff)</span>
+                </div>
+            </div>
+            <div id="diff-content" class="h-full relative"></div>
+        </div>
+    </div>
+
+    <script>
+        // Data from Flask
+        let refSql = `{{ ref_sql | safe }}`;
+        let refMd = `{{ ref_md | safe }}`;
+        let genSql = `{{ gen_sql | safe }}`;
+        let genMd = `{{ gen_md | safe }}`;
+        let error = `{{ error | safe }}`;
+        let currentFilename = `{{ filename }}`;
+
+        let editor;
+        let currentTab = 'sql';
+
+        async function toggleFileOverride(isOk) {
+            try {
+                const res = await fetch('/api/override', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: currentFilename, is_ok: isOk })
+                });
+                const data = await res.json();
+                if (data.status !== 'success') {
+                    alert("Failed to save override: " + JSON.stringify(data));
+                    document.getElementById('user-ok-toggle').checked = !isOk;
+                }
+            } catch (e) {
+                alert("Error saving override: " + e);
+                document.getElementById('user-ok-toggle').checked = !isOk;
+            }
+        }
+
+        // Initialize Editor ONCE
+        function safeDiffCheck() {
+            return (typeof Diff !== 'undefined' && typeof Diff2HtmlUI !== 'undefined');
+        }
+
+        // Configure Monaco
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs' } });
+
+        window.addEventListener('load', function () {
+            // Init Editor
+            require(['vs/editor/editor.main'], function () {
+                const initialCode = document.getElementById('raw-python').value;
+                editor = monaco.editor.create(document.getElementById('editor-container'), {
+                    value: initialCode,
+                    language: 'python',
+                    theme: 'vs-light',
+                    minimap: { enabled: false },
+                    automaticLayout: false // Manual layout handled by splitters
+                });
+
+                // Initial layout
+                editor.layout();
+            });
+
+            // Initial Render
+            renderDiff();
+
+            // Setup Splitter
+            setupSplitter();
+        });
+
+        function setupSplitter() {
+            const splitter = document.getElementById('splitter');
+            const topPane = document.getElementById('top-pane');
+            const container = document.getElementById('main-container');
+            let isDragging = false;
+
+            splitter.addEventListener('mousedown', function (e) {
+                isDragging = true;
+                document.body.style.cursor = 'row-resize';
+                splitter.style.background = '#d1d5db';
+                e.preventDefault(); // Prevent text selection
+            });
+
+            document.addEventListener('mousemove', function (e) {
+                if (!isDragging) return;
+
+                const containerRect = container.getBoundingClientRect();
+                // Calculate height relative to container top
+                let newHeight = e.clientY - containerRect.top;
+
+                // Constraints (min 100px and max total - 100px)
+                const minHeight = 100;
+                const maxHeight = containerRect.height - 100;
+
+                if (newHeight < minHeight) newHeight = minHeight;
+                if (newHeight > maxHeight) newHeight = maxHeight;
+
+                topPane.style.height = newHeight + 'px';
+                topPane.style.flex = "none";
+
+                if (editor) editor.layout();
+            });
+
+            document.addEventListener('mouseup', function () {
+                if (isDragging) {
+                    isDragging = false;
+                    document.body.style.cursor = 'default';
+                    splitter.style.background = '#e5e7eb';
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                if (editor) editor.layout();
+            });
+        }
+
+        function renderDiff() {
+            const targetElement = document.getElementById('diff-content');
+            targetElement.innerHTML = '';
+
+            if (!safeDiffCheck()) {
+                targetElement.innerHTML = '<div class="p-4 text-red-600"><strong>Error:</strong> Diff libraries failed to load. Please check your internet connection and refresh.</div>';
+                return;
+            }
+
+            if (error && error !== 'None' && error !== '') {
+                targetElement.innerHTML = `<div class="p-4 text-red-600 font-mono whitespace-pre-wrap border-l-4 border-red-500 bg-red-50 p-4 m-2">${error}</div>`;
+                return;
+            }
+
+            let leftStr = "";
+            let rightStr = "";
+
+            if (currentTab === 'sql') {
+                leftStr = refSql;
+                rightStr = genSql;
+            } else {
+                leftStr = refMd;
+                rightStr = genMd;
+            }
+
+            if (!leftStr) leftStr = "";
+            if (!rightStr) rightStr = "";
+
+            if (!leftStr && !rightStr) {
+                targetElement.innerHTML = '<div class="p-4 text-gray-500 italic">Both outputs are empty (or R failed to run).</div>';
+                return;
+            }
+
+            try {
+                // Create Patch - Full File Context
+                const diff = Diff.createTwoFilesPatch(
+                    "R Reference",
+                    "Python Generated",
+                    leftStr,
+                    rightStr,
+                    "Reference",
+                    "Generated",
+                    { context: 999999 }
+                );
+
+                const ui = new Diff2HtmlUI(targetElement, diff, {
+                    drawFileList: false,
+                    matching: 'lines',
+                    outputFormat: 'side-by-side',
+                    synchronisedScroll: true,
+                    highlight: true,
+                    renderNothingWhenEmpty: false,
+                });
+
+                ui.draw();
+            } catch (e) {
+                targetElement.innerHTML = `<div class="p-4 text-red-600">Diff Render Error: ${e.message}</div>`;
+            }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+
+            // Update UI Tabs
+            document.getElementById('tab-sql').className = tab === 'sql'
+                ? "px-3 py-1 rounded text-sm font-medium transition bg-white shadow text-blue-600 border border-blue-200"
+                : "px-3 py-1 rounded text-sm font-medium transition text-gray-600 hover:text-gray-900 border border-transparent";
+
+            document.getElementById('tab-md').className = tab === 'md'
+                ? "px-3 py-1 rounded text-sm font-medium transition bg-white shadow text-blue-600 border border-blue-200"
+                : "px-3 py-1 rounded text-sm font-medium transition text-gray-600 hover:text-gray-900 border border-transparent";
+
+            renderDiff();
+        }
+
+        // AI Logic
+        function explainDiff() {
+            const modal = document.getElementById('ai-modal');
+            const content = document.getElementById('ai-content');
+            modal.style.display = 'flex';
+            content.innerHTML = '<div class="flex flex-col items-center justify-center p-8"><div class="text-purple-600 text-xl font-bold mb-2 animate-pulse">Analyzing logic...</div><div class="text-gray-500">Asking Gemini to explain the differences. This may take a few seconds.</div></div>';
+
+            // Prepare payload
+            let rVal = currentTab === 'sql' ? refSql : refMd;
+            let pVal = currentTab === 'sql' ? genSql : genMd;
+
+            fetch('/explain', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ref: rVal,
+                    gen: pVal,
+                    type: currentTab.toUpperCase()
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        content.innerHTML = `<div class="p-4 bg-red-50 text-red-700 rounded border border-red-200"><strong>Error:</strong> ${data.error}</div>`;
+                    } else {
+                        // Use marked to render markdown response from AI
+                        content.innerHTML = marked.parse(data.explanation);
+                    }
+                })
+                .catch(err => {
+                    content.innerHTML = `<div class="p-4 bg-red-50 text-red-700 rounded border border-red-200"><strong>Network Error:</strong> ${err}</div>`;
+                });
+        }
+
+        function closeAiModal() {
+            document.getElementById('ai-modal').style.display = 'none';
+        }
+
+        document.getElementById('run-btn').addEventListener('click', async () => {
+            if (!editor) return;
+
+            const code = editor.getValue();
+            const btn = document.getElementById('run-btn');
+            const originalText = btn.textContent;
+
+            btn.textContent = 'Running...';
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            try {
+                const res = await fetch('/compile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    error = data.error;
+                } else {
+                    error = null;
+                    genSql = data.sql || "";
+                    genMd = data.markdown || "";
+                }
+                renderDiff();
+
+            } catch (e) {
+                alert("Error running code: " + e);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        });
+    </script>
+
+    <!-- Hidden storage for raw values to avoid JS string escaping hell -->
+    <textarea id="raw-ref-sql" style="display:none">{{ ref_sql }}</textarea>
+    <textarea id="raw-ref-md" style="display:none">{{ ref_md }}</textarea>
+    <textarea id="raw-gen-sql" style="display:none">{{ gen_sql }}</textarea>
+    <textarea id="raw-gen-md" style="display:none">{{ gen_md }}</textarea>
+    <textarea id="raw-python" style="display:none">{{ python_code }}</textarea>
+    <textarea id="raw-error" style="display:none">{{ error }}</textarea>
+
+    <script>
+        // Overwrite the JS variables with robust DOM reads
+        refSql = document.getElementById('raw-ref-sql').value;
+        refMd = document.getElementById('raw-ref-md').value;
+        genSql = document.getElementById('raw-gen-sql').value;
+        genMd = document.getElementById('raw-gen-md').value;
+        error = document.getElementById('raw-error').value;
+    </script>
+
+</body>
+
+</html>

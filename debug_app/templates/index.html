@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Circe Python Debugger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="max-w-6xl mx-auto mt-10 p-6 bg-white rounded shadow">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Debug Cohorts</h1>
+                <p class="text-gray-600 text-sm">
+                    Run <code>pytest tests/test_real_example_cohorts.py</code> to update test statuses.
+                </p>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex gap-2">
+                <button onclick="filterTable('all')"
+                    class="filter-btn px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium active"
+                    data-filter="all">All</button>
+                <button onclick="filterTable('fail')"
+                    class="filter-btn px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium"
+                    data-filter="fail">Failed</button>
+                <button onclick="filterTable('sql_fail')"
+                    class="filter-btn px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium"
+                    data-filter="sql_fail">SQL Fail</button>
+                <button onclick="filterTable('md_fail')"
+                    class="filter-btn px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium"
+                    data-filter="md_fail">MD Fail</button>
+                <button onclick="filterTable('pass')"
+                    class="filter-btn px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium"
+                    data-filter="pass">Passed</button>
+                <button onclick="filterTable('user_ok')"
+                    class="filter-btn px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium"
+                    data-filter="user_ok">User OK</button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-200" id="cohorts-table">
+                <thead>
+                    <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Cohort File</th>
+                        <th class="py-3 px-6 text-center">SQL Status</th>
+                        <th class="py-3 px-6 text-center">Markdown Status</th>
+                        <th class="py-3 px-6 text-center">User OK</th>
+                        <th class="py-3 px-6 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-600 text-sm font-light">
+                    {% for file in files %}
+                    {% set status = test_results.get(file, {}) %}
+                    {% set is_user_ok = status.get('user_ok', False) %}
+                    {% set sql_pass = status.get('sql_match', False) %}
+                    {% set md_pass = status.get('md_match', False) %}
+                    {% set overall_status = 'pass' if (sql_pass and md_pass) else ('user_ok' if is_user_ok else 'fail')
+                    %}
+
+                    <tr class="border-b border-gray-200 hover:bg-gray-50 cohort-row" data-status="{{ overall_status }}"
+                        data-sql="{{ 'pass' if sql_pass else 'fail' }}" data-md="{{ 'pass' if md_pass else 'fail' }}">
+                        <td class="py-3 px-6 text-left whitespace-nowrap">
+                            <span class="font-medium font-mono text-blue-600">{{ file }}</span>
+                        </td>
+
+                        <!-- SQL Status -->
+                        <td class="py-3 px-6 text-center">
+                            {% if file in test_results %}
+                            {% if sql_pass %}
+                            <span
+                                class="bg-green-100 text-green-700 py-1 px-3 rounded-full text-xs font-bold ring-1 ring-green-600/20">PASS</span>
+                            {% else %}
+                            {% if is_user_ok %}
+                            <span
+                                class="bg-blue-100 text-blue-700 py-1 px-3 rounded-full text-xs font-bold ring-1 ring-blue-600/20">USER
+                                OK</span>
+                            {% else %}
+                            <span
+                                class="bg-red-100 text-red-700 py-1 px-3 rounded-full text-xs font-bold ring-1 ring-red-600/20">FAIL</span>
+                            {% endif %}
+                            {% endif %}
+                            {% else %}
+                            <span class="text-gray-400 italic text-xs">No Data</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Markdown Status -->
+                        <td class="py-3 px-6 text-center">
+                            {% if file in test_results %}
+                            {% if md_pass %}
+                            <span
+                                class="bg-green-100 text-green-700 py-1 px-3 rounded-full text-xs font-bold ring-1 ring-green-600/20">PASS</span>
+                            {% else %}
+                            {% if is_user_ok %}
+                            <span
+                                class="bg-blue-100 text-blue-700 py-1 px-3 rounded-full text-xs font-bold ring-1 ring-blue-600/20">USER
+                                OK</span>
+                            {% else %}
+                            <span
+                                class="bg-red-100 text-red-700 py-1 px-3 rounded-full text-xs font-bold ring-1 ring-red-600/20">FAIL</span>
+                            {% endif %}
+                            {% endif %}
+                            {% else %}
+                            <span class="text-gray-400 italic text-xs">No Data</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- User OK Checkbox -->
+                        <td class="py-3 px-6 text-center">
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" onchange="toggleUserOk('{{ file }}', this.checked)"
+                                    class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                    {% if is_user_ok %}checked{% endif %}>
+                            </label>
+                        </td>
+
+                        <td class="py-3 px-6 text-center">
+                            <a href="/cohort/{{ file }}"
+                                class="bg-gray-800 hover:bg-black text-white py-1 px-4 rounded transition text-xs font-medium shadow-sm">Debug</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function filterTable(filter, updateUrl = true) {
+            // Update buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+                btn.classList.add('bg-gray-200', 'text-gray-800', 'hover:bg-gray-300');
+                if (btn.dataset.filter === filter) {
+                    btn.classList.remove('bg-gray-200', 'text-gray-800', 'hover:bg-gray-300');
+                    btn.classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+                }
+            });
+
+            const rows = document.querySelectorAll('.cohort-row');
+            rows.forEach(row => {
+                const status = row.dataset.status;
+                const sqlStatus = row.dataset.sql;
+                const mdStatus = row.dataset.md;
+
+                if (filter === 'all') {
+                    row.style.display = '';
+                } else if (filter === 'fail') {
+                    row.style.display = (status === 'fail') ? '' : 'none';
+                } else if (filter === 'pass') {
+                    row.style.display = (status === 'pass') ? '' : 'none';
+                } else if (filter === 'user_ok') {
+                    row.style.display = (status === 'user_ok') ? '' : 'none';
+                } else if (filter === 'sql_fail') {
+                    // Show if SQL failed AND not overridden
+                    row.style.display = (sqlStatus === 'fail' && status !== 'user_ok') ? '' : 'none';
+                } else if (filter === 'md_fail') {
+                    // Show if MD failed AND not overridden
+                    row.style.display = (mdStatus === 'fail' && status !== 'user_ok') ? '' : 'none';
+                }
+            });
+
+            if (updateUrl) {
+                const url = new URL(window.location);
+                url.searchParams.set('filter', filter);
+                window.history.pushState({}, '', url);
+            }
+        }
+
+        // Initial state from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialFilter = urlParams.get('filter') || 'all';
+        filterTable(initialFilter, false);
+
+        // Handle Back Button
+        window.addEventListener('popstate', () => {
+            const params = new URLSearchParams(window.location.search);
+            filterTable(params.get('filter') || 'all', false);
+        });
+
+        async function toggleUserOk(filename, isOk) {
+            try {
+                const res = await fetch('/api/override', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename, is_ok: isOk })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    location.reload(); // Reload to update badges/filtering
+                }
+            } catch (e) {
+                alert("Error saving override: " + e);
+            }
+        }
+    </script>
+</body>
+
+</html>

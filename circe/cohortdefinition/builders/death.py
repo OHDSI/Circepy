@@ -29,7 +29,7 @@ class DeathSqlBuilder(CriteriaSqlBuilder[Death]):
         # - Removed hardcoded 'WHERE' and '@ordinalExpression'
         return """-- Begin Death Criteria
 SELECT C.person_id, C.person_id as event_id, C.start_date, C.end_date,
-       C.cause_concept_id as domain_concept_id, CAST(NULL as bigint) as visit_occurrence_id,
+       CAST(NULL as bigint) as visit_occurrence_id,
        C.start_date as sort_date@additionalColumns
 FROM 
 (
