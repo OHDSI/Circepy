@@ -212,7 +212,9 @@ class RangeCheckerFactory(BaseCheckerFactory):
                 self._check_range(c.start_date, Constants.Criteria.LOCATION_REGION, Constants.Attributes.LOCATION_REGION_END_DATE_ATTR)
             return check
         else:
-            return lambda c: None
+            def default_check(c) -> None:
+                pass
+            return default_check
     
     def _get_check_demographic(self, criteria: 'DemographicCriteria') -> Callable[['DemographicCriteria'], None]:
         """Get a checker function for demographic criteria.
