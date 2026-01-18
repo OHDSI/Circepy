@@ -135,8 +135,8 @@
 {%- endmacro -%}
 
 {%- macro UserDefinedPeriod(p) -%}
-  {%- if p.start_date -%}a user defiend start date of {{ format_date(p.start_date) }}{%- if p.end_date -%} and{%- endif -%}{%- endif -%}
-  {%- if p.end_date -%}{%- if not p.start_date %}a user defined{% endif %} end date of {{ format_date(p.end_date) }}{%- endif -%}
+  {%- if p.start_date -%}a user defiend start date of {{ format_date(p.start_date) }}{% if p.end_date %} and {% endif %}{%- endif -%}
+  {%- if p.end_date -%}{% if not p.start_date %}a user defined{% endif %} end date of {{ format_date(p.end_date) }}{%- endif -%}
 {%- endmacro -%}
 
 {%- macro DateAdjustment(da) -%}

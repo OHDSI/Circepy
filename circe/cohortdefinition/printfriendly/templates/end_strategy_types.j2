@@ -30,9 +30,9 @@ The person exits the cohort at the end of continuous observation.
 {%- macro CustomEraStrategy(s) -%}
   The cohort end date will be based on a continuous exposure to {{ codeset_name(s.drug_codeset_id, "_invalid drug specified_") }}:
   allowing {{ s.gap_days }} days between exposures, adding {{ utils.format_value(s.offset, "day") }} after exposure ends, and 
-  {%- if s.days_supply_override is not none -%}
+  {% if s.days_supply_override is not none -%}
     forcing drug exposure days supply to: {{ utils.format_value(s.days_supply_override, "day") }}.
-  {%- else -%}
+  {% else -%}
     using days supply and exposure end date for exposure duration.
   {%- endif -%}
 {%- endmacro -%}

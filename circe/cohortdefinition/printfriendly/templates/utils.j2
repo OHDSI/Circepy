@@ -10,11 +10,12 @@
 
 {# Macro for count column display #}
 {%- macro count_column(col) -%}
-  {%- if col|upper == "DOMAIN_CONCEPT" -%}
+  {%- set col_str = col|string -%}
+  {%- if col_str|upper == "DOMAIN_CONCEPT" or col_str == "domain_concept_id" or "DOMAIN_CONCEPT" in col_str|upper -%}
     standard concepts
-  {%- elif col|upper == "START_DATE" -%}
+  {%- elif col_str|upper == "START_DATE" or col_str == "start_date" or "START_DATE" in col_str|upper -%}
     start dates
-  {%- elif col|upper == "VISIT_ID" -%}
+  {%- elif col_str|upper == "VISIT_ID" or col_str == "visit_occurrence_id" or "VISIT_ID" in col_str|upper -%}
     visits
   {%- else -%}
     {{ col }}

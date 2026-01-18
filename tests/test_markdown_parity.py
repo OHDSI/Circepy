@@ -4,7 +4,7 @@ Tests for real example cohorts - Markdown parity.
 
 from circe.api import cohort_expression_from_json, cohort_print_friendly
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 import pytest
 import re
 from difflib import unified_diff
@@ -14,6 +14,9 @@ import random
 # Test cohort files
 COHORTS_DIR = Path(__file__).parent / 'cohorts'
 REFERENCE_DIR = COHORTS_DIR / 'reference_outputs'
+
+# Cache for generated markdown to avoid redundant work
+_MARKDOWN_CACHE: Dict[str, Tuple[Optional[str], Optional[str]]] = {}
 
 def get_target_cohort_files(config):
     """Discover cohort files based on configuration."""
@@ -43,22 +46,18 @@ def pytest_generate_tests(metafunc):
             params.append(f)
         metafunc.parametrize("cohort_name", params)
 
+@pytest.fixture(scope="module")
+def shared_markdown_cache():
+    return _MARKDOWN_CACHE
 
-def get_reference_markdown(cohort_name: str) -> Optional[str]:
-    """Get pre-generated reference Markdown from R/Java implementation."""
-    ref_file = REFERENCE_DIR / cohort_name.replace('.json', '.md')
-    if ref_file.exists():
-        return ref_file.read_text()
-    return None
-
-
-def generate_python_markdown(cohort_file: Path) -> Tuple[Optional[str], Optional[str]]:
+def get_generated_markdown(cohort_name: str) -> Tuple[Optional[str], Optional[str]]:
     """
-    Run Python reference implementation to generate Markdown.
-    
-    Returns:
-        Tuple of (markdown, error_message)
+    Get generated markdown for a cohort, using cache if available.
     """
+    if cohort_name in _MARKDOWN_CACHE:
+        return _MARKDOWN_CACHE[cohort_name]
+        
+    cohort_file = COHORTS_DIR / cohort_name
     markdown = None
     error = None
 
@@ -76,8 +75,15 @@ def generate_python_markdown(cohort_file: Path) -> Tuple[Optional[str], Optional
     except Exception as e:
         error = f"JSON parsing failed: {str(e)}"
 
+    _MARKDOWN_CACHE[cohort_name] = (markdown, error)
     return markdown, error
 
+def get_reference_markdown(cohort_name: str) -> Optional[str]:
+    """Get pre-generated reference Markdown from R/Java implementation."""
+    ref_file = REFERENCE_DIR / cohort_name.replace('.json', '.md')
+    if ref_file.exists():
+        return ref_file.read_text()
+    return None
 
 def normalize_markdown(text: str) -> str:
     """
@@ -126,7 +132,6 @@ def normalize_markdown(text: str) -> str:
     
     return result.strip()
 
-
 def compare_markdown_outputs(python_output: str, reference_output: str) -> dict:
     """
     Compare Python markdown with reference output.
@@ -163,7 +168,6 @@ def compare_markdown_outputs(python_output: str, reference_output: str) -> dict:
         'diff': diff[:50],
     }
 
-
 def analyze_markdown_differences(py_md: str, ref_md: str) -> list:
     """
     Analyze Markdown differences and identify potential issues.
@@ -185,42 +189,29 @@ def analyze_markdown_differences(py_md: str, ref_md: str) -> list:
     ]
     
     py_normalized = normalize_markdown(py_md)
-    # Ref might not need much normalization but we do it anyway for consistency in section names if they change
     
     for pattern, name in sections:
         if pattern not in py_normalized:
-            # Only report if it WAS in reference (conceptually)
-            # This is a bit loose but analyze is for finding issues.
             pass
 
     return issues
-
 
 def test_markdown_generation_produces_output(cohort_name):
     """
     Test that Python generates Markdown without crashing.
     """
-    cohort_file = COHORTS_DIR / cohort_name
-    if not cohort_file.exists():
-        pytest.skip(f"Cohort file not found: {cohort_file}")
-    
-    markdown, error = generate_python_markdown(cohort_file)
+    markdown, error = get_generated_markdown(cohort_name)
     
     if error:
         pytest.fail(f"Markdown generation error for {cohort_name}: {error}")
     
     assert markdown is not None, f"No Markdown generated for {cohort_name}"
 
-
 def test_markdown_has_no_unknown_types(cohort_name):
     """
     Test that Markdown doesn't contain "Unknown criteria type" errors.
     """
-    cohort_file = COHORTS_DIR / cohort_name
-    if not cohort_file.exists():
-        pytest.skip(f"Cohort file not found: {cohort_file}")
-    
-    markdown, error = generate_python_markdown(cohort_file)
+    markdown, error = get_generated_markdown(cohort_name)
     if error or markdown is None:
         pytest.skip(f"Markdown generation failed: {error}")
     
@@ -236,16 +227,11 @@ def test_markdown_has_no_unknown_types(cohort_name):
             "\n".join(f"  {line}" for line in lines_with_unknown)
         )
 
-
 def test_markdown_matches_reference(cohort_name):
     """
     Test that Python Markdown matches the reference R/Java Markdown.
     """
-    cohort_file = COHORTS_DIR / cohort_name
-    if not cohort_file.exists():
-        pytest.skip(f"Cohort file not found: {cohort_file}")
-    
-    markdown, error = generate_python_markdown(cohort_file)
+    markdown, error = get_generated_markdown(cohort_name)
     if error or markdown is None:
         pytest.fail(f"Markdown generation failed: {error}")
     
@@ -267,3 +253,4 @@ def test_markdown_matches_reference(cohort_name):
             ("\n".join(f"  - {issue}" for issue in issues) if issues else "  (no specific issues identified)") +
             f"\n\nFirst 30 lines of diff:\n{diff_preview}"
         )
+
