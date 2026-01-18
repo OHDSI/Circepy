@@ -26,7 +26,8 @@ FROM
 ) C
 @joinClause
 @whereClause
--- End Drug Exposure Criteria"""
+-- End Drug Exposure Criteria
+"""
 
 
 class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):

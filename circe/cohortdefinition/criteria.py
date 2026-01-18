@@ -480,6 +480,11 @@ class DrugExposure(Criteria):
         validation_alias=AliasChoices("Refills", "refills"),
         serialization_alias="Refills"
     )
+    effective_drug_dose: Optional[NumericRange] = Field(
+        default=None,
+        validation_alias=AliasChoices("EffectiveDrugDose", "effectiveDrugDose"),
+        serialization_alias="EffectiveDrugDose"
+    )
 
     model_config = ConfigDict(populate_by_name=True)
 

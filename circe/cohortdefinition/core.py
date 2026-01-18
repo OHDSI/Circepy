@@ -160,12 +160,12 @@ class DateAdjustment(CirceBaseModel):
         serialization_alias="endOffset"
     )
     start_with: Optional[DateType] = Field(
-        default=None,
+        default=DateType.START_DATE,
         validation_alias=AliasChoices("startWith", "StartWith"),
         serialization_alias="startWith"
     )
     end_with: Optional[DateType] = Field(
-        default=None,
+        default=DateType.END_DATE,
         validation_alias=AliasChoices("endWith", "EndWith"),
         serialization_alias="endWith"
     )
