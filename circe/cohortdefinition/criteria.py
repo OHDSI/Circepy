@@ -8,8 +8,8 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Any, ClassVar, Union, TYPE_CHECKING
-from pydantic import BaseModel, Field, ConfigDict, model_serializer, AliasChoices, field_validator
+from typing import List, Optional, Any, ClassVar, Union, TYPE_CHECKING, Annotated
+from pydantic import BaseModel, Field, ConfigDict, model_serializer, AliasChoices, field_validator, BeforeValidator
 from enum import Enum
 from ..vocabulary.concept import Concept
 from .core import (
@@ -1204,13 +1204,31 @@ class CriteriaGroup(BaseModel):
 
 
 # Define CriteriaType Union for strict typing
-CriteriaType = Union[
+# Define CriteriaType Union for strict typing
+_CriteriaTypeUnion = Union[
     ConditionOccurrence, DrugExposure, ProcedureOccurrence,
     VisitOccurrence, Observation, Measurement, DeviceExposure,
     Specimen, Death, VisitDetail, ObservationPeriod,
     PayerPlanPeriod, LocationRegion, ConditionEra,
-    DrugEra, DoseEra
+    DrugEra, DoseEra, Criteria
 ]
+
+def _validate_criteria_extension(v: Any) -> Any:
+    """Validate criteria checking extensions registry for custom types."""
+    if isinstance(v, dict) and len(v) == 1:
+        key = next(iter(v))
+        try:
+             from circe.extensions import get_registry
+             registry = get_registry()
+             cls = registry.get_criteria_class(key)
+             if cls:
+                 # Found registered criteria class, deserialize it
+                 return cls.model_validate(v[key])
+        except ImportError:
+             pass
+    return v
+
+CriteriaType = Annotated[_CriteriaTypeUnion, BeforeValidator(_validate_criteria_extension)]
 
 # Map for dynamic lookup
 NAMES_TO_CLASSES = {
