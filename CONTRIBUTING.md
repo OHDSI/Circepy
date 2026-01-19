@@ -17,19 +17,21 @@ This project follows the [OHDSI Code of Conduct](https://www.ohdsi.org/web/wiki/
 
 ### Development Setup
 
-1. Fork the repository on GitHub
-2. Clone your fork locally:
+> [!NOTE]
+> This is a private development repository. Ensure you have access before attempting to clone.
+
+1. Clone the repository
    ```bash
-   git clone https://github.com/YOUR_USERNAME/circe-be-python.git
-   cd circe-be-python
+   git clone https://github.com/azimov/circepy.git
+   cd circepy
    ```
 
-3. Install the package in development mode:
+2. Install the package in development mode:
    ```bash
    pip install -e ".[dev]"
    ```
 
-4. Run tests to ensure everything is working:
+3. Run tests to ensure everything is working:
    ```bash
    pytest
    ```

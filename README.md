@@ -1,10 +1,13 @@
 # CIRCE Python Implementation
 
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-993%20passed-brightgreen)](tests/)
-[![Coverage](https://img.shields.io/badge/coverage-81%25-brightgreen)](htmlcov/)
+[![Tests](https://img.shields.io/badge/tests-3400%2B%20passed-brightgreen)](tests/)
+[![Coverage](https://img.shields.io/badge/coverage-34%25-orange)](htmlcov/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![PyPI](https://img.shields.io/badge/PyPI-ohdsi--circe-blue)](https://pypi.org/project/ohdsi-circe/)
+
+> [!CAUTION]
+> **This project is currently under active testing and development.** It is a Python implementation of the OHDSI CIRCE-BE Java library. While we aim for 1:1 parity, this version is an Alpha release and should be used with caution in production environments.
 
 A Python implementation of the OHDSI CIRCE-BE (Cohort Inclusion and Restriction Criteria Engine) for generating SQL queries from cohort definitions in the OMOP Common Data Model.
 
@@ -21,17 +24,44 @@ CIRCE Python provides a comprehensive toolkit for working with OMOP CDM cohort d
 
 ## Package Status
 
-- **Version**: 1.0.0 (Beta)
-- **Tests**: 993 passing
-- **Coverage**: 81%
+> [!IMPORTANT]
+> This package is currently in **Alpha** status and undergoing rigorous parity testing against the Java implementation.
+
+- **Version**: 0.1.0 (Alpha)
+- **Tests**: 3,400+ passing
+- **Coverage**: 34% (Core logic focus)
 - **Python**: 3.8+
 - **License**: Apache 2.0
 
 ## Installation
 
+> [!NOTE]
+> This package is currently in private development. Install from source using Git.
+
+### From Source (Current Method)
+
 ```bash
-pip install ohdsi-circe
+# Clone the repository
+git clone https://github.com/azimov/circepy.git
+cd circepy
+
+# Install in development mode with all dependencies
+pip install -e ".[dev]"
+
+# Verify installation
+circe --help
 ```
+
+See [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions, troubleshooting, and setup options.
+
+### From PyPI (Coming Soon)
+
+> [!NOTE]
+> **PyPI package is not yet available.** Once stable, you'll be able to install with:
+> ```bash
+> # Coming in future release
+> pip install ohdsi-circe
+> ```
 
 ## Quick Start
 
@@ -112,7 +142,7 @@ print(sql)
 
 This package provides a complete Python implementation of CIRCE-BE with:
 
-- **993 passing tests** with 81% code coverage
+- **3,400+ passing tests** with focused coverage on core logic
 - **18+ SQL builders** for all OMOP CDM domains:
   - Condition Occurrence/Era
   - Drug Exposure/Era
@@ -168,7 +198,7 @@ circe/
 - [x] Java interoperability with camelCase/snake_case field support
 - [x] Cohort expression validation with 40+ checker implementations
 - [x] Markdown rendering for print-friendly descriptions
-- [x] Full test suite (896 tests, 71% coverage)
+- [x] Full test suite (3,400+ tests)
 - [x] Type hints throughout with py.typed marker
 - [x] Concept set expression handling
 - [x] Window criteria and correlated criteria support
@@ -293,9 +323,16 @@ circe process my_cohort.json --validate --sql my_cohort.sql --markdown my_cohort
 ### Setup Development Environment
 
 ```bash
+# Clone the repository
 git clone https://github.com/azimov/circepy.git
 cd circepy
+
+# Install with development dependencies
 pip install -e ".[dev]"
+
+# Verify installation
+pytest --version
+circe --help
 ```
 
 ### Running Tests
@@ -304,7 +341,7 @@ pip install -e ".[dev]"
 pytest
 ```
 
-All 993 tests should pass with 81% coverage.
+All 3,400+ tests should pass.
 
 ### Code Formatting
 
@@ -391,9 +428,10 @@ Special thanks to:
 
 ## Support
 
-- **Repository**: https://github.com/OHDSI/circe-be-python
-- **Issues**: https://github.com/OHDSI/circe-be-python/issues
-- **PyPI**: https://pypi.org/project/ohdsi-circe/
+- **Repository**: https://github.com/azimov/circepy
+- **Issues**: https://github.com/azimov/circepy/issues
+- **Installation Guide**: [INSTALLATION.md](INSTALLATION.md)
+- **PyPI**: https://pypi.org/project/ohdsi-circe/ (coming soon)
 - **Documentation**: https://ohdsi-circe.readthedocs.io/ (coming soon)
 
 ## Related Projects

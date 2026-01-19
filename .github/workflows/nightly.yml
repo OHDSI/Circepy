@@ -1,0 +1,188 @@
+name: Nightly Development Build
+
+on:
+  push:
+    branches:
+      - develop  # Trigger on pushes to develop branch
+  schedule:
+    - cron: '0 2 * * *'  # Run daily at 2:00 AM UTC
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: write  # Required for creating pre-releases
+  packages: write
+
+jobs:
+  nightly-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout develop branch
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Generate nightly version
+        id: nightly_version
+        run: |
+          # Get base version from pyproject.toml
+          BASE_VERSION=$(grep '^version = ' pyproject.toml | cut -d'"' -f2)
+          
+          # Generate nightly version with date stamp
+          DATE_STAMP=$(date +'%Y%m%d')
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          NIGHTLY_VERSION="${BASE_VERSION}.dev${DATE_STAMP}+${COMMIT_SHA}"
+          
+          echo "NIGHTLY_VERSION=$NIGHTLY_VERSION" >> $GITHUB_OUTPUT
+          echo "DATE_STAMP=$DATE_STAMP" >> $GITHUB_OUTPUT
+          echo "Building nightly version: $NIGHTLY_VERSION"
+      
+      - name: Update version for nightly build
+        run: |
+          # Temporarily update version in pyproject.toml for build
+          sed -i "s/^version = .*/version = \"${{ steps.nightly_version.outputs.NIGHTLY_VERSION }}\"/" pyproject.toml
+          
+          # Verify change
+          grep '^version = ' pyproject.toml
+      
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine wheel setuptools pytest pytest-cov
+      
+      - name: Build package
+        run: |
+          python -m build
+          ls -lh dist/
+      
+      - name: Check package
+        run: |
+          twine check dist/*
+      
+      - name: Install and test package
+        run: |
+          pip install dist/*.whl
+          
+          # Basic smoke tests
+          circe --help
+          python -c "from circe import __version__; print(f'Nightly version: {__version__}')"
+      
+      - name: Run test suite
+        run: |
+          pip install -e ".[dev]"
+          pytest --maxfail=10 -v --tb=short || echo "::warning::Some tests failed in nightly build"
+        continue-on-error: true  # Don't fail the workflow if tests fail
+      
+      - name: Generate coverage report
+        run: |
+          pytest --cov=circe --cov-report=html --cov-report=term || true
+        continue-on-error: true
+      
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-coverage-${{ steps.nightly_version.outputs.DATE_STAMP }}
+          path: htmlcov/
+          retention-days: 30
+        if: always()
+      
+      - name: Create nightly pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly-${{ steps.nightly_version.outputs.DATE_STAMP }}
+          name: Nightly Build ${{ steps.nightly_version.outputs.DATE_STAMP }}
+          body: |
+            ## 🌙 Nightly Development Build
+            
+            **Version:** `${{ steps.nightly_version.outputs.NIGHTLY_VERSION }}`  
+            **Commit:** `${{ github.sha }}`  
+            **Branch:** `develop`  
+            **Date:** ${{ steps.nightly_version.outputs.DATE_STAMP }}
+            
+            > [!CAUTION]
+            > **This is a development build** from the `develop` branch. It may contain experimental features, bugs, or breaking changes. Use in production at your own risk.
+            
+            ### Installation
+            
+            Download the wheel from the assets below and install:
+            
+            ```bash
+            pip install ohdsi_circe-${{ steps.nightly_version.outputs.NIGHTLY_VERSION }}-py3-none-any.whl
+            ```
+            
+            Or install directly from the develop branch:
+            
+            ```bash
+            git clone https://github.com/azimov/circepy.git
+            cd circepy
+            git checkout develop
+            pip install -e ".[dev]"
+            ```
+            
+            ### What's Included
+            
+            - Latest features and fixes from the develop branch
+            - Full test suite results (check Actions tab)
+            - Coverage reports (available in artifacts)
+            
+            ### Notes
+            
+            - This release is automatically generated and may be overwritten daily
+            - Older nightly builds are deleted automatically after 30 days
+            - For stable releases, use tagged versions from the main branch
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+          draft: false
+          prerelease: true  # Mark as pre-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Delete old nightly releases
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - 30);  // Keep last 30 days
+            
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            
+            for (const release of releases.data) {
+              if (release.tag_name.startsWith('nightly-')) {
+                const releaseDate = new Date(release.created_at);
+                if (releaseDate < cutoffDate) {
+                  console.log(`Deleting old nightly release: ${release.tag_name}`);
+                  
+                  // Delete the release
+                  await github.rest.repos.deleteRelease({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    release_id: release.id
+                  });
+                  
+                  // Delete the tag
+                  await github.rest.git.deleteRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: `tags/${release.tag_name}`
+                  });
+                }
+              }
+            }
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-dist-${{ steps.nightly_version.outputs.DATE_STAMP }}
+          path: dist/
+          retention-days: 30
