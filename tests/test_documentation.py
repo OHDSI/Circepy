@@ -7,8 +7,10 @@ links are valid, and version numbers match.
 
 import re
 from pathlib import Path
-import tomllib
-
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python <3.11 fallback
+    import tomli as tomllib
 
 class TestDocumentation:
     """Test suite for documentation validation."""
