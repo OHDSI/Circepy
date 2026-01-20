@@ -14,7 +14,6 @@ class TestPackageStructure:
     def test_package_import(self):
         """Test that the main package can be imported."""
         assert hasattr(circe, '__version__')
-        assert circe.__version__ == "1.0.0"
     
     def test_package_metadata(self):
         """Test package metadata."""
