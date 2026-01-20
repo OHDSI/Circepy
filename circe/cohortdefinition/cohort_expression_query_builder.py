@@ -26,8 +26,8 @@ from .builders import (
     ConditionOccurrenceSqlBuilder, DeathSqlBuilder, DeviceExposureSqlBuilder,
     MeasurementSqlBuilder, ObservationSqlBuilder, SpecimenSqlBuilder,
     VisitOccurrenceSqlBuilder, DrugExposureSqlBuilder, ProcedureOccurrenceSqlBuilder,
-    ConditionEraSqlBuilder, DrugEraSqlBuilder, DoseEraSqlBuilder, ObservationPeriodSqlBuilder, PayerPlanPeriodSqlBuilder,
-    VisitDetailSqlBuilder, LocationRegionSqlBuilder
+    ConditionEraSqlBuilder,    DrugEraSqlBuilder, DoseEraSqlBuilder, ObservationPeriodSqlBuilder, PayerPlanPeriodSqlBuilder,
+    VisitDetailSqlBuilder, LocationRegionSqlBuilder, get_builder_for_criteria
 )
 from circe.extensions import get_registry
 from .interfaces import IGetCriteriaSqlDispatcher, IGetEndStrategySqlDispatcher

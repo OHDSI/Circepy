@@ -58,5 +58,6 @@ __all__ = [
     "ObservationPeriodSqlBuilder",
     "PayerPlanPeriodSqlBuilder",
     "VisitDetailSqlBuilder",
-    "LocationRegionSqlBuilder"
+    "LocationRegionSqlBuilder",
+    "get_builder_for_criteria"
 ]

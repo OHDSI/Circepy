@@ -218,13 +218,26 @@ class Criteria(CirceBaseModel):
     @model_serializer(mode='wrap')
     def _serialize_polymorphic(self, serializer, info):
         """Serialize with polymorphic type wrapper for Java compatibility."""
-        # Get the serialized data using default serialization
-        data = serializer(self)
-        # Wrap in class name for polymorphic deserialization in Java
-        # Only wrap if this is a subclass (not the base Criteria class)
-        if self.__class__.__name__ != 'Criteria':
-            return {self.__class__.__name__: data}
-        return data
+        if self.__class__.__name__ == 'Criteria':
+            return serializer(self)
+            
+        # For subclasses (extensions), we want to ensure all fields are included
+        # even if serialized via a base class Union link.
+        # We manually build the dict to avoid infinite recursion with model_dump()
+        data = {}
+        for field_name, field_info in self.model_fields.items():
+            value = getattr(self, field_name)
+            if value is not None:
+                # Use serialization_alias if it exists, otherwise use field name
+                # Note: alias_generator (PascalCase) is handled via serialization_alias 
+                # effectively if we use the right property. 
+                # In Pydantic V2, serialization_alias is often the PascalCase version if configured.
+                alias = field_info.serialization_alias or field_name
+                # If it's a generic field without explicit alias, it might need PascalCase
+                # but most CIRCE fields have explicit aliases.
+                data[alias] = value
+                
+        return {self.__class__.__name__: data}
     
     def accept(self, dispatcher: Any, options: Optional[Any] = None) -> str:
         """Accept method for visitor pattern."""
