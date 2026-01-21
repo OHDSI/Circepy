@@ -87,95 +87,46 @@ class CohortBuilder:
     
     # Entry event methods - each returns CohortWithEntry
     def with_condition(self, concept_set_id: int) -> 'CohortWithEntry':
-        """
-        Set entry event to a condition occurrence.
-        
-        Args:
-            concept_set_id: ID of the concept set defining the conditions
-            
-        Returns:
-            CohortWithEntry for further configuration
-        """
         query = ConditionQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
+        cohort = CohortWithEntry(self, query)
+        query._parent = cohort
+        return cohort
     
     def with_drug(self, concept_set_id: int) -> 'CohortWithEntry':
-        """
-        Set entry event to a drug exposure.
-        
-        Args:
-            concept_set_id: ID of the concept set defining the drugs
-            
-        Returns:
-            CohortWithEntry for further configuration
-        """
         query = DrugQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
+        cohort = CohortWithEntry(self, query)
+        query._parent = cohort
+        return cohort
     
     def with_drug_era(self, concept_set_id: int) -> 'CohortWithEntry':
-        """
-        Set entry event to a drug era.
-        
-        Args:
-            concept_set_id: ID of the concept set defining the drugs
-            
-        Returns:
-            CohortWithEntry for further configuration
-        """
         query = DrugEraQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
+        cohort = CohortWithEntry(self, query)
+        query._parent = cohort
+        return cohort
     
     def with_procedure(self, concept_set_id: int) -> 'CohortWithEntry':
-        """
-        Set entry event to a procedure occurrence.
-        
-        Args:
-            concept_set_id: ID of the concept set defining the procedures
-            
-        Returns:
-            CohortWithEntry for further configuration
-        """
         query = ProcedureQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
+        cohort = CohortWithEntry(self, query)
+        query._parent = cohort
+        return cohort
     
     def with_measurement(self, concept_set_id: int) -> 'CohortWithEntry':
-        """
-        Set entry event to a measurement.
-        
-        Args:
-            concept_set_id: ID of the concept set defining the measurements
-            
-        Returns:
-            CohortWithEntry for further configuration
-        """
         query = MeasurementQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
+        cohort = CohortWithEntry(self, query)
+        query._parent = cohort
+        return cohort
     
     def with_visit(self, concept_set_id: int) -> 'CohortWithEntry':
-        """
-        Set entry event to a visit occurrence.
-        
-        Args:
-            concept_set_id: ID of the concept set defining the visits
-            
-        Returns:
-            CohortWithEntry for further configuration
-        """
         query = VisitQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
+        cohort = CohortWithEntry(self, query)
+        query._parent = cohort
+        return cohort
     
     def with_observation(self, concept_set_id: int) -> 'CohortWithEntry':
-        """
-        Set entry event to an observation.
-        
-        Args:
-            concept_set_id: ID of the concept set defining the observations
-            
-        Returns:
-            CohortWithEntry for further configuration
-        """
         query = ObservationQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
+        cohort = CohortWithEntry(self, query)
+        query._parent = cohort
+        return cohort
     
     def with_condition_era(self, concept_set_id: int) -> 'CohortWithEntry':
         """Set entry event to a condition era."""
@@ -237,23 +188,103 @@ class CohortWithEntry:
     
     def __init__(self, parent: CohortBuilder, entry_query: BaseQuery):
         self._parent = parent
-        self._entry_query = entry_query
-        self._entry_config = entry_query._get_config()
+        self._entry_queries = [entry_query]
         self._prior_observation_days = 0
         self._post_observation_days = 0
         self._limit = "All"
+        self._qualified_limit = "First"
+        self._expression_limit = "All"
         self._settings = CohortSettings()
     
+    def or_with_condition(self, concept_set_id: int) -> 'CohortWithEntry':
+        """Add another alternative entry event (OR logic in Primary Criteria)."""
+        query = ConditionQuery(concept_set_id, is_entry=True, parent=self)
+        self._entry_queries.append(query)
+        return self
+
+    def or_with_drug(self, concept_set_id: int) -> 'CohortWithEntry':
+        """Add another alternative entry event (OR logic in Primary Criteria)."""
+        query = DrugQuery(concept_set_id, is_entry=True, parent=self)
+        self._entry_queries.append(query)
+        return self
+
+    def or_with_procedure(self, concept_set_id: int) -> 'CohortWithEntry':
+        """Add another alternative entry event (OR logic in Primary Criteria)."""
+        query = ProcedureQuery(concept_set_id, is_entry=True, parent=self)
+        self._entry_queries.append(query)
+        return self
+
+    def or_with_measurement(self, concept_set_id: int) -> 'CohortWithEntry':
+        """Add another alternative entry event (OR logic in Primary Criteria)."""
+        query = MeasurementQuery(concept_set_id, is_entry=True, parent=self)
+        self._entry_queries.append(query)
+        return self
+
+    def or_with_visit(self, concept_set_id: int) -> 'CohortWithEntry':
+        """Add another alternative entry event (OR logic in Primary Criteria)."""
+        query = VisitQuery(concept_set_id, is_entry=True, parent=self)
+        self._entry_queries.append(query)
+        return self
+
+    def with_qualified_limit(self, limit: str) -> 'CohortWithEntry':
+        """Set the qualified limit (First, Last, All)."""
+        self._qualified_limit = limit
+        return self
+
+    def with_expression_limit(self, limit: str) -> 'CohortWithEntry':
+        """Set the expression limit (First, Last, All)."""
+        self._expression_limit = limit
+        return self
+
+    # Entry query filters (delegate to the last added query)
+    def with_condition_type(self, *concept_ids: int) -> 'CohortWithEntry':
+        """Filter the last added condition entry by type."""
+        last_q = self._entry_queries[-1]
+        if isinstance(last_q, ConditionQuery):
+            last_q.with_condition_type(*concept_ids)
+        return self
+
+    def with_drug_type(self, *concept_ids: int) -> 'CohortWithEntry':
+        """Filter the last added drug entry by type."""
+        last_q = self._entry_queries[-1]
+        if isinstance(last_q, DrugQuery):
+            last_q.with_drug_type(*concept_ids)
+        return self
+
+    def with_visit_type(self, *concept_ids: int) -> 'CohortWithEntry':
+        """Filter the last added entry by visit type."""
+        self._entry_queries[-1].with_visit_type(*concept_ids)
+        return self
+    
+    def with_source_concept(self, concept_set_id: int) -> 'CohortWithEntry':
+        """Filter the last added entry by source concept."""
+        self._entry_queries[-1].with_source_concept(concept_set_id)
+        return self
+
+    def with_all(self) -> 'CriteriaGroupBuilder':
+        """Start a correlated criteria group for the last added entry."""
+        return self._entry_queries[-1].with_all()
+
+    def with_any(self) -> 'CriteriaGroupBuilder':
+        """Start a correlated criteria group for the last added entry."""
+        return self._entry_queries[-1].with_any()
+
+    def with_at_least(self, count: int) -> 'CriteriaGroupBuilder':
+        """Start a correlated criteria group for the last added entry."""
+        return self._entry_queries[-1].with_at_least(count)
+
     def first_occurrence(self) -> 'CohortWithEntry':
-        """Only use the first occurrence per person."""
-        self._entry_config.first_occurrence = True
+        """Only use the first occurrence per person for entry events."""
+        for q in self._entry_queries:
+            q._get_config().first_occurrence = True
         self._limit = "First"
         return self
     
     def all_occurrences(self) -> 'CohortWithEntry':
         """Use all occurrences per person."""
         self._limit = "All"
-        self._entry_config.first_occurrence = False
+        for q in self._entry_queries:
+            q._get_config().first_occurrence = False
         return self
     
     def with_observation(
@@ -276,13 +307,15 @@ class CohortWithEntry:
         return self
     
     def min_age(self, age: int) -> 'CohortWithEntry':
-        """Require minimum age at entry."""
-        self._entry_config.age_min = age
+        """Require minimum age at entry for all entry events."""
+        for q in self._entry_queries:
+            q._get_config().age_min = age
         return self
     
     def max_age(self, age: int) -> 'CohortWithEntry':
-        """Require maximum age at entry."""
-        self._entry_config.age_max = age
+        """Require maximum age at entry for all entry events."""
+        for q in self._entry_queries:
+            q._get_config().age_max = age
         return self
     
     def require_gender(self, *concept_ids: int) -> 'CohortWithEntry':
@@ -437,10 +470,12 @@ class CohortWithEntry:
         """Transition to criteria state."""
         return CohortWithCriteria(
             parent=self._parent,
-            entry_config=self._entry_config,
+            entry_configs=[q._get_config() for q in self._entry_queries],
             prior_observation=self._prior_observation_days,
             post_observation=self._post_observation_days,
             limit=self._limit,
+            qualified_limit=self._qualified_limit,
+            expression_limit=self._expression_limit,
             settings=self._settings
         )
     
@@ -465,17 +500,21 @@ class CohortWithCriteria:
     def __init__(
         self,
         parent: CohortBuilder,
-        entry_config: QueryConfig,
+        entry_configs: List[QueryConfig],
         prior_observation: int = 0,
         post_observation: int = 0,
         limit: str = "All",
+        qualified_limit: str = "First",
+        expression_limit: str = "All",
         settings: Optional[CohortSettings] = None
     ):
         self._parent = parent
-        self._entry_config = entry_config
+        self._entry_configs = entry_configs
         self._prior_observation = prior_observation
         self._post_observation = post_observation
         self._limit = limit
+        self._qualified_limit = qualified_limit
+        self._expression_limit = expression_limit
         self._rules = [{"name": "Inclusion Criteria", "group": GroupConfig(type="ALL")}]
         self._settings = settings or CohortSettings()
     
@@ -714,10 +753,12 @@ class CohortWithCriteria:
         return _build_cohort_expression(
             title=self._parent._title,
             concept_sets=self._parent._concept_sets,
-            entry_config=self._entry_config,
+            entry_configs=self._entry_configs,
             prior_observation=self._prior_observation,
             post_observation=self._post_observation,
             limit=self._limit,
+            qualified_limit=self._qualified_limit,
+            expression_limit=self._expression_limit,
             rules=self._rules,
             settings=self._settings
         )
@@ -730,24 +771,26 @@ class CohortWithCriteria:
 def _build_cohort_expression(
     title: str,
     concept_sets: List[ConceptSet],
-    entry_config: QueryConfig,
+    entry_configs: List[QueryConfig],
     prior_observation: int,
     post_observation: int,
     limit: str,
+    qualified_limit: str,
+    expression_limit: str,
     rules: List[Dict[str, Any]],
     settings: CohortSettings
 ) -> CohortExpression:
     """Build a CohortExpression from the builder state."""
     
     # Build primary criteria
-    entry_criteria = _config_to_criteria(entry_config)
+    entry_criteria_list = [_config_to_criteria(cfg) for cfg in entry_configs]
     primary_criteria = PrimaryCriteria(
-        criteria_list=[entry_criteria],
+        criteria_list=entry_criteria_list,
         observation_window=ObservationFilter(
             prior_days=prior_observation,
             post_days=post_observation
         ),
-        primary_limit=ResultLimit(type=limit)
+        primary_criteria_limit=ResultLimit(type=limit)
     )
     
     # Build inclusion rules from rules
@@ -819,7 +862,9 @@ def _build_cohort_expression(
         inclusion_rules=inclusion_rules if inclusion_rules else None,
         end_strategy=end_strategy,
         collapse_settings=collapse_settings,
-        censoring_criteria=censoring_criteria if censoring_criteria else None
+        censoring_criteria=censoring_criteria if censoring_criteria else None,
+        qualified_limit=ResultLimit(type=qualified_limit),
+        expression_limit=ResultLimit(type=expression_limit)
     )
 
 
@@ -919,6 +964,24 @@ def _config_to_criteria(config: QueryConfig):
     
     if config.visit_type_concepts:
         kwargs['visit_type'] = [Concept(concept_id=c, concept_name="Visit Type") for c in config.visit_type_concepts]
+
+    if config.condition_type_concepts:
+        kwargs['condition_type'] = [Concept(concept_id=c, concept_name="Condition Type") for c in config.condition_type_concepts]
+
+    if config.drug_type_concepts:
+        kwargs['drug_type'] = [Concept(concept_id=c, concept_name="Drug Type") for c in config.drug_type_concepts]
+
+    if config.procedure_type_concepts:
+        kwargs['procedure_type'] = [Concept(concept_id=c, concept_name="Procedure Type") for c in config.procedure_type_concepts]
+
+    if config.measurement_type_concepts:
+        kwargs['measurement_type'] = [Concept(concept_id=c, concept_name="Measurement Type") for c in config.measurement_type_concepts]
+
+    if config.observation_type_concepts:
+        kwargs['observation_type'] = [Concept(concept_id=c, concept_name="Observation Type") for c in config.observation_type_concepts]
+
+    if config.device_type_concepts:
+        kwargs['device_type'] = [Concept(concept_id=c, concept_name="Device Type") for c in config.device_type_concepts]
 
     if config.provider_specialty_concepts:
         kwargs['provider_specialty'] = [Concept(concept_id=c, concept_name="Provider Specialty") for c in config.provider_specialty_concepts]

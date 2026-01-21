@@ -59,6 +59,12 @@ class QueryConfig:
     status_concepts: List[int] = field(default_factory=list)
     # ... other concepts
     visit_type_concepts: List[int] = field(default_factory=list)
+    condition_type_concepts: List[int] = field(default_factory=list)
+    drug_type_concepts: List[int] = field(default_factory=list)
+    procedure_type_concepts: List[int] = field(default_factory=list)
+    measurement_type_concepts: List[int] = field(default_factory=list)
+    observation_type_concepts: List[int] = field(default_factory=list)
+    device_type_concepts: List[int] = field(default_factory=list)
     provider_specialty_concepts: List[int] = field(default_factory=list)
     source_concept_set_id: Optional[int] = None
     days_supply_min: Optional[int] = None
@@ -262,7 +268,7 @@ class BaseQuery:
             self._config.time_window = TimeWindow(use_event_end=True)
         return self
     
-    def _finalize(self) -> 'CohortWithCriteria':
+    def _finalize(self) -> Any:
         """Add this query to the parent and return for chaining."""
         if self._parent is None:
             raise ValueError("Cannot finalize query without parent cohort")
@@ -288,6 +294,11 @@ class ConditionQuery(BaseQuery):
         self._config.status_concepts = status_concepts
         return self
     
+    def with_condition_type(self, *concept_ids: int) -> 'ConditionQuery':
+        """Filter by condition type (e.g., Primary Diagnosis)."""
+        self._config.condition_type_concepts.extend(concept_ids)
+        return self
+    
     def inpatient_only(self) -> 'ConditionQuery':
         """Only include conditions during inpatient visits."""
         # This usually requires joining with visit, but in CIRCE it's often a VisitType filter
@@ -304,6 +315,11 @@ class DrugQuery(BaseQuery):
         """Filter by days supply."""
         self._config.days_supply_min = min_days
         self._config.days_supply_max = max_days
+        return self
+    
+    def with_drug_type(self, *concept_ids: int) -> 'DrugQuery':
+        """Filter by drug exposure type (e.g., Prescribed)."""
+        self._config.drug_type_concepts.extend(concept_ids)
         return self
     
     def with_quantity(self, min_qty: Optional[float] = None, max_qty: Optional[float] = None) -> 'DrugQuery':
@@ -526,9 +542,14 @@ class CriteriaGroupBuilder:
         ))
         return self
     
-    def end_group(self) -> Union['CriteriaGroupBuilder', Any]:
+    def end_group(self) -> Any:
         """Finish adding to this group and return to the parent builder."""
-        return self._parent
+        parent = self._parent
+        # If the parent is a query object (for correlated criteria), 
+        # return the query's parent (the cohort) to continue chaining.
+        if isinstance(parent, BaseQuery):
+            return parent._parent
+        return parent
 
     def require_condition(self, concept_set_id: int) -> 'ConditionQuery':
         return ConditionQuery(concept_set_id, parent=self, is_exclusion=False)

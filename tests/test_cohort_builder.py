@@ -42,7 +42,7 @@ class TestCohortWithEntry:
         result = (CohortBuilder("Test")
                   .with_condition(1)
                   .first_occurrence())
-        assert result._entry_config.first_occurrence is True
+        assert result._entry_queries[0]._get_config().first_occurrence is True
     
     def test_with_observation(self):
         result = (CohortBuilder("Test")
@@ -55,7 +55,7 @@ class TestCohortWithEntry:
         result = (CohortBuilder("Test")
                   .with_condition(1)
                   .min_age(18))
-        assert result._entry_config.age_min == 18
+        assert result._entry_queries[0]._get_config().age_min == 18
     
     def test_build_from_entry(self):
         expr = (CohortBuilder("Simple")
@@ -95,7 +95,7 @@ class TestCohortWithCriteria:
                   .with_condition(1)
                   .require_drug(2).within_days_after(30)
                   .exclude_drug(3).anytime_before())
-        assert len(result._criteria) == 2
+        assert len(result._rules[0]["group"].criteria) == 2
 
 
 class TestBuildCohortExpression:
@@ -154,7 +154,7 @@ class TestQueryMethods:
                   .require_drug(2)
                   .within_days_before(365))
         
-        config = result._criteria[0].query_config
+        config = result._rules[0]["group"].criteria[0].query_config
         assert config.time_window.days_before == 365
         assert config.time_window.days_after == 0
     
@@ -164,7 +164,7 @@ class TestQueryMethods:
                   .require_drug(2)
                   .within_days_after(30))
         
-        config = result._criteria[0].query_config
+        config = result._rules[0]["group"].criteria[0].query_config
         assert config.time_window.days_before == 0
         assert config.time_window.days_after == 30
     
@@ -174,7 +174,7 @@ class TestQueryMethods:
                   .exclude_drug(2)
                   .anytime_before())
         
-        config = result._criteria[0].query_config
+        config = result._rules[0]["group"].criteria[0].query_config
         assert config.time_window.days_before == 99999
     
     def test_same_day(self):
@@ -183,6 +183,6 @@ class TestQueryMethods:
                   .require_drug(2)
                   .same_day())
         
-        config = result._criteria[0].query_config
+        config = result._rules[0]["group"].criteria[0].query_config
         assert config.time_window.days_before == 0
         assert config.time_window.days_after == 0

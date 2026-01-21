@@ -200,7 +200,7 @@ class CollapseSettings(CirceBaseModel):
         serialization_alias="EraPad"
     )
     collapse_type: Optional[CollapseType] = Field(
-        default=None,
+        default=CollapseType.ERA,
         validation_alias=AliasChoices("CollapseType", "collapseType"),
         serialization_alias="CollapseType"
     )
