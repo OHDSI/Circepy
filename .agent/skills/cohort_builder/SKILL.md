@@ -18,13 +18,13 @@ Use this skill when the user wants to:
 ## Quick Start
 
 ```python
-from circe.cohort_builder import Cohort
+from circe.cohort_builder import CohortBuilder
 
 cohort = (
-    Cohort("Cohort Title")
+    CohortBuilder("Cohort Title")
     .with_condition(concept_set_id=1)  # Entry event
     .require_age(18, 65)  # Demographics
-    .require_drug(2).anytime_before()  # Inclusion criteria
+    .require_any_of(drug_ids=[2, 3, 4])  # Simplified group (Phase 1)
     .build()
 )
 ```
@@ -34,7 +34,7 @@ cohort = (
 ### Step 1: Start with Entry Event
 
 ```python
-Cohort("Title")
+CohortBuilder("Title")
     .with_condition(concept_set_id=N)      # Condition occurrence
     .with_condition_era(concept_set_id=N)  # Condition era
     .with_drug(concept_set_id=N)           # Drug exposure
@@ -43,14 +43,7 @@ Cohort("Title")
     .with_procedure(concept_set_id=N)      # Procedure
     .with_measurement(concept_set_id=N)    # Measurement
     .with_visit(concept_set_id=N)          # Visit occurrence
-    .with_visit_detail(concept_set_id=N)   # Visit detail
-    .with_observation(concept_set_id=N)    # Observation
-    .with_device_exposure(concept_set_id=N) # Device exposure
-    .with_specimen(concept_set_id=N)       # Specimen
-    .with_death(concept_set_id=N)          # Death
     .with_observation_period(concept_set_id=N)  # Observation period
-    .with_payer_plan_period(concept_set_id=N)   # Payer plan period
-    .with_location_region(concept_set_id=N)     # Location/region
 ```
 
 ### Step 2: Configure Entry (Optional)
@@ -80,7 +73,49 @@ Cohort("Title")
     .require_procedure(N).same_day()
 ```
 
-### Step 5: Add Nested Criteria Groups (Optional)
+### Step 5: Add Inclusion Criteria
+
+#### Option A: Collection Methods (Phase 1 - RECOMMENDED)
+
+Simplified syntax for common patterns:
+
+```python
+# ANY of (OR logic) - patient must have at least one
+.require_any_of(
+    drug_ids=[10, 11, 12],
+    condition_ids=[20, 21],
+    procedure_ids=[30]
+)
+
+# ALL of (AND logic) - patient must have all
+.require_all_of(
+    measurement_ids=[40, 41],
+    procedure_ids=[50]
+)
+
+# AT LEAST N of - patient must have N criteria
+.require_at_least_of(2, 
+    drug_ids=[60, 61, 62, 63]
+)
+
+# Exclusions
+.exclude_any_of(
+    condition_ids=[70, 71, 72]
+)
+```
+
+**Supported domains for collection methods:**
+- `condition_ids`
+- `drug_ids`
+- `drug_era_ids`
+- `procedure_ids`
+- `measurement_ids`
+- `observation_ids`
+- `visit_ids`
+
+#### Option B: Manual Nested Groups
+
+For maximum control:
 
 ```python
     .any_of()                     # Start ANY group (OR logic)
@@ -100,7 +135,7 @@ Cohort("Title")
     .end_group()
 ```
 
-### Step 6: Add Simple Inclusion Criteria (Optional)
+#### Option C: Simple Criteria
 
 ```python
     .require_condition(N).within_days_before(365)
@@ -108,14 +143,16 @@ Cohort("Title")
     .require_measurement(N).same_day()
 ```
 
-### Step 7: Add Exclusion Criteria (Optional)
+### Step 6: Add Exclusion Criteria (Optional)
 
 ```python
     .exclude_condition(N).anytime_before()
     .exclude_drug(N).within_days_before(365)
+    # Or use collection methods:
+    .exclude_any_of(condition_ids=[10, 11, 12])
 ```
 
-### Step 8: Add Censoring Events (Optional)
+### Step 7: Add Censoring Events (Optional)
 
 Censoring events cause a patient to exit the cohort if they occur after the entry date.
 
@@ -125,12 +162,14 @@ Censoring events cause a patient to exit the cohort if they occur after the entr
     .censor_on_death().anytime_after()
 ```
 
-### Step 9: Build
+### Step 8: Build
 ```python
     .build()  # Returns CohortExpression
 ```
 
 ## Time Window Options
+
+### Basic Time Windows
 
 | Method | Description |
 |--------|-------------|
@@ -141,370 +180,365 @@ Censoring events cause a patient to exit the cohort if they occur after the entr
 | `.anytime_after()` | Any time after index |
 | `.same_day()` | Same day as index |
 
-## Advanced Query Filters
+### Advanced Time Windows (Phase 4)
 
-All query methods (`.require_*()`, `.exclude_*()`) support these filters:
+| Method | Description | Example |
+|--------|-------------|----------|
+| `.between_visits()` | Restrict to same visit as index | `.require_procedure(10).between_visits()` |
+| `.during_event()` | Event must occur entirely within index event duration | `.require_measurement(20).during_event()` |
+| `.before_event_end(days)` | Relative to index event's end date | `.require_drug(10).before_event_end(days=3)` |
+| `.anytime_in_past(years)` | Any time before index, optionally limited to N years | `.require_condition(10).anytime_in_past(years=5)` |
+| `.anytime_in_future(years)` | Any time after index, optionally limited to N years | `.require_condition(20).anytime_in_future(years=1)` |
 
-### Occurrence Counting
+**Examples:**
 ```python
-    .require_drug(N)
-        .at_least(2)              # At least 2 occurrences
-        .at_most(5)               # At most 5 occurrences
-        .exactly(1)               # Exactly 1 occurrence
-        .anytime_before()
+# Same visit procedures
+.require_procedure(10).between_visits()
+
+# Measurements during hospitalization
+.require_measurement(20).during_event()
+
+# Drug within 7 days before hospitalization ends
+.require_drug(30).before_event_end(days=7)
+
+# Prior conditions in past 5 years
+.require_condition(40).anytime_in_past(years=5)
+
+# Future events in next year
+.require_condition(50).anytime_in_future(years=1)
 ```
 
-### Age Filtering
+## Domain-Specific Modifiers (Phase 2)
+
+Apply fine-grained filters to individual criteria:
+
+### Procedure Modifiers
+
 ```python
-    .require_drug(N)
-        .with_age(min_age=30, max_age=50)  # Age at event
-        .anytime_before()
+.require_procedure(N)\
+    .with_quantity(min_qty=1, max_qty=5)\  # Quantity range
+    .with_modifier(4184637, 4330420)\      # Modifier concepts (e.g., Bilateral)
+    .anytime_before()
 ```
 
-### Visit Constraints
+### Measurement Modifiers
+
 ```python
-    .require_procedure(N)
-        .with_visit_type(9201)    # Inpatient visits only
-        .restrict_to_visit()      # Same visit as index event
-        .same_day()
+.require_measurement(N)\
+    .with_operator(4172704)\                         # Operator (>, <, =, etc.)
+    .with_range_low_ratio(min_ratio=0.5, max_ratio=1.5)\   # Ratio to lower bound
+    .with_range_high_ratio(min_ratio=1.0, max_ratio=2.0)\  # Ratio to upper bound
+    .with_value(min_val=10.0, max_val=50.0)\        # Value range
+    .with_unit(8510)\                                # Unit concepts
+    .is_abnormal()\                                  # Abnormal flag
+    .anytime_before()
 ```
 
-### Provider Specialty
+### Drug Modifiers
+
 ```python
-    .require_procedure(N)
-        .with_provider_specialty(38004446)  # Cardiologist
-        .anytime_before()
+.require_drug(N)\
+    .with_route(4132161)\                           # Route (e.g., Oral)
+    .with_refills(min_refills=1, max_refills=12)\   # Refill range
+    .with_dose(min_dose=10.0, max_dose=50.0)\       # Dose range
+    .with_days_supply(min_days=30, max_days=90)\    # Days supply
+    .with_quantity(min_qty=30, max_qty=90)\         # Quantity
+    .anytime_before()
 ```
 
-### Gender Filtering
+### Visit Modifiers
+
 ```python
-    .require_condition(N)
-        .with_gender(8507)        # Male patients only
-        .anytime_before()
+.require_visit(N)\
+    .with_admitted_from(8715)\                      # Admitted from (e.g., ER)
+    .with_discharged_to(8717)\                      # Discharged to (e.g., Home)
+    .with_place_of_service(...)\                    # Place of service
+    .with_length(min_days=1, max_days=7)\           # Visit length
+    .anytime_before()
 ```
 
-### Source Concepts
+### Observation Modifiers
+
 ```python
-    .require_condition(N)
-        .with_source_concept(concept_set_id=5)
-        .anytime_before()
+.require_observation(N)\
+    .with_qualifier(4214956)\                       # Qualifier concepts
+    .with_value_as_string("positive")\              # String value match
+    .anytime_before()
 ```
 
-### Observation Period
+## Occurrence Counting
+
+All query methods support occurrence counting:
+
 ```python
-    .require_drug(N)
-        .ignore_observation_period()  # Don't restrict to obs period
-        .anytime_before()
+.require_drug(N)\
+    .at_least(3)\         # At least 3 occurrences
+    .at_most(5)\          # At most 5 occurrences
+    .exactly(2)\          # Exactly 2 occurrences
+    .anytime_before()
 ```
 
-### Time Window Modifiers
+## Advanced Features (Phase 5)
+
+These methods provide fine-grained control over counting and observation periods:
+
+### Distinct Counting
+
+Count only distinct occurrences rather than all occurrences:
+
 ```python
-    .require_drug(N)
-        .relative_to_index_end()  # Relative to index event end date
-        .within_days_after(30)
-    
-    .require_procedure(N)
-        .relative_to_event_end()  # Relative to criteria event end date
-        .within_days_before(7)
+.require_measurement(10)\
+    .with_distinct()\     # Count distinct only
+    .at_least(3)\
+    .anytime_before()
 ```
 
-### Date Adjustment (Event Offsets)
+**Use Case**: When you want "at least 3 different measurements" rather than "at least 3 measurement records" (which could be the same measurement repeated).
+
+### Ignore Observation Period
+
+By default, OHDSI requires events to fall within observation periods. This flag allows events outside those periods:
+
 ```python
-    .require_drug(N)
-        .with_start_date_adjustment(-7) # Event starts 7 days before record start
-        .with_end_date_adjustment(7)    # Event ends 7 days after record end
-        .anytime_before()
+.require_condition(10)\
+    .ignore_observation_period()\
+    .anytime_before()
 ```
 
-### Advanced Measurement / Drug / Era Filters
-```python
-    .require_measurement(N)
-        .with_unit(8505)                # Milligrams
-        .is_abnormal()                  # Abnormal flag
-        .with_value(10, 20)             # Numeric range
-        .with_value_as_concept(4587)    # Concept result
-        .anytime_before()
-    
-    .require_drug_era(N)
-        .with_gap_days(0, 30)           # Era gap
-        .with_occurrence_count(2)       # Number of events in era
-        .anytime_before()
-```
+**Use Case**: When you need to capture events that may occur outside typical healthcare observation windows.
 
-### Custom Era Exit Strategy
-```python
-    .with_condition(1)
-    .exit_at_era_end(concept_set_id=10, gap_days=30, offset=0)
-    .build()
-```
+### Chaining Advanced Features
 
-### Correlated Criteria (Criteria within Criteria)
-
-Apply criteria that must be met relative to a specific event.
+Both methods can be chained with other modifiers:
 
 ```python
-    .require_drug(10)           # Main event
-        .with_all()             # Relational criteria (ALL must match)
-            .require_procedure(20).same_day()
-            .require_condition(30).within_days_before(30)
-        .end_group()            # End relational group
-        .anytime_before()       # Back to main event window
-```
-
-### Multiple Alternative Entry Events (OR Logic)
-```python
-    .with_condition(1)          # Alternative 1: Diagnosis
-    .or_with_drug(2)            # Alternative 2: Medication
-    .or_with_procedure(3)       # Alternative 3: Surgery
-    .first_occurrence()         # Applies to all entry alternatives
-    .build()
-```
-
-### Result Limits (Qualified & Expression)
-```python
-    .with_condition(1)
-    .with_qualified_limit("First")   # Limit results after inclusion criteria
-    .with_expression_limit("All")    # Final result limit
-    .build()
-```
-
-### Domain-Specific Type Filters
-```python
-    .with_condition(1)
-        .with_condition_type(44786627) # Primary Diagnosis
-    .or_with_drug(2)
-        .with_drug_type(38000177)      # Prescription written
-    .build()
-```
-
-## Complete Examples
-
-### Example 1: Simple Cohort with Demographics
-
-```python
-from circe.cohort_builder import Cohort
-
-cohort = (
-    Cohort("Adult Males with T2DM")
-    .with_condition(1)  # T2DM diagnosis
-    .require_age(18, 65)
-    .require_gender(8507)  # Male
-    .build()
-)
-```
-
-### Example 2: Nested Groups with Complex Logic
-
-```python
-cohort = (
-    Cohort("Complex Medication Cohort")
-    .with_drug(1)  # Entry: Drug A
-    .first_occurrence()
-    .require_age(18)
-    .any_of()  # Patient must have EITHER:
-        .require_drug(2).at_least(2).anytime_before()  # 2+ exposures to Drug B
-        .all_of()  # OR BOTH:
-            .require_procedure(10).same_day()  # Procedure on same day
-            .require_measurement(20).within_days_before(30)  # Recent measurement
-        .end_group()
-    .end_group()
-    .build()
-)
-```
-
-### Example 3: Named Inclusion Rules for Attrition
-
-```python
-cohort = (
-    Cohort("Metformin Users with Attrition")
-    .with_drug(1)  # Metformin
-    .first_occurrence()
-    .begin_rule("Age Criteria")
-    .require_age(18, 65)
-    .begin_rule("Prior Diagnosis")
-    .require_condition(2).within_days_before(365)  # T2DM in prior year
-    .begin_rule("No Prior Insulin")
-    .exclude_drug(3).anytime_before()  # No insulin before
-    .build()
-)
-```
-
-### Example 4: Advanced Filters
-
-```python
-cohort = (
-    Cohort("Inpatient Procedures")
-    .with_procedure(1)
-    .require_age(18)
-    .require_procedure(2)
-        .with_visit_type(9201)  # Inpatient only
-        .with_provider_specialty(38004446)  # Cardiologist
-        .restrict_to_visit()  # Same visit as index
-        .same_day()
-    .build()
-)
-```
-
-### Example 5: Complete Real-World Example
-
-```python
-from circe.cohort_builder import Cohort
-from circe.vocabulary import concept_set, descendants
-
-# Define concept sets
-t2dm = concept_set(descendants(201826), id=1, name="T2DM")
-metformin = concept_set(descendants(1503297), id=2, name="Metformin")
-insulin = concept_set(descendants(1511348), id=3, name="Insulin")
-a1c = concept_set(descendants(3004410), id=4, name="HbA1c")
-
-# Build cohort
-cohort = (
-    Cohort("New Metformin Users with T2DM")
-    .with_concept_sets(t2dm, metformin, insulin, a1c)
-    .with_drug(2)  # Entry: Metformin exposure
-    .first_occurrence()
-    .with_observation(prior_days=365)
-    .require_age(18, 75)
-    .require_gender(8507, 8532)  # Male or Female
-    .begin_rule("T2DM Diagnosis")
-    .require_condition(1).within_days_before(365)
-    .begin_rule("No Prior Insulin")
-    .exclude_drug(3).anytime_before()
-    .begin_rule("Recent A1C")
-    .require_measurement(4).within_days_before(90)
-    .build()
-)
+.require_measurement(10)\
+    .with_distinct()\
+    .ignore_observation_period()\
+    .with_operator(4172704)\
+    .at_least(2)\
+    .anytime_in_past(years=10)
 ```
 
 ## Common Patterns
 
-### First-Ever Diagnosis
+### Pattern 1: Simple Diabetes Cohort
+
 ```python
-(Cohort("First T2DM Diagnosis")
-    .with_condition(1)
+cohort = (
+    CohortBuilder("Type 2 Diabetes")
+    .with_condition(1)  # T2D concept set
     .first_occurrence()
     .with_observation(prior_days=365)
-    .exclude_condition(1).anytime_before()
-    .build())
+    .require_age(18, 75)
+    .build()
+)
 ```
 
-### New Drug User
-```python
-(Cohort("New Metformin Users")
-    .with_drug(2)
-    .first_occurrence()
-    .with_observation(prior_days=365)
-    .exclude_drug(2).within_days_before(365)
-    .build())
-```
+### Pattern 2: Medication History (Using Phase 1)
 
-### Disease + Treatment
 ```python
-(Cohort("T2DM on Metformin")
-    .with_drug(2)
-    .first_occurrence()
-    .require_condition(1).within_days_before(365)
-    .build())
-```
-
-### Complex Nested Logic
-```python
-(Cohort("Complex Criteria")
+cohort = (
+    CohortBuilder("Patients on Common Diabetes Meds")
     .with_condition(1)
-    .all_of()  # Must have ALL of:
-        .require_drug(10).anytime_before()
-        .any_of()  # AND at least ONE of:
-            .require_procedure(20).same_day()
-            .require_measurement(30).within_days_before(30)
+    .require_any_of(drug_ids=[10, 11, 12])  # Metformin, Insulin, GLP-1
+    .build()
+)
+```
+
+### Pattern 3: Complex Drug Monitoring (Using Phases 1 & 2)
+
+```python
+cohort = (
+    CohortBuilder("High-Dose Oral Medication Monitoring")
+    .with_condition(1)  # Type 2 Diabetes
+    .first_occurrence()
+    .require_age(18, 75)
+    .begin_rule("High-Dose Oral Medications")
+    .require_any_of(drug_ids=[10, 11, 12])  # Phase 1: Collection
+    .require_drug(10)\                       # Phase 2: Modifiers
+        .with_route(4132161)\                 # Oral
+        .with_dose(min_dose=50.0, max_dose=200.0)\
+        .with_refills(min_refills=3)\
+        .anytime_before()
+    .begin_rule("Abnormal Lab Values")
+    .require_measurement(20)\                # Phase 2: Modifiers
+        .with_operator(4172704)\              # Greater than
+        .with_range_high_ratio(min_ratio=1.5)\  # 1.5x upper limit
+        .within_days_before(90)
+    .build()
+)
+```
+
+### Pattern 4: "N of M" Criteria (Using Phase 1)
+
+```python
+cohort = (
+    CohortBuilder("At Least 2 of 4 Complications")
+    .with_condition(1)
+    .require_at_least_of(2,
+        condition_ids=[20, 21, 22, 23]  # Retinopathy, Neuropathy, Nephropathy, CVD
+    )
+    .build()
+)
+```
+
+### Pattern 5: Exclusions (Using Phase 1)
+
+```python
+cohort = (
+    CohortBuilder("No Cancer History")
+    .with_condition(1)
+    .exclude_any_of(
+        condition_ids=[30, 31, 32, 33]  # Various cancers
+    )
+    .build()
+)
+```
+
+### Pattern 6: Complex Nested Structure - Secondary Primary Malignancy
+
+**Clinical Scenario**: Identify patients with a second primary cancer (different site/type) occurring at least 1 year after their first cancer diagnosis, excluding metastatic disease.
+
+**This example showcases**:
+- Nested groups with complex time windows
+- Multiple inclusion rules with different logic
+- Combining collection methods with manual groups
+- Phase 4 time window features
+- Exclusion criteria
+
+```python
+cohort = (
+    CohortBuilder("Secondary Primary Malignancy")
+    # Entry: First cancer diagnosis (any solid tumor)
+    .with_condition(1)  # Concept set: Solid tumor malignancies
+    .first_occurrence()
+    .with_observation(prior_days=365)  # Require 1 year prior observation
+    .require_age(18, 85)
+    
+    # Rule 1: Second distinct cancer at different site
+    .begin_rule("Second Primary Cancer at Different Site")
+    .all_of()  # ALL of these must be true:
+        # Different anatomic site from entry
+        .require_condition(2)\  # Concept set: Different cancer sites
+            .anytime_in_future(years=10)\  # Phase 4: Within 10 years after index
+            .at_least(1)
+        
+        # Nested ANY: At least one of these cancer types at new site
+        .any_of()
+            .require_condition(10).anytime_in_future(years=10)  # Breast
+            .require_condition(11).anytime_in_future(years=10)  # Lung
+            .require_condition(12).anytime_in_future(years=10)  # Colorectal
+            .require_condition(13).anytime_in_future(years=10)  # Prostate
         .end_group()
     .end_group()
-    .build())
+    
+    # Rule 2: Minimum time gap (at least 1 year between cancers)
+    .begin_rule("Time Gap Requirement")
+    .require_condition(2)\  # Same concept set as Rule 1
+        .with_distinct()\  # Phase 5: Count distinct occurrences only
+        .within_days_after(365)  # At least 365 days after index
+    
+    # Rule 3: Exclude metastatic disease (ensure second cancer is primary)
+    .begin_rule("No Metastatic Disease")
+    .exclude_any_of(
+        condition_ids=[100, 101, 102, 103]  # Metastasis conditions
+    )
+    
+    # Rule 4: Confirmatory evidence (pathology or imaging)
+    .begin_rule("Diagnostic Confirmation")
+    .at_least_of(1)  # Manual group: At least 1 of these
+        # Pathology procedures
+        .require_procedure(200)\
+            .with_modifier(4184637)\  # Phase 2: Biopsy modifier
+            .within_days_after(0)  # On or after index
+        
+        # Imaging studies
+        .require_procedure(201)\
+            .with_quantity(min_qty=1)\  # Phase 2: At least one study
+            .within_days_after(0)
+        
+        # Tumor marker measurements
+        .require_measurement(300)\
+            .with_operator(4172704)\  # Phase 2: Greater than operator
+            .with_distinct()\  # Phase 5: Distinct measurements
+            .at_least(2)\
+            .anytime_in_future(years=1)  # Phase 4: Within 1 year
+    .end_group()
+    
+    # Rule 5: Active treatment for second cancer
+    .begin_rule("Active Cancer Treatment")
+    .any_of()
+        # Chemotherapy
+        .require_drug(400)\
+            .with_route(4112421)\  # Phase 2: Intravenous
+            .anytime_in_future(years=2)
+        
+        # Radiation
+        .require_procedure(500)\
+            .between_visits()\  # Phase 4: Same visit restriction
+            .anytime_in_future(years=2)
+        
+        # Surgery
+        .require_procedure(600)\
+            .with_modifier(4301351)\  # Phase 2: Excision modifier
+            .anytime_in_future(years=2)
+    .end_group()
+    
+    .build()
+)
 ```
 
-## Implementation Status
+**This cohort will include patients who have**:
+1. ✅ A first solid tumor malignancy (entry event)
+2. ✅ A second cancer at a different anatomic site within 10 years
+3. ✅ At least 365 days between the two cancer diagnoses
+4. ✅ No evidence of metastatic disease
+5. ✅ Diagnostic confirmation via pathology, imaging, or tumor markers
+6. ✅ Active treatment for the second cancer
 
-### ✅ Fully Implemented Features
+**Key Features Demonstrated**:
+- Nested `all_of()` and `any_of()` groups (up to 2 levels deep)
+- `at_least_of()` for "N of M" logic
+- Phase 1 collection methods (`exclude_any_of`)
+- Phase 2 domain modifiers (`with_modifier`, `with_quantity`, `with_operator`, `with_route`)
+- Phase 4 time windows (`anytime_in_future(years)`, `between_visits`)
+- Phase 5 advanced features (`with_distinct`)
+- Multiple named inclusion rules for interpretability
 
-**Entry Events (All OMOP Domains):**
-- ✅ Condition Occurrence
-- ✅ Condition Era
-- ✅ Drug Exposure
-- ✅ Drug Era
-- ✅ Dose Era
-- ✅ Procedure Occurrence
-- ✅ Measurement
-- ✅ Visit Occurrence
-- ✅ Visit Detail
-- ✅ Observation
-- ✅ Device Exposure
-- ✅ Specimen
-- ✅ Death
-- ✅ Observation Period
-- ✅ Payer Plan Period
-- ✅ Location Region
-- ✅ Censoring Events (`censor_on_*`)
+## Feature Status
 
-**Criteria Methods:**
-- ✅ All `require_*()` methods for all domains
-- ✅ All `exclude_*()` methods for all domains
+### Fully Implemented ✅
+- Entry events (all domains)
+- Demographics (age, gender, race, ethnicity)
+- Named inclusion rules
+- Manual nested groups (ANY/ALL/AT_LEAST)
+- **Collection methods (Phase 1)** - `require_any_of()`, `require_all_of()`, `require_at_least_of()`, `exclude_any_of()`
+- **Domain-specific modifiers (Phase 2)** - Procedure, Measurement, Drug, Visit, Observation
+- **Advanced time windows (Phase 4)** - `between_visits()`, `during_event()`, `before_event_end()`, `anytime_in_past()`, `anytime_in_future()`
+- **Advanced features (Phase 5)** - `with_distinct()`, `ignore_observation_period()`
+- Basic time windows (before/after/same_day)
+- Occurrence counting (at_least/at_most/exactly)
+- Censoring events
+- Observation windows
 
-**Demographics:**
-- ✅ Age filtering (`require_age()`)
-- ✅ Gender filtering (`require_gender()`)
-- ✅ Race filtering (`require_race()`)
-- ✅ Ethnicity filtering (`require_ethnicity()`)
+### Not Yet Implemented ❌
+- Demographics within nested groups (CIRCE architectural limitation)
+- Event correlation shortcuts (deferred - complex implementation)
+- Visit-level time correlation features
 
-**Nested Groups:**
-- ✅ `any_of()` - OR logic
-- ✅ `all_of()` - AND logic
-- ✅ `at_least_of(N)` - At least N criteria
-- ✅ Recursive nesting (groups within groups)
-- ✅ `end_group()` to close groups
+## Tips for LLMs
 
-**Named Inclusion Rules:**
-- ✅ `begin_rule(name)` - Start named rule for attrition tracking
+1. **Prefer collection methods (Phase 1)** over manual groups for simple ANY/ALL/AT_LEAST logic
+2. **Chain modifiers (Phase 2)** for domain-specific filters rather than using generic filters
+3. Always include a time window (`.anytime_before()`, `.within_days_before(N)`, etc.)
+4. Use `.begin_rule("Name")` for complex cohorts with multiple criteria groups
+5. Demographics (`require_age`, `require_gender`) create separate inclusion rules automatically
+6. The fluent API enforces state transitions - follow the step order above
 
-**Occurrence Counting:**
-- ✅ `at_least(N)` - At least N occurrences
-- ✅ `at_most(N)` - At most N occurrences
-- ✅ `exactly(N)` - Exactly N occurrences
+## Implementation Notes
 
-**Advanced Filters:**
-- ✅ `with_age(min, max)` - Age at event
-- ✅ `with_gender(*ids)` - Gender filtering
-- ✅ `with_visit_type(*ids)` - Visit type filtering
-- ✅ `with_provider_specialty(*ids)` - Provider specialty
-- ✅ `with_source_concept(id)` - Source concept filtering
-- ✅ `restrict_to_visit()` - Same visit as index
-- ✅ `ignore_observation_period()` - Ignore obs period
-- ✅ `relative_to_index_end()` - Time relative to index end
-- ✅ `relative_to_event_end()` - Time relative to event end
-- ✅ `with_all()`, `with_any()`, `with_at_least()` - Correlated criteria
-- ✅ `with_condition_type()`, `with_drug_type()`, `with_procedure_type()`, etc.
-
-**Entry Configuration:**
-- ✅ `first_occurrence()` / `all_occurrences()`
-- ✅ `with_observation(prior_days, post_days)`
-- ✅ `min_age(age)` / `max_age(age)`
-- ✅ `exit_at_observation_end()` / `exit_after_days(days)`
-- ✅ `collapse_era(days)`
-- ✅ `with_start_date_adjustment()`, `with_end_date_adjustment()`
-- ✅ `with_unit()`, `with_value_as_concept()`, `is_abnormal()`
-- ✅ `with_gap_days()`, `with_occurrence_count()`
-- ✅ `exit_at_era_end()` - Custom Era exit strategy
-- ✅ `or_with_*()` - Multiple entry alternatives
-- ✅ `with_qualified_limit()`, `with_expression_limit()`
-
-## When to Use Alternatives
-
-### Use **Raw Pydantic Models** if you need:
-- Custom SQL Extensions
-- Custom extensions or experimental features
-
-## Notes
-
-- Concept set IDs must match IDs in your concept sets
-- Call `.build()` to get the final `CohortExpression`
-- Use `build_cohort_query(cohort)` to generate SQL
-- All features are fully compatible with OHDSI CIRCE specification
-- The API is designed to be LLM-friendly with clear state transitions
+- Built on top of CIRCE (OHDSI Cohort Expression specification)
+- Generates JSON-serializable `CohortExpression` Pydantic models
+- Can be converted to SQL via `circe.api.build_cohort_query()`
+- Can be rendered as human-readable markdown via `circe.api.cohort_print_friendly()`

@@ -466,6 +466,23 @@ class CohortWithEntry:
         """Start an 'At Least N Of' group in the current rule."""
         return self._to_criteria().at_least_of(count)
     
+    # Collection method delegates
+    def require_any_of(self, **kwargs) -> 'CohortWithCriteria':
+        """Delegate to CohortWithCriteria. See CohortWithCriteria.require_any_of for documentation."""
+        return self._to_criteria().require_any_of(**kwargs)
+    
+    def require_all_of(self, **kwargs) -> 'CohortWithCriteria':
+        """Delegate to CohortWithCriteria. See CohortWithCriteria.require_all_of for documentation."""
+        return self._to_criteria().require_all_of(**kwargs)
+    
+    def require_at_least_of(self, count: int, **kwargs) -> 'CohortWithCriteria':
+        """Delegate to CohortWithCriteria. See CohortWithCriteria.require_at_least_of for documentation."""
+        return self._to_criteria().require_at_least_of(count, **kwargs)
+    
+    def exclude_any_of(self, **kwargs) -> 'CohortWithCriteria':
+        """Delegate to CohortWithCriteria. See CohortWithCriteria.exclude_any_of for documentation."""
+        return self._to_criteria().exclude_any_of(**kwargs)
+    
     def _to_criteria(self) -> 'CohortWithCriteria':
         """Transition to criteria state."""
         return CohortWithCriteria(
@@ -558,6 +575,330 @@ class CohortWithCriteria:
         group = GroupConfig(type="AT_LEAST", count=count)
         self._rules[-1]["group"].criteria.append(group)
         return CriteriaGroupBuilder(self, group)
+    
+    # Collection methods for simplified group creation
+    def require_any_of(
+        self,
+        condition_ids: Optional[List[int]] = None,
+        drug_ids: Optional[List[int]] = None,
+        drug_era_ids: Optional[List[int]] = None,
+        procedure_ids: Optional[List[int]] = None,
+        measurement_ids: Optional[List[int]] = None,
+        observation_ids: Optional[List[int]] = None,
+        visit_ids: Optional[List[int]] = None
+    ) -> 'CohortWithCriteria':
+        """
+        Require ANY of the specified criteria (OR logic).
+        
+        This is a shortcut for creating an ANY group with multiple criteria
+        without manually chaining .any_of()...end_group().
+        
+        Args:
+            condition_ids: List of condition concept set IDs
+            drug_ids: List of drug concept set IDs
+            drug_era_ids: List of drug era concept set IDs
+            procedure_ids: List of procedure concept set IDs
+            measurement_ids: List of measurement concept set IDs
+            observation_ids: List of observation concept set IDs
+            visit_ids: List of visit concept set IDs
+        
+        Returns:
+            Self for continued chaining
+        
+        Example:
+            >>> cohort.require_any_of(drug_ids=[1, 2, 3])
+            # Patient must have at least one of Drug 1, 2, or 3
+        """
+        group = GroupConfig(type="ANY")
+        
+        if condition_ids:
+            for cid in condition_ids:
+                config = QueryConfig(domain="ConditionOccurrence", concept_set_id=cid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)  # Default: all time
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if drug_ids:
+            for did in drug_ids:
+                config = QueryConfig(domain="DrugExposure", concept_set_id=did)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if drug_era_ids:
+            for deid in drug_era_ids:
+                config = QueryConfig(domain="DrugEra", concept_set_id=deid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if procedure_ids:
+            for pid in procedure_ids:
+                config = QueryConfig(domain="ProcedureOccurrence", concept_set_id=pid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if measurement_ids:
+            for mid in measurement_ids:
+                config = QueryConfig(domain="Measurement", concept_set_id=mid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if observation_ids:
+            for oid in observation_ids:
+                config = QueryConfig(domain="Observation", concept_set_id=oid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if visit_ids:
+            for vid in visit_ids:
+                config = QueryConfig(domain="VisitOccurrence", concept_set_id=vid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if group.criteria:  # Only add if we have at least one criterion
+            self._rules[-1]["group"].criteria.append(group)
+        
+        return self
+    
+    def require_all_of(
+        self,
+        condition_ids: Optional[List[int]] = None,
+        drug_ids: Optional[List[int]] = None,
+        drug_era_ids: Optional[List[int]] = None,
+        procedure_ids: Optional[List[int]] = None,
+        measurement_ids: Optional[List[int]] = None,
+        observation_ids: Optional[List[int]] = None,
+        visit_ids: Optional[List[int]] = None
+    ) -> 'CohortWithCriteria':
+        """
+        Require ALL of the specified criteria (AND logic).
+        
+        This is a shortcut for creating an ALL group with multiple criteria.
+        
+        Args:
+            condition_ids: List of condition concept set IDs
+            drug_ids: List of drug concept set IDs
+            drug_era_ids: List of drug era concept set IDs
+            procedure_ids: List of procedure concept set IDs
+            measurement_ids: List of measurement concept set IDs
+            observation_ids: List of observation concept set IDs
+            visit_ids: List of visit concept set IDs
+        
+        Returns:
+            Self for continued chaining
+        
+        Example:
+            >>> cohort.require_all_of(drug_ids=[1, 2], procedure_ids=[10])
+            # Patient must have Drug 1 AND Drug 2 AND Procedure 10
+        """
+        group = GroupConfig(type="ALL")
+        
+        if condition_ids:
+            for cid in condition_ids:
+                config = QueryConfig(domain="ConditionOccurrence", concept_set_id=cid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if drug_ids:
+            for did in drug_ids:
+                config = QueryConfig(domain="DrugExposure", concept_set_id=did)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if drug_era_ids:
+            for deid in drug_era_ids:
+                config = QueryConfig(domain="DrugEra", concept_set_id=deid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if procedure_ids:
+            for pid in procedure_ids:
+                config = QueryConfig(domain="ProcedureOccurrence", concept_set_id=pid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if measurement_ids:
+            for mid in measurement_ids:
+                config = QueryConfig(domain="Measurement", concept_set_id=mid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if observation_ids:
+            for oid in observation_ids:
+                config = QueryConfig(domain="Observation", concept_set_id=oid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if visit_ids:
+            for vid in visit_ids:
+                config = QueryConfig(domain="VisitOccurrence", concept_set_id=vid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if group.criteria:
+            self._rules[-1]["group"].criteria.append(group)
+        
+        return self
+    
+    def require_at_least_of(
+        self,
+        count: int,
+        condition_ids: Optional[List[int]] = None,
+        drug_ids: Optional[List[int]] = None,
+        drug_era_ids: Optional[List[int]] = None,
+        procedure_ids: Optional[List[int]] = None,
+        measurement_ids: Optional[List[int]] = None,
+        observation_ids: Optional[List[int]] = None,
+        visit_ids: Optional[List[int]] = None
+    ) -> 'CohortWithCriteria':
+        """
+        Require at least N of the specified criteria.
+        
+        This is a shortcut for creating an AT_LEAST group.
+        
+        Args:
+            count: Minimum number of criteria that must be met
+            condition_ids: List of condition concept set IDs
+            drug_ids: List of drug concept set IDs
+            drug_era_ids: List of drug era concept set IDs
+            procedure_ids: List of procedure concept set IDs
+            measurement_ids: List of measurement concept set IDs
+            observation_ids: List of observation concept set IDs
+            visit_ids: List of visit concept set IDs
+        
+        Returns:
+            Self for continued chaining
+        
+        Example:
+            >>> cohort.require_at_least_of(2, procedure_ids=[10, 11, 12])
+            # Patient must have at least 2 of the 3 procedures
+        """
+        group = GroupConfig(type="AT_LEAST", count=count)
+        
+        if condition_ids:
+            for cid in condition_ids:
+                config = QueryConfig(domain="ConditionOccurrence", concept_set_id=cid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if drug_ids:
+            for did in drug_ids:
+                config = QueryConfig(domain="DrugExposure", concept_set_id=did)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if drug_era_ids:
+            for deid in drug_era_ids:
+                config = QueryConfig(domain="DrugEra", concept_set_id=deid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if procedure_ids:
+            for pid in procedure_ids:
+                config = QueryConfig(domain="ProcedureOccurrence", concept_set_id=pid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if measurement_ids:
+            for mid in measurement_ids:
+                config = QueryConfig(domain="Measurement", concept_set_id=mid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if observation_ids:
+            for oid in observation_ids:
+                config = QueryConfig(domain="Observation", concept_set_id=oid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if visit_ids:
+            for vid in visit_ids:
+                config = QueryConfig(domain="VisitOccurrence", concept_set_id=vid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
+        
+        if group.criteria:
+            self._rules[-1]["group"].criteria.append(group)
+        
+        return self
+    
+    def exclude_any_of(
+        self,
+        condition_ids: Optional[List[int]] = None,
+        drug_ids: Optional[List[int]] = None,
+        drug_era_ids: Optional[List[int]] = None,
+        procedure_ids: Optional[List[int]] = None,
+        measurement_ids: Optional[List[int]] = None,
+        observation_ids: Optional[List[int]] = None,
+        visit_ids: Optional[List[int]] = None
+    ) -> 'CohortWithCriteria':
+        """
+        Exclude if ANY of the specified criteria are present.
+        
+        This creates exclusion criteria with OR logic.
+        
+        Args:
+            condition_ids: List of condition concept set IDs to exclude
+            drug_ids: List of drug concept set IDs to exclude
+            drug_era_ids: List of drug era concept set IDs to exclude
+            procedure_ids: List of procedure concept set IDs to exclude
+            measurement_ids: List of measurement concept set IDs to exclude
+            observation_ids: List of observation concept set IDs to exclude
+            visit_ids: List of visit concept set IDs to exclude
+        
+        Returns:
+            Self for continued chaining
+        
+        Example:
+            >>> cohort.exclude_any_of(drug_ids=[3, 4])
+            # Exclude patients who have Drug 3 OR Drug 4
+        """
+        group = GroupConfig(type="ANY")
+        
+        if condition_ids:
+            for cid in condition_ids:
+                config = QueryConfig(domain="ConditionOccurrence", concept_set_id=cid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=True))
+        
+        if drug_ids:
+            for did in drug_ids:
+                config = QueryConfig(domain="DrugExposure", concept_set_id=did)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=True))
+        
+        if drug_era_ids:
+            for deid in drug_era_ids:
+                config = QueryConfig(domain="DrugEra", concept_set_id=deid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=True))
+        
+        if procedure_ids:
+            for pid in procedure_ids:
+                config = QueryConfig(domain="ProcedureOccurrence", concept_set_id=pid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=True))
+        
+        if measurement_ids:
+            for mid in measurement_ids:
+                config = QueryConfig(domain="Measurement", concept_set_id=mid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=True))
+        
+        if observation_ids:
+            for oid in observation_ids:
+                config = QueryConfig(domain="Observation", concept_set_id=oid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=True))
+        
+        if visit_ids:
+            for vid in visit_ids:
+                config = QueryConfig(domain="VisitOccurrence", concept_set_id=vid)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=True))
+        
+        if group.criteria:
+            self._rules[-1]["group"].criteria.append(group)
+        
+        return self
     
     # Inclusion methods - return query builders with self as parent
     def require_condition(self, concept_set_id: int) -> ConditionQuery:
@@ -795,19 +1136,8 @@ def _build_cohort_expression(
     
     # Build inclusion rules from rules
     inclusion_rules = []
-    for rule_data in rules:
-        rule_name = rule_data["name"]
-        root_group = rule_data["group"]
-        
-        if not root_group.criteria:
-            continue
-            
-        inclusion_rules.append(InclusionRule(
-            name=rule_name,
-            expression=_build_criteria_group(root_group)
-        ))
     
-    # Build demographic rule if needed
+    # Build demographic rule FIRST if needed
     if settings.gender_concepts or settings.race_concepts or settings.ethnicity_concepts or settings.age_min is not None or settings.age_max is not None:
         demographic = DemographicCriteria()
         if settings.gender_concepts:
@@ -827,6 +1157,29 @@ def _build_cohort_expression(
                 type="ALL",
                 demographic_criteria_list=[demographic]
             )
+        ))
+    
+    # Then add named rules from builder
+    for rule_data in rules:
+        rule_name = rule_data["name"]
+        root_group = rule_data["group"]
+        
+        if not root_group.criteria:
+            continue
+        
+        # If the root group has exactly ONE child and that child is a group (not a criteria),
+        # unwrap it and use it directly as the expression
+        if (len(root_group.criteria) == 1 and 
+            isinstance(root_group.criteria[0], GroupConfig)):
+            # Use the nested group directly
+            expression = _build_criteria_group(root_group.criteria[0])
+        else:
+            # Use the root group as-is
+            expression = _build_criteria_group(root_group)
+            
+        inclusion_rules.append(InclusionRule(
+            name=rule_name,
+            expression=expression
         ))
     
     # Build end strategy
@@ -907,6 +1260,15 @@ def _config_to_criteria(config: QueryConfig):
         if config.value_min is not None or config.value_max is not None:
             op = 'bt' if (config.value_min is not None and config.value_max is not None) else ('gte' if config.value_min is not None else 'lte')
             kwargs['value_as_number'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
+        # Phase 2: Measurement-specific modifiers
+        if config.measurement_operator_concepts:
+            kwargs['operator'] = [Concept(concept_id=c, concept_name="Operator") for c in config.measurement_operator_concepts]
+        if config.range_low_ratio_min is not None or config.range_low_ratio_max is not None:
+            op = 'bt' if (config.range_low_ratio_min and config.range_low_ratio_max) else ('gte' if config.range_low_ratio_min else 'lte')
+            kwargs['range_low_ratio'] = NumericRange(value=config.range_low_ratio_min, extent=config.range_low_ratio_max, op=op)
+        if config.range_high_ratio_min is not None or config.range_high_ratio_max is not None:
+            op = 'bt' if (config.range_high_ratio_min and config.range_high_ratio_max) else ('gte' if config.range_high_ratio_min else 'lte')
+            kwargs['range_high_ratio'] = NumericRange(value=config.range_high_ratio_min, extent=config.range_high_ratio_max, op=op)
     
     if config.domain == 'DrugExposure':
         if config.days_supply_min is not None or config.days_supply_max is not None:
@@ -915,6 +1277,15 @@ def _config_to_criteria(config: QueryConfig):
         if config.quantity_min is not None or config.quantity_max is not None:
             op = 'bt' if (config.quantity_min is not None and config.quantity_max is not None) else ('gte' if config.quantity_min is not None else 'lte')
             kwargs['quantity'] = NumericRange(value=config.quantity_min, extent=config.quantity_max, op=op)
+        # Phase 2: Drug-specific modifiers
+        if config.drug_route_concepts:
+            kwargs['route_concept'] = [Concept(concept_id=c, concept_name="Route") for c in config.drug_route_concepts]
+        if config.refills_min is not None or config.refills_max is not None:
+            op = 'bt' if (config.refills_min and config.refills_max) else ('gte' if config.refills_min else 'lte')
+            kwargs['refills'] = NumericRange(value=config.refills_min, extent=config.refills_max, op=op)
+        if config.dose_min is not None or config.dose_max is not None:
+            op = 'bt' if (config.dose_min and config.dose_max) else ('gte' if config.dose_min else 'lte')
+            kwargs['effective_drug_dose'] = NumericRange(value=config.dose_min, extent=config.dose_max, op=op)
             
     if config.domain == 'Measurement':
         if config.unit_concepts:
@@ -949,14 +1320,39 @@ def _config_to_criteria(config: QueryConfig):
             op = 'bt' if (config.era_length_min is not None and config.era_length_max is not None) else ('gte' if config.era_length_min is not None else 'lte')
             kwargs['era_length'] = NumericRange(value=config.era_length_min, extent=config.era_length_max, op=op)
 
+    # Phase 2: Procedure-specific modifiers
+    if config.domain == 'ProcedureOccurrence':
+        if config.procedure_modifier_concepts:
+            kwargs['modifier'] = [Concept(concept_id=c, concept_name="Modifier") for c in config.procedure_modifier_concepts]
+        if config.quantity_min is not None or config.quantity_max is not None:
+            op = 'bt' if (config.quantity_min and config.quantity_max) else ('gte' if config.quantity_min else 'lte')
+            kwargs['quantity'] = NumericRange(value=config.quantity_min, extent=config.quantity_max, op=op)
+    
     if config.domain in ['VisitOccurrence', 'VisitDetail', 'ObservationPeriod']:
         if config.value_min is not None or config.value_max is not None:
             op = 'bt' if (config.value_min is not None and config.value_max is not None) else ('gte' if config.value_min is not None else 'lte')
             # For these, duration/length is usually value_as_number equivalent or similar
             # Visit uses 'visit_length', ObservationPeriod uses 'period_length'? No, actually CIRCE uses specific names.
-            if config.domain == 'VisitOccurrence': kwargs['visit_length'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
-            elif config.domain == 'VisitDetail': kwargs['visit_detail_length'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
-            elif config.domain == 'ObservationPeriod': kwargs['period_length'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
+            if config.domain == 'VisitOccurrence': 
+                kwargs['visit_length'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
+                # Phase 2: Visit-specific modifiers
+                if config.admitted_from_concepts:
+                    kwargs['admitted_from_concept'] = [Concept(concept_id=c, concept_name="Admitted From") for c in config.admitted_from_concepts]
+                if config.discharged_to_concepts:
+                    kwargs['discharged_to_concept'] = [Concept(concept_id=c, concept_name="Discharged To") for c in config.discharged_to_concepts]
+                if config.place_of_service_concepts:
+                    kwargs['place_of_service_concept'] = [Concept(concept_id=c, concept_name="Place of Service") for c in config.place_of_service_concepts]
+            elif config.domain == 'VisitDetail': 
+                kwargs['visit_detail_length'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
+            elif config.domain == 'ObservationPeriod': 
+                kwargs['period_length'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
+    
+    # Phase 2: Observation-specific modifiers
+    if config.domain == 'Observation':
+        if config.qualifier_concepts:
+            kwargs['qualifier'] = [Concept(concept_id=c, concept_name="Qualifier") for c in config.qualifier_concepts]
+        if config.value_as_string:
+            kwargs['value_as_string'] = config.value_as_string
 
     # Map common filters
     if config.gender_concepts:
@@ -1051,11 +1447,15 @@ def _build_correlated_criteria(criteria_cfg: CriteriaConfig) -> CorelatedCriteri
     
     # Build occurrence
     if criteria_cfg.is_exclusion:
-        occurrence = Occurrence(type=0, count=0)  # exactly 0
+        occurrence = Occurrence(type=0, count=0, is_distinct=False)  # exactly 0
     else:
         type_map = {"exactly": 0, "atMost": 1, "atLeast": 2}
         occ_type = type_map.get(config.occurrence_type, 2)
-        occurrence = Occurrence(type=occ_type, count=config.occurrence_count)
+        occurrence = Occurrence(
+            type=occ_type, 
+            count=config.occurrence_count,
+            is_distinct=config.is_distinct
+        )
     
     # Build window
     start_window = None

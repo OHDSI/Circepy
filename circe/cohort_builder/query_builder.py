@@ -79,6 +79,28 @@ class QueryConfig:
 
     # Measurement specific
     value_as_concept_concepts: List[int] = field(default_factory=list)
+    measurement_operator_concepts: List[int] = field(default_factory=list)
+    range_low_ratio_min: Optional[float] = None
+    range_low_ratio_max: Optional[float] = None
+    range_high_ratio_min: Optional[float] = None
+    range_high_ratio_max: Optional[float] = None
+    
+    # Procedure specific
+    procedure_modifier_concepts: List[int] = field(default_factory=list)
+    
+    # Drug specific
+    drug_route_concepts: List[int] = field(default_factory=list)
+    refills_min: Optional[int] = None
+    refills_max: Optional[int] = None
+    
+    # Visit specific
+    admitted_from_concepts: List[int] = field(default_factory=list)
+    discharged_to_concepts: List[int] = field(default_factory=list)
+    place_of_service_concepts: List[int] = field(default_factory=list)
+    
+    # Observation specific
+    qualifier_concepts: List[int] = field(default_factory=list)
+    value_as_string: Optional[str] = None
 
 
 @dataclass
@@ -259,6 +281,133 @@ class BaseQuery:
         else:
             self._config.time_window = TimeWindow(use_index_end=True)
         return self
+    
+    # Phase 4: Advanced Time Window Shortcuts
+    def between_visits(self) -> 'CohortWithCriteria':
+        """
+        Restrict criterion to occur during the same visit as the index event.
+        
+        This sets the restrict_visit flag which ensures the criterion's event
+        must have the same visit_occurrence_id as the index event.
+        
+        Returns:
+            Parent builder for chaining
+        
+        Example:
+            >>> .require_procedure(10).between_visits()
+        """
+        self._config.restrict_visit = True
+        return self._finalize()
+    
+    def during_event(self) -> 'CohortWithCriteria':
+        """
+        Both start and end dates must fall within the index event's time window.
+        
+        This is stricter than same_day() as it requires the entire duration
+        of the criterion's event to be contained within the index event.
+        
+        Returns:
+            Parent builder for chaining
+        
+        Example:
+            >>> .require_measurement(20).during_event()
+        """
+        self._config.time_window = TimeWindow(days_before=0, days_after=0, use_index_end=True)
+        return self._finalize()
+    
+    def before_event_end(self, days: int = 0) -> 'CohortWithCriteria':
+        """
+        Events occurring before the index event's end date (not start date).
+        
+        This is useful for events that should occur during the index event
+        but relative to when the index event ends.
+        
+        Args:
+            days: Number of days before the index event end (default: 0 = on end date)
+        
+        Returns:
+            Parent builder for chaining
+        
+        Example:
+            >>> .require_drug(10).before_event_end(days=3)  # Within 3 days before index ends
+        """
+        self._config.time_window = TimeWindow(days_before=days, days_after=0, use_index_end=True)
+        return self._finalize()
+    
+    def anytime_in_past(self, years: Optional[int] = None) -> 'CohortWithCriteria':
+        """
+        Any time before the index, optionally limited to N years.
+        
+        This is a more intuitive alternative to anytime_before() with optional
+        year-based limiting.
+        
+        Args:
+            years: Maximum years to look back (None = unlimited)
+        
+        Returns:
+            Parent builder for chaining
+        
+        Example:
+            >>> .require_condition(10).anytime_in_past(years=5)  # Within past 5 years
+            >>> .require_condition(20).anytime_in_past()  # Any time in past
+        """
+        days = years * 365 if years else 99999
+        self._config.time_window = TimeWindow(days_before=days, days_after=0)
+        return self._finalize()
+    
+    def anytime_in_future(self, years: Optional[int] = None) -> 'CohortWithCriteria':
+        """
+        Any time after the index, optionally limited to N years.
+        
+        This is a more intuitive alternative to anytime_after() with optional
+        year-based limiting.
+        
+        Args:
+            years: Maximum years to look forward (None = unlimited)
+        
+        Returns:
+            Parent builder for chaining
+        
+        Example:
+            >>> .require_death().anytime_in_future(years=1)  # Death within 1 year
+            >>> .censor_on_drug(30).anytime_in_future()  # Any time in future
+        """
+        days = years * 365 if years else 99999
+        self._config.time_window = TimeWindow(days_before=0, days_after=days)
+        return self._finalize()
+    
+    # Phase 5: Advanced Counting and Filtering
+    def with_distinct(self) -> 'BaseQuery':
+        """
+        Count only distinct occurrences of this criterion.
+        
+        This sets the isDistinct flag which affects how occurrence counting works.
+        Useful when you want to count unique events rather than all events.
+        
+        Returns:
+            Self for chaining with other modifiers
+        
+        Example:
+            >>> .require_measurement(10).with_distinct().at_least(3).anytime_before()
+        """
+        self._config.is_distinct = True
+        return self
+    
+    def ignore_observation_period(self) -> 'BaseQuery':
+        """
+        Allow events to occur outside of observation periods.
+        
+        By default, OHDSI requires events to fall within observation periods.
+        This flag allows events outside those periods to be considered.
+        
+        Returns:
+            Self for chaining with other modifiers
+        
+        Example:
+            >>> .require_condition(10).ignore_observation_period().anytime_before()
+        """
+        self._config.ignore_observation_period = True
+        return self
 
     def relative_to_event_end(self) -> 'BaseQuery':
         """Make the time window relative to the criteria event's end date."""
@@ -326,6 +475,59 @@ class DrugQuery(BaseQuery):
         """Filter by quantity."""
         self._config.quantity_min = min_qty
         self._config.quantity_max = max_qty
+        return self
+    
+    # Phase 2: New modifier methods  
+    def with_route(self, *concept_ids: int) -> 'DrugQuery':
+        """
+        Filter by drug route of administration (e.g., oral, IV, topical).
+        
+        Args:
+            concept_ids: Route concept IDs from the OMOP vocabulary
+        
+        Returns:
+            Self for chaining
+        
+        Example:
+            >>> .with_route(4132161)  # Oral
+        """
+        self._config.drug_route_concepts.extend(concept_ids)
+        return self
+    
+    def with_refills(self, min_refills: Optional[int] = None, max_refills: Optional[int] = None) -> 'DrugQuery':
+        """
+        Filter by number of refills.
+        
+        Args:
+            min_refills: Minimum number of refills
+            max_refills: Maximum number of refills
+        
+        Returns:
+            Self for chaining
+        
+        Example:
+            >>> .with_refills(min_refills=1, max_refills=12)
+        """
+        self._config.refills_min = min_refills
+        self._config.refills_max = max_refills
+        return self
+    
+    def with_dose(self, min_dose: Optional[float] = None, max_dose: Optional[float] = None) -> 'DrugQuery':
+        """
+        Filter by dose value.
+        
+        Args:
+            min_dose: Minimum dose value
+            max_dose: Maximum dose value
+        
+        Returns:
+            Self for chaining
+        
+        Example:
+            >>> .with_dose(min_dose=10.0, max_dose=50.0)
+        """
+        self._config.dose_min = min_dose
+        self._config.dose_max = max_dose
         return self
 
 
@@ -406,6 +608,63 @@ class MeasurementQuery(BaseQuery):
         """Only include values below normal range."""
         self._config.op = "below_normal"
         return self
+    
+    # Phase 2: New modifier methods
+    def with_operator(self, *concept_ids: int) -> 'MeasurementQuery':
+        """
+        Filter by measurement operator concepts (e.g., >, <, =, >=, <=).
+        
+        Args:
+            concept_ids: Operator concept IDs from the OMOP vocabulary
+        
+        Returns:
+            Self for chaining
+        
+        Example:
+            >>> .with_operator(4172704)  # Greater than
+        """
+        self._config.measurement_operator_concepts.extend(concept_ids)
+        return self
+    
+    def with_range_low_ratio(self, min_ratio: Optional[float] = None, max_ratio: Optional[float] = None) -> 'MeasurementQuery':
+        """
+        Filter by range_low / value_as_number ratio.
+        
+        This allows filtering for values that are a certain multiple of the lower bound of the reference range.
+        
+        Args:
+            min_ratio: Minimum ratio value
+            max_ratio: Maximum ratio value
+        
+        Returns:
+            Self for chaining
+        
+        Example:
+            >>> .with_range_low_ratio(min_ratio=0.5, max_ratio=1.5)
+        """
+        self._config.range_low_ratio_min = min_ratio
+        self._config.range_low_ratio_max = max_ratio
+        return self
+    
+    def with_range_high_ratio(self, min_ratio: Optional[float] = None, max_ratio: Optional[float] = None) -> 'MeasurementQuery':
+        """
+        Filter by range_high / value_as_number ratio.
+        
+        This allows filtering for values that are a certain multiple of the upper bound of the reference range.
+        
+        Args:
+            min_ratio: Minimum ratio value
+            max_ratio: Maximum ratio value
+        
+        Returns:
+            Self for chaining
+        
+        Example:
+            >>> .with_range_high_ratio(min_ratio=1.0, max_ratio=2.0)
+        """
+        self._config.range_high_ratio_min = min_ratio
+        self._config.range_high_ratio_max = max_ratio
+        return self
 
 
 class ProcedureQuery(BaseQuery):
@@ -413,6 +672,43 @@ class ProcedureQuery(BaseQuery):
     
     def __init__(self, concept_set_id: Optional[int] = None, **kwargs):
         super().__init__("ProcedureOccurrence", concept_set_id, **kwargs)
+    
+    # Phase 2: New modifier methods
+    def with_quantity(self, min_qty: Optional[int] = None, max_qty: Optional[int] = None) -> 'ProcedureQuery':
+        """
+        Filter by procedure quantity.
+        
+        Args:
+            min_qty: Minimum quantity value
+            max_qty: Maximum quantity value
+        
+        Returns:
+            Self for chaining
+        
+        Example:
+            >>> .with_quantity(min_qty=1, max_qty=5)
+        """
+        self._config.quantity_min = float(min_qty) if min_qty is not None else None
+        self._config.quantity_max = float(max_qty) if max_qty is not None else None
+        return self
+    
+    def with_modifier(self, *concept_ids: int) -> 'ProcedureQuery':
+        """
+        Filter by procedure modifier concepts.
+        
+        Modifiers provide additional context about how the procedure was performed.
+        
+        Args:
+            concept_ids: Modifier concept IDs from the OMOP vocabulary
+        
+        Returns:
+            Self for chaining
+        
+        Example:
+            >>> .with_modifier(4184637, 4330420)  # Bilateral, Emergency
+        """
+        self._config.procedure_modifier_concepts.extend(concept_ids)
+        return self
 
 
 class VisitQuery(BaseQuery):
@@ -426,6 +722,46 @@ class VisitQuery(BaseQuery):
         self._config.value_min = min_days
         self._config.value_max = max_days
         return self
+    
+    # Phase 2: New modifier methods
+    def with_admitted_from(self, *concept_ids: int) -> 'VisitQuery':
+        """
+        Filter by admitted from concept (e.g., emergency room, transfer).
+        
+        Args:
+            concept_ids: Admitted from concept IDs
+        
+        Returns:
+            Self for chaining
+        """
+        self._config.admitted_from_concepts.extend(concept_ids)
+        return self
+    
+    def with_discharged_to(self, *concept_ids: int) -> 'VisitQuery':
+        """
+        Filter by discharged to concept (e.g., home, skilled nursing facility).
+        
+        Args:
+            concept_ids: Discharged to concept IDs
+        
+        Returns:
+            Self for chaining
+        """
+        self._config.discharged_to_concepts.extend(concept_ids)
+        return self
+    
+    def with_place_of_service(self, *concept_ids: int) -> 'VisitQuery':
+        """
+        Filter by place of service concept.
+        
+        Args:
+            concept_ids: Place of service concept IDs
+        
+        Returns:
+            Self for chaining
+        """
+        self._config.place_of_service_concepts.extend(concept_ids)
+        return self
 
 
 class ObservationQuery(BaseQuery):
@@ -433,6 +769,36 @@ class ObservationQuery(BaseQuery):
     
     def __init__(self, concept_set_id: Optional[int] = None, **kwargs):
         super().__init__("Observation", concept_set_id, **kwargs)
+    
+    # Phase 2: New modifier methods
+    def with_qualifier(self, *concept_ids: int) -> 'ObservationQuery':
+        """
+        Filter by observation qualifier concepts.
+        
+        Args:
+            concept_ids: Qualifier concept IDs
+        
+        Returns:
+            Self for chaining
+        """
+        self._config.qualifier_concepts.extend(concept_ids)
+        return self
+    
+    def with_value_as_string(self, value: str) -> 'ObservationQuery':
+        """
+        Filter by observation value as string.
+        
+        Args:
+            value: String value to match
+        
+        Returns:
+            Self for chaining
+        
+        Example:
+            >>> .with_value_as_string("positive")
+        """
+        self._config.value_as_string = value
+        return self
 
 
 class DeathQuery(BaseQuery):

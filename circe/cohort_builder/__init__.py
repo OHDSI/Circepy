@@ -23,11 +23,7 @@ Example:
 
 from circe.cohort_builder.builder import CohortBuilder, CohortWithEntry, CohortWithCriteria
 
-# Alias for CohortBuilder for convenience
-Cohort = CohortBuilder
-
 __all__ = [
-    "Cohort",
     "CohortBuilder",
     "CohortWithEntry",
     "CohortWithCriteria"
