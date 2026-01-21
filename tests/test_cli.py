@@ -136,7 +136,7 @@ def test_markdown_generation(cohort_name):
 
 def test_validate_command():
     """Test validate command."""
-    cohort_file = COHORTS_DIR / '22161.json'
+    cohort_file = COHORTS_DIR / 'isolated_immune_thrombocytopenia.json'
     
     exit_code, _, _ = run_python_cli_in_process(['validate', str(cohort_file)])
     
@@ -146,7 +146,7 @@ def test_validate_command():
 
 def test_process_command():
     """Test process command."""
-    cohort_file = COHORTS_DIR / '22161.json'
+    cohort_file = COHORTS_DIR / 'isolated_immune_thrombocytopenia.json'
     
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir_path = Path(tmpdir)
@@ -170,7 +170,7 @@ def test_process_command():
 
 def test_generate_source_command():
     """Test generate-source command."""
-    cohort_file = COHORTS_DIR / '22161.json'
+    cohort_file = COHORTS_DIR / 'isolated_immune_thrombocytopenia.json'
     
     with tempfile.TemporaryDirectory() as tmpdir:
         output_file = Path(tmpdir) / 'cohort.py'

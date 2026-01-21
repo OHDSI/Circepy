@@ -85,7 +85,69 @@ circe process cohort.json --validate --sql --markdown
 
 See the [CLI Documentation](#command-line-interface) section below for more details.
 
-### Python API
+## High-Level Building APIs
+
+CIRCE Python provides two high-level APIs for building cohorts without manually constructing complex JSON/Pydantic models.
+
+### 1. Fluent Builder API (`circe.cohort_builder`)
+**Best for: LLMs, beginners, and interactive development.**
+This state-based API guides you through valid next steps using method chaining.
+
+```python
+from circe.cohort_builder import CohortBuilder
+from circe.vocabulary import concept_set, descendants
+from circe.api import build_cohort_query
+
+# 1. Define concept sets
+t2dm = concept_set(descendants(201826), id=1, name="T2DM")
+metformin = concept_set(descendants(1503297), id=2, name="Metformin")
+
+# 2. Build cohort step-by-step
+cohort = (
+    CohortBuilder("New Metformin Users with T2DM")
+    .with_concept_sets(t2dm, metformin)
+    .with_drug(concept_set_id=2)  # Entry: metformin exposure
+    .first_occurrence()  # First exposure only
+    .with_observation(prior_days=365)  # 365 days prior observation
+    .min_age(18)  # Adults only
+    .require_condition(concept_set_id=1)  # Require T2DM diagnosis
+    .within_days_before(365)  # Within 365 days before
+    .build()
+)
+
+# 3. Generate SQL
+sql = build_cohort_query(cohort)
+```
+
+### 2. Capr-style API (`circe.capr`)
+**Best for: Power users familiar with the R `Capr` package.**
+A functional, declarative API for programmatic cohort definition.
+
+```python
+from circe.capr import (
+    cohort, entry, condition_occurrence, drug_exposure,
+    at_least, exactly, with_all, during_interval, event_starts
+)
+
+# Build using functional composition
+my_cohort = cohort(
+    title="T2DM on Metformin",
+    entry=entry(
+        drug_exposure(concept_set_id=2, first_occurrence=True),
+        observation_window=(365, 0)
+    ),
+    attrition=attrition(
+        has_t2dm=with_all(
+            at_least(1, condition_occurrence(1), 
+                during_interval(event_starts(before=365)))
+        )
+    )
+).build()
+```
+
+## Advanced Usage: Raw Pydantic Models
+
+For full control, you can use the underlying Pydantic models that replicate the Java CIRCE-BE internal structure.
 
 ```python
 from circe import CohortExpression
@@ -93,56 +155,23 @@ from circe.cohortdefinition import PrimaryCriteria, ConditionOccurrence
 from circe.cohortdefinition.core import ObservationFilter, ResultLimit
 from circe.vocabulary import ConceptSet, ConceptSetExpression, ConceptSetItem, Concept
 
-# Create a cohort expression
+# Create a cohort expression using raw models
 cohort = CohortExpression(
-    title="Type 2 Diabetes Cohort",
+    title="Raw Model Example",
     primary_criteria=PrimaryCriteria(
-        criteria_list=[
-            ConditionOccurrence(
-                codeset_id=1,
-                first=True
-            )
-        ],
+        criteria_list=[ConditionOccurrence(codeset_id=1, first=True)],
         observation_window=ObservationFilter(prior_days=0, post_days=0),
         primary_limit=ResultLimit(type="All")
     ),
-    concept_sets=[
-        ConceptSet(
-            id=1,
-            name="Type 2 Diabetes",
-            expression=ConceptSetExpression(
-                items=[
-                    ConceptSetItem(
-                        concept=Concept(
-                            concept_id=201826,
-                            concept_name="Type 2 diabetes mellitus"
-                        ),
-                        include_descendants=True
-                    )
-                ]
-            )
-        )
-    ]
+    concept_sets=[...]
 )
-
-# Generate SQL using the API
-from circe.api import build_cohort_query
-from circe.cohortdefinition import BuildExpressionQueryOptions
-
-options = BuildExpressionQueryOptions()
-options.cdm_schema = 'cdm'
-options.vocabulary_schema = 'cdm'
-options.cohort_id = 1
-options.target_table = 'scratch.cohort'
-sql = build_cohort_query(cohort, options)
-print(sql)
 ```
 
 ## What's Included
 
 This package provides a complete Python implementation of CIRCE-BE with:
 
-- **3,400+ passing tests** with focused coverage on core logic
+- **800+ passing tests** with focused coverage on core logic
 - **18+ SQL builders** for all OMOP CDM domains:
   - Condition Occurrence/Era
   - Drug Exposure/Era
