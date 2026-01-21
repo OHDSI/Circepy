@@ -208,6 +208,36 @@ All query methods (`.require_*()`, `.exclude_*()`) support these filters:
         .within_days_before(7)
 ```
 
+### Date Adjustment (Event Offsets)
+```python
+    .require_drug(N)
+        .with_start_date_adjustment(-7) # Event starts 7 days before record start
+        .with_end_date_adjustment(7)    # Event ends 7 days after record end
+        .anytime_before()
+```
+
+### Advanced Measurement / Drug / Era Filters
+```python
+    .require_measurement(N)
+        .with_unit(8505)                # Milligrams
+        .is_abnormal()                  # Abnormal flag
+        .with_value(10, 20)             # Numeric range
+        .with_value_as_concept(4587)    # Concept result
+        .anytime_before()
+    
+    .require_drug_era(N)
+        .with_gap_days(0, 30)           # Era gap
+        .with_occurrence_count(2)       # Number of events in era
+        .anytime_before()
+```
+
+### Custom Era Exit Strategy
+```python
+    .with_condition(1)
+    .exit_at_era_end(concept_set_id=10, gap_days=30, offset=0)
+    .build()
+```
+
 ### Correlated Criteria (Criteria within Criteria)
 
 Apply criteria that must be met relative to a specific event.
@@ -431,32 +461,15 @@ cohort = (
 - ✅ `min_age(age)` / `max_age(age)`
 - ✅ `exit_at_observation_end()` / `exit_after_days(days)`
 - ✅ `collapse_era(days)`
-
-### ⚠️ Partially Implemented
-
-**Domain-Specific Attributes:**
-- ⚠️ Drug: Days supply, quantity (implemented in QueryConfig, needs query builder methods)
-- ⚠️ Measurement: Value ranges (implemented in QueryConfig, needs query builder methods)
-- ⚠️ Visit: Visit length (implemented in QueryConfig, needs query builder methods)
-- ⚠️ Era: Era length (implemented in QueryConfig, needs query builder methods)
-
-### ❌ Not Yet Implemented
-
-**Advanced Features:**
-1. **Censoring Events:**
-   - Exit strategies (exit on observation end vs fixed date) are fully implemented
-   - This section needs re-evaluation of what is "partially" implemented
-
-2. **Date Adjustment:**
-   - Adjusting event dates for cohort entry/exit
-   - Not yet exposed in fluent API
+- ✅ `with_start_date_adjustment()`, `with_end_date_adjustment()`
+- ✅ `with_unit()`, `with_value_as_concept()`, `is_abnormal()`
+- ✅ `with_gap_days()`, `with_occurrence_count()`
+- ✅ `exit_at_era_end()` - Custom Era exit strategy
 
 ## When to Use Alternatives
 
 ### Use **Raw Pydantic Models** if you need:
-- Censoring criteria
-- Date adjustment
-- Correlated criteria (criteria within criteria)
+- Custom SQL Extensions
 - Custom extensions or experimental features
 
 ## Notes

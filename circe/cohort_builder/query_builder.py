@@ -43,8 +43,21 @@ class QueryConfig:
     extent_min: Optional[float] = None
     extent_max: Optional[float] = None
     op: Optional[str] = None
-    unit_concept_id: Optional[int] = None
+    unit_concepts: List[int] = field(default_factory=list)
+    abnormal: Optional[bool] = None
+    range_low_min: Optional[float] = None
+    range_low_max: Optional[float] = None
+    range_high_min: Optional[float] = None
+    range_high_max: Optional[float] = None
+    
+    # Date Adjustment
+    start_date_offset: int = 0
+    end_date_offset: int = 0
+    start_date_with: str = "START_DATE"
+    end_date_with: str = "END_DATE"
+    
     status_concepts: List[int] = field(default_factory=list)
+    # ... other concepts
     visit_type_concepts: List[int] = field(default_factory=list)
     provider_specialty_concepts: List[int] = field(default_factory=list)
     source_concept_set_id: Optional[int] = None
@@ -57,6 +70,9 @@ class QueryConfig:
     dose_min: Optional[float] = None
     dose_max: Optional[float] = None
     correlated_criteria: Optional['GroupConfig'] = None
+
+    # Measurement specific
+    value_as_concept_concepts: List[int] = field(default_factory=list)
 
 
 @dataclass
@@ -167,6 +183,18 @@ class BaseQuery:
     def ignore_observation_period(self) -> 'BaseQuery':
         """Ignore observation period for this criteria."""
         self._config.ignore_observation_period = True
+        return self
+
+    def with_start_date_adjustment(self, offset: int, start_with: str = "START_DATE") -> 'BaseQuery':
+        """Adjust the start date of the criteria event."""
+        self._config.start_date_offset = offset
+        self._config.start_date_with = start_with
+        return self
+
+    def with_end_date_adjustment(self, offset: int, start_with: str = "END_DATE") -> 'BaseQuery':
+        """Adjust the end date of the criteria event."""
+        self._config.end_date_offset = offset
+        self._config.end_date_with = start_with
         return self
 
     def with_all(self) -> 'CriteriaGroupBuilder':
@@ -297,6 +325,22 @@ class DrugEraQuery(BaseQuery):
         self._config.era_length_max = max_days
         return self
 
+    def with_occurrence_count(self, min_count: Optional[int] = None, max_count: Optional[int] = None) -> 'DrugEraQuery':
+        """Filter by occurrence count within the era."""
+        self._config.occurrence_count = min_count if min_count is not None else 1
+        # Wait, QueryConfig.occurrence_count is for inclusion. 
+        # For Era, we might need a separate field if we want to filter by number of events.
+        # But CIRCE DrugEra has OccurrenceCount as a NumericRange.
+        self._config.value_min = min_count
+        self._config.value_max = max_count
+        return self
+
+    def with_gap_days(self, min_days: Optional[int] = None, max_days: Optional[int] = None) -> 'DrugEraQuery':
+        """Filter by gap days between exposures."""
+        self._config.extent_min = min_days
+        self._config.extent_max = max_days
+        return self
+
 
 class MeasurementQuery(BaseQuery):
     """Builder for measurement queries."""
@@ -310,6 +354,33 @@ class MeasurementQuery(BaseQuery):
         self._config.value_max = max_val
         return self
     
+    def with_unit(self, *concept_ids: int) -> 'MeasurementQuery':
+        """Filter by unit concept IDs."""
+        self._config.unit_concepts.extend(concept_ids)
+        return self
+
+    def is_abnormal(self, value: bool = True) -> 'MeasurementQuery':
+        """Filter by abnormal flag."""
+        self._config.abnormal = value
+        return self
+
+    def with_range_low(self, min_val: Optional[float] = None, max_val: Optional[float] = None) -> 'MeasurementQuery':
+        """Filter by range low value."""
+        self._config.range_low_min = min_val
+        self._config.range_low_max = max_val
+        return self
+
+    def with_range_high(self, min_val: Optional[float] = None, max_val: Optional[float] = None) -> 'MeasurementQuery':
+        """Filter by range high value."""
+        self._config.range_high_min = min_val
+        self._config.range_high_max = max_val
+        return self
+
+    def with_value_as_concept(self, *concept_ids: int) -> 'MeasurementQuery':
+        """Filter by value as concept IDs."""
+        self._config.value_as_concept_concepts.extend(concept_ids)
+        return self
+
     def above_normal(self) -> 'MeasurementQuery':
         """Only include values above normal range."""
         self._config.op = "above_normal"
@@ -365,6 +436,12 @@ class ConditionEraQuery(BaseQuery):
         """Filter by era length in days."""
         self._config.era_length_min = min_days
         self._config.era_length_max = max_days
+        return self
+
+    def with_occurrence_count(self, min_count: Optional[int] = None, max_count: Optional[int] = None) -> 'ConditionEraQuery':
+        """Filter by occurrence count within the era."""
+        self._config.value_min = min_count
+        self._config.value_max = max_count
         return self
 
 

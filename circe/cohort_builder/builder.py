@@ -30,7 +30,7 @@ from circe.cohortdefinition import (
 )
 from circe.cohortdefinition.core import (
     ObservationFilter, ResultLimit, Window, WindowBound,
-    NumericRange
+    NumericRange, DateAdjustment
 )
 from circe.cohortdefinition.criteria import CriteriaGroup as CirceCriteriaGroup
 from circe.vocabulary import ConceptSet, Concept
@@ -44,6 +44,12 @@ class CohortSettings:
     exit_offset_field: str = "startDate"
     era_days: int = 0
     censor_queries: List[QueryConfig] = field(default_factory=list)
+    
+    # Custom Era Strategy
+    custom_era_drug_codeset_id: Optional[int] = None
+    custom_era_gap_days: int = 30
+    custom_era_offset: int = 0
+    custom_era_days_supply_override: Optional[int] = None
     
     # Demographics
     gender_concepts: List[int] = field(default_factory=list)
@@ -402,6 +408,19 @@ class CohortWithEntry:
         """Add an exclusion criteria for a payer plan period."""
         return self._to_criteria().exclude_payer_plan_period(concept_set_id)
 
+    # Exit strategies
+    def exit_at_observation_end(self) -> 'CohortWithCriteria':
+        """Exit cohort at the end of the observation period."""
+        return self._to_criteria().exit_at_observation_end()
+
+    def exit_after_days(self, days: int, from_field: str = "startDate") -> 'CohortWithCriteria':
+        """Exit cohort N days after index start/end."""
+        return self._to_criteria().exit_after_days(days, from_field)
+
+    def exit_at_era_end(self, concept_set_id: int, gap_days: int = 30, offset: int = 0, supply_override: Optional[int] = None) -> 'CohortWithCriteria':
+        """Exit cohort at the end of a drug era."""
+        return self._to_criteria().exit_at_era_end(concept_set_id, gap_days, offset, supply_override)
+
     def any_of(self) -> 'CriteriaGroupBuilder':
         """Start an 'Any Of' group in the current rule."""
         return self._to_criteria().any_of()
@@ -617,6 +636,15 @@ class CohortWithCriteria:
         self._settings.exit_offset_field = from_field
         return self
 
+    def exit_at_era_end(self, concept_set_id: int, gap_days: int = 30, offset: int = 0, supply_override: Optional[int] = None) -> 'CohortWithCriteria':
+        """Exit cohort at the end of a drug era."""
+        self._settings.exit_strategy_type = "custom_era"
+        self._settings.custom_era_drug_codeset_id = concept_set_id
+        self._settings.custom_era_gap_days = gap_days
+        self._settings.custom_era_offset = offset
+        self._settings.custom_era_days_supply_override = supply_override
+        return self
+
     # Censoring methods
     def censor_on_condition(self, concept_set_id: int) -> ConditionQuery:
         """Censor if a condition occurs."""
@@ -766,6 +794,14 @@ def _build_cohort_expression(
             date_field=settings.exit_offset_field,
             offset=settings.exit_offset_days
         )
+    elif settings.exit_strategy_type == "custom_era":
+        from circe.cohortdefinition.core import CustomEraStrategy
+        end_strategy = CustomEraStrategy(
+            drug_codeset_id=settings.custom_era_drug_codeset_id,
+            gap_days=settings.custom_era_gap_days,
+            offset=settings.custom_era_offset,
+            days_supply_override=settings.custom_era_days_supply_override
+        )
     
     # Build collapse settings
     from circe.cohortdefinition.core import CollapseSettings
@@ -834,16 +870,39 @@ def _config_to_criteria(config: QueryConfig):
         if config.quantity_min is not None or config.quantity_max is not None:
             op = 'bt' if (config.quantity_min is not None and config.quantity_max is not None) else ('gte' if config.quantity_min is not None else 'lte')
             kwargs['quantity'] = NumericRange(value=config.quantity_min, extent=config.quantity_max, op=op)
+            
+    if config.domain == 'Measurement':
+        if config.unit_concepts:
+            kwargs['unit'] = [Concept(concept_id=c, concept_name="Unit") for c in config.unit_concepts]
+        if config.abnormal is not None:
+            kwargs['abnormal'] = config.abnormal
+        if config.range_low_min is not None or config.range_low_max is not None:
+            op = 'bt' if (config.range_low_min is not None and config.range_low_max is not None) else ('gte' if config.range_low_min is not None else 'lte')
+            kwargs['range_low'] = NumericRange(value=config.range_low_min, extent=config.range_low_max, op=op)
+        if config.range_high_min is not None or config.range_high_max is not None:
+            op = 'bt' if (config.range_high_min is not None and config.range_high_max is not None) else ('gte' if config.range_high_min is not None else 'lte')
+            kwargs['range_high'] = NumericRange(value=config.range_high_min, extent=config.range_high_max, op=op)
+        if config.value_as_concept_concepts:
+            kwargs['value_as_concept'] = [Concept(concept_id=c, concept_name="Value") for c in config.value_as_concept_concepts]
 
     if config.domain in ['DrugEra', 'ConditionEra']:
         if config.era_length_min is not None or config.era_length_max is not None:
             op = 'bt' if (config.era_length_min is not None and config.era_length_max is not None) else ('gte' if config.era_length_min is not None else 'lte')
             kwargs['era_length'] = NumericRange(value=config.era_length_min, extent=config.era_length_max, op=op)
+        if config.value_min is not None or config.value_max is not None:
+            op = 'bt' if (config.value_min is not None and config.value_max is not None) else ('gte' if config.value_min is not None else 'lte')
+            kwargs['occurrence_count'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
+        if config.domain == 'DrugEra' and (config.extent_min is not None or config.extent_max is not None):
+            op = 'bt' if (config.extent_min is not None and config.extent_max is not None) else ('gte' if config.extent_min is not None else 'lte')
+            kwargs['gap_days'] = NumericRange(value=config.extent_min, extent=config.extent_max, op=op)
 
     if config.domain == 'DoseEra':
         if config.dose_min is not None or config.dose_max is not None:
             op = 'bt' if (config.dose_min is not None and config.dose_max is not None) else ('gte' if config.dose_min is not None else 'lte')
-            kwargs['dose'] = NumericRange(value=config.dose_min, extent=config.dose_max, op=op)
+            kwargs['dose_value'] = NumericRange(value=config.dose_min, extent=config.dose_max, op=op)
+        if config.era_length_min is not None or config.era_length_max is not None:
+            op = 'bt' if (config.era_length_min is not None and config.era_length_max is not None) else ('gte' if config.era_length_min is not None else 'lte')
+            kwargs['era_length'] = NumericRange(value=config.era_length_min, extent=config.era_length_max, op=op)
 
     if config.domain in ['VisitOccurrence', 'VisitDetail', 'ObservationPeriod']:
         if config.value_min is not None or config.value_max is not None:
@@ -889,6 +948,15 @@ def _config_to_criteria(config: QueryConfig):
     # Add correlated criteria if present
     if config.correlated_criteria:
         criteria_obj.correlated_criteria = _build_criteria_group(config.correlated_criteria)
+        
+    # Add date adjustment if present
+    if config.start_date_offset != 0 or config.end_date_offset != 0:
+        criteria_obj.date_adjustment = DateAdjustment(
+            start_offset=config.start_date_offset,
+            end_offset=config.end_date_offset,
+            start_with=config.start_date_with,
+            end_with=config.end_date_with
+        )
         
     return criteria_obj
 
