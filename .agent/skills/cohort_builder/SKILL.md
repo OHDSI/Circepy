@@ -6,182 +6,172 @@ description: Build OHDSI cohort definitions using the fluent Python API
 
 Build OHDSI cohort definitions step-by-step using the fluent `cohort_builder` API.
 
-## When to Use
+**⚠️ AUTO-GENERATED**: This file is generated from the codebase. Do not edit manually.
 
-Use this skill when the user wants to:
-- Create a new cohort definition
-- Define patient populations based on conditions, drugs, procedures, etc.
-- Build inclusion/exclusion criteria with complex logic
-- Apply demographic filters (age, gender, race, ethnicity)
-- Create nested criteria groups (ANY/ALL logic)
+## Entry Event Methods
 
-## Quick Start
+Start building a cohort with one of these methods on `CohortBuilder`:
 
 ```python
-from circe.cohort_builder import CohortBuilder
-
-cohort = (
-    CohortBuilder("Cohort Title")
-    .with_condition(concept_set_id=1)  # Entry event
-    .require_age(18, 65)  # Demographics
-    .build()
-)
+CohortBuilder("Title").with_condition(concept_set_id)
+CohortBuilder("Title").with_condition_era(concept_set_id)
+CohortBuilder("Title").with_death()
+CohortBuilder("Title").with_device_exposure(concept_set_id)
+CohortBuilder("Title").with_dose_era(concept_set_id)
+CohortBuilder("Title").with_drug(concept_set_id)
+CohortBuilder("Title").with_drug_era(concept_set_id)
+CohortBuilder("Title").with_location_region(concept_set_id)
+CohortBuilder("Title").with_measurement(concept_set_id)
+CohortBuilder("Title").with_observation(concept_set_id)
+CohortBuilder("Title").with_observation_period()
+CohortBuilder("Title").with_payer_plan_period(concept_set_id)
+CohortBuilder("Title").with_procedure(concept_set_id)
+CohortBuilder("Title").with_specimen(concept_set_id)
+CohortBuilder("Title").with_visit(concept_set_id)
+CohortBuilder("Title").with_visit_detail(concept_set_id)
 ```
 
-## API Reference
+## Entry Configuration Methods
 
-### Step 1: Start with Entry Event
+After defining the entry event, configure it with:
 
-```python
-CohortBuilder("Title")
-    .with_condition(concept_set_id=N)      # Condition occurrence
-    .with_condition_era(concept_set_id=N)  # Condition era
-    .with_drug(concept_set_id=N)           # Drug exposure
-    .with_drug_era(concept_set_id=N)       # Drug era
-    .with_dose_era(concept_set_id=N)       # Dose era
-    .with_procedure(concept_set_id=N)      # Procedure
-    .with_measurement(concept_set_id=N)    # Measurement
-    .with_visit(concept_set_id=N)          # Visit occurrence
-    .with_observation_period()             # Observation period (no arguments)
-```
+### `.first_occurrence()`
+Only use the first occurrence per person for entry events.
 
-### Step 2: Configure Entry (Optional)
+### `.max_age(age)`
+Require maximum age at entry for all entry events.
 
-```python
-    .first_occurrence()           # Only first event per person
-    .with_observation(prior_days=365, post_days=0)  # Observation window
-    .min_age(18)                  # Minimum age at event
-    .max_age(65)                  # Maximum age at event
-```
+### `.min_age(age)`
+Require minimum age at entry for all entry events.
 
-### Step 3: Add Demographics (Optional)
+### `.with_observation(prior_days=0, post_days=0)`
+Set continuous observation requirements.
 
-```python
-    .require_age(min_age=18, max_age=65)  # Age range
-    .require_gender(8507)                  # Gender (male=8507, female=8532)
-    .require_race(8516)                    # Race concept IDs
-    .require_ethnicity(38003564)           # Ethnicity concept IDs
-```
+Args:
+    prior_days: Days of observation required before index
+    post_days: Days of observation required after index
+    
+Returns:
+    Self for chaining
 
-### Step 4: Add Named Inclusion Rules (Optional)
+## Demographic Criteria
 
-```python
-    .begin_rule("Rule Name")      # Start a named inclusion rule
-    .require_drug(N).anytime_before()
-```
+Add demographic requirements:
 
-### Step 5: Add Inclusion Criteria
+- `.require_age(min_age, max_age)`: Require specific age range
+- `.require_ethnicity(concept_ids)`: Require specific ethnicity concept IDs
+- `.require_gender(concept_ids)`: Require specific gender concept IDs
+- `.require_race(concept_ids)`: Require specific race concept IDs
 
-#### Option A: Collection Methods (RECOMMENDED)
+## ⚠️ CRITICAL CHAINING RULE
 
-Simplified syntax for common patterns:
+**Modifiers MUST be called BEFORE time windows!**
 
-```python
-# ANY of (OR logic) - patient must have at least one
-.require_any_of(drug_ids=[10, 11, 12])
+Time window methods finalize the criteria and return to the parent builder.
+Once a time window is called, you cannot chain further modifiers.
 
-# ALL of (AND logic) - patient must have all
-.require_all_of(measurement_ids=[40, 41])
-
-# Exclusions
-.exclude_any_of(condition_ids=[70, 71, 72])
-```
-
-#### Option B: Manual Nested Groups
-
-```python
-    .any_of()                     # Start ANY group (OR logic)
-        .require_drug(10).anytime_before()
-        .require_procedure(20).same_day()
-    .end_group()                  # End group
-```
-
-### STEP 6: CRITICAL CHAINING RULE
-
-**IMPORTANT**: Modality methods (count, qualifiers) MUST be called BEFORE time window methods. Time window methods finalize the criteria and return to the parent builder.
-
-**CORRECT**:
+✅ **CORRECT**:
 ```python
 .require_drug(10).at_least(2).within_days_before(30)
 ```
 
-**INCORRECT**:
+❌ **INCORRECT**:
 ```python
-.require_drug(10).within_days_before(30).at_least(2)  # ERROR: at_least not found on CohortWithCriteria
+.require_drug(10).within_days_before(30).at_least(2)  # ERROR!
 ```
 
-## Modifiers and Modalities
+## Time Window Methods (Call LAST)
 
-### Occurrence Counting (Call BEFORE time window)
+These methods finalize the criteria:
 
-```python
-.at_least(3)
-.at_most(5)
-.exactly(2)
-.with_distinct()
-```
+- `.anytime_after()`: Events any time after the index
+- `.anytime_before()`: Events any time before the index
+- `.before_event_end(days=0)`: Events occurring before the index event's end date (not start date)
+- `.during_event()`: Both start and end dates must fall within the index event's time window
+- `.restrict_to_visit()`: Restrict criteria to the same visit as the index event
+- `.same_day()`: Events on the same day as the index
+- `.within_days(before=0, after=0)`: Events within a window around the index
+- `.within_days_after(days)`: Events within N days after the index (excluding index day)
+- `.within_days_before(days)`: Events within N days before the index (excluding index day)
 
-### Time Windows (Finalizes criteria)
+## Modifier Methods (Call BEFORE time windows)
 
-| Method | Description |
-|--------|-------------|
-| `.within_days_before(N)` | N days before index |
-| `.within_days_after(N)` | N days after index |
-| `.within_days(before=N, after=M)` | Window around index |
-| `.anytime_before()` | Any time before index |
-| `.anytime_after()` | Any time after index |
-| `.same_day()` | Same day as index |
-| `.restrict_to_visit()` | Same visit as index |
-| `.during_event()` | Within index event duration |
+### BaseQuery
 
-## Domain-Specific Modifiers (Call BEFORE time window)
+- `.at_least(count)`
+- `.at_most(count)`
+- `.exactly(count)`
+- `.ignore_observation_period()`
+- `.with_distinct()`
 
-### Procedure Modifiers
-```python
-.require_procedure(N).with_quantity(1, 5).with_modifier(4184637).anytime_before()
-```
+### ProcedureQuery
 
-### Measurement Modifiers
-```python
-.require_measurement(N).with_operator(4172704).with_value(10, 50).is_abnormal().anytime_before()
-```
+- `.with_modifier(concept_ids)`
+- `.with_quantity(min_qty, max_qty)`
 
-### Drug Modifiers
-```python
-.require_drug(N).with_route(4132161).with_dose(10, 50).anytime_before()
-```
+### MeasurementQuery
 
-## Example: Secondary Primary Malignancy
+- `.is_abnormal(value=True)`
+- `.with_operator(concept_ids)`
+- `.with_range_high_ratio(min_ratio, max_ratio)`
+- `.with_range_low_ratio(min_ratio, max_ratio)`
+- `.with_unit(concept_ids)`
+- `.with_value(min_val, max_val)`
 
-```python
-cohort = (
-    CohortBuilder("Secondary Primary Malignancy")
-    .with_condition(1)
-    .first_occurrence()
-    .with_observation(prior_days=365)
-    .require_age(18, 85)
-    
-    .begin_rule("Second Primary Cancer at Different Site")
-    .all_of()
-        .require_condition(2).at_least(1).anytime_after()
-        .any_of()
-            .require_condition(10).anytime_after()
-            .require_condition(11).anytime_after()
-        .end_group()
-    .end_group()
-    
-    .begin_rule("Time Gap Requirement")
-    .require_condition(2).with_distinct().within_days_after(365)
-    
-    .begin_rule("No Metastatic Disease")
-    .exclude_any_of(condition_ids=[100, 101, 102, 103])
-    
-    .begin_rule("Diagnostic Confirmation")
-    .at_least_of(1)
-        .require_procedure(200).with_modifier(4184637).within_days_after(0)
-        .require_measurement(300).with_operator(4172704).with_distinct().at_least(2).anytime_after()
-    .end_group()
-    
-    .build()
-)
-```
+### DrugQuery
+
+- `.with_days_supply(min_days, max_days)`
+- `.with_dose(min_dose, max_dose)`
+- `.with_quantity(min_qty, max_qty)`
+- `.with_refills(min_refills, max_refills)`
+- `.with_route(concept_ids)`
+
+### VisitQuery
+
+- `.with_length(min_days, max_days)`
+- `.with_place_of_service(concept_ids)`
+
+### ObservationQuery
+
+- `.with_qualifier(concept_ids)`
+- `.with_value_as_string(value)`
+
+## Inclusion Criteria Methods
+
+Build complex criteria with:
+
+### `.exclude_any_of(condition_ids, drug_ids, drug_era_ids, procedure_ids, measurement_ids, observation_ids, visit_ids)`
+Exclude if ANY of the specified criteria are present.
+
+This creates exclusion criteria with OR logic.
+
+Args:
+    condition_ids: List of condition concept set IDs to exclude
+    drug_ids: List of drug ...
+
+### `.require_all_of(condition_ids, drug_ids, drug_era_ids, procedure_ids, measurement_ids, observation_ids, visit_ids)`
+Require ALL of the specified criteria (AND logic).
+
+This is a shortcut for creating an ALL group with multiple criteria.
+
+Args:
+    condition_ids: List of condition concept set IDs
+    drug_ids: List ...
+
+### `.require_any_of(condition_ids, drug_ids, drug_era_ids, procedure_ids, measurement_ids, observation_ids, visit_ids)`
+Require ANY of the specified criteria (OR logic).
+
+This is a shortcut for creating an ANY group with multiple criteria
+without manually chaining .any_of()...end_group().
+
+Args:
+    condition_ids: List...
+
+### `.require_at_least_of(count, condition_ids, drug_ids, drug_era_ids, procedure_ids, measurement_ids, observation_ids, visit_ids)`
+Require at least N of the specified criteria.
+
+This is a shortcut for creating an AT_LEAST group.
+
+Args:
+    count: Minimum number of criteria that must be met
+    condition_ids: List of condition con...
