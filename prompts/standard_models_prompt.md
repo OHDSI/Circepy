@@ -181,6 +181,77 @@ Args:
     count: Minimum number of criteria that must be met
     condition_ids: List of condition con...
 
+## Example 1: Simple Age-Restricted Cohort
+
+Basic cohort with just an entry event and age restriction:
+
+```python
+from circe.cohort_builder import CohortBuilder
+
+cohort = (
+    CohortBuilder("Adults with Diabetes")
+    .with_condition(1)
+    .require_age(18)
+    .build()
+)
+```
+
+
+## Example 2: Incident (First-Time) Diagnosis
+
+Capturing only the first occurrence with observation window:
+
+```python
+from circe.cohort_builder import CohortBuilder
+
+cohort = (
+    CohortBuilder("New Diabetes Diagnosis")
+    .with_condition(1)
+    .first_occurrence()
+    .with_observation(prior_days=365)
+    .min_age(18)
+    .build()
+)
+```
+
+
+## Example 3: With Inclusion Criteria
+
+Entry event with prior medication requirement:
+
+```python
+from circe.cohort_builder import CohortBuilder
+
+cohort = (
+    CohortBuilder("Diabetes with Prior Metformin")
+    .with_condition(1)
+    .first_occurrence()
+    .require_age(18, 75)
+    .begin_rule("Prior Metformin Use")
+    .require_drug(2).anytime_before()
+    .build()
+)
+```
+
+
+## Example 4: With Exclusion Criteria
+
+Using `.exclude_` methods:
+
+```python
+from circe.cohort_builder import CohortBuilder
+
+cohort = (
+    CohortBuilder("Diabetes Without Prior Insulin")
+    .with_condition(1)
+    .first_occurrence()
+    .begin_rule("No Prior Insulin")
+    .exclude_drug(3).anytime_before()
+    .build()
+)
+```
+
+
 [END SKILL.MD CONTENT]
 
 ## Strategic Instructions

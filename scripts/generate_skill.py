@@ -279,9 +279,173 @@ class SkillGenerator:
         
         print(f"✅ Generated {output_path}")
         print(f"📊 Total lines: {len(content.splitlines())}")
+        return content
+    
+    def update_system_prompt(self, skill_content: str, prompt_path: str):
+        """Update a system prompt with the generated skill."""
+        print(f"📝 Updating {prompt_path}...")
+        
+        try:
+            # Read existing prompt
+            with open(prompt_path, 'r') as f:
+                prompt_content = f.read()
+        except FileNotFoundError:
+            print(f"⚠️  Prompt file not found: {prompt_path}")
+            return
+        
+        # Find the SKILL section markers
+        start_marker = "[BEGIN SKILL.MD CONTENT]"
+        end_marker = "[END SKILL.MD CONTENT]"
+        
+        start_idx = prompt_content.find(start_marker)
+        end_idx = prompt_content.find(end_marker)
+        
+        if start_idx == -1 or end_idx == -1:
+            print(f"⚠️  Could not find SKILL section markers in {prompt_path}")
+            return
+        
+        # Replace the content between markers
+        # Skip the frontmatter from skill content
+        skill_lines = skill_content.splitlines()
+        skill_body = []
+        in_frontmatter = False
+        for line in skill_lines:
+            if line.strip() == "---":
+                if not in_frontmatter:
+                    in_frontmatter = True
+                else:
+                    in_frontmatter = False
+                continue
+            if not in_frontmatter:
+                skill_body.append(line)
+        
+        new_skill_section = "\n".join(skill_body).strip()
+        
+        new_prompt = (
+            prompt_content[:start_idx + len(start_marker)] +
+            "\n\n" + new_skill_section + "\n\n" +
+            prompt_content[end_idx:]
+        )
+        
+        
+        # Write updated prompt
+        with open(prompt_path, 'w') as f:
+            f.write(new_prompt)
+        
+        print(f"✅ Updated {prompt_path}")
+    
+    def load_examples(self) -> str:
+        """Load examples from EXAMPLES.md file."""
+        examples_path = Path(__file__).parent.parent / "prompts" / "EXAMPLES.md"
+        try:
+            with open(examples_path, 'r') as f:
+                return f.read()
+        except FileNotFoundError:
+            print("⚠️  EXAMPLES.md not found")
+            return ""
+    
+    def update_system_prompt_with_examples(self, skill_content: str, prompt_path: str, num_examples: int = 5):
+        """Update a system prompt with skill and examples."""
+        print(f"📝 Updating {prompt_path} (with {num_examples} examples)...")
+        
+        try:
+            # Read existing prompt
+            with open(prompt_path, 'r') as f:
+                prompt_content = f.read()
+        except FileNotFoundError:
+            print(f"⚠️  Prompt file not found: {prompt_path}")
+            return
+        
+        # Find the SKILL section markers
+        start_marker = "[BEGIN SKILL.MD CONTENT]"
+        end_marker = "[END SKILL.MD CONTENT]"
+        
+        start_idx = prompt_content.find(start_marker)
+        end_idx = prompt_content.find(end_marker)
+        
+        if start_idx == -1 or end_idx == -1:
+            print(f"⚠️  Could not find SKILL section markers in {prompt_path}")
+            return
+        
+        # Replace the content between markers
+        # Skip the frontmatter from skill content
+        skill_lines = skill_content.splitlines()
+        skill_body = []
+        in_frontmatter = False
+        for line in skill_lines:
+            if line.strip() == "---":
+                if not in_frontmatter:
+                    in_frontmatter = True
+                else:
+                    in_frontmatter = False
+                continue
+            if not in_frontmatter:
+                skill_body.append(line)
+        
+        new_skill_section = "\n".join(skill_body).strip()
+        
+        # Load and append examples
+        examples_content = self.load_examples()
+        if examples_content and num_examples > 0:
+            # Extract first N examples from EXAMPLES.md
+            examples_lines = examples_content.splitlines()
+            example_sections = []
+            current_example = []
+            example_count = 0
+            in_example = False
+            
+            for line in examples_lines:
+                if line.startswith("## Example "):
+                    if current_example and example_count < num_examples:
+                        example_sections.append("\n".join(current_example))
+                        example_count += 1
+                    current_example = [line]
+                    in_example = True
+                elif in_example:
+                    current_example.append(line)
+            
+            # Add last example if within limit
+            if current_example and example_count < num_examples:
+                example_sections.append("\n".join(current_example))
+            
+            # Append examples to skill section
+            if example_sections:
+                examples_text = "\n\n".join(example_sections[:num_examples])
+                new_skill_section += "\n\n" + examples_text
+        
+        new_prompt = (
+            prompt_content[:start_idx + len(start_marker)] +
+            "\n\n" + new_skill_section + "\n\n" +
+            prompt_content[end_idx:]
+        )
+        
+        # Write updated prompt
+        with open(prompt_path, 'w') as f:
+            f.write(new_prompt)
+        
+        print(f"✅ Updated {prompt_path}")
+
+
 
 
 if __name__ == "__main__":
     generator = SkillGenerator()
-    output = ".agent/skills/cohort_builder/SKILL.md"
-    generator.run(output)
+    
+    # Generate SKILL.md
+    skill_output = ".agent/skills/cohort_builder/SKILL.md"
+    skill_content = generator.run(skill_output)
+    
+    # Update all system prompt variants with appropriate example counts
+    prompts = [
+        ("prompts/reasoning_models_prompt.md", "Reasoning Models", 1),  # Minimal examples
+        ("prompts/standard_models_prompt.md", "Standard Models", 4),     # Moderate examples
+        ("prompts/fast_models_prompt.md", "Fast Models", 7),              # Many examples
+    ]
+    
+    for prompt_path, model_type, num_examples in prompts:
+        generator.update_system_prompt_with_examples(skill_content, prompt_path, num_examples)
+    
+    print("\n✅ All documentation updated!")
+    print(f"   - SKILL.md")
+    print(f"   - {len(prompts)} model-specific prompts (with examples)")
+
