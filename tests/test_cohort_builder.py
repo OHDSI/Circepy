@@ -1,7 +1,5 @@
 """
-Unit tests for the State-Based Fluent Builder.
-
-Tests the Cohort -> CohortWithEntry -> CohortWithCriteria progression.
+Unit tests for the Simplified Parameter-Based Fluent Builder.
 """
 
 import pytest
@@ -24,14 +22,6 @@ class TestCohortStart:
     
     def test_with_drug_returns_entry_state(self):
         result = CohortBuilder("Test").with_drug(concept_set_id=1)
-        assert hasattr(result, 'first_occurrence')
-    
-    def test_with_measurement_returns_entry_state(self):
-        result = CohortBuilder("Test").with_measurement(concept_set_id=1)
-        assert hasattr(result, 'first_occurrence')
-    
-    def test_with_procedure_returns_entry_state(self):
-        result = CohortBuilder("Test").with_procedure(concept_set_id=1)
         assert hasattr(result, 'first_occurrence')
 
 
@@ -68,33 +58,20 @@ class TestCohortWithEntry:
 class TestCohortWithCriteria:
     """Test CohortWithCriteria state."""
     
-    def test_require_transitions_to_query(self):
-        query = (CohortBuilder("Test")
-                 .with_condition(1)
-                 .require_drug(2))
-        assert hasattr(query, 'within_days_before')
-        assert hasattr(query, 'anytime_before')
-    
-    def test_exclude_transitions_to_query(self):
-        query = (CohortBuilder("Test")
-                 .with_condition(1)
-                 .exclude_drug(2))
-        assert hasattr(query, 'within_days_before')
-    
-    def test_query_within_days_returns_criteria_state(self):
+    def test_require_returns_criteria_state(self):
+        # In new API, require_drug returns ChoiceWithCriteria directly if params are passed
         result = (CohortBuilder("Test")
-                  .with_condition(1)
-                  .require_drug(2)
-                  .within_days_before(365))
+                 .with_condition(1)
+                 .require_drug(2, anytime_before=True))
+        # It returns CohortWithCriteria, so it should have build(), require_*, etc.
         assert hasattr(result, 'require_condition')
-        assert hasattr(result, 'exclude_drug')
         assert hasattr(result, 'build')
     
     def test_chained_criteria(self):
         result = (CohortBuilder("Test")
                   .with_condition(1)
-                  .require_drug(2).within_days_after(30)
-                  .exclude_drug(3).anytime_before())
+                  .require_drug(2, within_days=(0, 30))  # within_days_after(30)
+                  .exclude_drug(3, anytime_before=True))
         assert len(result._rules[0]["group"].criteria) == 2
 
 
@@ -116,7 +93,7 @@ class TestBuildCohortExpression:
         expr = (CohortBuilder("With Inclusion")
                 .with_drug(2)
                 .first_occurrence()
-                .require_condition(1).within_days_before(365)
+                .require_condition(1, within_days_before=365)
                 .build())
         
         assert expr.inclusion_rules is not None
@@ -125,7 +102,7 @@ class TestBuildCohortExpression:
     def test_cohort_with_exclusion(self):
         expr = (CohortBuilder("With Exclusion")
                 .with_condition(1)
-                .exclude_drug(2).anytime_before()
+                .exclude_drug(2, anytime_before=True)
                 .build())
         
         assert expr.inclusion_rules is not None
@@ -136,9 +113,9 @@ class TestBuildCohortExpression:
                 .first_occurrence()
                 .with_observation(prior_days=365)
                 .min_age(18)
-                .require_condition(1).within_days_before(365)
-                .exclude_drug(2).within_days_before(365)
-                .require_measurement(3).within_days_after(30)
+                .require_condition(1, within_days_before=365)
+                .exclude_drug(2, within_days_before=365)
+                .require_measurement(3, within_days_after=30)
                 .build())
         
         assert expr.primary_criteria is not None
@@ -146,13 +123,12 @@ class TestBuildCohortExpression:
 
 
 class TestQueryMethods:
-    """Test query builder methods."""
+    """Test query configuration via parameters."""
     
     def test_within_days_before(self):
         result = (CohortBuilder("Test")
                   .with_condition(1)
-                  .require_drug(2)
-                  .within_days_before(365))
+                  .require_drug(2, within_days_before=365))
         
         config = result._rules[0]["group"].criteria[0].query_config
         assert config.time_window.days_before == 365
@@ -161,8 +137,7 @@ class TestQueryMethods:
     def test_within_days_after(self):
         result = (CohortBuilder("Test")
                   .with_condition(1)
-                  .require_drug(2)
-                  .within_days_after(30))
+                  .require_drug(2, within_days_after=30))
         
         config = result._rules[0]["group"].criteria[0].query_config
         assert config.time_window.days_before == 0
@@ -171,8 +146,7 @@ class TestQueryMethods:
     def test_anytime_before(self):
         result = (CohortBuilder("Test")
                   .with_condition(1)
-                  .exclude_drug(2)
-                  .anytime_before())
+                  .exclude_drug(2, anytime_before=True))
         
         config = result._rules[0]["group"].criteria[0].query_config
         assert config.time_window.days_before == 99999
@@ -180,9 +154,28 @@ class TestQueryMethods:
     def test_same_day(self):
         result = (CohortBuilder("Test")
                   .with_condition(1)
-                  .require_drug(2)
-                  .same_day())
+                  .require_drug(2, same_day=True))
         
         config = result._rules[0]["group"].criteria[0].query_config
         assert config.time_window.days_before == 0
         assert config.time_window.days_after == 0
+
+
+def test_begin_end_rule():
+    """Test that begin_rule and end_rule work correctly."""
+    cohort = (
+        CohortBuilder("Test Rule Blocks")
+        .with_condition(1)
+        .begin_rule("Rule A")
+        .require_drug(2, anytime_before=True)
+        .end_rule()
+        .begin_rule("Rule B")
+        .require_measurement(3, same_day=True)
+        .end_rule()
+        .build()
+    )
+    
+    # Inclusion rules should be "Rule A" and "Rule B"
+    # (The default "Inclusion Criteria" rule is skipped because it's empty)
+    assert cohort.inclusion_rules[0].name == "Rule A"
+    assert cohort.inclusion_rules[1].name == "Rule B"

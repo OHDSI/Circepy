@@ -54,21 +54,21 @@ Time window methods (`.anytime_before()`, `.within_days_after()`, etc.) exist ON
 Start building a cohort with one of these methods on `CohortBuilder`:
 
 ```python
-CohortBuilder("Title").with_condition(concept_set_id)
-CohortBuilder("Title").with_condition_era(concept_set_id)
+CohortBuilder("Title").with_condition(concept_set_id, kwargs)
+CohortBuilder("Title").with_condition_era(concept_set_id, kwargs)
 CohortBuilder("Title").with_death()
-CohortBuilder("Title").with_device_exposure(concept_set_id)
+CohortBuilder("Title").with_device_exposure(concept_set_id, kwargs)
 CohortBuilder("Title").with_dose_era(concept_set_id)
-CohortBuilder("Title").with_drug(concept_set_id)
-CohortBuilder("Title").with_drug_era(concept_set_id)
+CohortBuilder("Title").with_drug(concept_set_id, kwargs)
+CohortBuilder("Title").with_drug_era(concept_set_id, kwargs)
 CohortBuilder("Title").with_location_region(concept_set_id)
-CohortBuilder("Title").with_measurement(concept_set_id)
-CohortBuilder("Title").with_observation(concept_set_id)
+CohortBuilder("Title").with_measurement(concept_set_id, kwargs)
+CohortBuilder("Title").with_observation(concept_set_id, kwargs)
 CohortBuilder("Title").with_observation_period()
-CohortBuilder("Title").with_payer_plan_period(concept_set_id)
-CohortBuilder("Title").with_procedure(concept_set_id)
-CohortBuilder("Title").with_specimen(concept_set_id)
-CohortBuilder("Title").with_visit(concept_set_id)
+CohortBuilder("Title").with_payer_plan_period(concept_set_id, kwargs)
+CohortBuilder("Title").with_procedure(concept_set_id, kwargs)
+CohortBuilder("Title").with_specimen(concept_set_id, kwargs)
+CohortBuilder("Title").with_visit(concept_set_id, kwargs)
 CohortBuilder("Title").with_visit_detail(concept_set_id)
 ```
 
@@ -125,15 +125,15 @@ Once a time window is called, you cannot chain further modifiers.
 
 These methods finalize the criteria:
 
-- `.anytime_after()`: Events any time after the index
-- `.anytime_before()`: Events any time before the index
-- `.before_event_end(days=0)`: Events occurring before the index event's end date (not start date)
-- `.during_event()`: Both start and end dates must fall within the index event's time window
+- `.anytime_after()`: Events occurring any time after the index
+- `.anytime_before()`: Events occurring any time before the index
+- `.before_event_end(days=0)`: Events occurring before the end of the index event
+- `.during_event()`: Events occurring within the duration of the index event
 - `.restrict_to_visit()`: Restrict criteria to the same visit as the index event
-- `.same_day()`: Events on the same day as the index
-- `.within_days(before=0, after=0)`: Events within a window around the index
-- `.within_days_after(days)`: Events within N days after the index (excluding index day)
-- `.within_days_before(days)`: Events within N days before the index (excluding index day)
+- `.same_day()`: Events occurring on the same day as the index
+- `.within_days(before=0, after=0)`: Events occurring within a window of [before, after] days
+- `.within_days_after(days)`: Events occurring within N days after the index
+- `.within_days_before(days)`: Events occurring within N days before the index
 
 ## Modifier Methods (Call BEFORE time windows)
 
