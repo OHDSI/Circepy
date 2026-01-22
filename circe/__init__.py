@@ -31,6 +31,7 @@ from .api import (
     cohort_expression_from_json,
     build_cohort_query,
     cohort_print_friendly,
+    create_cohort_prompt  # LLM prompt generation
 )
 
 from circe.cohortdefinition import (

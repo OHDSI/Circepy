@@ -8,6 +8,40 @@ Build OHDSI cohort definitions step-by-step using the fluent `cohort_builder` AP
 
 **⚠️ AUTO-GENERATED**: This file is generated from the codebase. Do not edit manually.
 
+## ⚠️ CRITICAL API NOTES
+
+### 1. Demographic Methods Accept Multiple Values, NOT Lists
+
+❌ **WRONG**:
+```python
+.require_gender([8507, 8532])  # ERROR! Pydantic validation error
+.require_race([8516])           # ERROR!
+```
+
+✅ **CORRECT**:
+```python
+.require_gender(8507, 8532)     # Multiple values as separate arguments
+.require_race(8516)             # Single value
+.require_ethnicity(38003563, 38003564)  # Multiple values unpacked
+```
+
+### 2. Time Windows Are ONLY on Query Builders
+
+Time window methods (`.anytime_before()`, `.within_days_after()`, etc.) exist ONLY on query builders returned by `.require_X()` and `.exclude_X()` methods.
+
+❌ **WRONG**:
+```python
+.with_condition(1).anytime_after()  # ERROR! CohortWithCriteria has no time windows
+```
+
+✅ **CORRECT**:
+```python
+.with_condition(1)              # Returns CohortWithCriteria
+.require_drug(2).anytime_after()  # .require_drug() returns DrugQuery (has time windows!)
+```
+
+**API Flow**: `CohortWithCriteria.require_X()` → `QueryBuilder` (with time windows) → `.time_window()` → back to `CohortWithCriteria`
+
 ## Entry Event Methods
 
 Start building a cohort with one of these methods on `CohortBuilder`:
