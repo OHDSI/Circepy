@@ -111,20 +111,20 @@ def test_drug_with_dose():
     assert criteria.criteria.effective_drug_dose.extent == 50.0
 
 
-def test_visit_with_admitted_from():
-    """Test visit admitted_from modifier."""
+def test_visit_with_place_of_service():
+    """Test visit place_of_service modifier."""
     cohort = (
-        CohortBuilder("Test Visit Admitted From")
+        CohortBuilder("Test Visit Place of Service")
         .with_condition(1)
         .begin_rule("Visit Rule")
-        .require_visit(10).with_admitted_from(8715).anytime_before()  # Emergency Room
+        .require_visit(10).with_place_of_service(8546).anytime_before()  # Hospice
         .build()
     )
     
     criteria = cohort.inclusion_rules[0].expression.criteria_list[0]
-    assert criteria.criteria.admitted_from_concept is not None
-    assert len(criteria.criteria.admitted_from_concept) == 1
-    assert criteria.criteria.admitted_from_concept[0].concept_id == 8715
+    assert criteria.criteria.place_of_service is not None
+    assert len(criteria.criteria.place_of_service) == 1
+    assert criteria.criteria.place_of_service[0].concept_id == 8546
 
 
 def test_observation_with_qualifier():

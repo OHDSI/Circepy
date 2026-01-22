@@ -334,47 +334,6 @@ class BaseQuery:
         self._config.time_window = TimeWindow(days_before=days, days_after=0, use_index_end=True)
         return self._finalize()
     
-    def anytime_in_past(self, years: Optional[int] = None) -> 'CohortWithCriteria':
-        """
-        Any time before the index, optionally limited to N years.
-        
-        This is a more intuitive alternative to anytime_before() with optional
-        year-based limiting.
-        
-        Args:
-            years: Maximum years to look back (None = unlimited)
-        
-        Returns:
-            Parent builder for chaining
-        
-        Example:
-            >>> .require_condition(10).anytime_in_past(years=5)  # Within past 5 years
-            >>> .require_condition(20).anytime_in_past()  # Any time in past
-        """
-        days = years * 365 if years else 99999
-        self._config.time_window = TimeWindow(days_before=days, days_after=0)
-        return self._finalize()
-    
-    def anytime_in_future(self, years: Optional[int] = None) -> 'CohortWithCriteria':
-        """
-        Any time after the index, optionally limited to N years.
-        
-        This is a more intuitive alternative to anytime_after() with optional
-        year-based limiting.
-        
-        Args:
-            years: Maximum years to look forward (None = unlimited)
-        
-        Returns:
-            Parent builder for chaining
-        
-        Example:
-            >>> .require_death().anytime_in_future(years=1)  # Death within 1 year
-            >>> .censor_on_drug(30).anytime_in_future()  # Any time in future
-        """
-        days = years * 365 if years else 99999
-        self._config.time_window = TimeWindow(days_before=0, days_after=days)
-        return self._finalize()
     
     # Phase 5: Advanced Counting and Filtering
     def with_distinct(self) -> 'BaseQuery':
@@ -724,32 +683,6 @@ class VisitQuery(BaseQuery):
         return self
     
     # Phase 2: New modifier methods
-    def with_admitted_from(self, *concept_ids: int) -> 'VisitQuery':
-        """
-        Filter by admitted from concept (e.g., emergency room, transfer).
-        
-        Args:
-            concept_ids: Admitted from concept IDs
-        
-        Returns:
-            Self for chaining
-        """
-        self._config.admitted_from_concepts.extend(concept_ids)
-        return self
-    
-    def with_discharged_to(self, *concept_ids: int) -> 'VisitQuery':
-        """
-        Filter by discharged to concept (e.g., home, skilled nursing facility).
-        
-        Args:
-            concept_ids: Discharged to concept IDs
-        
-        Returns:
-            Self for chaining
-        """
-        self._config.discharged_to_concepts.extend(concept_ids)
-        return self
-    
     def with_place_of_service(self, *concept_ids: int) -> 'VisitQuery':
         """
         Filter by place of service concept.

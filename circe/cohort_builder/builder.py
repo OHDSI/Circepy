@@ -925,6 +925,38 @@ class CohortWithCriteria:
         """Add an inclusion criteria for a visit."""
         return VisitQuery(concept_set_id, parent=self, is_exclusion=False)
     
+    def require_observation(self, concept_set_id: int) -> 'ObservationQuery':
+        """Add an inclusion criteria for an observation."""
+        return ObservationQuery(concept_set_id, parent=self, is_exclusion=False)
+
+    def require_visit_detail(self, concept_set_id: int) -> 'VisitDetailQuery':
+        """Add an inclusion criteria for a visit detail."""
+        return VisitDetailQuery(concept_set_id, parent=self, is_exclusion=False)
+    
+    def require_death(self) -> DeathQuery:
+        """Add an inclusion criteria for death."""
+        return DeathQuery(parent=self, is_exclusion=False)
+
+    def require_device(self, concept_set_id: int) -> DeviceExposureQuery:
+        """Add an inclusion criteria for a device."""
+        return DeviceExposureQuery(concept_set_id, parent=self, is_exclusion=False)
+
+    def require_specimen(self, concept_set_id: int) -> SpecimenQuery:
+        """Add an inclusion criteria for a specimen."""
+        return SpecimenQuery(concept_set_id, parent=self, is_exclusion=False)
+
+    def require_drug_era(self, concept_set_id: int) -> DrugEraQuery:
+        """Add an inclusion criteria for a drug era."""
+        return DrugEraQuery(concept_set_id, parent=self, is_exclusion=False)
+
+    def require_condition_era(self, concept_set_id: int) -> ConditionEraQuery:
+        """Add an inclusion criteria for a condition era."""
+        return ConditionEraQuery(concept_set_id, parent=self, is_exclusion=False)
+
+    def require_dose_era(self, concept_set_id: int) -> DoseEraQuery:
+        """Add an inclusion criteria for a dose era."""
+        return DoseEraQuery(concept_set_id, parent=self, is_exclusion=False)
+    
     # Exclusion methods
     def exclude_condition(self, concept_set_id: int) -> ConditionQuery:
         """Add an exclusion criteria for a condition."""
@@ -988,8 +1020,32 @@ class CohortWithCriteria:
         return PayerPlanPeriodQuery(concept_set_id, parent=self, is_exclusion=True)
     
     def require_visit_detail(self, concept_set_id: int) -> VisitDetailQuery:
-        """Add an inclusion criteria for a visit detail."""
+        """Require a visit detail."""
         return VisitDetailQuery(concept_set_id, parent=self, is_exclusion=False)
+
+    def require_death(self) -> DeathQuery:
+        """Require death."""
+        return DeathQuery(parent=self, is_exclusion=False)
+
+    def require_device(self, concept_set_id: int) -> DeviceExposureQuery:
+        """Require a device."""
+        return DeviceExposureQuery(concept_set_id, parent=self, is_exclusion=False)
+
+    def require_specimen(self, concept_set_id: int) -> SpecimenQuery:
+        """Require a specimen."""
+        return SpecimenQuery(concept_set_id, parent=self, is_exclusion=False)
+
+    def require_drug_era(self, concept_set_id: int) -> DrugEraQuery:
+        """Require a drug era."""
+        return DrugEraQuery(concept_set_id, parent=self, is_exclusion=False)
+
+    def require_condition_era(self, concept_set_id: int) -> ConditionEraQuery:
+        """Require a condition era."""
+        return ConditionEraQuery(concept_set_id, parent=self, is_exclusion=False)
+
+    def require_dose_era(self, concept_set_id: int) -> DoseEraQuery:
+        """Require a dose era."""
+        return DoseEraQuery(concept_set_id, parent=self, is_exclusion=False)
     
     def exclude_visit_detail(self, concept_set_id: int) -> VisitDetailQuery:
         """Add an exclusion criteria for a visit detail."""
@@ -1331,22 +1387,18 @@ def _config_to_criteria(config: QueryConfig):
     if config.domain in ['VisitOccurrence', 'VisitDetail', 'ObservationPeriod']:
         if config.value_min is not None or config.value_max is not None:
             op = 'bt' if (config.value_min is not None and config.value_max is not None) else ('gte' if config.value_min is not None else 'lte')
-            # For these, duration/length is usually value_as_number equivalent or similar
-            # Visit uses 'visit_length', ObservationPeriod uses 'period_length'? No, actually CIRCE uses specific names.
-            if config.domain == 'VisitOccurrence': 
+            if config.domain == 'VisitOccurrence':
                 kwargs['visit_length'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
-                # Phase 2: Visit-specific modifiers
-                if config.admitted_from_concepts:
-                    kwargs['admitted_from_concept'] = [Concept(concept_id=c, concept_name="Admitted From") for c in config.admitted_from_concepts]
-                if config.discharged_to_concepts:
-                    kwargs['discharged_to_concept'] = [Concept(concept_id=c, concept_name="Discharged To") for c in config.discharged_to_concepts]
-                if config.place_of_service_concepts:
-                    kwargs['place_of_service_concept'] = [Concept(concept_id=c, concept_name="Place of Service") for c in config.place_of_service_concepts]
-            elif config.domain == 'VisitDetail': 
+            elif config.domain == 'VisitDetail':
                 kwargs['visit_detail_length'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
-            elif config.domain == 'ObservationPeriod': 
+            elif config.domain == 'ObservationPeriod':
                 kwargs['period_length'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
-    
+        
+        # Phase 2: Visit-specific modifiers (outside value range check)
+        if config.domain == 'VisitOccurrence':
+            if config.place_of_service_concepts:
+                kwargs['place_of_service'] = [Concept(concept_id=c, concept_name="Place of Service") for c in config.place_of_service_concepts]
+
     # Phase 2: Observation-specific modifiers
     if config.domain == 'Observation':
         if config.qualifier_concepts:
