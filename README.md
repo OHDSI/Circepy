@@ -4,7 +4,7 @@
 [![Tests](https://img.shields.io/badge/tests-3400%2B%20passed-brightgreen)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-34%25-orange)](htmlcov/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![PyPI](https://img.shields.io/badge/PyPI-circepy-blue)](https://pypi.org/project/circepy/)
+[![PyPI](https://img.shields.io/badge/PyPI-ohdsi--ohdsi-circepy-blue)](https://pypi.org/project/ohdsi-circepy/)
 
 > [!CAUTION]
 > **This project is currently under active testing and development.** It is a Python implementation of the OHDSI CIRCE-BE Java library. While we aim for 1:1 parity, this version is an Alpha release and should be used with caution in production environments.
@@ -42,8 +42,8 @@ CIRCE Python provides a comprehensive toolkit for working with OMOP CDM cohort d
 
 ```bash
 # Clone the repository
-git clone https://github.com/OHDSI/circepy.git
-cd circepy
+git clone https://github.com/OHDSI/ohdsi-circepy.git
+cd Circepy
 
 # Install in development mode with all dependencies
 pip install -e ".[dev]"
@@ -58,7 +58,7 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions, t
 
 > ```bash
 > # Coming in future release
-> pip install circepy
+> pip install ohdsi-circepy
 > ```
 
 ## Quick Start
@@ -370,7 +370,7 @@ This implementation is designed to be compatible with OHDSI CIRCE-BE Java versio
 If you encounter import errors, ensure the package is properly installed:
 
 ```bash
-pip install --upgrade circepy
+pip install --upgrade ohdsi-circepy
 ```
 
 ### SQL Generation Issues
@@ -426,11 +426,11 @@ Special thanks to:
 
 ## Support
 
-- **Repository**: https://github.com/OHDSI/circepy
-- **Issues**: https://github.com/OHDSI/circepy/issues
+- **Repository**: https://github.com/OHDSI/ohdsi-circepy
+- **Issues**: https://github.com/OHDSI/ohdsi-circepy/issues
 - **Installation Guide**: [INSTALLATION.md](INSTALLATION.md)
-- **PyPI**: https://pypi.org/project/circepy/ (coming soon)
-- **Documentation**: https://circepy.readthedocs.io/ (coming soon)
+- **PyPI**: https://pypi.org/project/ohdsi-circepy/ (coming soon)
+- **Documentation**: https://ohdsi-circepy.readthedocs.io/ (coming soon)
 
 ## Related Projects
 

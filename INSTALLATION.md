@@ -65,7 +65,7 @@ This installs only the core dependencies (`pydantic` and `typing-extensions`).
 > 
 > ```bash
 > # This will work in future releases
-> pip install circepy
+> pip install ohdsi-circepy
 > ```
 
 ## Installation Options
@@ -165,7 +165,7 @@ python -m circe --help
 
 **Solution**: Reinstall the package:
 ```bash
-pip uninstall circepy circe
+pip uninstall ohdsi-circepy circe
 cd Circepy
 pip install -e ".[dev]"
 ```
@@ -203,7 +203,7 @@ pip install -e ".[dev]"  # Reinstall if dependencies changed
 To remove the package:
 
 ```bash
-pip uninstall circepy
+pip uninstall ohdsi-circepy
 ```
 
 ## System Requirements
