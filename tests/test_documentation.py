@@ -123,11 +123,11 @@ class TestDocumentation:
             content = file_path.read_text()
 
             # If PyPI is mentioned, it should be marked as coming soon
-            if "pip install circepy" in content:
-                # Find context around pip install circepy
+            if "pip install ohdsi-circepy" in content:
+                # Find context around pip install ohdsi-circepy
                 lines = content.split("\n")
                 for i, line in enumerate(lines):
-                    if "pip install circepy" in line:
+                    if "pip install ohdsi-circepy" in line:
                         # Check surrounding lines for "coming soon" or similar
                         context = "\n".join(lines[max(0, i - 5) : i + 5])
                         assert any(

@@ -152,7 +152,7 @@ python validate_cohort.py
 ```bash
 # Clone the repository
 git clone https://github.com/OHDSI/Circepy.git
-cd circepy
+cd Circepy
 
 # Install in development mode
 pip install -e ".[dev]"
@@ -168,7 +168,7 @@ See [../INSTALLATION.md](../INSTALLATION.md) for detailed installation instructi
 > [!NOTE]
 > PyPI package is not yet available. Once released:
 > ```bash
-> pip install circepy
+> pip install ohdsi-circepy
 > ```
 
 ### Run All Examples
