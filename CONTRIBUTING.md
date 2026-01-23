@@ -22,7 +22,7 @@ This project follows the [OHDSI Code of Conduct](https://www.ohdsi.org/web/wiki/
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/azimov/circepy.git
+   git clone https://github.com/OHDSI/Circepy.git
    cd circepy
    ```
 
@@ -238,7 +238,7 @@ We follow [Semantic Versioning](https://semver.org/):
    twine upload --repository testpypi dist/*
    
    # Test installation
-   pip install --index-url https://test.pypi.org/simple/ ohdsi-circe
+   pip install --index-url https://test.pypi.org/simple/ circepy
    ```
 
 4. **Create Git Tag**

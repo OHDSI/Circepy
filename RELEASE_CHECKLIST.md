@@ -37,7 +37,7 @@ This checklist ensures a smooth and error-free release process for publishing to
 ```bash
 # Remove old build artifacts
 rm -rf build/ dist/ *.egg-info/
-rm -rf circe.egg-info/ ohdsi_circe.egg-info/
+rm -rf circe.egg-info/ circepy.egg-info/
 
 # Clear Python cache
 find . -type d -name __pycache__ -exec rm -r {} + 2>/dev/null || true
@@ -58,8 +58,8 @@ python -m build
 
 - [ ] Build completed successfully
 - [ ] Generated files in `dist/`:
-  - [ ] `ohdsi_circe-X.Y.Z.tar.gz` (source distribution)
-  - [ ] `ohdsi_circe-X.Y.Z-py3-none-any.whl` (wheel)
+  - [ ] `circepy-X.Y.Z.tar.gz` (source distribution)
+  - [ ] `circepy-X.Y.Z-py3-none-any.whl` (wheel)
 
 ### 3. Check Package
 
@@ -81,7 +81,7 @@ python -m venv test_env
 source test_env/bin/activate  # On Windows: test_env\Scripts\activate
 
 # Install from wheel
-pip install dist/ohdsi_circe-X.Y.Z-py3-none-any.whl
+pip install dist/circepy-X.Y.Z-py3-none-any.whl
 
 # Test imports
 python -c "from circe import CohortExpression; print('✓ Import successful')"
@@ -116,7 +116,7 @@ twine upload --repository testpypi dist/*
 ```
 
 - [ ] Uploaded to TestPyPI successfully
-- [ ] TestPyPI page loads: https://test.pypi.org/project/ohdsi-circe/
+- [ ] TestPyPI page loads: https://test.pypi.org/project/circepy/
 
 ### 6. Test Installation from TestPyPI
 
@@ -126,7 +126,7 @@ python -m venv testpypi_env
 source testpypi_env/bin/activate
 
 # Install from TestPyPI
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ ohdsi-circe
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ circepy
 
 # Test the installation
 python -c "from circe import CohortExpression; print('✓ TestPyPI installation works')"
@@ -167,7 +167,7 @@ twine upload dist/*
 ```
 
 - [ ] Uploaded to PyPI successfully
-- [ ] PyPI page loads: https://pypi.org/project/ohdsi-circe/
+- [ ] PyPI page loads: https://pypi.org/project/circepy/
 
 ### 9. Verify Production Installation
 
@@ -177,7 +177,7 @@ python -m venv prod_test_env
 source prod_test_env/bin/activate
 
 # Install from PyPI
-pip install ohdsi-circe
+pip install circepy
 
 # Verify installation
 python -c "from circe import __version__; print(f'Installed version: {__version__}')"
@@ -248,7 +248,7 @@ rm -rf prod_test_env
 
 1. Create account at https://pypi.org/
 2. Go to Account Settings → API tokens
-3. Generate token with scope for "ohdsi-circe" project
+3. Generate token with scope for "circepy" project
 4. Store securely (use `keyring` or `.pypirc`)
 
 ### TestPyPI API Token
