@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/circepy
+      url: https://pypi.org/p/ohdsi-circepy
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
     
@@ -70,7 +70,7 @@ jobs:
       
       # Option 1: Publish using Trusted Publisher (recommended - no token needed)
       # Setup instructions: https://docs.pypi.org/trusted-publishers/
-      # 1. Go to https://pypi.org/manage/project/circepy/settings/publishing/
+      # 1. Go to https://pypi.org/manage/project/ohdsi-circepy/settings/publishing/
       # 2. Add: Owner=OHDSI, Repo=Circepy, Workflow=publish-pypi.yml
       - name: Publish to PyPI (Trusted Publishing)
         uses: pypa/gh-action-pypi-publish@release/v1
