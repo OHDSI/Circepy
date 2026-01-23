@@ -16,7 +16,7 @@ Since this package is currently in private development, you'll need to install i
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/azimov/circepy.git
+git clone https://github.com/OHDSI/Circepy.git
 cd Circepy
 ```
 
@@ -224,7 +224,7 @@ If you encounter installation issues:
 
 1. Check the [Troubleshooting](#troubleshooting) section above
 2. Review the [Contributing Guide](CONTRIBUTING.md)
-3. Open an issue on [GitHub Issues](https://github.com/azimov/circepy/issues)
+3. Open an issue on [GitHub Issues](https://github.com/OHDSI/Circepy/issues)
 4. Check existing issues for similar problems
 
 ## Next Steps
