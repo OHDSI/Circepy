@@ -42,7 +42,7 @@ CIRCE Python provides a comprehensive toolkit for working with OMOP CDM cohort d
 
 ```bash
 # Clone the repository
-git clone https://github.com/azimov/circepy.git
+git clone https://github.com/OHDSI/circepy.git
 cd circepy
 
 # Install in development mode with all dependencies
@@ -428,8 +428,8 @@ Special thanks to:
 
 ## Support
 
-- **Repository**: https://github.com/azimov/circepy
-- **Issues**: https://github.com/azimov/circepy/issues
+- **Repository**: https://github.com/OHDSI/circepy
+- **Issues**: https://github.com/OHDSI/circepy/issues
 - **Installation Guide**: [INSTALLATION.md](INSTALLATION.md)
 - **PyPI**: https://pypi.org/project/ohdsi-circe/ (coming soon)
 - **Documentation**: https://ohdsi-circe.readthedocs.io/ (coming soon)
