@@ -426,10 +426,10 @@ Special thanks to:
 
 ## Support
 
-- **Repository**: https://github.com/OHDSI/ohdsi-circepy
-- **Issues**: https://github.com/OHDSI/ohdsi-circepy/issues
+- **Repository**: https://github.com/OHDSI/circepy
+- **Issues**: https://github.com/OHDSI/circepy/issues
 - **Installation Guide**: [INSTALLATION.md](INSTALLATION.md)
-- **PyPI**: https://pypi.org/project/ohdsi-circepy/ (coming soon)
+- **PyPI**: https://pypi.org/project/circepy/ (coming soon)
 - **Documentation**: https://ohdsi-circepy.readthedocs.io/ (coming soon)
 
 ## Related Projects
