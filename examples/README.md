@@ -168,7 +168,7 @@ See [../INSTALLATION.md](../INSTALLATION.md) for detailed installation instructi
 > [!NOTE]
 > PyPI package is not yet available. Once released:
 > ```bash
-> pip install ohdsi-circe
+> pip install circepy
 > ```
 
 ### Run All Examples

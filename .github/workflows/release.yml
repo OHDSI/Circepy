@@ -89,8 +89,11 @@ jobs:
           echo "Download the wheel or source distribution from the assets below, or install from source:" >> release_notes.md
           echo "" >> release_notes.md
           echo "\`\`\`bash" >> release_notes.md
-          echo "git clone https://github.com/azimov/circepy.git" >> release_notes.md
-          echo "cd circepy" >> release_notes.md
+          echo "pip install ohdsi-circe" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "# Or install from source:" >> release_notes.md
+          echo "git clone https://github.com/OHDSI/Circepy.git" >> release_notes.md
+          echo "cd Circepy" >> release_notes.md
           echo "git checkout v$VERSION" >> release_notes.md
           echo "pip install -e ." >> release_notes.md
           echo "\`\`\`" >> release_notes.md

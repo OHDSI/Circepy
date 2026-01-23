@@ -238,7 +238,7 @@ We follow [Semantic Versioning](https://semver.org/):
    twine upload --repository testpypi dist/*
    
    # Test installation
-   pip install --index-url https://test.pypi.org/simple/ ohdsi-circe
+   pip install --index-url https://test.pypi.org/simple/ circepy
    ```
 
 4. **Create Git Tag**
