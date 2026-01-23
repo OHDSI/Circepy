@@ -4,7 +4,7 @@
 [![Tests](https://img.shields.io/badge/tests-3400%2B%20passed-brightgreen)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-34%25-orange)](htmlcov/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![PyPI](https://img.shields.io/badge/PyPI-ohdsi--ohdsi-circepy-blue)](https://pypi.org/project/ohdsi-circepy/)
+[![PyPI](https://img.shields.io/badge/PyPI-ohdsi--circe--python--alpha-blue)](https://pypi.org/project/ohdsi-circe-python-alpha/)
 
 > [!CAUTION]
 > **This project is currently under active testing and development.** It is a Python implementation of the OHDSI CIRCE-BE Java library. While we aim for 1:1 parity, this version is an Alpha release and should be used with caution in production environments.

@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Cohort Constructor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+
+        /* Header */
+        #header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 16px 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        #header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Main Container */
+        #main-container {
+            flex: 1;
+            display: flex;
+            gap: 16px;
+            padding: 16px;
+            overflow: hidden;
+        }
+
+        /* Panels */
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #left-panel {
+            flex: 1;
+            min-width: 500px;
+        }
+
+        #right-panel {
+            flex: 1;
+            min-width: 500px;
+        }
+
+        .panel-header {
+            padding: 16px 20px;
+            border-bottom: 2px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .panel-body {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Editor Section */
+        #editor-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            gap: 12px;
+        }
+
+        #template-selector {
+            padding: 10px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        #template-selector:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        #editor-container {
+            flex: 1;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #error-display {
+            padding: 12px 16px;
+            background: #fef2f2;
+            border: 2px solid #fecaca;
+            border-radius: 8px;
+            color: #dc2626;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            display: none;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        #error-display.show {
+            display: block;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            padding: 0 20px;
+            background: #f9fafb;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            color: #6b7280;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            background: transparent;
+        }
+
+        .tab:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow: auto;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        #json-output,
+        #sql-output,
+        #python-output {
+            padding: 20px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            background: #1f2937;
+            color: #e5e7eb;
+            overflow: auto;
+            height: 100%;
+        }
+
+        #markdown-output {
+            padding: 24px;
+            overflow: auto;
+            height: 100%;
+        }
+
+        /* Loading State */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Markdown Styling */
+        #markdown-output h1,
+        #markdown-output h2,
+        #markdown-output h3 {
+            margin-top: 24px;
+            margin-bottom: 12px;
+            color: #1f2937;
+        }
+
+        #markdown-output p {
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        #markdown-output ul,
+        #markdown-output ol {
+            margin-left: 24px;
+            margin-bottom: 12px;
+        }
+
+        #markdown-output code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', monospace;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="header">
+        <h1>🏗️ Cohort Constructor</h1>
+        <div class="header-buttons">
+            <a href="/" class="btn btn-secondary">← Back to Debug</a>
+            <button id="execute-btn" class="btn btn-primary">
+                ▶️ Execute
+            </button>
+        </div>
+    </div>
+
+    <div id="main-container">
+        <!-- Left Panel: Python Editor -->
+        <div id="left-panel" class="panel">
+            <div class="panel-header">
+                <span class="panel-title">Python Code Editor</span>
+                <select id="template-selector">
+                    <option value="">Load Template...</option>
+                    {% for name, code in examples.items() %}
+                    <option value="{{ name }}">{{ name.replace('_', ' ').title() }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="panel-body">
+                <div id="editor-wrapper">
+                    <div id="editor-container"></div>
+                    <div id="error-display"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Output Tabs -->
+        <div id="right-panel" class="panel">
+            <div class="panel-header">
+                <span class="panel-title">Output</span>
+            </div>
+            <div class="tabs">
+                <div class="tab active" data-tab="json">JSON</div>
+                <div class="tab" data-tab="sql">SQL</div>
+                <div class="tab" data-tab="markdown">Markdown</div>
+                <div class="tab" data-tab="python">Python</div>
+            </div>
+            <div class="panel-body">
+                <div id="json-output" class="tab-content active"></div>
+                <div id="sql-output" class="tab-content"></div>
+                <div id="markdown-output" class="tab-content"></div>
+                <div id="python-output" class="tab-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Example templates from Flask
+        const examples = {
+            {% for name, code in examples.items() %}
+        "{{ name }}": `{{ code | safe }}`,
+            {% endfor %}
+        };
+
+        let editor;
+        let currentTab = 'json';
+
+        // Initialize Monaco Editor
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs' } });
+
+        window.addEventListener('load', function () {
+            require(['vs/editor/editor.main'], function () {
+                editor = monaco.editor.create(document.getElementById('editor-container'), {
+                    value: examples['simple'] || '',
+                    language: 'python',
+                    theme: 'vs-dark',
+                    minimap: { enabled: false },
+                    automaticLayout: true,
+                    fontSize: 14,
+                    lineNumbers: 'on',
+                    roundedSelection: true,
+                    scrollBeyondLastLine: false,
+                    wordWrap: 'on',
+                });
+            });
+        });
+
+        // Template Selector
+        document.getElementById('template-selector').addEventListener('change', function (e) {
+            const templateName = e.target.value;
+            if (templateName && examples[templateName] && editor) {
+                editor.setValue(examples[templateName]);
+            }
+            e.target.value = ''; // Reset selector
+        });
+
+        // Tab Switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function () {
+                const tabName = this.dataset.tab;
+                switchTab(tabName);
+            });
+        });
+
+        function switchTab(tabName) {
+            currentTab = tabName;
+
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === tabName);
+            });
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === `${tabName}-output`);
+            });
+        }
+
+        // Execute Button
+        document.getElementById('execute-btn').addEventListener('click', async function () {
+            if (!editor) return;
+
+            const code = editor.getValue();
+            const btn = this;
+            const originalText = btn.innerHTML;
+
+            // Show loading
+            btn.innerHTML = '<span class="spinner"></span> Executing...';
+            btn.disabled = true;
+            btn.classList.add('loading');
+
+            // Hide previous error
+            const errorDisplay = document.getElementById('error-display');
+            errorDisplay.classList.remove('show');
+
+            try {
+                const response = await fetch('/api/execute_cohort', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    // Show error
+                    errorDisplay.textContent = data.error;
+                    errorDisplay.classList.add('show');
+
+                    // Clear outputs
+                    document.getElementById('json-output').textContent = '';
+                    document.getElementById('sql-output').textContent = '';
+                    document.getElementById('markdown-output').innerHTML = '';
+                    document.getElementById('python-output').textContent = '';
+                } else {
+                    // Populate outputs
+                    document.getElementById('json-output').textContent = data.json || '';
+                    document.getElementById('sql-output').textContent = data.sql || '';
+                    document.getElementById('python-output').textContent = data.python_code || '';
+
+                    // Render markdown
+                    if (data.markdown) {
+                        document.getElementById('markdown-output').innerHTML = marked.parse(data.markdown);
+                    } else {
+                        document.getElementById('markdown-output').innerHTML = '';
+                    }
+                }
+
+            } catch (error) {
+                errorDisplay.textContent = `Network Error: ${error.message}\n\nPlease check that the Flask server is running.`;
+                errorDisplay.classList.add('show');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.classList.remove('loading');
+            }
+        });
+    </script>
+</body>
+
+</html>
