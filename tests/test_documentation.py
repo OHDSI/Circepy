@@ -51,7 +51,7 @@ class TestDocumentation:
     def test_repository_urls_consistent(self):
         """Verify repository URLs are consistent across documentation."""
         root = self.get_project_root()
-        expected_repo = "azimov/circepy"
+        expected_repo = "OHDSI/Circepy"
 
         files_to_check = [
             root / "README.md",
@@ -123,11 +123,11 @@ class TestDocumentation:
             content = file_path.read_text()
 
             # If PyPI is mentioned, it should be marked as coming soon
-            if "pip install ohdsi-circe" in content:
-                # Find context around pip install ohdsi-circe
+            if "pip install circepy" in content:
+                # Find context around pip install circepy
                 lines = content.split("\n")
                 for i, line in enumerate(lines):
-                    if "pip install ohdsi-circe" in line:
+                    if "pip install circepy" in line:
                         # Check surrounding lines for "coming soon" or similar
                         context = "\n".join(lines[max(0, i - 5) : i + 5])
                         assert any(

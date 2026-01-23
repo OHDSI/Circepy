@@ -151,7 +151,7 @@ python validate_cohort.py
 
 ```bash
 # Clone the repository
-git clone https://github.com/azimov/circepy.git
+git clone https://github.com/OHDSI/Circepy.git
 cd circepy
 
 # Install in development mode
@@ -168,7 +168,7 @@ See [../INSTALLATION.md](../INSTALLATION.md) for detailed installation instructi
 > [!NOTE]
 > PyPI package is not yet available. Once released:
 > ```bash
-> pip install ohdsi-circe
+> pip install circepy
 > ```
 
 ### Run All Examples
@@ -264,7 +264,7 @@ These examples generate SQL for the OMOP Common Data Model. To use the generated
 
 - **Documentation**: See the main [README.md](../README.md) and [INSTALLATION.md](../INSTALLATION.md)
 - **API Reference**: Use `help()` in Python: `help(CohortExpression)`
-- **Issues**: Report problems at https://github.com/azimov/circepy/issues
+- **Issues**: Report problems at https://github.com/OHDSI/Circepy/issues
 
 ## Additional Resources
 

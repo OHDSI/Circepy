@@ -50,7 +50,7 @@ make clean
 ## Live Documentation
 
 Once published, documentation will be available at:
-https://ohdsi-circe.readthedocs.io/
+https://circepy.readthedocs.io/
 
 ## Contributing to Documentation
 
