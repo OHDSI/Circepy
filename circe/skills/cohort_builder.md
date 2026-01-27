@@ -6,48 +6,111 @@ description: Build OHDSI cohort definitions using the Pythonic context manager A
 
 Build OHDSI cohort definitions using the `CohortBuilder` context manager.
 
-**⚠️ AUTO-GENERATED**: This file is generated from the codebase. Do not edit manually.
+## Key Principles
 
-## Basic Usage
+1. **Use named concept sets** - Always attach concept sets to the cohort so they appear in output
+2. **Return expressions from functions** - Define cohorts as functions for readability
+3. **Save to cohorts directory** - Output multiple cohorts to a common directory by name
+
+## Basic Pattern
 
 ```python
 from circe.cohort_builder import CohortBuilder
+from circe.vocabulary import concept_set, descendants
+
+
+def create_diabetes_cohort():
+    """Create a Type 2 Diabetes cohort."""
+    # Define concept sets (attached to cohort)
+    t2dm = concept_set(descendants(201826), id=1, name="Type 2 Diabetes")
+    metformin = concept_set(descendants(1503297), id=2, name="Metformin")
+    
+    with CohortBuilder("New T2DM on Metformin") as cohort:
+        cohort.with_concept_sets(t2dm, metformin)
+        cohort.with_condition(concept_set_id=1)
+        cohort.first_occurrence()
+        cohort.with_observation_window(prior_days=365)
+        cohort.min_age(18)
+        
+        with cohort.include_rule("Prior Metformin") as rule:
+            rule.require_drug(2, anytime_before=True)
+    
+    return cohort.expression
+
+
+# Save cohort to file
+if __name__ == "__main__":
+    from pathlib import Path
+    
+    cohort = create_diabetes_cohort()
+    output_dir = Path("cohorts")
+    output_dir.mkdir(exist_ok=True)
+    
+    output_file = output_dir / "new_t2dm_on_metformin.json"
+    output_file.write_text(cohort.model_dump_json(by_alias=True, indent=2))
+```
+
+## API Reference
+
+### Context Manager
+
+```python
+with CohortBuilder("Title") as cohort:
+    # Define cohort inside block
+    cohort.with_condition(1)
+
+expression = cohort.expression  # Access after block exits
+```
+
+### Concept Sets (Required for Output)
+
+Always define and attach concept sets:
+
+```python
+from circe.vocabulary import concept_set, descendants
+
+# Create concept sets with meaningful names
+t2dm = concept_set(descendants(201826), id=1, name="Type 2 Diabetes")
+metformin = concept_set(descendants(1503297), id=2, name="Metformin")
 
 with CohortBuilder("My Cohort") as cohort:
-    cohort.with_condition(1)  # Entry event
-    cohort.first_occurrence()
-    cohort.require_drug(2, within_days_before=30)
-
-expression = cohort.expression  # Access after context exits
+    cohort.with_concept_sets(t2dm, metformin)  # Attach to cohort
+    cohort.with_condition(concept_set_id=1)    # Reference by ID
 ```
 
-## ⚠️ CRITICAL API NOTES
-
-### 1. Use Context Manager (`with`) Block
-- Cohort auto-builds when exiting the `with` block
-- Access result via `.expression` property after exiting
-- Do NOT call `.build()` - it's automatic
-
-### 2. Demographic Methods Accept Multiple Values, NOT Lists
-
-❌ **WRONG**:
-```python
-cohort.require_gender([8507, 8532])  # ERROR!
-```
-
-✅ **CORRECT**:
-```python
-cohort.require_gender(8507, 8532)  # Multiple values as separate arguments
-```
-
-### 3. Time Windows Use Keyword Arguments
+### Entry Events
 
 ```python
-cohort.require_drug(2, within_days_before=30)
-cohort.exclude_condition(3, anytime_before=True)
+cohort.with_condition(concept_set_id)
+cohort.with_drug(concept_set_id)
+cohort.with_procedure(concept_set_id)
+cohort.with_measurement(concept_set_id)
+cohort.with_observation(concept_set_id)
+cohort.with_visit(concept_set_id)
+cohort.with_death()
 ```
 
-**Available time windows:**
+### Entry Configuration
+
+```python
+cohort.first_occurrence()
+cohort.with_observation_window(prior_days=365, post_days=0)
+cohort.min_age(18)
+cohort.max_age(65)
+cohort.require_age(min_age=18, max_age=65)
+cohort.require_gender(8507, 8532)  # Separate args, NOT list
+```
+
+### Inclusion/Exclusion with Time Windows
+
+```python
+cohort.require_condition(id, within_days_before=30)
+cohort.require_drug(id, anytime_before=True)
+cohort.exclude_condition(id, within_days_after=90)
+cohort.exclude_drug(id, same_day=True)
+```
+
+**Time window options:**
 - `within_days_before=N`
 - `within_days_after=N`
 - `anytime_before=True`
@@ -55,72 +118,70 @@ cohort.exclude_condition(3, anytime_before=True)
 - `same_day=True`
 - `during_event=True`
 
-## Entry Event Methods
+### Named Inclusion Rules
 
-Start with one entry event inside the context:
+For attrition tracking, use nested contexts:
 
 ```python
-cohort.with_condition(concept_set_id, kwargs)
-cohort.with_condition_era(concept_set_id, kwargs)
-cohort.with_death()
-cohort.with_device_exposure(concept_set_id, kwargs)
-cohort.with_dose_era(concept_set_id)
-cohort.with_drug(concept_set_id, kwargs)
-cohort.with_drug_era(concept_set_id, kwargs)
-cohort.with_location_region(concept_set_id)
-cohort.with_measurement(concept_set_id, kwargs)
-cohort.with_observation(concept_set_id, kwargs)
-cohort.with_observation_period()
-cohort.with_observation_window(prior_days=0, post_days=0)
-cohort.with_payer_plan_period(concept_set_id, kwargs)
-cohort.with_procedure(concept_set_id, kwargs)
-cohort.with_specimen(concept_set_id, kwargs)
-cohort.with_visit(concept_set_id, kwargs)
-cohort.with_visit_detail(concept_set_id)
+with cohort.include_rule("Prior Treatment") as rule:
+    rule.require_drug(2, anytime_before=True)
+
+with cohort.include_rule("No Contraindications") as rule:
+    rule.exclude_condition(3, within_days_before=365)
 ```
 
-## Entry Configuration Methods
+## Complete Example with Multiple Cohorts
 
 ```python
-cohort.first_occurrence()                   # Only first occurrence per person
-cohort.with_observation_window(prior_days=365, post_days=0)
-cohort.min_age(18)                          # Minimum age at entry
-cohort.max_age(65)                          # Maximum age at entry
-```
+from pathlib import Path
+from circe.cohort_builder import CohortBuilder
+from circe.vocabulary import concept_set, descendants
 
-## Demographic Criteria
 
-```python
-cohort.require_gender(8507, 8532)           # Multiple as separate args
-cohort.require_race(8516)
-cohort.require_ethnicity(38003563)
-cohort.require_age(min_age=18, max_age=65)
-```
-
-## Inclusion/Exclusion Criteria
-
-```python
-cohort.require_condition(id, **time_window)
-cohort.require_drug(id, **time_window)
-cohort.require_procedure(id, **time_window)
-cohort.require_measurement(id, **time_window)
-cohort.exclude_condition(id, **time_window)
-cohort.exclude_drug(id, **time_window)
-```
-
-## Named Inclusion Rules
-
-Use nested context for named rules (for attrition tracking):
-
-```python
-with CohortBuilder("Complex Cohort") as cohort:
-    cohort.with_condition(1)
+def create_t2dm_cohort():
+    """Adults with new T2DM diagnosis."""
+    t2dm = concept_set(descendants(201826), id=1, name="Type 2 Diabetes")
     
-    with cohort.include_rule("Prior Treatment") as rule:
-        rule.require_drug(2, anytime_before=True)
+    with CohortBuilder("New Type 2 Diabetes") as cohort:
+        cohort.with_concept_sets(t2dm)
+        cohort.with_condition(concept_set_id=1)
+        cohort.first_occurrence()
+        cohort.with_observation_window(prior_days=365)
+        cohort.min_age(18)
     
-    with cohort.include_rule("Lab Confirmation") as rule:
-        rule.require_measurement(3, same_day=True)
+    return cohort.expression
 
-expression = cohort.expression
+
+def create_metformin_cohort():
+    """New metformin users."""
+    metformin = concept_set(descendants(1503297), id=1, name="Metformin")
+    
+    with CohortBuilder("New Metformin Users") as cohort:
+        cohort.with_concept_sets(metformin)
+        cohort.with_drug(concept_set_id=1)
+        cohort.first_occurrence()
+        cohort.with_observation_window(prior_days=365)
+        cohort.min_age(18)
+    
+    return cohort.expression
+
+
+def save_cohort(expression, name: str, output_dir: Path = Path("cohorts")):
+    """Save cohort expression to JSON file."""
+    output_dir.mkdir(exist_ok=True)
+    filename = name.lower().replace(" ", "_") + ".json"
+    output_path = output_dir / filename
+    output_path.write_text(expression.model_dump_json(by_alias=True, indent=2))
+    return output_path
+
+
+if __name__ == "__main__":
+    cohorts = [
+        ("new_type_2_diabetes", create_t2dm_cohort()),
+        ("new_metformin_users", create_metformin_cohort()),
+    ]
+    
+    for name, expr in cohorts:
+        path = save_cohort(expr, name)
+        print(f"Saved: {path}")
 ```

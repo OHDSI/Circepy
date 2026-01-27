@@ -459,25 +459,15 @@ class SkillGenerator:
 
 
 
-
 if __name__ == "__main__":
     generator = SkillGenerator()
     
-    # Generate SKILL.md
-    skill_output = ".agent/skills/cohort_builder/SKILL.md"
+    # Generate SKILL.md to the canonical package location
+    skill_output = "circe/skills/cohort_builder.md"
     skill_content = generator.run(skill_output)
     
-    # Update all system prompt variants with appropriate example counts
-    prompts = [
-        ("prompts/reasoning_models_prompt.md", "Reasoning Models", 1),  # Minimal examples
-        ("prompts/standard_models_prompt.md", "Standard Models", 4),     # Moderate examples
-        ("prompts/fast_models_prompt.md", "Fast Models", 7),              # Many examples
-    ]
-    
-    for prompt_path, model_type, num_examples in prompts:
-        generator.update_system_prompt_with_examples(skill_content, prompt_path, num_examples)
-    
-    print("\n✅ All documentation updated!")
-    print(f"   - SKILL.md")
-    print(f"   - {len(prompts)} model-specific prompts (with examples)")
+    print("\n✅ Skill documentation updated!")
+    print(f"   Location: {skill_output}")
+    print("   Agents access via: circe.get_cohort_builder_skill()")
+
 
