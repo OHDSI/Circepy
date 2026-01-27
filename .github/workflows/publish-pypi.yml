@@ -1,0 +1,93 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*.*.*'  # Also trigger on version tags
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: read
+
+jobs:
+  pypi-publish:
+    name: Upload release to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/ohdsi-circe-python-alpha
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine wheel setuptools
+      
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+            echo "Building release for version: $VERSION"
+          else
+            echo "Not a tag push, checking for release"
+          fi
+      
+      - name: Build package
+        run: |
+          python -m build
+          ls -lh dist/
+      
+      - name: Check package
+        run: |
+          twine check dist/*
+      
+      - name: Verify version matches tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          INSTALLED_VERSION=$(python -c "from circe import __version__; print(__version__)")
+          if [ "$INSTALLED_VERSION" != "${{ steps.get_version.outputs.VERSION }}" ]; then
+            echo "ERROR: Version mismatch!"
+            echo "Tag version: ${{ steps.get_version.outputs.VERSION }}"
+            echo "Code version: $INSTALLED_VERSION"
+            echo "Please update circe/__init__.py to match the tag"
+            exit 1
+          fi
+          echo "✓ Version verification passed: $INSTALLED_VERSION"
+      
+      # Option 1: Publish using Trusted Publisher (recommended - no token needed)
+      # Setup instructions: https://docs.pypi.org/trusted-publishers/
+      # 1. Go to https://pypi.org/manage/project/ohdsi-circe-python-alpha/settings/publishing/
+      # 2. Add: Owner=OHDSI, Repo=Circepy, Workflow=publish-pypi.yml
+      - name: Publish to PyPI (Trusted Publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        continue-on-error: true  # Continue if trusted publishing fails
+      
+      # Option 2: Fallback to API token if trusted publishing isn't set up
+      # Add PYPI_API_TOKEN to GitHub Secrets: Settings → Secrets → Actions
+      - name: Publish to PyPI (API Token Fallback)
+        if: failure()  # Only run if trusted publishing failed
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -z "$TWINE_PASSWORD" ]; then
+            echo "ERROR: Neither trusted publishing nor PYPI_API_TOKEN is configured"
+            echo "See PUBLISHING_GUIDE.md for setup instructions"
+            exit 1
+          fi
+          twine upload dist/*
+
