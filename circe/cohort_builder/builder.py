@@ -63,11 +63,19 @@ class CohortBuilder:
     """
     Starting point for building a cohort definition.
     
-    This is the initial state - only entry event methods are available.
+    Supports both context manager and fluent API patterns.
     
-    Example:
-        >>> cohort = CohortBuilder("My Cohort")
-        >>> cohort.with_condition(concept_set_id=1)  # Returns CohortWithEntry
+    Context Manager Example (Recommended):
+        >>> with CohortBuilder("My Cohort") as cohort:
+        ...     cohort.with_condition(1)
+        ...     cohort.require_drug(2, within_days_before=30)
+        >>> expression = cohort.expression  # Built CohortExpression
+    
+    Fluent API Example:
+        >>> expression = (CohortBuilder("My Cohort")
+        ...     .with_condition(1)
+        ...     .require_drug(2, within_days_before=30)
+        ...     .build())
     """
     
     def __init__(self, title: str = "Untitled Cohort"):
@@ -79,114 +87,464 @@ class CohortBuilder:
         """
         self._title = title
         self._concept_sets: List[ConceptSet] = []
+        # Context manager state
+        self._state: Optional['CohortWithEntry'] = None
+        self._expression: Optional[CohortExpression] = None
+        self._in_context: bool = False
+    
+    # =========================================================================
+    # CONTEXT MANAGER PROTOCOL
+    # =========================================================================
+    
+    def __enter__(self) -> 'CohortBuilder':
+        """Enter context manager mode."""
+        self._in_context = True
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        """Exit context manager and auto-build the cohort."""
+        self._in_context = False
+        if self._state is not None:
+            self._expression = self._state.build()
+        return False  # Don't suppress exceptions
+    
+    @property
+    def expression(self) -> CohortExpression:
+        """
+        Get the built CohortExpression.
+        
+        Only available after exiting the context manager.
+        
+        Raises:
+            RuntimeError: If accessed before context exit or if no entry event defined
+        """
+        if self._expression is None:
+            if self._in_context:
+                raise RuntimeError(
+                    "Cannot access 'expression' while inside the context manager. "
+                    "Exit the 'with' block first."
+                )
+            raise RuntimeError(
+                "No cohort has been built. Define at least one entry event "
+                "(e.g., with_condition, with_drug) inside the context manager."
+            )
+        return self._expression
+    
+    def _ensure_state(self) -> Union['CohortWithEntry', 'CohortWithCriteria']:
+        """Get or create the current state for method chaining within context."""
+        if self._state is None:
+            raise RuntimeError(
+                "No entry event defined. Call with_condition(), with_drug(), etc. first."
+            )
+        return self._state
+    
+    def _update_state(self, new_state: Union['CohortWithEntry', 'CohortWithCriteria', None]) -> None:
+        """Update internal state after a method that may change state."""
+        if new_state is not None:
+            self._state = new_state
+    
+    # =========================================================================
+    # CONTEXT MANAGER DELEGATION METHODS
+    # =========================================================================
+    
+    def first_occurrence(self) -> 'CohortBuilder':
+        """Only use the first occurrence per person for entry events."""
+        self._ensure_state().first_occurrence()
+        return self
+    
+    def all_occurrences(self) -> 'CohortBuilder':
+        """Use all occurrences per person."""
+        self._ensure_state().all_occurrences()
+        return self
+    
+    def with_observation_window(self, prior_days: int = 0, post_days: int = 0) -> 'CohortBuilder':
+        """Set continuous observation requirements."""
+        self._ensure_state().with_observation(prior_days=prior_days, post_days=post_days)
+        return self
+    
+    def min_age(self, age: int) -> 'CohortBuilder':
+        """Require minimum age at entry."""
+        self._ensure_state().min_age(age)
+        return self
+    
+    def max_age(self, age: int) -> 'CohortBuilder':
+        """Require maximum age at entry."""
+        self._ensure_state().max_age(age)
+        return self
+    
+    def require_gender(self, *concept_ids: int) -> 'CohortBuilder':
+        """Require specific gender concept IDs."""
+        self._ensure_state().require_gender(*concept_ids)
+        return self
+    
+    def require_race(self, *concept_ids: int) -> 'CohortBuilder':
+        """Require specific race concept IDs."""
+        self._ensure_state().require_race(*concept_ids)
+        return self
+    
+    def require_ethnicity(self, *concept_ids: int) -> 'CohortBuilder':
+        """Require specific ethnicity concept IDs."""
+        self._ensure_state().require_ethnicity(*concept_ids)
+        return self
+    
+    def require_age(self, min_age: Optional[int] = None, max_age: Optional[int] = None) -> 'CohortBuilder':
+        """Require specific age range."""
+        self._ensure_state().require_age(min_age, max_age)
+        return self
+    
+    def require_condition(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+        """Add a required condition occurrence."""
+        result = self._ensure_state().require_condition(concept_set_id, **kwargs)
+        self._update_state(result)
+        return self
+    
+    def require_drug(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+        """Add a required drug exposure."""
+        result = self._ensure_state().require_drug(concept_set_id, **kwargs)
+        self._update_state(result)
+        return self
+    
+    def require_procedure(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+        """Add a required procedure occurrence."""
+        result = self._ensure_state().require_procedure(concept_set_id, **kwargs)
+        self._update_state(result)
+        return self
+    
+    def require_measurement(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+        """Add a required measurement."""
+        result = self._ensure_state().require_measurement(concept_set_id, **kwargs)
+        self._update_state(result)
+        return self
+    
+    def require_observation(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+        """Add a required observation."""
+        result = self._ensure_state().require_observation(concept_set_id, **kwargs)
+        self._update_state(result)
+        return self
+    
+    def require_visit(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+        """Add a required visit occurrence."""
+        result = self._ensure_state().require_visit(concept_set_id, **kwargs)
+        self._update_state(result)
+        return self
+    
+    def exclude_condition(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+        """Exclude patients with a condition occurrence."""
+        result = self._ensure_state().exclude_condition(concept_set_id, **kwargs)
+        self._update_state(result)
+        return self
+    
+    def exclude_drug(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+        """Exclude patients with a drug exposure."""
+        result = self._ensure_state().exclude_drug(concept_set_id, **kwargs)
+        self._update_state(result)
+        return self
+    
+    def exclude_procedure(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+        """Exclude patients with a procedure occurrence."""
+        result = self._ensure_state().exclude_procedure(concept_set_id, **kwargs)
+        self._update_state(result)
+        return self
+    
+    def exclude_measurement(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+        """Exclude patients with a measurement."""
+        result = self._ensure_state().exclude_measurement(concept_set_id, **kwargs)
+        self._update_state(result)
+        return self
+    
+    def include_rule(self, name: str) -> 'InclusionRuleContext':
+        """
+        Create a named inclusion rule context.
+        
+        Use with a nested 'with' block to group criteria:
+        
+            with CohortBuilder("My Cohort") as cohort:
+                cohort.with_condition(1)
+                
+                with cohort.include_rule("Prior Treatment") as rule:
+                    rule.require_drug(2, anytime_before=True)
+        """
+        return InclusionRuleContext(self, name)
+    
+    def exit_at_observation_end(self) -> 'CohortBuilder':
+        """Exit cohort at the end of the observation period."""
+        self._ensure_state().exit_at_observation_end()
+        return self
+    
+    def exit_after_days(self, days: int, from_field: str = "startDate") -> 'CohortBuilder':
+        """Exit cohort N days after index start/end."""
+        self._ensure_state().exit_after_days(days, from_field)
+        return self
+    
+    def collapse_era(self, days: int) -> 'CohortBuilder':
+        """Set the number of gap days to collapse successive cohort entries."""
+        self._ensure_state()._to_criteria().collapse_era(days)
+        return self
+    
+    # =========================================================================
+    # CONCEPT SET MANAGEMENT
+    # =========================================================================
     
     def with_concept_sets(self, *concept_sets: ConceptSet) -> 'CohortBuilder':
         """Add concept sets to the cohort."""
         self._concept_sets.extend(concept_sets)
         return self
     
-    # Entry event methods - each returns CohortWithEntry
-    def with_condition(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+    # =========================================================================
+    # ENTRY EVENT METHODS
+    # =========================================================================
+    
+    def with_condition(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+        """Set entry event to a condition occurrence."""
         query = ConditionQuery(concept_set_id, is_entry=True)
         query.apply_params(**kwargs)
         cohort = CohortWithEntry(self, query)
         query._parent = cohort
+        if self._in_context:
+            self._state = cohort
+            return self
         return cohort
 
-    def with_drug(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+    def with_drug(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+        """Set entry event to a drug exposure."""
         query = DrugQuery(concept_set_id, is_entry=True)
         query.apply_params(**kwargs)
         cohort = CohortWithEntry(self, query)
         query._parent = cohort
+        if self._in_context:
+            self._state = cohort
+            return self
         return cohort
 
-    def with_drug_era(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+    def with_drug_era(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+        """Set entry event to a drug era."""
         query = DrugEraQuery(concept_set_id, is_entry=True)
         query.apply_params(**kwargs)
         cohort = CohortWithEntry(self, query)
         query._parent = cohort
+        if self._in_context:
+            self._state = cohort
+            return self
         return cohort
 
-    def with_procedure(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+    def with_procedure(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+        """Set entry event to a procedure occurrence."""
         query = ProcedureQuery(concept_set_id, is_entry=True)
         query.apply_params(**kwargs)
         cohort = CohortWithEntry(self, query)
         query._parent = cohort
+        if self._in_context:
+            self._state = cohort
+            return self
         return cohort
 
-    def with_measurement(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+    def with_measurement(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+        """Set entry event to a measurement."""
         query = MeasurementQuery(concept_set_id, is_entry=True)
         query.apply_params(**kwargs)
         cohort = CohortWithEntry(self, query)
         query._parent = cohort
+        if self._in_context:
+            self._state = cohort
+            return self
         return cohort
 
-    def with_visit(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+    def with_visit(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+        """Set entry event to a visit occurrence."""
         query = VisitQuery(concept_set_id, is_entry=True)
         query.apply_params(**kwargs)
         cohort = CohortWithEntry(self, query)
         query._parent = cohort
+        if self._in_context:
+            self._state = cohort
+            return self
         return cohort
 
-    def with_observation(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+    def with_observation(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+        """Set entry event to an observation (with concept set)."""
         query = ObservationQuery(concept_set_id, is_entry=True)
         query.apply_params(**kwargs)
         cohort = CohortWithEntry(self, query)
         query._parent = cohort
+        if self._in_context:
+            self._state = cohort
+            return self
         return cohort
 
-    def with_condition_era(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+    def with_condition_era(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+        """Set entry event to a condition era."""
         query = ConditionEraQuery(concept_set_id, is_entry=True)
         query.apply_params(**kwargs)
         cohort = CohortWithEntry(self, query)
         query._parent = cohort
+        if self._in_context:
+            self._state = cohort
+            return self
         return cohort
 
-    def with_device_exposure(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+    def with_device_exposure(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+        """Set entry event to a device exposure."""
         query = DeviceExposureQuery(concept_set_id, is_entry=True)
         query.apply_params(**kwargs)
         cohort = CohortWithEntry(self, query)
         query._parent = cohort
+        if self._in_context:
+            self._state = cohort
+            return self
         return cohort
 
-    def with_specimen(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+    def with_specimen(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+        """Set entry event to a specimen."""
         query = SpecimenQuery(concept_set_id, is_entry=True)
         query.apply_params(**kwargs)
         cohort = CohortWithEntry(self, query)
         query._parent = cohort
+        if self._in_context:
+            self._state = cohort
+            return self
         return cohort
 
-    def with_death(self) -> 'CohortWithEntry':
+    def with_death(self) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to death."""
         query = DeathQuery(is_entry=True)
-        return CohortWithEntry(self, query)
+        cohort = CohortWithEntry(self, query)
+        if self._in_context:
+            self._state = cohort
+            return self
+        return cohort
     
-    def with_observation_period(self) -> 'CohortWithEntry':
+    def with_observation_period(self) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to an observation period."""
         query = ObservationPeriodQuery(is_entry=True)
-        return CohortWithEntry(self, query)
+        cohort = CohortWithEntry(self, query)
+        if self._in_context:
+            self._state = cohort
+            return self
+        return cohort
     
-    def with_payer_plan_period(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+    def with_payer_plan_period(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+        """Set entry event to a payer plan period."""
         query = PayerPlanPeriodQuery(concept_set_id, is_entry=True)
         query.apply_params(**kwargs)
         cohort = CohortWithEntry(self, query)
         query._parent = cohort
+        if self._in_context:
+            self._state = cohort
+            return self
         return cohort
 
-    def with_location_region(self, concept_set_id: int) -> 'CohortWithEntry':
+    def with_location_region(self, concept_set_id: int) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to a location/region."""
         query = LocationRegionQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
+        cohort = CohortWithEntry(self, query)
+        if self._in_context:
+            self._state = cohort
+            return self
+        return cohort
     
-    def with_visit_detail(self, concept_set_id: int) -> 'CohortWithEntry':
+    def with_visit_detail(self, concept_set_id: int) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to a visit detail."""
         query = VisitDetailQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
+        cohort = CohortWithEntry(self, query)
+        if self._in_context:
+            self._state = cohort
+            return self
+        return cohort
     
-    def with_dose_era(self, concept_set_id: int) -> 'CohortWithEntry':
+    def with_dose_era(self, concept_set_id: int) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to a dose era."""
         query = DoseEraQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
+        cohort = CohortWithEntry(self, query)
+        if self._in_context:
+            self._state = cohort
+            return self
+        return cohort
+
+
+class InclusionRuleContext:
+    """
+    Context manager for named inclusion rules.
+    
+    Provides a clean way to group criteria under a named rule for attrition tracking.
+    """
+    
+    def __init__(self, builder: CohortBuilder, name: str):
+        self._builder = builder
+        self._name = name
+    
+    def __enter__(self) -> 'InclusionRuleContext':
+        """Enter the inclusion rule context."""
+        state = self._builder._ensure_state()
+        new_state = state.begin_rule(self._name)
+        self._builder._update_state(new_state)
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        """Exit the inclusion rule context."""
+        state = self._builder._ensure_state()
+        new_state = state.end_rule()
+        self._builder._update_state(new_state)
+        return False
+    
+    def require_condition(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+        """Add a required condition occurrence to this rule."""
+        result = self._builder._ensure_state().require_condition(concept_set_id, **kwargs)
+        self._builder._update_state(result)
+        return self
+    
+    def require_drug(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+        """Add a required drug exposure to this rule."""
+        result = self._builder._ensure_state().require_drug(concept_set_id, **kwargs)
+        self._builder._update_state(result)
+        return self
+    
+    def require_procedure(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+        """Add a required procedure occurrence to this rule."""
+        result = self._builder._ensure_state().require_procedure(concept_set_id, **kwargs)
+        self._builder._update_state(result)
+        return self
+    
+    def require_measurement(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+        """Add a required measurement to this rule."""
+        result = self._builder._ensure_state().require_measurement(concept_set_id, **kwargs)
+        self._builder._update_state(result)
+        return self
+    
+    def require_observation(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+        """Add a required observation to this rule."""
+        result = self._builder._ensure_state().require_observation(concept_set_id, **kwargs)
+        self._builder._update_state(result)
+        return self
+    
+    def require_visit(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+        """Add a required visit occurrence to this rule."""
+        result = self._builder._ensure_state().require_visit(concept_set_id, **kwargs)
+        self._builder._update_state(result)
+        return self
+    
+    def exclude_condition(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+        """Exclude patients with a condition occurrence."""
+        result = self._builder._ensure_state().exclude_condition(concept_set_id, **kwargs)
+        self._builder._update_state(result)
+        return self
+    
+    def exclude_drug(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+        """Exclude patients with a drug exposure."""
+        result = self._builder._ensure_state().exclude_drug(concept_set_id, **kwargs)
+        self._builder._update_state(result)
+        return self
+    
+    def exclude_procedure(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+        """Exclude patients with a procedure occurrence."""
+        result = self._builder._ensure_state().exclude_procedure(concept_set_id, **kwargs)
+        self._builder._update_state(result)
+        return self
+    
+    def exclude_measurement(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+        """Exclude patients with a measurement."""
+        result = self._builder._ensure_state().exclude_measurement(concept_set_id, **kwargs)
+        self._builder._update_state(result)
+        return self
 
 
 class CohortWithEntry:

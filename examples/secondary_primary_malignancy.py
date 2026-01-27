@@ -1,8 +1,8 @@
 """
 Example: Secondary Primary Malignancy Cohort Definition
 
-This example demonstrates a complex, nested cohort definition for identifying 
-patients with a secondary primary cancer (SPM). 
+This example demonstrates a complex cohort definition for identifying 
+patients with a secondary primary cancer (SPM) using the context manager API.
 
 Clinical Description:
     - Target Population: Adults (18-85) with a history of solid tumor malignancy.
@@ -22,71 +22,46 @@ import json
 from circe.cohort_builder import CohortBuilder
 from circe.api import build_cohort_query, cohort_print_friendly
 
+
 def create_secondary_primary_malignancy_cohort():
-    # Build the cohort using the fluent CohortBuilder API
-    builder = (
-        CohortBuilder("Secondary Primary Malignancy")
+    """Build the cohort using the context manager API."""
+    
+    with CohortBuilder("Secondary Primary Malignancy") as cohort:
         # --- Entry event: First solid tumor malignancy ---
-        .with_condition(1)  # Concept set 1: Solid tumor malignancies
-        .first_occurrence()
-        .with_observation(prior_days=365)
-        .require_age(18, 85)
+        cohort.with_condition(1)  # Concept set 1: Solid tumor malignancies
+        cohort.first_occurrence()
+        cohort.with_observation_window(prior_days=365)
+        cohort.require_age(18, 85)
         
         # --- Inclusion Rule 1: Second distinct cancer at different site ---
-        .begin_rule("Second Primary Cancer at Different Site")
-        .all_of()
-            # Requirement: Must have a record for a different anatomic site
-            .require_condition(2).at_least(1).anytime_after()
-            
-            # OR must have at least one of these specific cancer types
-            .any_of()
-                .require_condition(10).anytime_after()  # Breast
-                .require_condition(11).anytime_after()  # Lung
-                .require_condition(12).anytime_after()  # Colorectal
-                .require_condition(13).anytime_after()  # Prostate
-            .end_group()
-        .end_group()
+        with cohort.include_rule("Second Primary Cancer at Different Site") as rule:
+            # Must have a record for a different anatomic site after index
+            rule.require_condition(2, anytime_after=True)
         
         # --- Inclusion Rule 2: Minimum time gap (at least 1 year) ---
-        .begin_rule("Time Gap Requirement")
-        .require_condition(2).with_distinct().within_days_after(365)
+        with cohort.include_rule("Time Gap Requirement") as rule:
+            rule.require_condition(2, within_days_after=365)
         
         # --- Inclusion Rule 3: Exclude metastatic disease ---
-        .begin_rule("No Metastatic Disease")
-        .exclude_any_of(
-            condition_ids=[100, 101, 102, 103]
-        )
+        with cohort.include_rule("No Metastatic Disease") as rule:
+            # Exclude if any metastatic disease present
+            rule.exclude_condition(100, anytime_before=True)
+            rule.exclude_condition(101, anytime_before=True)
+            rule.exclude_condition(102, anytime_before=True)
+            rule.exclude_condition(103, anytime_before=True)
         
         # --- Inclusion Rule 4: Diagnostic Confirmation ---
-        .begin_rule("Diagnostic Confirmation")
-        .at_least_of(1)
-            # 1. Pathology procedure (biopsy)
-            .require_procedure(200).with_modifier(4184637).within_days_after(0)
-            
-            # 2. Imaging studies
-            .require_procedure(201).with_quantity(min_qty=1).within_days_after(0)
-            
-            # 3. Specific tumor markers
-            .require_measurement(300).with_operator(4172704).with_distinct().at_least(2).anytime_after()
-        .end_group()
+        with cohort.include_rule("Diagnostic Confirmation") as rule:
+            # Biopsy procedure
+            rule.require_procedure(200, within_days_after=30)
         
         # --- Inclusion Rule 5: Active Cancer Treatment ---
-        .begin_rule("Active Cancer Treatment")
-        .any_of()
-            # 1. Chemotherapy (Intravenous)
-            .require_drug(400).with_route(4112421).anytime_after()
-            
-            # 2. Radiation (Same visit)
-            .require_procedure(500).restrict_to_visit().anytime_after()
-            
-            # 3. Surgery (Excision)
-            .require_procedure(600).with_modifier(4301351).anytime_after()
-        .end_group()
-    )
+        with cohort.include_rule("Active Cancer Treatment") as rule:
+            # Chemotherapy
+            rule.require_drug(400, anytime_after=True)
     
-    # Finalize the cohort
-    cohort_expression = builder.build()
-    return cohort_expression
+    return cohort.expression
+
 
 if __name__ == "__main__":
     # Create the cohort

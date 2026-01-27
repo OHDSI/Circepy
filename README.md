@@ -87,9 +87,9 @@ See the [CLI Documentation](#command-line-interface) section below for more deta
 
 CIRCE Python provides two high-level APIs for building cohorts without manually constructing complex JSON/Pydantic models.
 
-### 1. Fluent Builder API (`circe.cohort_builder`)
+### 1. Context Manager API (`circe.cohort_builder`)
 **Best for: LLMs, beginners, and interactive development.**
-This state-based API guides you through valid next steps using method chaining.
+This Pythonic API uses `with` blocks and auto-builds on exit.
 
 ```python
 from circe.cohort_builder import CohortBuilder
@@ -100,21 +100,20 @@ from circe.api import build_cohort_query
 t2dm = concept_set(descendants(201826), id=1, name="T2DM")
 metformin = concept_set(descendants(1503297), id=2, name="Metformin")
 
-# 2. Build cohort step-by-step
-cohort = (
-    CohortBuilder("New Metformin Users with T2DM")
-    .with_concept_sets(t2dm, metformin)
-    .with_drug(concept_set_id=2)  # Entry: metformin exposure
-    .first_occurrence()  # First exposure only
-    .with_observation(prior_days=365)  # 365 days prior observation
-    .min_age(18)  # Adults only
-    .require_condition(concept_set_id=1)  # Require T2DM diagnosis
-    .within_days_before(365)  # Within 365 days before
-    .build()
-)
+# 2. Build cohort using context manager
+with CohortBuilder("New Metformin Users with T2DM") as cohort:
+    cohort.with_concept_sets(t2dm, metformin)
+    cohort.with_drug(concept_set_id=2)  # Entry: metformin exposure
+    cohort.first_occurrence()  # First exposure only
+    cohort.with_observation_window(prior_days=365)  # 365 days prior
+    cohort.min_age(18)  # Adults only
+    cohort.require_condition(concept_set_id=1, within_days_before=365)
+    
+    with cohort.include_rule("No Prior Insulin") as rule:
+        rule.exclude_drug(3, anytime_before=True)
 
-# 3. Generate SQL
-sql = build_cohort_query(cohort)
+# 3. Access the built expression and generate SQL
+sql = build_cohort_query(cohort.expression)
 ```
 
 ### 2. Capr-style API (`circe.capr`)
@@ -164,6 +163,27 @@ cohort = CohortExpression(
     concept_sets=[...]
 )
 ```
+
+## AI Agent Integration
+
+CIRCE Python provides skill documentation for AI agents that need to generate cohort definitions programmatically.
+
+```python
+from circe import get_cohort_builder_skill, list_skills
+
+# List available skills
+print(list_skills())  # ['cohort_builder']
+
+# Get skill documentation for an AI agent
+skill_docs = get_cohort_builder_skill()
+# Returns markdown documentation describing the CohortBuilder API
+```
+
+The skill documentation includes:
+- Context manager API usage patterns
+- Available entry event methods
+- Inclusion/exclusion criteria syntax
+- Named rule contexts for attrition tracking
 
 ## What's Included
 

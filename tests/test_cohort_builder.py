@@ -7,6 +7,108 @@ from circe.cohort_builder import CohortBuilder
 from circe.cohortdefinition import CohortExpression
 
 
+# =============================================================================
+# CONTEXT MANAGER TESTS
+# =============================================================================
+
+class TestContextManager:
+    """Test the context manager API for CohortBuilder."""
+    
+    def test_context_manager_basic(self):
+        """Test basic context manager usage."""
+        with CohortBuilder("Context Test") as cohort:
+            cohort.with_condition(1)
+        
+        # After exiting, expression should be built
+        expr = cohort.expression
+        assert isinstance(expr, CohortExpression)
+        assert expr.title == "Context Test"
+    
+    def test_context_manager_auto_builds(self):
+        """Verify that auto-build happens on context exit."""
+        with CohortBuilder("Auto Build Test") as cohort:
+            cohort.with_drug(2)
+            cohort.first_occurrence()
+            cohort.with_observation_window(prior_days=365)
+        
+        expr = cohort.expression
+        assert expr.primary_criteria.observation_window.prior_days == 365
+    
+    def test_context_manager_with_criteria(self):
+        """Test context manager with inclusion/exclusion criteria."""
+        with CohortBuilder("Criteria Test") as cohort:
+            cohort.with_condition(1)
+            cohort.require_drug(2, within_days_before=30)
+            cohort.exclude_condition(3, anytime_before=True)
+        
+        expr = cohort.expression
+        assert expr.inclusion_rules is not None
+        assert len(expr.inclusion_rules) >= 1
+    
+    def test_context_manager_result_access_before_exit_raises(self):
+        """Accessing expression inside context should raise."""
+        with pytest.raises(RuntimeError, match="inside the context manager"):
+            with CohortBuilder("Error Test") as cohort:
+                cohort.with_condition(1)
+                _ = cohort.expression  # Should raise
+    
+    def test_context_manager_no_entry_event_raises(self):
+        """Accessing expression with no entry event should raise."""
+        with CohortBuilder("Empty Test") as cohort:
+            pass  # No entry event defined
+        
+        with pytest.raises(RuntimeError, match="No cohort has been built"):
+            _ = cohort.expression
+    
+    def test_context_manager_nested_rules(self):
+        """Test nested inclusion rule contexts."""
+        with CohortBuilder("Nested Rules Test") as cohort:
+            cohort.with_condition(1)
+            
+            with cohort.include_rule("Prior Treatment") as rule:
+                rule.require_drug(2, anytime_before=True)
+            
+            with cohort.include_rule("Lab Confirmation") as rule:
+                rule.require_measurement(3, same_day=True)
+        
+        expr = cohort.expression
+        # Should have two named rules
+        rule_names = [r.name for r in expr.inclusion_rules]
+        assert "Prior Treatment" in rule_names
+        assert "Lab Confirmation" in rule_names
+    
+    def test_context_manager_exception_still_builds(self):
+        """Even if an exception occurs, the cohort should be built if possible."""
+        cohort = CohortBuilder("Exception Test")
+        try:
+            with cohort:
+                cohort.with_condition(1)
+                raise ValueError("Test exception")
+        except ValueError:
+            pass
+        
+        # Cohort should still be built
+        expr = cohort.expression
+        assert isinstance(expr, CohortExpression)
+    
+    def test_context_manager_chaining_returns_self(self):
+        """Context manager methods should return self for chaining."""
+        with CohortBuilder("Chaining Test") as cohort:
+            result = cohort.with_condition(1)
+            assert result is cohort
+            
+            result = cohort.first_occurrence()
+            assert result is cohort
+            
+            result = cohort.require_drug(2, within_days_before=30)
+            assert result is cohort
+
+
+# =============================================================================
+# FLUENT API TESTS (Backwards Compatibility)
+# =============================================================================
+
+
 class TestCohortStart:
     """Test initial Cohort state."""
     

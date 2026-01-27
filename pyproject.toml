@@ -72,7 +72,7 @@ include = ["circe*"]
 exclude = ["circe.tests*"]
 
 [tool.setuptools.package-data]
-circe = ["py.typed"]
+circe = ["py.typed", "skills/*.md"]
 
 [tool.black]
 line-length = 88

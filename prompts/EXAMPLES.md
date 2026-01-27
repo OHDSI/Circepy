@@ -1,194 +1,158 @@
 # Validated Examples for Cohort Builder Prompts
 
-**Note**: These examples are extracted from working code in the `examples/` directory and are guaranteed to execute successfully.
+**Note**: These examples use the context manager API and are guaranteed to execute successfully.
 
 ## ⚠️ CRITICAL API NOTES
 
-### 1. Demographic Methods Accept Individual Values, NOT Lists
+### 1. Use Context Manager (`with`) Block
+
+The context manager auto-builds the cohort on exit. Access the result via `.expression`:
+
+```python
+with CohortBuilder("My Cohort") as cohort:
+    cohort.with_condition(1)
+    cohort.require_drug(2, within_days_before=30)
+
+expression = cohort.expression  # Built CohortExpression
+```
+
+### 2. Demographic Methods Accept Individual Values, NOT Lists
 
 ❌ **WRONG**:
 ```python
-.require_gender([8507, 8532])  # ERROR!
-.require_race([8516])           # ERROR!
+cohort.require_gender([8507, 8532])  # ERROR!
+cohort.require_race([8516])           # ERROR!
 ```
 
 ✅ **CORRECT**:
 ```python
-.require_gender(8507, 8532)     # Multiple values unpacked
-.require_race(8516)             # Single value
-.require_ethnicity(38003563, 38003564)  # Multiple unpacked
+cohort.require_gender(8507, 8532)     # Multiple values unpacked
+cohort.require_race(8516)             # Single value
+cohort.require_ethnicity(38003563, 38003564)  # Multiple unpacked
 ```
 
-### 2. Time Windows Are On Query Builders, Not CohortWithCriteria
+### 3. Time Windows Use Keyword Arguments
 
-❌ **WRONG**:
+Time windows are specified directly on criteria methods:
+
 ```python
-.with_condition(1).anytime_after()  # ERROR! CohortWithCriteria has no time windows
+cohort.require_drug(2, within_days_before=30)
+cohort.exclude_condition(3, anytime_before=True)
+cohort.require_measurement(4, same_day=True)
 ```
 
-✅ **CORRECT**:
-```python
-.with_condition(1)  # Returns CohortWithCriteria
-.require_drug(2).anytime_after()  # .require_drug() returns DrugQuery which HAS time windows
-```
-
-**Key Rule**: Time window methods (`.anytime_before()`, `.within_days_after()`, etc.) only exist on **query builders** returned by `.require_X()` and `.exclude_X()` methods.
+**Available time window parameters:**
+- `within_days_before=N`
+- `within_days_after=N`
+- `anytime_before=True`
+- `anytime_after=True`
+- `same_day=True`
+- `during_event=True`
 
 ---
 
 ## Example 1: Simple Age-Restricted Cohort
 
-Basic cohort with just an entry event and age restriction:
-
 ```python
 from circe.cohort_builder import CohortBuilder
 
-cohort = (
-    CohortBuilder("Adults with Diabetes")
-    .with_condition(1)
-    .require_age(18)
-    .build()
-)
+with CohortBuilder("Adults with Diabetes") as cohort:
+    cohort.with_condition(1)
+    cohort.require_age(min_age=18)
+
+expression = cohort.expression
 ```
 
 ## Example 2: Incident (First-Time) Diagnosis
 
-Capturing only the first occurrence with observation window:
-
 ```python
 from circe.cohort_builder import CohortBuilder
 
-cohort = (
-    CohortBuilder("New Diabetes Diagnosis")
-    .with_condition(1)
-    .first_occurrence()
-    .with_observation(prior_days=365)
-    .min_age(18)
-    .build()
-)
+with CohortBuilder("New Diabetes Diagnosis") as cohort:
+    cohort.with_condition(1)
+    cohort.first_occurrence()
+    cohort.with_observation_window(prior_days=365)
+    cohort.min_age(18)
+
+expression = cohort.expression
 ```
 
-## Example 3: With Inclusion Criteria
-
-Entry event with prior medication requirement:
+## Example 3: With Inclusion Criteria (Named Rule)
 
 ```python
 from circe.cohort_builder import CohortBuilder
 
-cohort = (
-    CohortBuilder("Diabetes with Prior Metformin")
-    .with_condition(1)
-    .first_occurrence()
-    .require_age(18, 75)
-    .begin_rule("Prior Metformin Use")
-    .require_drug(2).anytime_before()
-    .build()
-)
+with CohortBuilder("Diabetes with Prior Metformin") as cohort:
+    cohort.with_condition(1)
+    cohort.first_occurrence()
+    cohort.require_age(min_age=18, max_age=75)
+    
+    with cohort.include_rule("Prior Metformin Use") as rule:
+        rule.require_drug(2, anytime_before=True)
+
+expression = cohort.expression
 ```
 
 ## Example 4: With Exclusion Criteria
 
-Using `.exclude_` methods:
-
 ```python
 from circe.cohort_builder import CohortBuilder
 
-cohort = (
-    CohortBuilder("Diabetes Without Prior Insulin")
-    .with_condition(1)
-    .first_occurrence()
-    .begin_rule("No Prior Insulin")
-    .exclude_drug(3).anytime_before()
-    .build()
-)
+with CohortBuilder("Diabetes Without Prior Insulin") as cohort:
+    cohort.with_condition(1)
+    cohort.first_occurrence()
+    
+    with cohort.include_rule("No Prior Insulin") as rule:
+        rule.exclude_drug(3, anytime_before=True)
+
+expression = cohort.expression
 ```
 
 ## Example 5: Complex Multi-Criteria Cohort
 
-Multiple inclusion rules with different time windows:
-
 ```python
 from circe.cohort_builder import CohortBuilder
 
-cohort = (
-    CohortBuilder("T2DM with Metformin and Lab")
-    .with_condition(1)
-    .first_occurrence()
-    .with_observation(prior_days=365)
-    .require_age(18, 75)
-    .begin_rule("Metformin Within 30 Days")
-    .require_drug(2).within_days_after(30)
-    .begin_rule("HbA1c Within 180 Days")
-    .require_measurement(4).within_days_after(180)
-    .begin_rule("No Prior Insulin")
-    .exclude_drug(3).within_days_before(180)
-    .build()
-)
+with CohortBuilder("T2DM with Metformin and Lab") as cohort:
+    cohort.with_condition(1)
+    cohort.first_occurrence()
+    cohort.with_observation_window(prior_days=365)
+    cohort.require_age(min_age=18, max_age=75)
+    
+    with cohort.include_rule("Metformin Within 30 Days") as rule:
+        rule.require_drug(2, within_days_after=30)
+    
+    with cohort.include_rule("HbA1c Within 180 Days") as rule:
+        rule.require_measurement(4, within_days_after=180)
+    
+    with cohort.include_rule("No Prior Insulin") as rule:
+        rule.exclude_drug(3, within_days_before=180)
+
+expression = cohort.expression
 ```
 
-## Example 6: Using Collection Methods
-
-**IMPORTANT**: Collection methods (`require_any_of`, `require_all_of`) work both with and without `begin_rule()`:
+## Example 6: Multiple Criteria in Same Rule
 
 ```python
 from circe.cohort_builder import CohortBuilder
 
-# Pattern 1: Without begin_rule (simpler)
-cohort = (
-    CohortBuilder("Diabetes with Complications")
-    .with_condition(1)
-    .first_occurrence()
-    .require_any_of(condition_ids=[10, 11, 12])  # Retinopathy OR neuropathy OR nephropathy
-    .build()
-)
+with CohortBuilder("Diabetes with Complications") as cohort:
+    cohort.with_condition(1)
+    cohort.first_occurrence()
+    
+    # Multiple criteria in same rule (all must be met)
+    with cohort.include_rule("Has Complications and Treatment") as rule:
+        rule.require_condition(10, same_day=True)  # Complication
+        rule.require_drug(2, within_days_before=30)  # Treatment
 
-# Pattern 2: With begin_rule (for named rule/attrition)
-cohort = (
-    CohortBuilder("Diabetes with Complications")
-    .with_condition(1)
-    .first_occurrence()
-    .begin_rule("At Least One Complication")  # Creates named inclusion rule
-    .require_any_of(condition_ids=[10, 11, 12])  # Adds criteria to that rule
-    .build()
-)
-```
-
-## Example 7: Measurement with Modifiers
-
-Domain-specific modifiers for measurements (remember: modifiers BEFORE time windows!):
-
-```python
-from circe.cohort_builder import CohortBuilder
-
-cohort = (
-    CohortBuilder("High Glucose Readings")
-    .with_measurement(1)
-    .begin_rule("Abnormal HbA1c")
-    .require_measurement(2)
-        .with_operator(4172704)  # Greater than
-        .with_value(min_val=6.5, max_val=15.0)
-        .is_abnormal()
-        .at_least(2)
-        .within_days_before(365)  # Time window LAST
-    .build()
-)
+expression = cohort.expression
 ```
 
 ---
 
 **Key Patterns Demonstrated:**
-1. Simple entry events
-2. First occurrence filtering
-3. Observation windows
-4. Age restrictions
-5. Inclusion/exclusion criteria with `.begin_rule()`
-6. **Collection methods work with OR without `.begin_rule()`**
-7. Time windows (before/after)
-8. Domain-specific modifiers
-9. Occurrence counting (at_least)
-10. Multiple inclusion rules
-
-**Critical Rules:**
-- Modifiers (`.at_least`, `.with_value`, etc.) MUST come BEFORE time windows
-- Collection methods (`.require_any_of`, `.require_all_of`) can be used directly OR after `.begin_rule()`
-- `.begin_rule()` is optional - use it to create named rules for attrition tracking
+1. Context manager auto-builds on exit
+2. Access result via `.expression` property
+3. Use `with cohort.include_rule("Name") as rule:` for named rules
+4. Time windows as keyword arguments on criteria methods
+5. Demographic restrictions via `require_gender()`, `require_age()`, etc.
