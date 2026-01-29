@@ -45,8 +45,8 @@ class CohortExpression(CirceBaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.CohortExpression
     """
 
-    concept_sets: Optional[List[ConceptSet]] = Field(
-        default=None,
+    concept_sets: List[ConceptSet] = Field(
+        default_factory=list,
         validation_alias=AliasChoices("ConceptSets", "conceptSets"),
         serialization_alias="ConceptSets"
     )
@@ -89,8 +89,8 @@ class CohortExpression(CirceBaseModel):
         validation_alias=AliasChoices("Title", "title"),
         serialization_alias="Title"
     )
-    inclusion_rules: Optional[List[InclusionRule]] = Field(
-        default=None,
+    inclusion_rules: List[InclusionRule] = Field(
+        default_factory=list,
         validation_alias=AliasChoices("InclusionRules", "inclusionRules"),
         serialization_alias="InclusionRules"
     )
@@ -99,14 +99,30 @@ class CohortExpression(CirceBaseModel):
         validation_alias=AliasChoices("CensorWindow", "censorWindow"),
         serialization_alias="CensorWindow"
     )
-    censoring_criteria: Optional[List[CriteriaType]] = Field(
-        default=None,
-        validation_alias=AliasChoices("CensoringCriteria", "censoringCriteria"),
+    censoring_criteria: List[CriteriaType] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("CensoringCriteria", "censoring_criteria", "censoringCriteria"),
         serialization_alias="CensoringCriteria"
     )
 
     model_config = ConfigDict(populate_by_name=True)
     
+    @field_validator('inclusion_rules', mode='before')
+    @classmethod
+    def allow_none_inclusion_rules(cls, v: Any) -> Any:
+        """Convert None to empty list for inclusion_rules."""
+        if v is None:
+            return []
+        return v
+
+    @field_validator('concept_sets', mode='before')
+    @classmethod
+    def allow_none_concept_sets(cls, v: Any) -> Any:
+        """Convert None to empty list for concept_sets."""
+        if v is None:
+            return []
+        return v
+
     @field_validator('end_strategy', mode='before')
     @classmethod
     def deserialize_end_strategy(cls, v: Any) -> Any:
@@ -141,6 +157,8 @@ class CohortExpression(CirceBaseModel):
         Censoring criteria come as [{"ConditionOccurrence": {...}}, ...] 
         and need to be unwrapped and deserialized to Criteria objects.
         """
+        if v is None:
+            return []
         if not v or not isinstance(v, list):
             return v
         
@@ -224,8 +242,6 @@ class CohortExpression(CirceBaseModel):
         """
         if not isinstance(concept_set, ConceptSet):
             raise TypeError("Expected ConceptSet instance")
-        if self.concept_sets is None:
-            self.concept_sets = []
         self.concept_sets.append(concept_set)
 
     def remove_concept_set_by_id(self, id_: int) -> None:
@@ -241,8 +257,6 @@ class CohortExpression(CirceBaseModel):
         """
         if not isinstance(rule, InclusionRule):
             raise TypeError("Expected InclusionRule instance")
-        if self.inclusion_rules is None:
-            self.inclusion_rules = []
         self.inclusion_rules.append(rule)
 
     def remove_inclusion_rule_by_name(self, name: str) -> None:
@@ -258,8 +272,6 @@ class CohortExpression(CirceBaseModel):
         """
         if not isinstance(criteria, Criteria):
             raise TypeError("Expected Criteria instance")
-        if self.censoring_criteria is None:
-            self.censoring_criteria = []
         self.censoring_criteria.append(criteria)
 
     def remove_censoring_criteria_by_type(self, criteria_type: str) -> None:

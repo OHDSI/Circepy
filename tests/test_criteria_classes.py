@@ -17,7 +17,8 @@ from circe.cohortdefinition.criteria import (
     ConditionOccurrence, DrugExposure, ProcedureOccurrence, VisitOccurrence,
     Observation, Measurement, DeviceExposure, Specimen, Death, VisitDetail,
     ObservationPeriod, PayerPlanPeriod, LocationRegion, ConditionEra,
-    DrugEra, DoseEra, GeoCriteria, WindowedCriteria
+    DrugEra, DoseEra, GeoCriteria, WindowedCriteria,
+    CriteriaGroup, PrimaryCriteria, DemographicCriteria
 )
 from circe.cohortdefinition.core import (
     TextFilter, WindowBound, Window,
@@ -25,6 +26,56 @@ from circe.cohortdefinition.core import (
     ConceptSetSelection
 )
 from circe.vocabulary.concept import Concept
+import json
+
+
+class TestStructureDefaults(unittest.TestCase):
+    """Test defaults and None handling for structural classes."""
+
+    def test_criteria_group_list_fields(self):
+        """Test defaults and None handling for CriteriaGroup list fields."""
+        # 1. Default Initialization
+        cg = CriteriaGroup()
+        self.assertEqual(cg.criteria_list, [])
+        self.assertEqual(cg.groups, [])
+        self.assertEqual(cg.demographic_criteria_list, [])
+
+        # 2. None Initialization
+        cg_none = CriteriaGroup(
+            criteria_list=None,
+            groups=None,
+            demographic_criteria_list=None
+        )
+        self.assertEqual(cg_none.criteria_list, [])
+        self.assertEqual(cg_none.groups, [])
+        self.assertEqual(cg_none.demographic_criteria_list, [])
+
+        # 3. JSON Null
+        cg_json = CriteriaGroup.model_validate_json(json.dumps({
+            "CriteriaList": None,
+            "Groups": None,
+            "DemographicCriteriaList": None
+        }))
+        self.assertEqual(cg_json.criteria_list, [])
+        self.assertEqual(cg_json.groups, [])
+        self.assertEqual(cg_json.demographic_criteria_list, [])
+
+    def test_primary_criteria_list_fields(self):
+        """Test defaults and None handling for PrimaryCriteria list fields."""
+        # 1. Default Initialization
+        pc = PrimaryCriteria()
+        self.assertEqual(pc.criteria_list, [])
+        
+        # 2. None Initialization
+        pc_none = PrimaryCriteria(criteria_list=None)
+        self.assertEqual(pc_none.criteria_list, [])
+        
+        # 3. JSON Null
+        pc_json = PrimaryCriteria.model_validate_json(json.dumps({
+            "CriteriaList": None
+        }))
+        self.assertEqual(pc_json.criteria_list, [])
+
 
 
 class TestConditionOccurrence(unittest.TestCase):

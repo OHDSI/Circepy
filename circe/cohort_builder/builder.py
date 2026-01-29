@@ -2162,12 +2162,12 @@ def _build_cohort_expression(
 
     return CohortExpression(
         title=title,
-        concept_sets=concept_sets if concept_sets else None,
+        concept_sets=concept_sets,
         primary_criteria=primary_criteria,
-        inclusion_rules=inclusion_rules if inclusion_rules else None,
+        inclusion_rules=inclusion_rules,
         end_strategy=end_strategy,
         collapse_settings=collapse_settings,
-        censoring_criteria=censoring_criteria if censoring_criteria else None,
+        censoring_criteria=censoring_criteria,
         qualified_limit=ResultLimit(type=qualified_limit),
         expression_limit=ResultLimit(type=expression_limit)
     )
@@ -2383,8 +2383,8 @@ def _build_criteria_group(group_cfg: GroupConfig) -> CirceCriteriaGroup:
     return CirceCriteriaGroup(
         type=group_cfg.type,
         count=group_cfg.count,
-        criteria_list=criteria_list if criteria_list else None,
-        groups=groups if groups else None
+        criteria_list=criteria_list,
+        groups=groups
     )
 
 

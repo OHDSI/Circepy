@@ -297,7 +297,7 @@ def _convert_to_cohort_expression(composed: ComposedCohort) -> CohortExpression:
         primary_criteria = _build_primary_criteria(composed.entry_event)
     
     # Build inclusion rules from attrition
-    inclusion_rules = None
+    inclusion_rules = []
     if composed.attrition and composed.attrition.rules:
         inclusion_rules = [
             _build_inclusion_rule(rule)
@@ -306,7 +306,7 @@ def _convert_to_cohort_expression(composed: ComposedCohort) -> CohortExpression:
     
     # Build end strategy
     end_strategy = None
-    censoring_criteria = None
+    censoring_criteria = []
     if composed.exit:
         end_strategy = _build_end_strategy(composed.exit)
         if composed.exit.censor_events:
@@ -375,7 +375,7 @@ def _build_criteria_group(group: CriteriaGroup):
     
     return CirceCriteriaGroup(
         type=group.group_type,
-        criteria_list=criteria_list if criteria_list else None
+        criteria_list=criteria_list
     )
 
 
