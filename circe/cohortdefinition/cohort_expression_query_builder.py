@@ -47,6 +47,9 @@ class BuildExpressionQueryOptions:
         self.result_schema: Optional[str] = None
         self.vocabulary_schema: Optional[str] = None
         self.generate_stats: bool = False
+        self.base_population_table: Optional[str] = None
+        self.base_population_id: Optional[int] = None
+        self.base_population_schema: Optional[str] = None
 
     @classmethod
     def from_json(cls, json_str: str) -> 'BuildExpressionQueryOptions':
@@ -64,6 +67,9 @@ class BuildExpressionQueryOptions:
             options.result_schema = data.get('resultSchema')
             options.vocabulary_schema = data.get('vocabularySchema')
             options.generate_stats = data.get('generateStats', False)
+            options.base_population_table = data.get('basePopulationTable')
+            options.base_population_id = data.get('basePopulationId')
+            options.base_population_schema = data.get('basePopulationSchema')
             return options
         except Exception as e:
             raise RuntimeError("Error parsing expression query options", e)
@@ -183,6 +189,7 @@ FROM
   @criteriaQueries
   ) E
 	JOIN @cdm_database_schema.observation_period OP on E.person_id = OP.person_id and E.start_date >=  OP.observation_period_start_date and E.start_date <= op.observation_period_end_date
+  @additionalJoins
   WHERE @primaryEventsFilter
 ) P
 @primaryEventLimit"""
@@ -545,7 +552,7 @@ JOIN (
         query = query.replace("@primaryEventsSubQuery", subquery)
         return query
 
-    def _get_primary_events_subquery(self, primary_criteria: PrimaryCriteria) -> str:
+    def _get_primary_events_subquery(self, primary_criteria: PrimaryCriteria, base_population_table: Optional[str] = None, base_population_id: Optional[int] = None, base_population_schema: Optional[str] = None) -> str:
         """Get the inner subquery for primary events."""
         query = self.PRIMARY_EVENTS_SUBQUERY_TEMPLATE
 
@@ -554,6 +561,15 @@ JOIN (
             criteria_queries.append(self.get_criteria_sql(criteria))
 
         query = query.replace("@criteriaQueries", "\nUNION ALL\n".join(criteria_queries))
+
+        # Base population join
+        additional_joins = ""
+        if base_population_table and base_population_id is not None:
+             # Use provided schema or default to cohort_database_schema
+             schema_token = "@base_population_schema" if base_population_schema else "@cohort_database_schema"
+             additional_joins = f"JOIN {schema_token}.@base_population_table BP ON E.person_id = BP.subject_id AND BP.population_id = @base_population_id"
+        
+        query = query.replace("@additionalJoins", additional_joins)
 
         # Primary events filters
         primary_events_filters = [
@@ -718,7 +734,12 @@ DROP TABLE #inclusion_rules;
         result_sql = result_sql.replace("@codesetQuery", codeset_query)
 
         # Get inner primary events subquery (logic only)
-        primary_events_subquery = self._get_primary_events_subquery(expression.primary_criteria)
+        primary_events_subquery = self._get_primary_events_subquery(
+            expression.primary_criteria,
+            base_population_table=options.base_population_table,
+            base_population_id=options.base_population_id,
+            base_population_schema=options.base_population_schema
+        )
         
         # Primary events query (full wrapper)
         primary_events_query = self.get_primary_events_query(expression.primary_criteria, primary_events_subquery)
