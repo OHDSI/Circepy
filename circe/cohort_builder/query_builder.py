@@ -651,7 +651,9 @@ class CriteriaGroupBuilder:
         return self
     
     def end_group(self) -> Any:
-        parent = self._parent
+        """End this group and return to parent context."""
+        return self._parent
+    
     def require_condition(self, concept_set_id: int, **kwargs) -> "CriteriaGroupBuilder":
         return ConditionQuery(concept_set_id, parent=self, is_exclusion=False).apply_params(**kwargs)._finalize()
 

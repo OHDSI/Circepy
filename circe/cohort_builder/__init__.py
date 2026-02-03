@@ -1,7 +1,7 @@
 """
 State-Based Fluent Builder for OHDSI Cohort Definitions.
 
-This module provides a guided, L LM-friendly API where each method returns
+This module provides a guided, LLM-friendly API where each method returns
 an object with only valid next methods. The API guides users through
 cohort construction step by step.
 

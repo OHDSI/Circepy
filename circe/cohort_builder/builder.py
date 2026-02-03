@@ -36,7 +36,6 @@ from circe.cohortdefinition.core import (
 from circe.cohortdefinition.criteria import CriteriaGroup as CirceCriteriaGroup
 from circe.vocabulary import ConceptSet, Concept
 
-
 @dataclass
 class CohortSettings:
     """Stores cohort-wide settings like exit strategy and era logic."""
@@ -58,7 +57,6 @@ class CohortSettings:
     ethnicity_concepts: List[int] = field(default_factory=list)
     age_min: Optional[int] = None
     age_max: Optional[int] = None
-
 
 class CohortBuilder:
     """
@@ -895,172 +893,105 @@ class CohortBuilder:
     # ENTRY EVENT METHODS
     # =========================================================================
     
-    def with_condition(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
-        """Set entry event to a condition occurrence."""
-        query = ConditionQuery(concept_set_id, is_entry=True)
+    def _create_entry_event(
+        self, 
+        query_class: type, 
+        concept_set_id: Optional[int] = None, 
+        **kwargs
+    ) -> Union['CohortBuilder', 'CohortWithEntry']:
+        """
+        Helper method to create entry events with consistent logic.
+        
+        Args:
+            query_class: The query class to instantiate (e.g., ConditionQuery, DrugQuery)
+            concept_set_id: Optional concept set ID (some queries like Death don't need this)
+            **kwargs: Additional parameters to pass to apply_params()
+            
+        Returns:
+            Self if in context manager mode, otherwise CohortWithEntry
+        """
+        # Create query with or without concept_set_id
+        if concept_set_id is not None:
+            query = query_class(concept_set_id, is_entry=True)
+        else:
+            query = query_class(is_entry=True)
+        
+        # Apply any additional parameters
         query.apply_params(**kwargs)
+        
+        # Create cohort state and link parent
         cohort = CohortWithEntry(self, query)
         query._parent = cohort
+        
+        # Handle context manager vs fluent API
         if self._in_context:
             self._state = cohort
             return self
         return cohort
+    
+    def with_condition(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+        """Set entry event to a condition occurrence."""
+        return self._create_entry_event(ConditionQuery, concept_set_id, **kwargs)
 
     def with_drug(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to a drug exposure."""
-        query = DrugQuery(concept_set_id, is_entry=True)
-        query.apply_params(**kwargs)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        if self._in_context:
-            self._state = cohort
-            return self
-        return cohort
+        return self._create_entry_event(DrugQuery, concept_set_id, **kwargs)
 
     def with_drug_era(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to a drug era."""
-        query = DrugEraQuery(concept_set_id, is_entry=True)
-        query.apply_params(**kwargs)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        if self._in_context:
-            self._state = cohort
-            return self
-        return cohort
+        return self._create_entry_event(DrugEraQuery, concept_set_id, **kwargs)
 
     def with_procedure(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to a procedure occurrence."""
-        query = ProcedureQuery(concept_set_id, is_entry=True)
-        query.apply_params(**kwargs)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        if self._in_context:
-            self._state = cohort
-            return self
-        return cohort
+        return self._create_entry_event(ProcedureQuery, concept_set_id, **kwargs)
 
     def with_measurement(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to a measurement."""
-        query = MeasurementQuery(concept_set_id, is_entry=True)
-        query.apply_params(**kwargs)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        if self._in_context:
-            self._state = cohort
-            return self
-        return cohort
+        return self._create_entry_event(MeasurementQuery, concept_set_id, **kwargs)
 
     def with_visit(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to a visit occurrence."""
-        query = VisitQuery(concept_set_id, is_entry=True)
-        query.apply_params(**kwargs)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        if self._in_context:
-            self._state = cohort
-            return self
-        return cohort
+        return self._create_entry_event(VisitQuery, concept_set_id, **kwargs)
 
     def with_observation(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to an observation (with concept set)."""
-        query = ObservationQuery(concept_set_id, is_entry=True)
-        query.apply_params(**kwargs)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        if self._in_context:
-            self._state = cohort
-            return self
-        return cohort
+        return self._create_entry_event(ObservationQuery, concept_set_id, **kwargs)
 
     def with_condition_era(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to a condition era."""
-        query = ConditionEraQuery(concept_set_id, is_entry=True)
-        query.apply_params(**kwargs)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        if self._in_context:
-            self._state = cohort
-            return self
-        return cohort
+        return self._create_entry_event(ConditionEraQuery, concept_set_id, **kwargs)
 
     def with_device_exposure(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to a device exposure."""
-        query = DeviceExposureQuery(concept_set_id, is_entry=True)
-        query.apply_params(**kwargs)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        if self._in_context:
-            self._state = cohort
-            return self
-        return cohort
+        return self._create_entry_event(DeviceExposureQuery, concept_set_id, **kwargs)
 
     def with_specimen(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to a specimen."""
-        query = SpecimenQuery(concept_set_id, is_entry=True)
-        query.apply_params(**kwargs)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        if self._in_context:
-            self._state = cohort
-            return self
-        return cohort
+        return self._create_entry_event(SpecimenQuery, concept_set_id, **kwargs)
 
     def with_death(self) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to death."""
-        query = DeathQuery(is_entry=True)
-        cohort = CohortWithEntry(self, query)
-        if self._in_context:
-            self._state = cohort
-            return self
-        return cohort
+        return self._create_entry_event(DeathQuery)
     
     def with_observation_period(self) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to an observation period."""
-        query = ObservationPeriodQuery(is_entry=True)
-        cohort = CohortWithEntry(self, query)
-        if self._in_context:
-            self._state = cohort
-            return self
-        return cohort
+        return self._create_entry_event(ObservationPeriodQuery)
     
     def with_payer_plan_period(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to a payer plan period."""
-        query = PayerPlanPeriodQuery(concept_set_id, is_entry=True)
-        query.apply_params(**kwargs)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        if self._in_context:
-            self._state = cohort
-            return self
-        return cohort
+        return self._create_entry_event(PayerPlanPeriodQuery, concept_set_id, **kwargs)
 
     def with_location_region(self, concept_set_id: int) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to a location/region."""
-        query = LocationRegionQuery(concept_set_id, is_entry=True)
-        cohort = CohortWithEntry(self, query)
-        if self._in_context:
-            self._state = cohort
-            return self
-        return cohort
+        return self._create_entry_event(LocationRegionQuery, concept_set_id)
     
     def with_visit_detail(self, concept_set_id: int) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to a visit detail."""
-        query = VisitDetailQuery(concept_set_id, is_entry=True)
-        cohort = CohortWithEntry(self, query)
-        if self._in_context:
-            self._state = cohort
-            return self
-        return cohort
+        return self._create_entry_event(VisitDetailQuery, concept_set_id)
     
     def with_dose_era(self, concept_set_id: int) -> Union['CohortBuilder', 'CohortWithEntry']:
         """Set entry event to a dose era."""
-        query = DoseEraQuery(concept_set_id, is_entry=True)
-        cohort = CohortWithEntry(self, query)
-        if self._in_context:
-            self._state = cohort
-            return self
-        return cohort
-
+        return self._create_entry_event(DoseEraQuery, concept_set_id)
 
 class InclusionRuleContext:
     """
@@ -1147,7 +1078,6 @@ class InclusionRuleContext:
         self._builder._update_state(result)
         return self
 
-
 class CohortWithEntry:
     """
     Cohort state after entry event is defined.
@@ -1178,40 +1108,42 @@ class CohortWithEntry:
         """Delegate censor query addition to the criteria state."""
         return self._to_criteria()._add_censor_query(config)
     
-    def or_with_condition(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
-        query = ConditionQuery(concept_set_id, is_entry=True, parent=self)
+    def _add_or_entry(self, query_class: type, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+        """
+        Helper method to add alternative entry events (OR logic).
+        
+        Args:
+            query_class: The query class to instantiate
+            concept_set_id: Concept set ID for the query
+            **kwargs: Additional parameters to pass to apply_params()
+            
+        Returns:
+            Self for chaining
+        """
+        query = query_class(concept_set_id, is_entry=True, parent=self)
         query.apply_params(**kwargs)
         self._entry_queries.append(query)
         return self
-
+    
+    def or_with_condition(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+        """Add an alternative condition occurrence as entry event (OR logic)."""
+        return self._add_or_entry(ConditionQuery, concept_set_id, **kwargs)
 
     def or_with_drug(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
-        query = DrugQuery(concept_set_id, is_entry=True, parent=self)
-        query.apply_params(**kwargs)
-        self._entry_queries.append(query)
-        return self
-
+        """Add an alternative drug exposure as entry event (OR logic)."""
+        return self._add_or_entry(DrugQuery, concept_set_id, **kwargs)
 
     def or_with_procedure(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
-        query = ProcedureQuery(concept_set_id, is_entry=True, parent=self)
-        query.apply_params(**kwargs)
-        self._entry_queries.append(query)
-        return self
-
+        """Add an alternative procedure occurrence as entry event (OR logic)."""
+        return self._add_or_entry(ProcedureQuery, concept_set_id, **kwargs)
 
     def or_with_measurement(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
-        query = MeasurementQuery(concept_set_id, is_entry=True, parent=self)
-        query.apply_params(**kwargs)
-        self._entry_queries.append(query)
-        return self
-
+        """Add an alternative measurement as entry event (OR logic)."""
+        return self._add_or_entry(MeasurementQuery, concept_set_id, **kwargs)
 
     def or_with_visit(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
-        query = VisitQuery(concept_set_id, is_entry=True, parent=self)
-        query.apply_params(**kwargs)
-        self._entry_queries.append(query)
-        return self
-
+        """Add an alternative visit occurrence as entry event (OR logic)."""
+        return self._add_or_entry(VisitQuery, concept_set_id, **kwargs)
 
     def with_qualified_limit(self, limit: str) -> 'CohortWithEntry':
         """Set the qualified limit (First, Last, All)."""
@@ -1225,12 +1157,6 @@ class CohortWithEntry:
 
     # Entry query filters (delegate to the last added query)
 
-
-
-
-
-
-
     def with_all(self) -> 'CriteriaGroupBuilder':
         """Start a correlated criteria group for the last added entry."""
         return self._entry_queries[-1].with_all()
@@ -1238,8 +1164,6 @@ class CohortWithEntry:
     def with_any(self) -> 'CriteriaGroupBuilder':
         """Start a correlated criteria group for the last added entry."""
         return self._entry_queries[-1].with_any()
-
-
 
     def first_occurrence(self) -> 'CohortWithEntry':
         """Only use the first occurrence per person for entry events."""
@@ -1325,7 +1249,6 @@ class CohortWithEntry:
                 return query._finalize()
         return query
 
-
     def require_drug(self, concept_set_id: int, **kwargs) -> Union['DrugQuery', 'CohortWithCriteria']:
         """require_drug (Supports both chaining and parameter-based API)"""
         query = DrugQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
@@ -1334,8 +1257,6 @@ class CohortWithEntry:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
-
 
     def censor_on_condition(self, concept_set_id: int, **kwargs) -> Union['ConditionQuery', 'CohortWithCriteria']:
         """censor_on_condition (Supports both chaining and parameter-based API)"""
@@ -1346,8 +1267,6 @@ class CohortWithEntry:
                 return query._finalize()
         return query
 
-
-
     def censor_on_drug(self, concept_set_id: int, **kwargs) -> Union['DrugQuery', 'CohortWithCriteria']:
         """censor_on_drug (Supports both chaining and parameter-based API)"""
         query = DrugQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=True)
@@ -1356,8 +1275,6 @@ class CohortWithEntry:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
-
 
     def censor_on_procedure(self, concept_set_id: int, **kwargs) -> Union['ProcedureQuery', 'CohortWithCriteria']:
         """censor_on_procedure (Supports both chaining and parameter-based API)"""
@@ -1368,8 +1285,6 @@ class CohortWithEntry:
                 return query._finalize()
         return query
 
-
-
     def censor_on_measurement(self, concept_set_id: int, **kwargs) -> Union['MeasurementQuery', 'CohortWithCriteria']:
         """censor_on_measurement (Supports both chaining and parameter-based API)"""
         query = MeasurementQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=True)
@@ -1378,8 +1293,6 @@ class CohortWithEntry:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
-
 
     def censor_on_observation(self, concept_set_id: int) -> ObservationQuery:
         """Censor if an observation occurs."""
@@ -1402,7 +1315,6 @@ class CohortWithEntry:
                 return query._finalize()
         return query
 
-
     def exclude_condition(self, concept_set_id: int, **kwargs) -> Union['ConditionQuery', 'CohortWithCriteria']:
         """exclude_condition (Supports both chaining and parameter-based API)"""
         query = ConditionQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
@@ -1411,7 +1323,6 @@ class CohortWithEntry:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
 
     def exclude_drug(self, concept_set_id: int, **kwargs) -> Union['DrugQuery', 'CohortWithCriteria']:
         """exclude_drug (Supports both chaining and parameter-based API)"""
@@ -1422,7 +1333,6 @@ class CohortWithEntry:
                 return query._finalize()
         return query
 
-
     def require_condition_era(self, concept_set_id: int, **kwargs) -> Union['ConditionEraQuery', 'CohortWithCriteria']:
         """require_condition_era (Supports both chaining and parameter-based API)"""
         query = ConditionEraQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
@@ -1431,7 +1341,6 @@ class CohortWithEntry:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
 
     def require_device_exposure(self, concept_set_id: int, **kwargs) -> Union['DeviceExposureQuery', 'CohortWithCriteria']:
         """require_device_exposure (Supports both chaining and parameter-based API)"""
@@ -1442,7 +1351,6 @@ class CohortWithEntry:
                 return query._finalize()
         return query
 
-
     def require_specimen(self, concept_set_id: int, **kwargs) -> Union['SpecimenQuery', 'CohortWithCriteria']:
         """require_specimen (Supports both chaining and parameter-based API)"""
         query = SpecimenQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
@@ -1451,7 +1359,6 @@ class CohortWithEntry:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
 
     def require_visit_detail(self, concept_set_id: int, **kwargs) -> Union['VisitDetailQuery', 'CohortWithCriteria']:
         """require_visit_detail (Supports both chaining and parameter-based API)"""
@@ -1462,7 +1369,6 @@ class CohortWithEntry:
                 return query._finalize()
         return query
 
-
     def require_dose_era(self, concept_set_id: int, **kwargs) -> Union['DoseEraQuery', 'CohortWithCriteria']:
         """require_dose_era (Supports both chaining and parameter-based API)"""
         query = DoseEraQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
@@ -1471,7 +1377,6 @@ class CohortWithEntry:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
 
     def require_payer_plan_period(self, concept_set_id: int, **kwargs) -> Union['PayerPlanPeriodQuery', 'CohortWithCriteria']:
         """require_payer_plan_period (Supports both chaining and parameter-based API)"""
@@ -1482,7 +1387,6 @@ class CohortWithEntry:
                 return query._finalize()
         return query
 
-
     def exclude_condition_era(self, concept_set_id: int, **kwargs) -> Union['ConditionEraQuery', 'CohortWithCriteria']:
         """exclude_condition_era (Supports both chaining and parameter-based API)"""
         query = ConditionEraQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
@@ -1491,7 +1395,6 @@ class CohortWithEntry:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
 
     def exclude_device_exposure(self, concept_set_id: int, **kwargs) -> Union['DeviceExposureQuery', 'CohortWithCriteria']:
         """exclude_device_exposure (Supports both chaining and parameter-based API)"""
@@ -1502,7 +1405,6 @@ class CohortWithEntry:
                 return query._finalize()
         return query
 
-
     def exclude_specimen(self, concept_set_id: int, **kwargs) -> Union['SpecimenQuery', 'CohortWithCriteria']:
         """exclude_specimen (Supports both chaining and parameter-based API)"""
         query = SpecimenQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
@@ -1511,7 +1413,6 @@ class CohortWithEntry:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
 
     def exclude_visit_detail(self, concept_set_id: int, **kwargs) -> Union['VisitDetailQuery', 'CohortWithCriteria']:
         """exclude_visit_detail (Supports both chaining and parameter-based API)"""
@@ -1522,7 +1423,6 @@ class CohortWithEntry:
                 return query._finalize()
         return query
 
-
     def exclude_dose_era(self, concept_set_id: int, **kwargs) -> Union['DoseEraQuery', 'CohortWithCriteria']:
         """exclude_dose_era (Supports both chaining and parameter-based API)"""
         query = DoseEraQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
@@ -1532,7 +1432,6 @@ class CohortWithEntry:
                 return query._finalize()
         return query
 
-
     def exclude_payer_plan_period(self, concept_set_id: int, **kwargs) -> Union['PayerPlanPeriodQuery', 'CohortWithCriteria']:
         """exclude_payer_plan_period (Supports both chaining and parameter-based API)"""
         query = PayerPlanPeriodQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
@@ -1541,8 +1440,6 @@ class CohortWithEntry:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
-
 
     # Exit strategies
     def exit_at_observation_end(self) -> 'CohortWithCriteria':
@@ -1602,7 +1499,6 @@ class CohortWithEntry:
     def build(self) -> CohortExpression:
         """Build the final CohortExpression."""
         return self._to_criteria().build()
-
 
 class CohortWithCriteria:
     """
@@ -2021,7 +1917,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
     def require_drug(self, concept_set_id: int, **kwargs) -> Union['DrugQuery', 'CohortWithCriteria']:
         """require_drug (Supports both chaining and parameter-based API)"""
         query = DrugQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
@@ -2031,7 +1926,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
     def require_drug_era(self, concept_set_id: int, **kwargs) -> Union['DrugEraQuery', 'CohortWithCriteria']:
         """require_drug_era (Supports both chaining and parameter-based API)"""
         query = DrugEraQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
@@ -2040,7 +1934,6 @@ class CohortWithCriteria:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
 
     def require_measurement(self, concept_set_id: int, **kwargs) -> Union['MeasurementQuery', 'CohortWithCriteria']:
         """require_measurement (Supports both chaining and parameter-based API)"""
@@ -2051,7 +1944,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
     def require_procedure(self, concept_set_id: int, **kwargs) -> Union['ProcedureQuery', 'CohortWithCriteria']:
         """require_procedure (Supports both chaining and parameter-based API)"""
         query = ProcedureQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
@@ -2060,7 +1952,6 @@ class CohortWithCriteria:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
 
     def require_visit(self, concept_set_id: int, **kwargs) -> Union['VisitQuery', 'CohortWithCriteria']:
         """require_visit (Supports both chaining and parameter-based API)"""
@@ -2071,7 +1962,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
     def require_observation(self, concept_set_id: int, **kwargs) -> Union['ObservationQuery', 'CohortWithCriteria']:
         """require_observation (Supports both chaining and parameter-based API)"""
         query = ObservationQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
@@ -2080,8 +1970,6 @@ class CohortWithCriteria:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
-
 
     def require_visit_detail(self, concept_set_id: int, **kwargs) -> Union['VisitDetailQuery', 'CohortWithCriteria']:
         """require_visit_detail (Supports both chaining and parameter-based API)"""
@@ -2092,7 +1980,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
     def require_death(self, **kwargs) -> Union['DeathQuery', 'CohortWithCriteria']:
         """require_death (Supports both chaining and parameter-based API)"""
         query = DeathQuery(parent=self, is_exclusion=False, is_censor=False)
@@ -2102,38 +1989,14 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
     def require_device(self, concept_set_id: int, **kwargs) -> Union['DeviceExposureQuery', 'CohortWithCriteria']:
-
-
-
         """require_device (Supports both chaining and parameter-based API)"""
-
-
-
         query = DeviceExposureQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
-
-
-
         if kwargs:
-
-
-
             query.apply_params(**kwargs)
-
-
-
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
-
-
-
                 return query._finalize()
-
-
-
         return query
-
-
 
     def require_specimen(self, concept_set_id: int, **kwargs) -> Union['SpecimenQuery', 'CohortWithCriteria']:
         """require_specimen (Supports both chaining and parameter-based API)"""
@@ -2143,8 +2006,6 @@ class CohortWithCriteria:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
-
 
     def require_drug_era(self, concept_set_id: int, **kwargs) -> Union['DrugEraQuery', 'CohortWithCriteria']:
         """require_drug_era (Supports both chaining and parameter-based API)"""
@@ -2155,8 +2016,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
-
     def require_condition_era(self, concept_set_id: int, **kwargs) -> Union['ConditionEraQuery', 'CohortWithCriteria']:
         """require_condition_era (Supports both chaining and parameter-based API)"""
         query = ConditionEraQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
@@ -2165,8 +2024,6 @@ class CohortWithCriteria:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
-
 
     def require_dose_era(self, concept_set_id: int, **kwargs) -> Union['DoseEraQuery', 'CohortWithCriteria']:
         """require_dose_era (Supports both chaining and parameter-based API)"""
@@ -2177,7 +2034,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
     def exclude_condition(self, concept_set_id: int, **kwargs) -> Union['ConditionQuery', 'CohortWithCriteria']:
         """exclude_condition (Supports both chaining and parameter-based API)"""
         query = ConditionQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
@@ -2186,7 +2042,6 @@ class CohortWithCriteria:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
 
     def exclude_drug(self, concept_set_id: int, **kwargs) -> Union['DrugQuery', 'CohortWithCriteria']:
         """exclude_drug (Supports both chaining and parameter-based API)"""
@@ -2197,99 +2052,32 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
     def exclude_drug_era(self, concept_set_id: int, **kwargs) -> Union['DrugEraQuery', 'CohortWithCriteria']:
-
-
-
         """exclude_drug_era (Supports both chaining and parameter-based API)"""
-
-
-
         query = DrugEraQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
-
-
-
         if kwargs:
-
-
-
             query.apply_params(**kwargs)
-
-
-
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
-
-
-
                 return query._finalize()
-
-
-
         return query
-
 
     def exclude_measurement(self, concept_set_id: int, **kwargs) -> Union['MeasurementQuery', 'CohortWithCriteria']:
-
-
-
         """exclude_measurement (Supports both chaining and parameter-based API)"""
-
-
-
         query = MeasurementQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
-
-
-
         if kwargs:
-
-
-
             query.apply_params(**kwargs)
-
-
-
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
-
-
-
                 return query._finalize()
-
-
-
         return query
-
 
     def exclude_procedure(self, concept_set_id: int, **kwargs) -> Union['ProcedureQuery', 'CohortWithCriteria']:
-
-
-
         """exclude_procedure (Supports both chaining and parameter-based API)"""
-
-
-
         query = ProcedureQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
-
-
-
         if kwargs:
-
-
-
             query.apply_params(**kwargs)
-
-
-
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
-
-
-
                 return query._finalize()
-
-
-
         return query
-
 
     def require_condition_era(self, concept_set_id: int, **kwargs) -> Union['ConditionEraQuery', 'CohortWithCriteria']:
         """require_condition_era (Supports both chaining and parameter-based API)"""
@@ -2300,7 +2088,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
     def exclude_condition_era(self, concept_set_id: int, **kwargs) -> Union['ConditionEraQuery', 'CohortWithCriteria']:
         """exclude_condition_era (Supports both chaining and parameter-based API)"""
         query = ConditionEraQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
@@ -2309,7 +2096,6 @@ class CohortWithCriteria:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
 
     def require_device_exposure(self, concept_set_id: int, **kwargs) -> Union['DeviceExposureQuery', 'CohortWithCriteria']:
         """require_device_exposure (Supports both chaining and parameter-based API)"""
@@ -2320,7 +2106,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
     def exclude_device_exposure(self, concept_set_id: int, **kwargs) -> Union['DeviceExposureQuery', 'CohortWithCriteria']:
         """exclude_device_exposure (Supports both chaining and parameter-based API)"""
         query = DeviceExposureQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
@@ -2329,7 +2114,6 @@ class CohortWithCriteria:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
 
     def require_specimen(self, concept_set_id: int, **kwargs) -> Union['SpecimenQuery', 'CohortWithCriteria']:
         """require_specimen (Supports both chaining and parameter-based API)"""
@@ -2340,7 +2124,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
     def exclude_specimen(self, concept_set_id: int, **kwargs) -> Union['SpecimenQuery', 'CohortWithCriteria']:
         """exclude_specimen (Supports both chaining and parameter-based API)"""
         query = SpecimenQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
@@ -2349,7 +2132,6 @@ class CohortWithCriteria:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
 
     def require_observation_period(self, **kwargs) -> Union['ObservationPeriodQuery', 'CohortWithCriteria']:
         """require_observation_period (Supports both chaining and parameter-based API)"""
@@ -2362,24 +2144,17 @@ class CohortWithCriteria:
 
     def exclude_observation_period(self, **kwargs) -> Union['ObservationPeriodQuery', 'CohortWithCriteria']:
 
-
         """exclude_observation_period (Supports both chaining and parameter-based API)"""
-
 
         query = ObservationPeriodQuery(parent=self, is_exclusion=True, is_censor=False)
 
-
         if kwargs:
-
 
             query.apply_params(**kwargs)
 
-
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
 
-
                 return query._finalize()
-
 
         return query
 
@@ -2392,7 +2167,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
     def exclude_payer_plan_period(self, concept_set_id: int, **kwargs) -> Union['PayerPlanPeriodQuery', 'CohortWithCriteria']:
         """exclude_payer_plan_period (Supports both chaining and parameter-based API)"""
         query = PayerPlanPeriodQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
@@ -2401,7 +2175,6 @@ class CohortWithCriteria:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
 
     def require_visit_detail(self, concept_set_id: int, **kwargs) -> Union['VisitDetailQuery', 'CohortWithCriteria']:
         """require_visit_detail (Supports both chaining and parameter-based API)"""
@@ -2412,8 +2185,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
-
     def require_death(self, **kwargs) -> Union['DeathQuery', 'CohortWithCriteria']:
         """require_death (Supports both chaining and parameter-based API)"""
         query = DeathQuery(parent=self, is_exclusion=False, is_censor=False)
@@ -2423,38 +2194,21 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
     def require_device(self, concept_set_id: int, **kwargs) -> Union['DeviceExposureQuery', 'CohortWithCriteria']:
-
-
 
         """require_device (Supports both chaining and parameter-based API)"""
 
-
-
         query = DeviceExposureQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
-
-
 
         if kwargs:
 
-
-
             query.apply_params(**kwargs)
-
-
 
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
 
-
-
                 return query._finalize()
 
-
-
         return query
-
-
 
     def require_specimen(self, concept_set_id: int, **kwargs) -> Union['SpecimenQuery', 'CohortWithCriteria']:
         """require_specimen (Supports both chaining and parameter-based API)"""
@@ -2465,8 +2219,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
-
     def require_drug_era(self, concept_set_id: int, **kwargs) -> Union['DrugEraQuery', 'CohortWithCriteria']:
         """require_drug_era (Supports both chaining and parameter-based API)"""
         query = DrugEraQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
@@ -2475,8 +2227,6 @@ class CohortWithCriteria:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
-
 
     def require_condition_era(self, concept_set_id: int, **kwargs) -> Union['ConditionEraQuery', 'CohortWithCriteria']:
         """require_condition_era (Supports both chaining and parameter-based API)"""
@@ -2487,8 +2237,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
-
     def require_dose_era(self, concept_set_id: int, **kwargs) -> Union['DoseEraQuery', 'CohortWithCriteria']:
         """require_dose_era (Supports both chaining and parameter-based API)"""
         query = DoseEraQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
@@ -2497,7 +2245,6 @@ class CohortWithCriteria:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
 
     def exclude_visit_detail(self, concept_set_id: int, **kwargs) -> Union['VisitDetailQuery', 'CohortWithCriteria']:
         """exclude_visit_detail (Supports both chaining and parameter-based API)"""
@@ -2508,7 +2255,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
     def require_dose_era(self, concept_set_id: int, **kwargs) -> Union['DoseEraQuery', 'CohortWithCriteria']:
         """require_dose_era (Supports both chaining and parameter-based API)"""
         query = DoseEraQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
@@ -2518,7 +2264,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
     def exclude_dose_era(self, concept_set_id: int, **kwargs) -> Union['DoseEraQuery', 'CohortWithCriteria']:
         """exclude_dose_era (Supports both chaining and parameter-based API)"""
         query = DoseEraQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
@@ -2527,7 +2272,6 @@ class CohortWithCriteria:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
 
     def exit_at_observation_end(self) -> 'CohortWithCriteria':
         """Exit cohort at the end of the observation period."""
@@ -2560,8 +2304,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
-
     def censor_on_drug(self, concept_set_id: int, **kwargs) -> Union['DrugQuery', 'CohortWithCriteria']:
         """censor_on_drug (Supports both chaining and parameter-based API)"""
         query = DrugQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=True)
@@ -2570,8 +2312,6 @@ class CohortWithCriteria:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
-
 
     def censor_on_procedure(self, concept_set_id: int, **kwargs) -> Union['ProcedureQuery', 'CohortWithCriteria']:
         """censor_on_procedure (Supports both chaining and parameter-based API)"""
@@ -2582,8 +2322,6 @@ class CohortWithCriteria:
                 return query._finalize()
         return query
 
-
-
     def censor_on_measurement(self, concept_set_id: int, **kwargs) -> Union['MeasurementQuery', 'CohortWithCriteria']:
         """censor_on_measurement (Supports both chaining and parameter-based API)"""
         query = MeasurementQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=True)
@@ -2592,8 +2330,6 @@ class CohortWithCriteria:
             if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
                 return query._finalize()
         return query
-
-
 
     def censor_on_observation(self, concept_set_id: int) -> ObservationQuery:
         """Censor if an observation occurs."""
@@ -2656,7 +2392,6 @@ class CohortWithCriteria:
             rules=self._rules,
             settings=self._settings
         )
-
 
 # =============================================================================
 # CONVERSION FUNCTIONS
@@ -2772,7 +2507,6 @@ def _build_cohort_expression(
         qualified_limit=ResultLimit(type=qualified_limit),
         expression_limit=ResultLimit(type=expression_limit)
     )
-
 
 def _config_to_criteria(config: QueryConfig):
     """Convert a QueryConfig to a domain criteria object."""
@@ -2968,7 +2702,6 @@ def _config_to_criteria(config: QueryConfig):
         
     return criteria_obj
 
-
 def _build_criteria_group(group_cfg: GroupConfig) -> CirceCriteriaGroup:
     """Recursively build a CirceCriteriaGroup from GroupConfig."""
     criteria_list = []
@@ -2987,7 +2720,6 @@ def _build_criteria_group(group_cfg: GroupConfig) -> CirceCriteriaGroup:
         criteria_list=criteria_list,
         groups=groups
     )
-
 
 def _build_correlated_criteria(criteria_cfg: CriteriaConfig) -> CorelatedCriteria:
     """Convert a CriteriaConfig to a CorelatedCriteria."""
