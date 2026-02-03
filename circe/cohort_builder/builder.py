@@ -10,6 +10,7 @@ The state progression is:
 
 from typing import Optional, List, Union, Dict, Any, TYPE_CHECKING
 from dataclasses import dataclass, field
+import copy
 
 from circe.cohort_builder.query_builder import (
     QueryConfig, TimeWindow, BaseQuery,
@@ -289,6 +290,606 @@ class CohortBuilder:
         """Add concept sets to the cohort."""
         self._concept_sets.extend(concept_sets)
         return self
+    
+    # =========================================================================
+    # COHORT MODIFICATION METHODS
+    # =========================================================================
+    
+    @classmethod
+    def from_expression(cls, expression: CohortExpression, title: Optional[str] = None) -> 'CohortBuilder':
+        """
+        Create a builder from an existing CohortExpression for modification.
+        
+        This creates a modifiable copy of the cohort. The original expression is preserved.
+        
+        Args:
+            expression: Existing CohortExpression to modify
+            title: Optional new title (keeps original if not provided)
+            
+        Returns:
+            CohortBuilder initialized with the existing expression state
+            
+        Raises:
+            ValueError: If expression has no primary criteria
+            
+        Example:
+            >>> # Load existing cohort
+            >>> existing = CohortExpression.model_validate_json(json_data)
+            >>> 
+            >>> # Modify it
+            >>> with CohortBuilder.from_expression(existing) as cohort:
+            ...     cohort.require_drug(5, within_days_before=30)
+            ...     cohort.remove_inclusion_rule("Old Rule")
+            >>> 
+            >>> modified = cohort.expression
+        """
+        # Create new builder
+        builder = cls(title or expression.title or "Modified Cohort")
+        
+        # Deep copy concept sets to avoid mutations
+        if expression.concept_sets:
+            builder._concept_sets = copy.deepcopy(expression.concept_sets)
+        
+        # Reconstruct state from expression
+        if not expression.primary_criteria:
+            raise ValueError("Cannot modify cohort without primary criteria (entry events)")
+        
+        builder._state = cls._reconstruct_state_from_expression(builder, expression)
+        
+        return builder
+    
+    def remove_inclusion_rule(self, name: str) -> 'CohortBuilder':
+        """
+        Remove an inclusion rule by name.
+        
+        Args:
+            name: Name of the inclusion rule to remove
+            
+        Raises:
+            KeyError: If no rule with the given name exists
+            RuntimeError: If called before entry event is defined
+            
+        Returns:
+            Self for chaining
+            
+        Example:
+            >>> with CohortBuilder.from_expression(expr) as cohort:
+            ...     cohort.remove_inclusion_rule("Prior Treatment")
+        """
+        state = self._ensure_state()
+        criteria_state = state._to_criteria() if hasattr(state, '_to_criteria') else state
+        
+        # Find and remove the rule
+        found = False
+        for i, rule in enumerate(criteria_state._rules):
+            if rule["name"] == name:
+                criteria_state._rules.pop(i)
+                found = True
+                break
+        
+        if not found:
+            raise KeyError(f"No inclusion rule found with name: {name}")
+        
+        self._update_state(criteria_state)
+        return self
+    
+    def remove_censoring_criteria(self, 
+                                  criteria_type: Optional[str] = None,
+                                  concept_set_id: Optional[int] = None,
+                                  index: Optional[int] = None) -> 'CohortBuilder':
+        """
+        Remove censoring criteria by type, concept set ID, or index.
+        
+        Exactly one argument must be provided.
+        
+        Args:
+            criteria_type: Type of criteria (e.g., "ConditionOccurrence", "DrugExposure", "Death")
+            concept_set_id: Concept set ID to match
+            index: Zero-based index of criteria to remove
+            
+        Raises:
+            ValueError: If no matching criteria found, multiple arguments provided, or no arguments
+            RuntimeError: If called before entry event is defined
+            
+        Returns:
+            Self for chaining
+            
+        Example:
+            >>> # Remove by type
+            >>> cohort.remove_censoring_criteria(criteria_type="Death")
+            >>> 
+            >>> # Remove by concept set
+            >>> cohort.remove_censoring_criteria(concept_set_id=5)
+            >>> 
+            >>> # Remove by index
+            >>> cohort.remove_censoring_criteria(index=0)
+        """
+        state = self._ensure_state()
+        criteria_state = state._to_criteria() if hasattr(state, '_to_criteria') else state
+        
+        # Validate arguments
+        args_provided = sum([criteria_type is not None, concept_set_id is not None, index is not None])
+        if args_provided == 0:
+            raise ValueError("Must provide one of: criteria_type, concept_set_id, or index")
+        if args_provided > 1:
+            raise ValueError("Can only provide one of: criteria_type, concept_set_id, or index")
+        
+        censor_queries = criteria_state._settings.censor_queries
+        
+        # Remove by index
+        if index is not None:
+            if index < 0 or index >= len(censor_queries):
+                raise ValueError(f"Index {index} out of range (0-{len(censor_queries)-1})")
+            censor_queries.pop(index)
+            self._update_state(criteria_state)
+            return self
+        
+        # Remove by type or concept set ID
+        found_idx = None
+        for i, query in enumerate(censor_queries):
+            if criteria_type is not None and query.domain == criteria_type:
+                found_idx = i
+                break
+            if concept_set_id is not None and query.concept_set_id == concept_set_id:
+                found_idx = i
+                break
+        
+        if found_idx is None:
+            if criteria_type:
+                raise ValueError(f"No censoring criteria found with type: {criteria_type}")
+            else:
+                raise ValueError(f"No censoring criteria found with concept_set_id: {concept_set_id}")
+        
+        censor_queries.pop(found_idx)
+        self._update_state(criteria_state)
+        return self
+    
+    def remove_entry_event(self,
+                          criteria_type: Optional[str] = None,
+                          concept_set_id: Optional[int] = None,
+                          index: Optional[int] = None) -> 'CohortBuilder':
+        """
+        Remove an entry event from primary criteria.
+        
+        Note: At least one entry event must remain after removal.
+        Exactly one argument must be provided.
+        
+        Args:
+            criteria_type: Type of criteria (e.g., "ConditionOccurrence", "DrugExposure")
+            concept_set_id: Concept set ID to match
+            index: Zero-based index of entry event to remove
+            
+        Raises:
+            ValueError: If removal would leave no entry events, no match found, or invalid arguments
+            RuntimeError: If called before entry event is defined
+            
+        Returns:
+            Self for chaining
+            
+        Example:
+            >>> # Remove condition entry event with specific concept set
+            >>> cohort.remove_entry_event(concept_set_id=1)
+            >>> 
+            >>> # Remove by type (removes first match)
+            >>> cohort.remove_entry_event(criteria_type="DrugExposure")
+        """
+        state = self._ensure_state()
+        criteria_state = state._to_criteria() if hasattr(state, '_to_criteria') else state
+        
+        # Validate arguments
+        args_provided = sum([criteria_type is not None, concept_set_id is not None, index is not None])
+        if args_provided == 0:
+            raise ValueError("Must provide one of: criteria_type, concept_set_id, or index")
+        if args_provided > 1:
+            raise ValueError("Can only provide one of: criteria_type, concept_set_id, or index")
+        
+        entry_configs = criteria_state._entry_configs
+        
+        # Check that we won't remove the last entry event
+        if len(entry_configs) <= 1:
+            raise ValueError("Cannot remove the last entry event. At least one entry event must remain.")
+        
+        # Remove by index
+        if index is not None:
+            if index < 0 or index >= len(entry_configs):
+                raise ValueError(f"Index {index} out of range (0-{len(entry_configs)-1})")
+            entry_configs.pop(index)
+            self._update_state(criteria_state)
+            return self
+        
+        # Remove by type or concept set ID
+        found_idx = None
+        for i, config in enumerate(entry_configs):
+            if criteria_type is not None and config.domain == criteria_type:
+                found_idx = i
+                break
+            if concept_set_id is not None and config.concept_set_id == concept_set_id:
+                found_idx = i
+                break
+        
+        if found_idx is None:
+            if criteria_type:
+                raise ValueError(f"No entry event found with type: {criteria_type}")
+            else:
+                raise ValueError(f"No entry event found with concept_set_id: {concept_set_id}")
+        
+        entry_configs.pop(found_idx)
+        self._update_state(criteria_state)
+        return self
+    
+    def remove_concept_set(self, concept_set_id: int) -> 'CohortBuilder':
+        """
+        Remove a concept set by ID.
+        
+        Warning: This does not remove criteria that reference this concept set.
+        Consider using remove_all_references() to clean up orphaned references.
+        
+        Args:
+            concept_set_id: ID of the concept set to remove
+            
+        Raises:
+            KeyError: If no concept set with the given ID exists
+            
+        Returns:
+            Self for chaining
+            
+        Example:
+            >>> cohort.remove_concept_set(concept_set_id=3)
+        """
+        found_idx = None
+        for i, cs in enumerate(self._concept_sets):
+            if cs.id == concept_set_id:
+                found_idx = i
+                break
+        
+        if found_idx is None:
+            raise KeyError(f"No concept set found with ID: {concept_set_id}")
+        
+        self._concept_sets.pop(found_idx)
+        return self
+    
+    def remove_all_references(self, concept_set_id: int) -> 'CohortBuilder':
+        """
+        Remove a concept set and all criteria that reference it.
+        
+        This removes:
+        - The concept set itself
+        - Entry events using this concept set
+        - Inclusion/exclusion criteria using this concept set
+        - Censoring criteria using this concept set
+        
+        Args:
+            concept_set_id: ID of the concept set to remove
+            
+        Returns:
+            Self for chaining
+            
+        Example:
+            >>> # Remove diabetes concept set and all related criteria
+            >>> cohort.remove_all_references(concept_set_id=3)
+        """
+        # Remove concept set
+        try:
+            self.remove_concept_set(concept_set_id)
+        except KeyError:
+            pass  # Concept set doesn't exist, continue with cleanup
+        
+        # Remove from entry events (if possible)
+        if self._state:
+            criteria_state = self._state._to_criteria() if hasattr(self._state, '_to_criteria') else self._state
+            
+            # Remove entry events with this concept set (keep at least one)
+            entry_configs = criteria_state._entry_configs
+            filtered_entries = [cfg for cfg in entry_configs if cfg.concept_set_id != concept_set_id]
+            if filtered_entries:  # Only update if we have remaining entries
+                criteria_state._entry_configs = filtered_entries
+            
+            # Remove censoring criteria with this concept set
+            criteria_state._settings.censor_queries = [
+                q for q in criteria_state._settings.censor_queries 
+                if q.concept_set_id != concept_set_id
+            ]
+            
+            # Remove inclusion/exclusion criteria with this concept set
+            for rule in criteria_state._rules:
+                self._remove_criteria_with_concept_set(rule["group"], concept_set_id)
+            
+            self._update_state(criteria_state)
+        
+        return self
+    
+    def _remove_criteria_with_concept_set(self, group, concept_set_id: int):
+        """Recursively remove criteria referencing a concept set from a group."""
+        from circe.cohort_builder.query_builder import GroupConfig, CriteriaConfig
+        
+        if not hasattr(group, 'criteria'):
+            return
+        
+        filtered_criteria = []
+        for criterion in group.criteria:
+            if isinstance(criterion, GroupConfig):
+                # Recursively clean nested groups
+                self._remove_criteria_with_concept_set(criterion, concept_set_id)
+                # Keep the group if it still has criteria
+                if criterion.criteria:
+                    filtered_criteria.append(criterion)
+            elif isinstance(criterion, CriteriaConfig):
+                # Keep criteria that don't reference this concept set
+                if criterion.query_config.concept_set_id != concept_set_id:
+                    filtered_criteria.append(criterion)
+            else:
+                # Keep other types as-is
+                filtered_criteria.append(criterion)
+        
+        group.criteria = filtered_criteria
+    
+    def clear_inclusion_rules(self) -> 'CohortBuilder':
+        """
+        Remove all inclusion rules.
+        
+        Returns:
+            Self for chaining
+        """
+        state = self._ensure_state()
+        criteria_state = state._to_criteria() if hasattr(state, '_to_criteria') else state
+        criteria_state._rules = [{"name": "Inclusion Criteria", "group": GroupConfig(type="ALL")}]
+        self._update_state(criteria_state)
+        return self
+    
+    def clear_censoring_criteria(self) -> 'CohortBuilder':
+        """
+        Remove all censoring criteria.
+        
+        Returns:
+            Self for chaining
+        """
+        state = self._ensure_state()
+        criteria_state = state._to_criteria() if hasattr(state, '_to_criteria') else state
+        criteria_state._settings.censor_queries = []
+        self._update_state(criteria_state)
+        return self
+    
+    def clear_demographic_criteria(self) -> 'CohortBuilder':
+        """
+        Clear all demographic restrictions (age, gender, race, ethnicity).
+        
+        Returns:
+            Self for chaining
+        """
+        state = self._ensure_state()
+        criteria_state = state._to_criteria() if hasattr(state, '_to_criteria') else state
+        criteria_state._settings.gender_concepts = []
+        criteria_state._settings.race_concepts = []
+        criteria_state._settings.ethnicity_concepts = []
+        criteria_state._settings.age_min = None
+        criteria_state._settings.age_max = None
+        self._update_state(criteria_state)
+        return self
+    
+    @staticmethod
+    def _reconstruct_state_from_expression(builder: 'CohortBuilder', 
+                                          expression: CohortExpression) -> 'CohortWithCriteria':
+        """
+        Reconstruct builder state from a CohortExpression.
+        
+        This reverse-engineers the internal state so modifications can be applied.
+        
+        Args:
+            builder: The parent CohortBuilder instance
+            expression: The CohortExpression to reconstruct from
+            
+        Returns:
+            CohortWithCriteria state ready for modifications
+        """
+        import copy
+        from circe.cohort_builder.query_builder import GroupConfig, CriteriaConfig
+        
+        # Extract entry events from primary criteria
+        entry_configs = []
+        if expression.primary_criteria and expression.primary_criteria.criteria_list:
+            for criteria in expression.primary_criteria.criteria_list:
+                config = builder._criteria_to_query_config(criteria)
+                entry_configs.append(config)
+        
+        # Extract observation window
+        prior_obs = 0
+        post_obs = 0
+        if expression.primary_criteria and expression.primary_criteria.observation_window:
+            prior_obs = expression.primary_criteria.observation_window.prior_days or 0
+            post_obs = expression.primary_criteria.observation_window.post_days or 0
+        
+        # Extract limits
+        limit = "All"
+        qualified_limit = "First"
+        expression_limit = "All"
+        
+        if expression.primary_criteria and expression.primary_criteria.primary_limit:
+            limit = expression.primary_criteria.primary_limit.type or "All"
+        if expression.qualified_limit:
+            qualified_limit = expression.qualified_limit.type or "First"
+        if expression.expression_limit:
+            expression_limit = expression.expression_limit.type or "All"
+        
+        # Extract settings
+        settings = builder._extract_settings_from_expression(expression)
+        
+        # Create CohortWithCriteria state
+        state = CohortWithCriteria(
+            parent=builder,
+            entry_configs=entry_configs,
+            prior_observation=prior_obs,
+            post_observation=post_obs,
+            limit=limit,
+            qualified_limit=qualified_limit,
+            expression_limit=expression_limit,
+            settings=settings
+        )
+        
+        # Reconstruct inclusion rules
+        if expression.inclusion_rules:
+            # Clear default rule
+            state._rules = []
+            
+            for rule in expression.inclusion_rules:
+                # Skip demographic criteria rule (handled in settings)
+                if rule.name == "Demographic Criteria":
+                    continue
+                
+                group = GroupConfig(type="ALL")
+                if rule.expression:
+                    builder._reconstruct_criteria_group(rule.expression, group)
+                
+                state._rules.append({"name": rule.name, "group": group})
+        
+        # If no rules were added, ensure we have the default rule
+        if not state._rules:
+            state._rules = [{"name": "Inclusion Criteria", "group": GroupConfig(type="ALL")}]
+        
+        return state
+    
+    @staticmethod
+    def _criteria_to_query_config(criteria):
+        """
+        Convert a Criteria object to a QueryConfig for the builder.
+        
+        Maps CIRCE criteria objects back to builder query configurations.
+        """
+        from circe.cohort_builder.query_builder import QueryConfig, TimeWindow
+        
+        # Determine domain from criteria type
+        domain = criteria.__class__.__name__
+        
+        # Extract concept set ID
+        concept_set_id = getattr(criteria, 'codeset_id', None)
+        
+        # Create basic config
+        config = QueryConfig(
+            domain=domain,
+            concept_set_id=concept_set_id,
+            time_window=TimeWindow()
+        )
+        
+        # Extract first occurrence flag
+        if hasattr(criteria, 'first') and criteria.first:
+            config.first_occurrence = True
+        
+        # Extract age constraints
+        if hasattr(criteria, 'age') and criteria.age:
+            if hasattr(criteria.age, 'value'):
+                config.age_min = criteria.age.value
+            if hasattr(criteria.age, 'extent'):
+                config.age_max = criteria.age.extent
+        
+        # Note: More complex criteria attributes (date ranges, correlated criteria, etc.)
+        # are not fully reconstructed. This is a simplified mapping for common cases.
+        
+        return config
+    
+    @staticmethod
+    def _extract_settings_from_expression(expression: CohortExpression) -> CohortSettings:
+        """
+        Extract cohort settings from expression.
+        
+        Extracts:
+        - Exit strategy (observation end, date offset, custom era)
+        - Era collapse settings
+        - Censoring criteria
+        - Demographic criteria
+        """
+        from circe.cohortdefinition.core import DateOffsetStrategy, CustomEraStrategy
+        
+        settings = CohortSettings()
+        
+        # Extract exit strategy
+        if expression.end_strategy:
+            if isinstance(expression.end_strategy, DateOffsetStrategy):
+                settings.exit_strategy_type = "date_offset"
+                settings.exit_offset_field = expression.end_strategy.date_field or "startDate"
+                settings.exit_offset_days = expression.end_strategy.offset or 0
+            elif isinstance(expression.end_strategy, CustomEraStrategy):
+                settings.exit_strategy_type = "custom_era"
+                settings.custom_era_drug_codeset_id = expression.end_strategy.drug_codeset_id
+                settings.custom_era_gap_days = expression.end_strategy.gap_days or 30
+                settings.custom_era_offset = expression.end_strategy.offset or 0
+                settings.custom_era_days_supply_override = expression.end_strategy.days_supply_override
+        
+        # Extract era collapse
+        if expression.collapse_settings and expression.collapse_settings.era_pad:
+            settings.era_days = expression.collapse_settings.era_pad
+        
+        # Extract censoring criteria
+        if expression.censoring_criteria:
+            for criteria in expression.censoring_criteria:
+                config = CohortBuilder._criteria_to_query_config(criteria)
+                settings.censor_queries.append(config)
+        
+        # Extract demographic criteria from inclusion rules
+        if expression.inclusion_rules:
+            for rule in expression.inclusion_rules:
+                if rule.name == "Demographic Criteria" and rule.expression:
+                    if rule.expression.demographic_criteria_list:
+                        demo = rule.expression.demographic_criteria_list[0]
+                        
+                        if demo.gender:
+                            settings.gender_concepts = [c.concept_id for c in demo.gender]
+                        if demo.race:
+                            settings.race_concepts = [c.concept_id for c in demo.race]
+                        if demo.ethnicity:
+                            settings.ethnicity_concepts = [c.concept_id for c in demo.ethnicity]
+                        if demo.age:
+                            settings.age_min = demo.age.value
+                            settings.age_max = demo.age.extent
+        
+        return settings
+    
+    @staticmethod
+    def _reconstruct_criteria_group(circe_group, builder_group):
+        """
+        Recursively reconstruct a CriteriaGroup from CIRCE format to builder format.
+        
+        This is a simplified reconstruction that handles common cases.
+        Complex nested groups and correlated criteria may not be fully supported.
+        """
+        from circe.cohort_builder.query_builder import GroupConfig, CriteriaConfig
+        
+        # Set group type
+        if circe_group.type:
+            builder_group.type = circe_group.type
+        
+        # Reconstruct count for AT_LEAST groups
+        if hasattr(circe_group, 'count') and circe_group.count:
+            builder_group.count = circe_group.count
+        
+        # Reconstruct criteria list
+        if hasattr(circe_group, 'criteria_list') and circe_group.criteria_list:
+            for item in circe_group.criteria_list:
+                # Check if it's a windowed criteria (has criteria field)
+                if hasattr(item, 'criteria'):
+                    # This is a windowed criteria
+                    config = CohortBuilder._criteria_to_query_config(item.criteria)
+                    
+                    # Determine if it's an exclusion based on occurrence count
+                    is_exclusion = False
+                    if hasattr(item, 'occurrence') and item.occurrence:
+                        # Count = 0 typically means exclusion
+                        is_exclusion = item.occurrence.count == 0
+                    
+                    builder_group.criteria.append(CriteriaConfig(
+                        query_config=config,
+                        is_exclusion=is_exclusion
+                    ))
+                elif hasattr(item, 'type'):
+                    # This is a nested group
+                    nested_group = GroupConfig(type=item.type)
+                    CohortBuilder._reconstruct_criteria_group(item, nested_group)
+                    builder_group.criteria.append(nested_group)
+        
+        # Handle groups (nested criteria groups)
+        if hasattr(circe_group, 'groups') and circe_group.groups:
+            for nested in circe_group.groups:
+                nested_group = GroupConfig(type=nested.type if hasattr(nested, 'type') else "ALL")
+                CohortBuilder._reconstruct_criteria_group(nested, nested_group)
+                builder_group.criteria.append(nested_group)
     
     # =========================================================================
     # ENTRY EVENT METHODS

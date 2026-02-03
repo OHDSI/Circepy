@@ -256,6 +256,283 @@ if __name__ == "__main__":
         print(f"Saved: {path}")
 ```
 
+```
+
+## Modifying Existing Cohorts
+
+If you have an existing cohort definition in your context (as a `CohortExpression` object or JSON), you can modify it instead of creating a new one from scratch.
+
+### When to Modify vs Create New
+
+**✅ Modify an existing cohort when:**
+- You need to make small adjustments to an existing definition
+- You want to add/remove specific criteria while preserving the rest
+- You're iterating on a cohort based on feedback
+- The existing cohort is close to what you need
+
+**❌ Create a new cohort when:**
+- The changes are substantial (different entry event, completely different logic)
+- You need a variant for comparison (keep both versions)
+- The clinical description is fundamentally different
+
+### Loading Existing Cohorts
+
+Use `CohortBuilder.from_expression()` to load an existing cohort for modification:
+
+```python
+from circe.cohort_builder import CohortBuilder
+from circe.cohortdefinition import CohortExpression
+
+# Load from JSON
+existing_json = """{ ... cohort definition ... }"""
+existing = CohortExpression.model_validate_json(existing_json)
+
+# Load into builder for modification
+with CohortBuilder.from_expression(existing) as cohort:
+    # Make modifications here
+    cohort.require_drug(5, within_days_before=30)
+    cohort.remove_inclusion_rule("Old Rule")
+
+modified = cohort.expression
+```
+
+### Modification Operations
+
+#### Adding New Criteria
+
+Use the same API as building new cohorts:
+
+```python
+with CohortBuilder.from_expression(existing) as cohort:
+    # Add new inclusion criteria
+    cohort.require_measurement(4, within_days_after=90)
+    
+    # Add new exclusion criteria
+    cohort.exclude_condition(6, anytime_before=True)
+    
+    # Add new concept sets
+    from circe.vocabulary import concept_set, descendants
+    hba1c = concept_set(descendants(3004410), id=4, name="HbA1c")
+    cohort.with_concept_sets(hba1c)
+```
+
+#### Removing Inclusion Rules
+
+Remove rules by their name:
+
+```python
+with CohortBuilder.from_expression(existing) as cohort:
+    # Remove a specific rule
+    cohort.remove_inclusion_rule("Prior Treatment")
+    
+    # Or clear all rules and start fresh
+    cohort.clear_inclusion_rules()
+```
+
+#### Removing Censoring Criteria
+
+Remove censoring criteria by type, concept set ID, or index:
+
+```python
+with CohortBuilder.from_expression(existing) as cohort:
+    # Remove by type
+    cohort.remove_censoring_criteria(criteria_type="Death")
+    
+    # Remove by concept set ID
+    cohort.remove_censoring_criteria(concept_set_id=5)
+    
+    # Remove by index
+    cohort.remove_censoring_criteria(index=0)
+    
+    # Or clear all censoring criteria
+    cohort.clear_censoring_criteria()
+```
+
+#### Removing Entry Events
+
+Remove entry events while ensuring at least one remains:
+
+```python
+with CohortBuilder.from_expression(existing) as cohort:
+    # Remove by concept set ID
+    cohort.remove_entry_event(concept_set_id=1)
+    
+    # Remove by type (removes first match)
+    cohort.remove_entry_event(criteria_type="DrugExposure")
+    
+    # Remove by index
+    cohort.remove_entry_event(index=0)
+```
+
+**Note**: You cannot remove the last entry event. At least one must remain.
+
+#### Removing Concept Sets
+
+Remove concept sets with or without cleaning up references:
+
+```python
+with CohortBuilder.from_expression(existing) as cohort:
+    # Remove just the concept set (leaves references)
+    cohort.remove_concept_set(concept_set_id=3)
+    
+    # Remove concept set AND all criteria that reference it
+    cohort.remove_all_references(concept_set_id=3)
+```
+
+**Recommendation**: Use `remove_all_references()` to avoid orphaned criteria.
+
+#### Clearing Demographic Criteria
+
+Remove all demographic restrictions:
+
+```python
+with CohortBuilder.from_expression(existing) as cohort:
+    # Clear age, gender, race, ethnicity restrictions
+    cohort.clear_demographic_criteria()
+```
+
+### Practical Modification Examples
+
+#### Example 1: Refining an Existing Cohort
+
+```python
+def refine_diabetes_cohort(existing_cohort: CohortExpression):
+    """Refine diabetes cohort by removing age restriction and adding HbA1c requirement."""
+    
+    # Add new concept set for HbA1c
+    hba1c = concept_set(descendants(3004410), id=4, name="HbA1c Measurement")
+    
+    with CohortBuilder.from_expression(existing_cohort, title="Refined Diabetes Cohort") as cohort:
+        # Remove age restriction (if it exists)
+        cohort.clear_demographic_criteria()
+        
+        # Add HbA1c measurement requirement
+        cohort.with_concept_sets(hba1c)
+        cohort.require_measurement(4, within_days_after=90)
+    
+    return cohort.expression
+```
+
+#### Example 2: Removing Outdated Criteria
+
+```python
+def remove_outdated_exclusions(existing_cohort: CohortExpression):
+    """Remove outdated exclusion criteria from cohort."""
+    
+    with CohortBuilder.from_expression(existing_cohort) as cohort:
+        # Remove specific exclusion rules
+        cohort.remove_inclusion_rule("Cancer Exclusion")
+        cohort.remove_inclusion_rule("Pregnancy Exclusion")
+        
+        # Remove death censoring
+        cohort.remove_censoring_criteria(criteria_type="Death")
+    
+    return cohort.expression
+```
+
+#### Example 3: Simplifying a Complex Cohort
+
+```python
+def simplify_cohort(existing_cohort: CohortExpression):
+    """Simplify cohort by removing all inclusion rules and keeping only entry event."""
+    
+    with CohortBuilder.from_expression(existing_cohort, title="Simplified Cohort") as cohort:
+        # Clear all inclusion rules
+        cohort.clear_inclusion_rules()
+        
+        # Clear all censoring criteria
+        cohort.clear_censoring_criteria()
+        
+        # Clear demographic restrictions
+        cohort.clear_demographic_criteria()
+    
+    return cohort.expression
+```
+
+#### Example 4: Adapting for Different Population
+
+```python
+def adapt_for_pediatric_population(adult_cohort: CohortExpression):
+    """Adapt an adult cohort for pediatric population."""
+    
+    with CohortBuilder.from_expression(adult_cohort, title="Pediatric Version") as cohort:
+        # Remove adult age restriction
+        cohort.clear_demographic_criteria()
+        
+        # Add pediatric age restriction
+        cohort.max_age(17)
+        
+        # Remove adult-specific criteria (example)
+        try:
+            cohort.remove_inclusion_rule("Pregnancy Screening")
+        except KeyError:
+            pass  # Rule doesn't exist, continue
+    
+    return cohort.expression
+```
+
+### Decision Guide: Modify or Create New?
+
+Use this flowchart to decide:
+
+1. **Is the entry event the same?**
+   - No → Create new cohort
+   - Yes → Continue
+
+2. **Are you changing >50% of the criteria?**
+   - Yes → Consider creating new cohort
+   - No → Continue
+
+3. **Do you need to keep both versions?**
+   - Yes → Create new cohort (with different title)
+   - No → Modify existing
+
+4. **Are the changes additive (adding criteria)?**
+   - Yes → Modify existing
+   - Mostly removals → Modify existing
+
+5. **Is this a one-time adjustment or a variant?**
+   - One-time → Modify existing
+   - Variant → Create new with different title
+
+### Important Notes
+
+**Preservation of Original**: Modifications create a copy. The original `CohortExpression` is never mutated.
+
+```python
+original = CohortExpression.model_validate_json(json_data)
+
+with CohortBuilder.from_expression(original) as cohort:
+    cohort.clear_inclusion_rules()
+
+modified = cohort.expression
+
+# original is unchanged
+assert len(original.inclusion_rules) > 0  # Still has rules
+assert len(modified.inclusion_rules) == 0  # Rules cleared
+```
+
+**Error Handling**: Removal methods raise errors for invalid operations:
+
+```python
+try:
+    cohort.remove_inclusion_rule("Nonexistent Rule")
+except KeyError:
+    print("Rule not found")
+
+try:
+    cohort.remove_entry_event(concept_set_id=999)
+except ValueError:
+    print("Entry event not found or would leave zero entry events")
+```
+
+**State Reconstruction Limitations**: Complex cohorts with deeply nested logic or correlated criteria may not be fully reconstructed. The modification API works best with:
+- Simple inclusion/exclusion rules
+- Standard time windows
+- Common criteria types
+
+For highly complex cohorts, consider creating a new one from scratch.
+
 ## Common Pitfalls to Avoid
 
 ### 1. **The "Adult Default" Trap**
