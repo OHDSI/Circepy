@@ -37,6 +37,22 @@ from .cohort_expression_query_builder import CohortExpressionQueryBuilder, Build
 from .concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
 from .interfaces import IGetCriteriaSqlDispatcher, IGetEndStrategySqlDispatcher
 from .printfriendly import MarkdownRender
+from .validators import (
+    is_first_event,
+    has_exclusion_rules,
+    has_inclusion_rule_by_name,
+    get_exclusion_count,
+    has_censoring_criteria,
+    get_censoring_criteria_types,
+    has_additional_criteria,
+    has_end_strategy,
+    get_end_strategy_type,
+    get_primary_criteria_types,
+    has_observation_window,
+    get_primary_limit_type,
+    get_concept_set_count,
+    has_concept_sets,
+)
 
 __all__ = [
     # Main cohort class
@@ -76,7 +92,23 @@ __all__ = [
     "IGetCriteriaSqlDispatcher", "IGetEndStrategySqlDispatcher",
     
     # Print-Friendly
-    "MarkdownRender"
+    "MarkdownRender",
+    
+    # Validator Functions
+    "is_first_event",
+    "has_exclusion_rules",
+    "has_inclusion_rule_by_name",
+    "get_exclusion_count",
+    "has_censoring_criteria",
+    "get_censoring_criteria_types",
+    "has_additional_criteria",
+    "has_end_strategy",
+    "get_end_strategy_type",
+    "get_primary_criteria_types",
+    "has_observation_window",
+    "get_primary_limit_type",
+    "get_concept_set_count",
+    "has_concept_sets",
 ]
 
 # Rebuild models with forward references after all imports are complete

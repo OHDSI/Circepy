@@ -32,6 +32,7 @@ from .api import (
     build_cohort_query,
     cohort_print_friendly,
 )
+from .skills import get_cohort_builder_skill, get_skill, list_skills
 
 from circe.cohortdefinition import (
     CohortExpression, Criteria, CorelatedCriteria, DemographicCriteria,
@@ -186,5 +187,10 @@ __all__ = [
     "cohort_expression_from_json",
     "build_cohort_query",
     "cohort_print_friendly",
-    "safe_model_rebuild"
+    "safe_model_rebuild",
+    # Skills for AI agents
+    "get_cohort_builder_skill",
+    "get_skill",
+    "list_skills",
 ]
+
