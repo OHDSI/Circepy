@@ -11,6 +11,7 @@ from pathlib import Path
 from .api import cohort_expression_from_json, build_cohort_query, cohort_print_friendly
 from .cohortdefinition import BuildExpressionQueryOptions
 from .cohortdefinition.code_generator import to_python_code
+from .skills import list_skills, get_skill
 
 
 def main():
@@ -48,6 +49,11 @@ def main():
     source_parser.add_argument('input', help='Input JSON file')
     source_parser.add_argument('--output', '-o', help='Output Python file (default: stdout)')
 
+    # Get skill command
+    skill_parser = subparsers.add_parser('get-skill', help='Get skill documentation for AI agents')
+    skill_parser.add_argument('name', nargs='?', help='Name of the skill to retrieve')
+    skill_parser.add_argument('--list', action='store_true', help='List available skills')
+
     # Process command (all-in-one)
     process_parser = subparsers.add_parser('process', help='Validate, generate SQL and Markdown')
     process_parser.add_argument('input', help='Input JSON file')
@@ -74,6 +80,8 @@ def main():
             return process_command(args)
         elif args.command == 'generate-source':
             return generate_source_command(args)
+        elif args.command == 'get-skill':
+            return get_skill_command(args)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
@@ -234,6 +242,31 @@ def generate_source_command(args):
     else:
         print(source_code)
     
+    return 0
+
+
+def get_skill_command(args):
+    """Get skill documentation."""
+    if args.list:
+        skills = list_skills()
+        print("Available skills:")
+        for skill in skills:
+            print(f"- {skill}")
+        return 0
+    
+    skill_content = get_skill(args.name or "cohort_builder")
+    if not skill_content:
+        # If no name provided (and default failed) or invalid name
+        # But our default is cohort_builder which exists.
+        # If they provided a name and it failed:
+        if args.name:
+            print(f"Error: Skill '{args.name}' not found", file=sys.stderr)
+            return 1
+        # Fallback if default fails (shouldn't happen given list_skills)
+        print("Error: Default skill not found", file=sys.stderr)
+        return 1
+        
+    print(skill_content)
     return 0
 
 

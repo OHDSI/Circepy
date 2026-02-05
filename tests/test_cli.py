@@ -192,3 +192,37 @@ def test_generate_source_command():
         ])
 
         assert "cohort =" in stdout
+
+
+def test_get_skill_command_list():
+    """Test get-skill --list command."""
+    exit_code, stdout, stderr = run_python_cli_in_process(['get-skill', '--list'])
+    
+    assert exit_code == 0
+    assert "Available skills:" in stdout
+    assert "cohort_builder" in stdout
+
+
+def test_get_skill_command_by_name():
+    """Test get-skill cohort_builder command."""
+    exit_code, stdout, stderr = run_python_cli_in_process(['get-skill', 'cohort_builder'])
+    
+    assert exit_code == 0
+    assert "# Cohort Builder Skill" in stdout
+    assert "CohortBuilder" in stdout
+
+
+def test_get_skill_command_default():
+    """Test get-skill command without name (defaults to cohort_builder)."""
+    exit_code, stdout, stderr = run_python_cli_in_process(['get-skill'])
+    
+    assert exit_code == 0
+    assert "# Cohort Builder Skill" in stdout
+
+
+def test_get_skill_command_invalid_name():
+    """Test get-skill with invalid skill name."""
+    exit_code, stdout, stderr = run_python_cli_in_process(['get-skill', 'invalid_skill_name'])
+    
+    assert exit_code == 1
+    assert "not found" in stderr
