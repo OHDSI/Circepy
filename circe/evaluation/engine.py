@@ -88,13 +88,14 @@ CREATE TABLE {table_full_name} (
 
         rule_queries = []
         for rule in rubric.rules:
-            # Generate the Correlated Criteria SQL
+            # Generate the Criteria Group SQL
             # This handles temporal windows and occurrences relative to the index_date
-            cc_sql = self._cohort_builder.get_corelated_criteria_query(rule.criteria, index_event_subquery)
-            cc_sql = cc_sql.replace("@indexId", str(rule.rule_id))
-            cc_sql = cc_sql.replace("@cdm_database_schema", cdm_schema)
+            # as well as complex logical grouping (AND/OR).
+            cg_sql = self._cohort_builder.get_criteria_group_query(rule.expression, index_event_subquery)
+            cg_sql = cg_sql.replace("@indexId", str(rule.rule_id))
+            cg_sql = cg_sql.replace("@cdm_database_schema", cdm_schema)
             
-            # The CC query returns (index_id, person_id, event_id) for matched events.
+            # The Criteria Group query returns (index_id, person_id, event_id) for matched events.
             # We wrap it to return the weighted score for the subject.
             rule_query = f"""
             SELECT 
@@ -107,7 +108,7 @@ CREATE TABLE {table_full_name} (
             LEFT JOIN (
               SELECT person_id, {rule.weight} * {rule.polarity} as score
               FROM (
-                {cc_sql}
+                {cg_sql}
               ) InnerR
             ) R ON E.subject_id = R.person_id
             """

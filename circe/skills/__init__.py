@@ -18,22 +18,22 @@ from typing import Optional
 def get_cohort_builder_skill() -> str:
     """
     Return the CohortBuilder skill documentation for AI agents.
-    
-    This returns a markdown document describing how to use the
-    CohortBuilder context manager API to build OHDSI cohort definitions.
-    
-    Returns:
-        str: Markdown documentation for the CohortBuilder API
-        
-    Example:
-        >>> from circe.skills import get_cohort_builder_skill
-        >>> skill = get_cohort_builder_skill()
-        >>> print(skill[:100])
-        ---
-        description: Build OHDSI cohort definitions using the Pythonic context manager API
-        ---
     """
     skill_file = files("circe.skills").joinpath("cohort_builder.md")
+    return skill_file.read_text()
+
+
+def get_evaluation_builder_skill() -> str:
+    """
+    Return the EvaluationBuilder skill documentation for AI agents.
+    
+    This returns a markdown document describing how to use the
+    EvaluationBuilder context manager API to build phenotype evaluation rubrics.
+    
+    Returns:
+        str: Markdown documentation for the EvaluationBuilder API
+    """
+    skill_file = files("circe.skills").joinpath("evaluation_builder.md")
     return skill_file.read_text()
 
 
@@ -49,9 +49,11 @@ def get_skill(name: str = "cohort_builder") -> Optional[str]:
         
     Available skills:
         - cohort_builder: Build OHDSI cohort definitions using CohortBuilder
+        - evaluation_builder: Build OHDSI evaluation rubrics using EvaluationBuilder
     """
     skill_map = {
         "cohort_builder": get_cohort_builder_skill,
+        "evaluation_builder": get_evaluation_builder_skill,
     }
     
     func = skill_map.get(name)
@@ -67,4 +69,4 @@ def list_skills() -> list:
     Returns:
         list: Names of available skills
     """
-    return ["cohort_builder"]
+    return ["cohort_builder", "evaluation_builder"]

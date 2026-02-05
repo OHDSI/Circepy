@@ -642,6 +642,12 @@ class CriteriaGroupBuilder:
     def __init__(self, parent: Union['CriteriaGroupBuilder', 'CohortWithCriteria', 'BaseQuery'], group: GroupConfig):
         self._parent = parent
         self._group = group
+
+    def __enter__(self) -> 'CriteriaGroupBuilder':
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        return False
     
     def _add_query(self, config: QueryConfig, is_exclusion: bool = False) -> 'CriteriaGroupBuilder':
         self._group.criteria.append(CriteriaConfig(
@@ -680,6 +686,28 @@ class CriteriaGroupBuilder:
 
     def require_death(self, **kwargs) -> "CriteriaGroupBuilder":
         return DeathQuery(parent=self, is_exclusion=False).apply_params(**kwargs)._finalize()
+
+    # Aliases for brevity
+    def condition(self, concept_set_id: int, **kwargs) -> "CriteriaGroupBuilder":
+        return self.require_condition(concept_set_id, **kwargs)
+
+    def drug(self, concept_set_id: int, **kwargs) -> "CriteriaGroupBuilder":
+        return self.require_drug(concept_set_id, **kwargs)
+
+    def measurement(self, concept_set_id: int, **kwargs) -> "CriteriaGroupBuilder":
+        return self.require_measurement(concept_set_id, **kwargs)
+
+    def procedure(self, concept_set_id: int, **kwargs) -> "CriteriaGroupBuilder":
+        return self.require_procedure(concept_set_id, **kwargs)
+
+    def visit(self, concept_set_id: int, **kwargs) -> "CriteriaGroupBuilder":
+        return self.require_visit(concept_set_id, **kwargs)
+
+    def observation(self, concept_set_id: int, **kwargs) -> "CriteriaGroupBuilder":
+        return self.require_observation(concept_set_id, **kwargs)
+
+    def death(self, **kwargs) -> "CriteriaGroupBuilder":
+        return self.require_death(**kwargs)
 
     def require_device(self, concept_set_id: int, **kwargs) -> "CriteriaGroupBuilder":
         return DeviceExposureQuery(concept_set_id, parent=self, is_exclusion=False).apply_params(**kwargs)._finalize()
