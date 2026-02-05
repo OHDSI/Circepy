@@ -55,6 +55,11 @@ class TestEvaluationEngine(unittest.TestCase):
         self.assertIn("CREATE TABLE #Codesets", sql)
         self.assertIn("INSERT INTO #Codesets", sql)
         self.assertIn("192671", sql) # GI hemorrhage
+        
+        # Check for target table population
+        self.assertIn("DELETE FROM @results_database_schema.cohort_rubric WHERE ruleset_id = 1", sql)
+        self.assertIn("INSERT INTO @results_database_schema.cohort_rubric (ruleset_id, subject_id, index_date, rule_id, score)", sql)
+        
         self.assertIn("ruleset_id", sql)
         self.assertIn("subject_id", sql)
         self.assertIn("index_date", sql)
@@ -81,10 +86,22 @@ class TestEvaluationEngine(unittest.TestCase):
             rules=[rule]
         )
         
-        sql = self.builder.build_query(rubric, ruleset_id=99)
+        sql = self.builder.build_query(rubric, ruleset_id=99, target_table="my_custom_table")
         
+        self.assertIn("DELETE FROM @results_database_schema.my_custom_table WHERE ruleset_id = 99", sql)
+        self.assertIn("INSERT INTO @results_database_schema.my_custom_table", sql)
         self.assertIn("99 as ruleset_id", sql)
         self.assertIn("10.0 * 1 as score", sql)
+
+    def test_ddl_generation(self):
+        ddl = self.builder.get_ddl(results_schema="results", target_table="eval_table")
+        self.assertIn("CREATE TABLE results.eval_table", ddl)
+        self.assertIn("ruleset_id INT", ddl)
+        self.assertIn("subject_id BIGINT", ddl)
+        self.assertIn("index_date DATE", ddl)
+        self.assertIn("rule_id INT", ddl)
+        self.assertIn("score FLOAT", ddl)
+
 
 
 if __name__ == "__main__":

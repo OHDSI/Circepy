@@ -15,17 +15,36 @@ class EvaluationQueryBuilder:
     def __init__(self):
         self._cohort_builder = CohortExpressionQueryBuilder()
 
+    def get_ddl(self, results_schema: str = "@results_database_schema", target_table: str = "cohort_rubric") -> str:
+        """
+        Generates T-SQL for creating the cohort_rubric table.
+        """
+        return f"""
+IF OBJECT_ID('{results_schema}.{target_table}', 'U') IS NULL
+CREATE TABLE {results_schema}.{target_table} (
+  ruleset_id INT NOT NULL,
+  subject_id BIGINT NOT NULL,
+  index_date DATE NOT NULL,
+  rule_id INT NOT NULL,
+  score FLOAT NOT NULL
+);
+"""
+
+
     def build_query(
         self, 
         rubric: EvaluationRubric, 
         ruleset_id: int, 
         index_event_table: str = "#evaluation_index_events",
         cdm_schema: str = "@cdm_database_schema",
-        vocabulary_schema: str = "@vocabulary_database_schema"
+        vocabulary_schema: str = "@vocabulary_database_schema",
+        results_schema: str = "@results_database_schema",
+        target_table: str = "cohort_rubric"
     ) -> str:
         """
         Generates T-SQL to produce a normalized evaluation results table.
         
+        The results are inserted into the target table (default: cohort_rubric).
         The output columns are: ruleset_id, subject_id, index_date, rule_id, score.
         
         Args:
@@ -34,6 +53,8 @@ class EvaluationQueryBuilder:
             index_event_table: Temp table containing (subject_id, index_date).
             cdm_schema: SQL parameter for the CDM schema.
             vocabulary_schema: SQL parameter for the vocabulary schema.
+            results_schema: SQL parameter for the results schema.
+            target_table: The table to populate with evaluation results.
             
         Returns:
             A string containing the T-SQL query.
@@ -90,10 +111,19 @@ class EvaluationQueryBuilder:
 
         final_union = "\nUNION ALL\n".join(rule_queries)
         
-        # Wrap everything
-        sql = f"{codeset_sql}\n\n{final_union}"
+        # Wrap everything in an INSERT INTO statement
+        target_full_name = f"{results_schema}.{target_table}"
+        
+        sql = f"""
+{codeset_sql}
+
+DELETE FROM {target_full_name} WHERE ruleset_id = {ruleset_id};
+INSERT INTO {target_full_name} (ruleset_id, subject_id, index_date, rule_id, score)
+{final_union};
+"""
         
         # Strip T-SQL specific bits that might not be handled by all translators
         sql = sql.replace("UPDATE STATISTICS #Codesets;", "")
         
         return sql
+
