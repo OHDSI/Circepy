@@ -61,7 +61,7 @@ class EvaluationBuilder:
         """Create and register a concept set, returning its ID."""
         cs_id = len(self._concept_sets) + 1
         from circe.vocabulary import concept_set, descendants
-        cs = concept_set(descendants(*concept_ids), id=cs_id, name=name)
+        cs = concept_set(*[descendants(cid) for cid in concept_ids], id=cs_id, name=name)
         self._concept_sets.append(cs)
         return cs_id
 
@@ -276,7 +276,11 @@ def _config_to_criteria(config: QueryConfig):
     
     kwargs = {'codeset_id': config.concept_set_id}
     if config.domain == 'Measurement' and (config.value_min is not None or config.value_max is not None):
-        op = 'bt' if (config.value_min is not None and config.value_max is not None) else ('gte' if config.value_min is not None else 'lte')
-        kwargs['value_as_number'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
+        if config.value_min is not None and config.value_max is not None:
+             kwargs['value_as_number'] = NumericRange(op='bt', value=config.value_min, extent=config.value_max)
+        elif config.value_min is not None:
+             kwargs['value_as_number'] = NumericRange(op='gte', value=config.value_min)
+        else:
+             kwargs['value_as_number'] = NumericRange(op='lte', value=config.value_max)
         
     return cls(**{k: v for k, v in kwargs.items() if v is not None})
