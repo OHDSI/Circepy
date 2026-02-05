@@ -1,16 +1,12 @@
 """
-Cohort Evaluation Framework.
-
-This module provides tools for evaluating individuals against phenotype rubrics,
-producing rule-by-rule scores that can be aggregated using flexible methods.
+Phenotype Evaluation Framework extension for CIRCE.
 """
 
-from .models import EvaluationRule, EvaluationRubric, RuleResult
-from .sql_generator import RubricSqlGenerator
+from .models import EvaluationRule, EvaluationRubric, IndividualEvaluation, RuleResult
 
 __all__ = [
     "EvaluationRule",
     "EvaluationRubric",
-    "RuleResult",
-    "RubricSqlGenerator",
+    "IndividualEvaluation",
+    "RuleResult"
 ]
