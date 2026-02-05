@@ -13,6 +13,32 @@ Build phenotype evaluation rubrics (collections of weighted rules) using the `Ev
 3.  **Positive vs Negative Evidence** - Use `polarity=1` for evidence of the phenotype and `polarity=-1` for evidence against it (exclusions).
 4.  **Complex Logic** - Use nested logical groups (`any_of`, `all_of`) for sophisticated rules that require multiple criteria.
 
+## What Makes Good Evaluation Criteria
+
+Unlike cohort definitions which are designed to *select* a population, evaluation rubrics are designed to *characterize* a pre-selected population.
+
+- **Sensitivity vs. Specificity**: Criteria can be much broader than cohort entry events. You might include rules for "Any Measurement" of a lab even if the value is missing, as the mere presence of the test can be a signal of clinical interest.
+- **Handling Missing Values**: It is often useful to have two rules: one for the "Presence of Measurement" (low weight) and another for the "Measurement with Elevated Value" (high weight).
+- **Redundant Signs**: Include multiple ways a phenotype might manifest (ICD codes, specific drugs, lab results) to build a robust score.
+
+## Expected Output
+
+The `EvaluationQueryBuilder` generates SQL that calculates scores for every person in your index events across every rule in the rubric.
+
+### Output Table: `cohort_rubric`
+Results are inserted into a table named `cohort_rubric` (configurable) with the following structure:
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `ruleset_id` | `INT` | Unique ID for this evaluation run/rubric |
+| `subject_id` | `BIGINT` | The OMOP `person_id` being evaluated |
+| `index_date` | `DATE` | The specific date the evaluation is anchored to |
+| `rule_id` | `INT` | ID of the rule being scored |
+| `score` | `FLOAT` | The calculated score (`weight * polarity`) or `0` if not matched |
+
+> [!NOTE]
+> This normalized format allows you to easily aggregate scores to get a total phenotype probability or analyze which specific rules are most frequently matching.
+
 ## Basic Pattern
 
 ```python
