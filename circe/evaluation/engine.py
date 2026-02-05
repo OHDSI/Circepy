@@ -18,15 +18,19 @@ class EvaluationQueryBuilder:
     def get_ddl(self, results_schema: str = "@results_database_schema", target_table: str = "cohort_rubric") -> str:
         """
         Generates T-SQL for creating the cohort_rubric table.
+        Uses a DROP IF EXISTS then CREATE approach for better SqlRender compatibility.
         """
+        table_full_name = f"{results_schema}.{target_table}"
         return f"""
-IF OBJECT_ID('{results_schema}.{target_table}', 'U') IS NULL
-CREATE TABLE {results_schema}.{target_table} (
-  ruleset_id INT NOT NULL,
-  subject_id BIGINT NOT NULL,
-  index_date DATE NOT NULL,
-  rule_id INT NOT NULL,
-  score FLOAT NOT NULL
+IF OBJECT_ID('{table_full_name}', 'U') IS NOT NULL 
+    DROP TABLE {table_full_name};
+
+CREATE TABLE {table_full_name} (
+    ruleset_id INT NOT NULL,
+    subject_id BIGINT NOT NULL, 
+    index_date DATE NOT NULL,
+    rule_id INT NOT NULL, 
+    score FLOAT NOT NULL
 );
 """
 
@@ -124,6 +128,8 @@ INSERT INTO {target_full_name} (ruleset_id, subject_id, index_date, rule_id, sco
         
         # Strip T-SQL specific bits that might not be handled by all translators
         sql = sql.replace("UPDATE STATISTICS #Codesets;", "")
+        if sql.strip() and not sql.strip().endswith(";"):
+            sql = sql.strip() + ";"
         
         return sql
 
