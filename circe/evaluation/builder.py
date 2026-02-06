@@ -26,7 +26,7 @@ from circe.cohortdefinition.core import (
 )
 from circe.cohortdefinition.criteria import CriteriaGroup as CirceCriteriaGroup
 from circe.evaluation.models import EvaluationRubric, EvaluationRule
-from circe.vocabulary import ConceptSet, Concept
+from circe.vocabulary import ConceptSet, Concept, concept_set, descendants, ConceptReference
 
 class EvaluationBuilder:
     """
@@ -57,13 +57,49 @@ class EvaluationBuilder:
         self._rubric = self.build()
         return False
 
-    def concept_set(self, name: str, *concept_ids: int, **kwargs) -> int:
-        """Create and register a concept set, returning its ID."""
+    def concept_set(self, name: str, *concepts: Union[int, 'ConceptReference'], **kwargs) -> int:
+        """
+        Create and register a concept set, returning its ID.
+        
+        Args:
+            name: Human-readable name
+            *concepts: Variadic list of concept IDs (int) or ConceptReference objects.
+                      If an int is provided, it defaults to including descendants.
+            **kwargs: Additional parameters for concept set (reserved for future use)
+            
+        Returns:
+            The ID assigned to the new concept set.
+        """
         cs_id = len(self._concept_sets) + 1
-        from circe.vocabulary import concept_set, descendants
-        cs = concept_set(*[descendants(cid) for cid in concept_ids], id=cs_id, name=name)
+
+        # Process concepts: default int to descendants() for evaluation convenience
+        refs = []
+        for c in concepts:
+            if isinstance(c, int):
+                refs.append(descendants(c))
+            else:
+                refs.append(c)
+                
+        cs = concept_set(*refs, id=cs_id, name=name)
         self._concept_sets.append(cs)
         return cs_id
+
+    def with_concept_sets(self, *concept_sets: ConceptSet) -> 'EvaluationBuilder':
+        """
+        Register pre-built concept sets.
+        
+        Args:
+            *concept_sets: ConceptSet objects to add to the rubric.
+            
+        Returns:
+            Self for chaining.
+        """
+        for cs in concept_sets:
+            # Ensure ID is set (use 1-based index if not set)
+            if cs.id == 0:
+                cs.id = len(self._concept_sets) + 1
+            self._concept_sets.append(cs)
+        return self
 
     def add_rule(self, name: str, weight: float, polarity: int = 1, category: Optional[str] = None) -> 'RuleBuilder':
         """Add a simple one-line rule."""
