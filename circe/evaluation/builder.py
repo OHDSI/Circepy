@@ -199,6 +199,23 @@ class RuleBuilder:
             last.query_config.time_window = TimeWindow(days_before=days, days_after=0)
         return self
 
+    def within_days_after(self, days: int) -> 'RuleBuilder':
+        if not self._group.criteria:
+             raise RuntimeError("Call a criteria method before temporal modifiers")
+        last = self._group.criteria[-1]
+        if isinstance(last, CriteriaConfig):
+            last.query_config.time_window = TimeWindow(days_before=0, days_after=days)
+        return self
+
+    def within_days(self, days: int) -> 'RuleBuilder':
+        """Set symmetric temporal window (days before AND after index date)."""
+        if not self._group.criteria:
+             raise RuntimeError("Call a criteria method before temporal modifiers")
+        last = self._group.criteria[-1]
+        if isinstance(last, CriteriaConfig):
+            last.query_config.time_window = TimeWindow(days_before=days, days_after=days)
+        return self
+
     def anytime_before(self) -> 'RuleBuilder':
         if not self._group.criteria:
              raise RuntimeError("Call a criteria method before temporal modifiers")
