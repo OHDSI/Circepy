@@ -5,7 +5,7 @@ GI Bleed prototype for Phenotype Evaluation Framework.
 from circe.vocabulary import concept_set, descendants
 from circe.cohortdefinition.criteria import (
     ConditionOccurrence, ProcedureOccurrence, Measurement, 
-    CorelatedCriteria
+    CorelatedCriteria, CriteriaGroup
 )
 from circe.evaluation.models import EvaluationRule, EvaluationRubric, IndividualEvaluation, RuleResult
 
@@ -29,34 +29,43 @@ def create_gi_bleed_rubric() -> EvaluationRubric:
     
     # 2. Rules
     
-    # Rule 1: GI Hemorrhage (Primary)
     rule1 = EvaluationRule(
         rule_id=1,
         name="GI Hemorrhage",
-        criteria=CorelatedCriteria(
-            criteria=ConditionOccurrence(codeset_id=gi_hemorrhage_cs.id)
+        expression=CriteriaGroup(
+            criteria_list=[
+                CorelatedCriteria(
+                    criteria=ConditionOccurrence(codeset_id=gi_hemorrhage_cs.id)
+                )
+            ]
         ),
         weight=10.0,
         category="Primary"
     )
     
-    # Rule 2: EGD Procedure (Validation)
     rule2 = EvaluationRule(
         rule_id=2,
         name="EGD procedure",
-        criteria=CorelatedCriteria(
-            criteria=ProcedureOccurrence(codeset_id=egd_procedure_cs.id)
+        expression=CriteriaGroup(
+            criteria_list=[
+                CorelatedCriteria(
+                    criteria=ProcedureOccurrence(codeset_id=egd_procedure_cs.id)
+                )
+            ]
         ),
         weight=5.5,
         category="Validation"
     )
     
-    # Rule 3: Hemoglobin Measurement (Validation/Laboratory)
     rule3 = EvaluationRule(
         rule_id=3,
         name="Hemoglobin measurement",
-        criteria=CorelatedCriteria(
-            criteria=Measurement(codeset_id=hemoglobin_cs.id)
+        expression=CriteriaGroup(
+            criteria_list=[
+                CorelatedCriteria(
+                    criteria=Measurement(codeset_id=hemoglobin_cs.id)
+                )
+            ]
         ),
         weight=2.0,
         category="Laboratory"

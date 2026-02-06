@@ -1,0 +1,41 @@
+{#
+  Main evaluation rubric template
+  Reuses cohort printfriendly templates
+#}
+
+{%- import 'utils.j2' as utils -%}
+
+{%- import 'criteria_types.j2' as ct -%}
+
+# {{ title }}
+
+## Summary of Rules
+
+| ID | Name | Weight | Mode | Category |
+|:---|:---|:---:|:---:|:---|
+{% for rule in rubric.rules -%}
+| {{ rule.rule_id }} | {{ rule.name }} | {{ format_number(rule.weight) }} | {{ 'Exclusion' if rule.polarity == -1 else 'Evidence' }} | {{ rule.category or '-' }} |
+{% endfor %}
+
+## Rule Details
+
+{%- for rule in rubric.rules %}
+
+### {{ rule.rule_id }}. {{ rule.name }}
+**Weight:** {{ format_number(rule.weight) }}  
+**Mode:** {{ 'Negative (Exclusion)' if rule.polarity == -1 else 'Positive (Evidence)' }}  
+{% if rule.category %}
+**Category:** {{ rule.category }}
+{% endif %}
+
+Matched if the person has {{ ct.Group(rule.expression) }}
+
+{%- endfor %}
+
+{% if rubric.concept_sets and rubric.concept_sets|length > 0 %}
+
+## Concept Sets
+
+{% include 'concept_set.j2' %}
+
+{%- endif -%}

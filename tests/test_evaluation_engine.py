@@ -8,7 +8,7 @@ from circe.evaluation.models import EvaluationRule, EvaluationRubric, Individual
 from circe.evaluation.engine import EvaluationQueryBuilder
 from examples.evaluation.gi_bleed_prototype import create_gi_bleed_rubric
 from circe.vocabulary import concept_set, descendants
-from circe.cohortdefinition.criteria import ConditionOccurrence, CorelatedCriteria
+from circe.cohortdefinition.criteria import ConditionOccurrence, CorelatedCriteria, CriteriaGroup
 
 
 class TestEvaluationModels(unittest.TestCase):
@@ -75,8 +75,12 @@ class TestEvaluationEngine(unittest.TestCase):
         rule = EvaluationRule(
             rule_id=1,
             name="GI Hemorrhage",
-            criteria=CorelatedCriteria(
-                criteria=ConditionOccurrence(codeset_id=gi_hemorrhage_cs.id)
+            expression=CriteriaGroup(
+                criteria_list=[
+                    CorelatedCriteria(
+                        criteria=ConditionOccurrence(codeset_id=gi_hemorrhage_cs.id)
+                    )
+                ]
             ),
             weight=10.0,
             category="Primary"

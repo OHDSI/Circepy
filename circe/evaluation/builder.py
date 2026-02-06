@@ -305,25 +305,81 @@ def _config_to_criteria(config: QueryConfig):
         'ProcedureOccurrence': ProcedureOccurrence,
         'VisitOccurrence': VisitOccurrence,
         'Observation': Observation,
-        'Death': Death
+        'Death': Death,
+        'ConditionEra': ConditionEra,
+        'DrugEra': DrugEra,
+        'DoseEra': DoseEra,
+        'DeviceExposure': DeviceExposure,
+        'Specimen': Specimen,
+        'ObservationPeriod': ObservationPeriod,
+        'PayerPlanPeriod': PayerPlanPeriod,
+        'LocationRegion': LocationRegion,
+        'VisitDetail': VisitDetail
     }
     cls = domain_map.get(config.domain)
     if not cls: raise ValueError(f"Unsupported domain: {config.domain}")
     
     kwargs = {'codeset_id': config.concept_set_id}
-    
-    # Handle Gender filter if present in config
-    if config.gender_concepts:
-        if hasattr(cls, 'gender_cs'):
-             # We need a dummy codeset_id or we just use gender if it's a simple list
-             kwargs['gender'] = [Concept(concept_id=cid) for cid in config.gender_concepts]
+    if hasattr(cls, 'first') or 'first' in cls.model_fields:
+        kwargs['first'] = config.first_occurrence
 
-    if config.domain == 'Measurement' and (config.value_min is not None or config.value_max is not None):
-        if config.value_min is not None and config.value_max is not None:
-             kwargs['value_as_number'] = NumericRange(op='bt', value=config.value_min, extent=config.value_max)
-        elif config.value_min is not None:
-             kwargs['value_as_number'] = NumericRange(op='gte', value=config.value_min)
+    # Helper for standard concepts
+    def get_concepts(concept_ids):
+        # Human-readable names for standard genders to help markdown report without DB
+        genders = {8507: "MALE", 8532: "FEMALE"}
+        return [Concept(concept_id=cid, concept_name=genders.get(cid)) for cid in concept_ids]
+
+    # Map QueryConfig fields to Criteria fields if they exist in the model
+    field_map = {
+        'gender_concepts': 'gender',
+        'visit_type_concepts': 'visit_type',
+        'condition_type_concepts': 'condition_type',
+        'drug_type_concepts': 'drug_type',
+        'procedure_type_concepts': 'procedure_type',
+        'measurement_type_concepts': 'measurement_type',
+        'observation_type_concepts': 'observation_type',
+        'device_type_concepts': 'device_type',
+        'unit_concepts': 'unit',
+        'value_as_concept_concepts': 'value_as_concept',
+        'status_concepts': 'status',
+        'procedure_modifier_concepts': 'modifier'
+    }
+
+    for config_field, criteria_field in field_map.items():
+        val = getattr(config, config_field, None)
+        if val and criteria_field in cls.model_fields:
+            kwargs[criteria_field] = get_concepts(val)
+
+    # Handle Age
+    if (config.age_min is not None or config.age_max is not None) and 'age' in cls.model_fields:
+        if config.age_min is not None and config.age_max is not None:
+             kwargs['age'] = NumericRange(op='bt', value=config.age_min, extent=config.age_max)
+        elif config.age_min is not None:
+             kwargs['age'] = NumericRange(op='gte', value=config.age_min)
         else:
-             kwargs['value_as_number'] = NumericRange(op='lte', value=config.value_max)
+             kwargs['age'] = NumericRange(op='lte', value=config.age_max)
+
+    # Handle Measurement specific values
+    if config.domain == 'Measurement':
+        if (config.value_min is not None or config.value_max is not None) and 'value_as_number' in cls.model_fields:
+            if config.value_min is not None and config.value_max is not None:
+                 kwargs['value_as_number'] = NumericRange(op='bt', value=config.value_min, extent=config.value_max)
+            elif config.value_min is not None:
+                 kwargs['value_as_number'] = NumericRange(op='gte', value=config.value_min)
+            else:
+                 kwargs['value_as_number'] = NumericRange(op='lte', value=config.value_max)
         
+        if config.abnormal is not None and 'abnormal' in cls.model_fields:
+            kwargs['abnormal'] = config.abnormal
+            
+    # Handle Observation values
+    if config.domain == 'Observation':
+        if (config.value_min is not None or config.value_max is not None) and 'value_as_number' in cls.model_fields:
+             if config.value_min is not None and config.value_max is not None:
+                  kwargs['value_as_number'] = NumericRange(op='bt', value=config.value_min, extent=config.value_max)
+             elif config.value_min is not None:
+                  kwargs['value_as_number'] = NumericRange(op='gte', value=config.value_min)
+             else:
+                  kwargs['value_as_number'] = NumericRange(op='lte', value=config.value_max)
+
     return cls(**{k: v for k, v in kwargs.items() if v is not None})
