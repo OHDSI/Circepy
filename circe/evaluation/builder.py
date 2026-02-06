@@ -275,6 +275,13 @@ def _config_to_criteria(config: QueryConfig):
     if not cls: raise ValueError(f"Unsupported domain: {config.domain}")
     
     kwargs = {'codeset_id': config.concept_set_id}
+    
+    # Handle Gender filter if present in config
+    if config.gender_concepts:
+        if hasattr(cls, 'gender_cs'):
+             # We need a dummy codeset_id or we just use gender if it's a simple list
+             kwargs['gender'] = [Concept(concept_id=cid) for cid in config.gender_concepts]
+
     if config.domain == 'Measurement' and (config.value_min is not None or config.value_max is not None):
         if config.value_min is not None and config.value_max is not None:
              kwargs['value_as_number'] = NumericRange(op='bt', value=config.value_min, extent=config.value_max)
