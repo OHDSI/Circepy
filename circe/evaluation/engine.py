@@ -88,7 +88,7 @@ CREATE TABLE {table_full_name} (
 
         index_event_subquery = f"""
         (
-          SELECT 
+          SELECT DISTINCT
             E.{subject_id_field} as person_id, 
             0 as event_id, 
             E.{index_date_field} as start_date, 
@@ -120,7 +120,7 @@ CREATE TABLE {table_full_name} (
 
             rule_query = f"""
 {rule_comment}
-            SELECT 
+            SELECT DISTINCT
               {ruleset_id} as ruleset_id,
               E.{subject_id_field} as subject_id,
               E.{index_date_field} as index_date,
