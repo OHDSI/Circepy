@@ -19,8 +19,8 @@ class TestEvaluationModels(unittest.TestCase):
         
         self.assertIn("Rules", data)
         self.assertIn("ConceptSets", data)
-        self.assertEqual(len(data["Rules"]), 3)
-        self.assertEqual(len(data["ConceptSets"]), 3)
+        self.assertEqual(len(data["Rules"]), 6)
+        self.assertEqual(len(data["ConceptSets"]), 5)
 
 
     def test_individual_evaluation_model(self):

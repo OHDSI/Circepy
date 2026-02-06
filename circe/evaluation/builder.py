@@ -131,6 +131,26 @@ class EvaluationBuilder:
 class RuleBuilder:
     """Builder for an individual EvaluationRule."""
     
+    # Define domain query mapping once
+    _DOMAIN_QUERIES = {
+        'condition': ConditionQuery,
+        'drug': DrugQuery,
+        'drug_era': DrugEraQuery,
+        'measurement': MeasurementQuery,
+        'procedure': ProcedureQuery,
+        'visit': VisitQuery,
+        'observation': ObservationQuery,
+        'death': DeathQuery,
+        'condition_era': ConditionEraQuery,
+        'device_exposure': DeviceExposureQuery,
+        'specimen': SpecimenQuery,
+        'observation_period': ObservationPeriodQuery,
+        'payer_plan_period': PayerPlanPeriodQuery,
+        'location_region': LocationRegionQuery,
+        'visit_detail': VisitDetailQuery,
+        'dose_era': DoseEraQuery,
+    }
+
     def __init__(self, parent_eval: EvaluationBuilder, rule_id: int, name: str, weight: float, polarity: int, category: Optional[str]):
         self._parent_eval = parent_eval
         self._rule_id = rule_id
@@ -156,95 +176,110 @@ class RuleBuilder:
         ))
         return self
 
+    def _add_domain_criteria(self, domain_name: str, concept_set_id: int, **kwargs) -> 'RuleBuilder':
+        """Generic method to add domain criteria."""
+        query_class = self._DOMAIN_QUERIES.get(domain_name)
+        if not query_class:
+            raise ValueError(f"Unknown domain: {domain_name}")
+        query_class(concept_set_id, parent=self).apply_params(**kwargs)._finalize()
+        return self
+
     # --- Domain Methods ---
     def condition(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        ConditionQuery(concept_set_id, parent=self).apply_params(**kwargs)._finalize()
-        return self
+        return self._add_domain_criteria('condition', concept_set_id, **kwargs)
 
     def drug(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        DrugQuery(concept_set_id, parent=self).apply_params(**kwargs)._finalize()
-        return self
+        return self._add_domain_criteria('drug', concept_set_id, **kwargs)
+
+    def drug_era(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
+        return self._add_domain_criteria('drug_era', concept_set_id, **kwargs)
 
     def measurement(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        MeasurementQuery(concept_set_id, parent=self).apply_params(**kwargs)._finalize()
-        return self
+        return self._add_domain_criteria('measurement', concept_set_id, **kwargs)
 
     def procedure(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        ProcedureQuery(concept_set_id, parent=self).apply_params(**kwargs)._finalize()
-        return self
+        return self._add_domain_criteria('procedure', concept_set_id, **kwargs)
 
     def visit(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        VisitQuery(concept_set_id, parent=self).apply_params(**kwargs)._finalize()
-        return self
+        return self._add_domain_criteria('visit', concept_set_id, **kwargs)
 
     def observation(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        ObservationQuery(concept_set_id, parent=self).apply_params(**kwargs)._finalize()
+        return self._add_domain_criteria('observation', concept_set_id, **kwargs)
+
+    def death(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
+        return self._add_domain_criteria('death', concept_set_id, **kwargs)
+
+    def condition_era(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
+        return self._add_domain_criteria('condition_era', concept_set_id, **kwargs)
+
+    def device_exposure(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
+        return self._add_domain_criteria('device_exposure', concept_set_id, **kwargs)
+
+    def specimen(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
+        return self._add_domain_criteria('specimen', concept_set_id, **kwargs)
+
+    def observation_period(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
+        return self._add_domain_criteria('observation_period', concept_set_id, **kwargs)
+
+    def payer_plan_period(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
+        return self._add_domain_criteria('payer_plan_period', concept_set_id, **kwargs)
+
+    def location_region(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
+        return self._add_domain_criteria('location_region', concept_set_id, **kwargs)
+
+    def visit_detail(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
+        return self._add_domain_criteria('visit_detail', concept_set_id, **kwargs)
+
+    def dose_era(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
+        return self._add_domain_criteria('dose_era', concept_set_id, **kwargs)
+
+    def _modify_last_criteria(self, modifier_fn) -> 'RuleBuilder':
+        """Generic helper for modifying the last criteria."""
+        if not self._group.criteria:
+            raise RuntimeError("Call a criteria method before applying modifiers")
+        last = self._group.criteria[-1]
+        if isinstance(last, CriteriaConfig):
+            modifier_fn(last.query_config)
         return self
 
     # Fluent modifiers for simple one-line rules
     def at_least(self, count: int) -> 'RuleBuilder':
-        if not self._group.criteria:
-            raise RuntimeError("Call a criteria method (e.g. .condition()) before .at_least()")
-        last = self._group.criteria[-1]
-        if isinstance(last, CriteriaConfig):
-            last.query_config.occurrence_count = count
-            last.query_config.occurrence_type = "atLeast"
-        return self
+        def set_occurrence(cfg):
+            cfg.occurrence_count = count
+            cfg.occurrence_type = "atLeast"
+        return self._modify_last_criteria(set_occurrence)
+
+    def _set_time_window(self, days_before: int = 0, days_after: int = 0) -> 'RuleBuilder':
+        """Generic temporal window setter."""
+        return self._modify_last_criteria(
+            lambda cfg: setattr(cfg, 'time_window', TimeWindow(days_before=days_before, days_after=days_after))
+        )
 
     def within_days_before(self, days: int) -> 'RuleBuilder':
-        if not self._group.criteria:
-             raise RuntimeError("Call a criteria method before temporal modifiers")
-        last = self._group.criteria[-1]
-        if isinstance(last, CriteriaConfig):
-            last.query_config.time_window = TimeWindow(days_before=days, days_after=0)
-        return self
+        return self._set_time_window(days_before=days, days_after=0)
 
     def within_days_after(self, days: int) -> 'RuleBuilder':
-        if not self._group.criteria:
-             raise RuntimeError("Call a criteria method before temporal modifiers")
-        last = self._group.criteria[-1]
-        if isinstance(last, CriteriaConfig):
-            last.query_config.time_window = TimeWindow(days_before=0, days_after=days)
-        return self
+        return self._set_time_window(days_before=0, days_after=days)
 
     def within_days(self, days: int) -> 'RuleBuilder':
         """Set symmetric temporal window (days before AND after index date)."""
-        if not self._group.criteria:
-             raise RuntimeError("Call a criteria method before temporal modifiers")
-        last = self._group.criteria[-1]
-        if isinstance(last, CriteriaConfig):
-            last.query_config.time_window = TimeWindow(days_before=days, days_after=days)
-        return self
+        return self._set_time_window(days_before=days, days_after=days)
 
     def anytime_before(self) -> 'RuleBuilder':
-        if not self._group.criteria:
-             raise RuntimeError("Call a criteria method before temporal modifiers")
-        last = self._group.criteria[-1]
-        if isinstance(last, CriteriaConfig):
-            last.query_config.time_window = TimeWindow(days_before=99999, days_after=0)
-        return self
+        return self._set_time_window(days_before=99999, days_after=0)
 
     def anytime_after(self) -> 'RuleBuilder':
-        if not self._group.criteria:
-             raise RuntimeError("Call a criteria method before temporal modifiers")
-        last = self._group.criteria[-1]
-        if isinstance(last, CriteriaConfig):
-            last.query_config.time_window = TimeWindow(days_before=0, days_after=99999)
-        return self
+        return self._set_time_window(days_before=0, days_after=99999)
 
     def with_value(self, gt: Optional[float] = None, lt: Optional[float] = None, between: Optional[tuple] = None) -> 'RuleBuilder':
-        """Set measurement value constraints."""
-        if not self._group.criteria:
-             raise RuntimeError("Call a criteria method before .with_value()")
-        last = self._group.criteria[-1]
-        if isinstance(last, CriteriaConfig):
-            cfg = last.query_config
+        """Set measurement/observation value constraints."""
+        def set_values(cfg):
             if between:
                 cfg.value_min, cfg.value_max = between
             else:
                 cfg.value_min = gt
                 cfg.value_max = lt
-        return self
+        return self._modify_last_criteria(set_values)
 
     def any_of(self) -> CriteriaGroupBuilder:
         new_group = GroupConfig(type="ANY")
@@ -314,6 +349,19 @@ def _build_correlated_criteria(criteria_cfg: CriteriaConfig) -> CorelatedCriteri
         occurrence=occurrence
     )
 
+def _apply_numeric_range(config: QueryConfig, kwargs: dict, config_min_field: str, config_max_field: str, criteria_field: str):
+    """Helper to apply numeric range from config to kwargs."""
+    min_val = getattr(config, config_min_field, None)
+    max_val = getattr(config, config_max_field, None)
+
+    if min_val is not None and max_val is not None:
+        kwargs[criteria_field] = NumericRange(op='bt', value=min_val, extent=max_val)
+    elif min_val is not None:
+        kwargs[criteria_field] = NumericRange(op='gte', value=min_val)
+    elif max_val is not None:
+        kwargs[criteria_field] = NumericRange(op='lte', value=max_val)
+
+
 def _config_to_criteria(config: QueryConfig):
     domain_map = {
         'ConditionOccurrence': ConditionOccurrence,
@@ -367,36 +415,18 @@ def _config_to_criteria(config: QueryConfig):
         if val and criteria_field in cls.model_fields:
             kwargs[criteria_field] = get_concepts(val)
 
-    # Handle Age
+    # Handle Age using generic helper
     if (config.age_min is not None or config.age_max is not None) and 'age' in cls.model_fields:
-        if config.age_min is not None and config.age_max is not None:
-             kwargs['age'] = NumericRange(op='bt', value=config.age_min, extent=config.age_max)
-        elif config.age_min is not None:
-             kwargs['age'] = NumericRange(op='gte', value=config.age_min)
-        else:
-             kwargs['age'] = NumericRange(op='lte', value=config.age_max)
+        _apply_numeric_range(config, kwargs, 'age_min', 'age_max', 'age')
 
-    # Handle Measurement specific values
-    if config.domain == 'Measurement':
+    # Handle value_as_number for both Measurement and Observation using generic helper
+    if config.domain in ('Measurement', 'Observation'):
         if (config.value_min is not None or config.value_max is not None) and 'value_as_number' in cls.model_fields:
-            if config.value_min is not None and config.value_max is not None:
-                 kwargs['value_as_number'] = NumericRange(op='bt', value=config.value_min, extent=config.value_max)
-            elif config.value_min is not None:
-                 kwargs['value_as_number'] = NumericRange(op='gte', value=config.value_min)
-            else:
-                 kwargs['value_as_number'] = NumericRange(op='lte', value=config.value_max)
-        
+            _apply_numeric_range(config, kwargs, 'value_min', 'value_max', 'value_as_number')
+
+    # Handle Measurement-specific abnormal flag
+    if config.domain == 'Measurement':
         if config.abnormal is not None and 'abnormal' in cls.model_fields:
             kwargs['abnormal'] = config.abnormal
-            
-    # Handle Observation values
-    if config.domain == 'Observation':
-        if (config.value_min is not None or config.value_max is not None) and 'value_as_number' in cls.model_fields:
-             if config.value_min is not None and config.value_max is not None:
-                  kwargs['value_as_number'] = NumericRange(op='bt', value=config.value_min, extent=config.value_max)
-             elif config.value_min is not None:
-                  kwargs['value_as_number'] = NumericRange(op='gte', value=config.value_min)
-             else:
-                  kwargs['value_as_number'] = NumericRange(op='lte', value=config.value_max)
 
     return cls(**{k: v for k, v in kwargs.items() if v is not None})
