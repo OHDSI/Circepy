@@ -43,7 +43,11 @@ CREATE TABLE {table_full_name} (
         cdm_schema: str = "@cdm_database_schema",
         vocabulary_schema: str = "@vocabulary_database_schema",
         results_schema: str = "@results_database_schema",
-        target_table: str = "cohort_rubric"
+        target_table: str = "cohort_rubric",
+        subject_id_field: str = "subject_id",
+        index_date_field: str = "cohort_start_date",
+        cohort_id_field: str = "cohort_definition_id",
+        cohort_ids: Optional[List[int]] = None
     ) -> str:
         """
         Generates T-SQL to produce a normalized evaluation results table.
@@ -59,6 +63,10 @@ CREATE TABLE {table_full_name} (
             vocabulary_schema: SQL parameter for the vocabulary schema.
             results_schema: SQL parameter for the results schema.
             target_table: The table to populate with evaluation results.
+            subject_id_field: Name of the field for subject ID (default: subject_id).
+            index_date_field: Name of the field for index date (default: cohort_start_date).
+            cohort_id_field: Name of the field for cohort ID (default: cohort_definition_id).
+            cohort_ids: Optional list of cohort IDs to filter.
             
         Returns:
             A string containing the T-SQL query.
@@ -70,19 +78,28 @@ CREATE TABLE {table_full_name} (
         # 2. Define the Index Event Table Expression for CIRCE
         # CIRCE WindowedCriteria/CorrelatedCriteria expect a table 'P' with:
         # person_id, event_id, start_date, end_date, op_start_date, op_end_date
+        
+        where_clauses = []
+        if cohort_ids:
+            ids_str = ",".join(map(str, cohort_ids))
+            where_clauses.append(f"E.{cohort_id_field} IN ({ids_str})")
+        
+        where_stmt = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+
         index_event_subquery = f"""
         (
           SELECT 
-            E.subject_id as person_id, 
+            E.{subject_id_field} as person_id, 
             0 as event_id, 
-            E.index_date as start_date, 
-            E.index_date as end_date,
+            E.{index_date_field} as start_date, 
+            E.{index_date_field} as end_date,
             OP.observation_period_start_date as OP_START_DATE,
             OP.observation_period_end_date as OP_END_DATE
           FROM {index_event_table} E
-          JOIN {cdm_schema}.observation_period OP ON E.subject_id = OP.person_id 
-            AND E.index_date >= OP.observation_period_start_date 
-            AND E.index_date <= OP.observation_period_end_date
+          JOIN {cdm_schema}.observation_period OP ON E.{subject_id_field} = OP.person_id 
+            AND E.{index_date_field} >= OP.observation_period_start_date 
+            AND E.{index_date_field} <= OP.observation_period_end_date
+          {where_stmt}
         )"""
 
 
@@ -100,8 +117,8 @@ CREATE TABLE {table_full_name} (
             rule_query = f"""
             SELECT 
               {ruleset_id} as ruleset_id,
-              E.subject_id,
-              E.index_date,
+              E.{subject_id_field} as subject_id,
+              E.{index_date_field} as index_date,
               {rule.rule_id} as rule_id,
               CAST(COALESCE(R.score, 0) AS FLOAT) as score
             FROM {index_event_table} E
@@ -110,7 +127,8 @@ CREATE TABLE {table_full_name} (
               FROM (
                 {cg_sql}
               ) InnerR
-            ) R ON E.subject_id = R.person_id
+            ) R ON E.{subject_id_field} = R.person_id
+            {where_stmt}
             """
             rule_queries.append(rule_query)
 
