@@ -113,7 +113,7 @@ CREATE TABLE {table_full_name} (
             cg_sql = cg_sql.replace("@cdm_database_schema", cdm_schema)
             
             # The Criteria Group query returns (index_id, person_id, event_id) for matched events.
-            # We wrap it to return the weighted score for the subject.
+            # We need to join back to the index events to get the start_date for proper matching.
             rule_comment = f"-- Rule {rule.rule_id}: {rule.name} (weight: {rule.weight}, polarity: {rule.polarity})"
             if rule.category:
                 rule_comment += f" [Category: {rule.category}]"
@@ -128,11 +128,13 @@ CREATE TABLE {table_full_name} (
               CAST(COALESCE(R.score, 0) AS FLOAT) as score
             FROM {index_event_table} E
             LEFT JOIN (
-              SELECT person_id, {rule.weight} * {rule.polarity} as score
+              SELECT CG.person_id, P.start_date, {rule.weight} * {rule.polarity} as score
               FROM (
                 {cg_sql}
-              ) InnerR
+              ) CG
+              JOIN {index_event_subquery} P ON CG.person_id = P.person_id
             ) R ON E.{subject_id_field} = R.person_id
+            AND E.{index_date_field} = R.start_date
             {where_stmt}
             """
             rule_queries.append(rule_query)
