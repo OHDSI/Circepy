@@ -114,7 +114,12 @@ CREATE TABLE {table_full_name} (
             
             # The Criteria Group query returns (index_id, person_id, event_id) for matched events.
             # We wrap it to return the weighted score for the subject.
+            rule_comment = f"-- Rule {rule.rule_id}: {rule.name} (weight: {rule.weight}, polarity: {rule.polarity})"
+            if rule.category:
+                rule_comment += f" [Category: {rule.category}]"
+
             rule_query = f"""
+{rule_comment}
             SELECT 
               {ruleset_id} as ruleset_id,
               E.{subject_id_field} as subject_id,

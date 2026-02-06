@@ -48,20 +48,20 @@ def create_gi_bleed_rubric() -> EvaluationRubric:
 
         # Validation evidence: EGD procedure within 30 days before index
         ev.add_rule("EGD procedure", weight=5.5, category="Validation") \
-            .procedure(egd_procedure).at_least(1).within_days_before(30)
+            .procedure(egd_procedure).at_least(1).within_days(30)
 
         # Laboratory evidence: Hemoglobin measurement within 30 days before index
         ev.add_rule("Hemoglobin measurement", weight=2.0, category="Laboratory") \
-            .measurement(hemoglobin).at_least(1).within_days_before(30)
+            .measurement(hemoglobin).at_least(1).within_days(30)
 
         # Laboratory evidence: Low hemoglobin indicating anemia from GI bleed
         # Hemoglobin < 10 g/dL within 30 days is clinically significant for acute blood loss
         ev.add_rule("Low Hemoglobin (< 10 g/dL)", weight=8.0, category="Laboratory") \
-            .measurement(hemoglobin).with_value(lt=10.0).at_least(1).within_days_before(30)
+            .measurement(hemoglobin).with_value(lt=10.0).at_least(1).within_days(30)
 
         # Supporting evidence: Anemia diagnosis within 30 days before index
         ev.add_rule("Anemia diagnosis", weight=6.0, category="Primary") \
-            .condition(anemia).at_least(1).within_days_before(30)
+            .condition(anemia).at_least(1).within_days(30)
 
         # Clinical observation: Blood in stool within 30 days before index
         # Strong indicator of lower GI bleeding
