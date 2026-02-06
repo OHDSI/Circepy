@@ -125,7 +125,7 @@ CREATE TABLE {table_full_name} (
             )
 
             rule_query = f"""
-{rule_comment}
+            {rule_comment}
             SELECT DISTINCT
               {ruleset_id} as ruleset_id,
               {cohort_select},
@@ -162,11 +162,11 @@ CREATE TABLE {table_full_name} (
         )
 
         sql = f"""
-{codeset_sql}
-
-DELETE FROM {target_full_name} {delete_filter};
-INSERT INTO {target_full_name} ({insert_columns})
-{final_union};
+        {codeset_sql}
+        
+        DELETE FROM {target_full_name} {delete_filter};
+        INSERT INTO {target_full_name} ({insert_columns})
+        {final_union};
 """
         
         # Strip T-SQL specific bits that might not be handled by all translators
