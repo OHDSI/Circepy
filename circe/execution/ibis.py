@@ -71,6 +71,10 @@ class IbisExecutor:
         cohort_id: Optional[int] = None,
     ) -> Any:
         """Persist cohort rows to a cohort table and return a backend table handle."""
+        if append and overwrite:
+            raise ValueError(
+                "`append=True` and `overwrite=True` cannot be used together."
+            )
         cohort_expression = load_expression(expression)
         self.close()
         events, ctx = self._build_with_context_native(

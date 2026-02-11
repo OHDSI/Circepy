@@ -19,6 +19,7 @@ from circe.cohortdefinition import (
 )
 from circe.execution import ExecutionOptions, IbisExecutor
 from circe.execution.criteria_compat import parse_single_criteria
+from circe.execution.ibis import write_cohort
 from circe.execution.options import schema_to_str
 from circe.io import load_expression
 from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
@@ -117,6 +118,35 @@ def test_coerce_concept_set_selection_rejects_invalid_value():
 
     with pytest.raises(ValueError, match="Unsupported concept set selection value"):
         coerce_concept_set_selection(object())
+
+
+def test_write_rejects_append_and_overwrite_together():
+    class DummyConn:
+        pass
+
+    executor = IbisExecutor(DummyConn(), ExecutionOptions())
+
+    with pytest.raises(ValueError, match="cannot be used together"):
+        executor.write(
+            {"Title": "Invalid write options"},
+            table="cohort",
+            append=True,
+            overwrite=True,
+        )
+
+
+def test_write_cohort_rejects_append_and_overwrite_together():
+    class DummyConn:
+        pass
+
+    with pytest.raises(ValueError, match="cannot be used together"):
+        write_cohort(
+            {"Title": "Invalid write options"},
+            DummyConn(),
+            table="cohort",
+            append=True,
+            overwrite=True,
+        )
 
 
 def test_has_end_strategy_handles_polymorphic_models():

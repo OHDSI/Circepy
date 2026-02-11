@@ -254,6 +254,10 @@ class BuildContext:
         Output schema matches OHDSI cohort tables:
           (cohort_definition_id, subject_id, cohort_start_date, cohort_end_date)
         """
+        if append and overwrite:
+            raise ValueError(
+                "`append=True` and `overwrite=True` cannot be used together."
+            )
         target_table = table_name or self._options.target_table
         if not target_table:
             raise ValueError(
