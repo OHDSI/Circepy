@@ -27,13 +27,10 @@ class EvaluationMarkdownRender:
         
         # Initialize Jinja2 environment with multiple loaders
         # This allows us to access both evaluation-specific templates and cohort ones
-        evaluation_template_dir = Path(__file__).parent / 'templates'
-        cohort_template_dir = Path(__file__).parents[1] / 'cohortdefinition' / 'printfriendly' / 'templates'
-        
         self._env = jinja2.Environment(
             loader=jinja2.ChoiceLoader([
-                jinja2.FileSystemLoader(str(evaluation_template_dir)),
-                jinja2.FileSystemLoader(str(cohort_template_dir))
+                jinja2.PackageLoader('circe.evaluation', 'templates'),
+                jinja2.PackageLoader('circe.cohortdefinition.printfriendly', 'templates')
             ]),
             trim_blocks=True,
             lstrip_blocks=True,

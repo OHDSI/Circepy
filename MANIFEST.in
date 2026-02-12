@@ -6,8 +6,9 @@ include CONTRIBUTING.md
 include requirements.txt
 include pyproject.toml
 
-# Include all Python files in the circe package
+# Include all Python files and Jinja2 templates in the circe package
 recursive-include circe *.py
+recursive-include circe *.j2
 
 # Include type hints marker
 include circe/py.typed

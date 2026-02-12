@@ -42,9 +42,8 @@ class MarkdownRender:
         self._include_concept_sets = include_concept_sets
         
         # Initialize Jinja2 environment
-        template_dir = Path(__file__).parent / 'templates'
         self._env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(str(template_dir)),
+            loader=jinja2.PackageLoader('circe.cohortdefinition.printfriendly', 'templates'),
             trim_blocks=True,
             lstrip_blocks=True,
             autoescape=False  # We're generating markdown, not HTML
