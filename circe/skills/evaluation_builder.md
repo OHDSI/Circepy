@@ -107,9 +107,11 @@ rule.visit(concept_set_id)
 rule.at_least(N)
 
 # Temporal windows (relative to index date)
-rule.within_days_before(N)
-rule.anytime_before()
-rule.anytime_after()
+rule.within_days_before(N)      # N days before index
+rule.within_days_after(N)       # N days after index
+rule.within_days(N)             # N days before AND after index (symmetric window)
+rule.anytime_before()           # Any time before index
+rule.anytime_after()            # Any time after index
 
 # Value ranges (Measurements)
 rule.measurement(id).with_value(gt=130)

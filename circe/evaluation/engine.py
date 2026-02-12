@@ -2,9 +2,9 @@
 SQL Generation Engine for the Phenotype Evaluation Framework.
 """
 
-from typing import List, Optional
+from typing import Optional
 from circe.cohortdefinition.cohort_expression_query_builder import CohortExpressionQueryBuilder
-from circe.evaluation.models import EvaluationRubric, EvaluationRule
+from circe.evaluation.models import EvaluationRubric
 
 
 class EvaluationQueryBuilder:
@@ -27,6 +27,7 @@ IF OBJECT_ID('{table_full_name}', 'U') IS NOT NULL
 
 CREATE TABLE {table_full_name} (
     ruleset_id INT NOT NULL,
+    cohort_definition_id BIGINT NULL,
     subject_id BIGINT NOT NULL, 
     index_date DATE NOT NULL,
     rule_id INT NOT NULL, 
@@ -47,14 +48,15 @@ CREATE TABLE {table_full_name} (
         subject_id_field: str = "subject_id",
         index_date_field: str = "cohort_start_date",
         cohort_id_field: str = "cohort_definition_id",
-        cohort_ids: Optional[List[int]] = None
+        cohort_id: Optional[int] = None,
+        include_cohort_id: bool = True,
     ) -> str:
         """
         Generates T-SQL to produce a normalized evaluation results table.
         
         The results are inserted into the target table (default: cohort_rubric).
-        The output columns are: ruleset_id, subject_id, index_date, rule_id, score.
-        
+        The output columns are: ruleset_id, cohort_definition_id, subject_id, index_date, rule_id, score.
+
         Args:
             rubric: The EvaluationRubric definition.
             ruleset_id: Identifier for this rubric/evaluation set.
@@ -66,8 +68,9 @@ CREATE TABLE {table_full_name} (
             subject_id_field: Name of the field for subject ID (default: subject_id).
             index_date_field: Name of the field for index date (default: cohort_start_date).
             cohort_id_field: Name of the field for cohort ID (default: cohort_definition_id).
-            cohort_ids: Optional list of cohort IDs to filter.
-            
+            cohort_id: Optional single cohort ID to filter.
+            include_cohort_id: Flag to include cohort_id in query and results.
+
         Returns:
             A string containing the T-SQL query.
         """
@@ -80,15 +83,14 @@ CREATE TABLE {table_full_name} (
         # person_id, event_id, start_date, end_date, op_start_date, op_end_date
         
         where_clauses = []
-        if cohort_ids:
-            ids_str = ",".join(map(str, cohort_ids))
-            where_clauses.append(f"E.{cohort_id_field} IN ({ids_str})")
-        
+        if cohort_id is not None and include_cohort_id:
+            where_clauses.append(f"E.{cohort_id_field} = {cohort_id}")
+
         where_stmt = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
 
         index_event_subquery = f"""
         (
-          SELECT 
+          SELECT DISTINCT
             E.{subject_id_field} as person_id, 
             0 as event_id, 
             E.{index_date_field} as start_date, 
@@ -113,21 +115,33 @@ CREATE TABLE {table_full_name} (
             cg_sql = cg_sql.replace("@cdm_database_schema", cdm_schema)
             
             # The Criteria Group query returns (index_id, person_id, event_id) for matched events.
-            # We wrap it to return the weighted score for the subject.
+            # We need to join back to the index events to get the start_date for proper matching.
+            rule_comment = f"-- Rule {rule.rule_id}: {rule.name} (weight: {rule.weight}, polarity: {rule.polarity})"
+            if rule.category:
+                rule_comment += f" [Category: {rule.category}]"
+
+            cohort_select = (
+                f"E.{cohort_id_field} as cohort_definition_id" if include_cohort_id else "CAST(NULL AS BIGINT) as cohort_definition_id"
+            )
+
             rule_query = f"""
-            SELECT 
+            {rule_comment}
+            SELECT DISTINCT
               {ruleset_id} as ruleset_id,
+              {cohort_select},
               E.{subject_id_field} as subject_id,
               E.{index_date_field} as index_date,
               {rule.rule_id} as rule_id,
               CAST(COALESCE(R.score, 0) AS FLOAT) as score
             FROM {index_event_table} E
             LEFT JOIN (
-              SELECT person_id, {rule.weight} * {rule.polarity} as score
+              SELECT CG.person_id, P.start_date, {rule.weight} * {rule.polarity} as score
               FROM (
                 {cg_sql}
-              ) InnerR
+              ) CG
+              JOIN {index_event_subquery} P ON CG.person_id = P.person_id
             ) R ON E.{subject_id_field} = R.person_id
+            AND E.{index_date_field} = R.start_date
             {where_stmt}
             """
             rule_queries.append(rule_query)
@@ -136,13 +150,23 @@ CREATE TABLE {table_full_name} (
         
         # Wrap everything in an INSERT INTO statement
         target_full_name = f"{results_schema}.{target_table}"
-        
-        sql = f"""
-{codeset_sql}
 
-DELETE FROM {target_full_name} WHERE ruleset_id = {ruleset_id};
-INSERT INTO {target_full_name} (ruleset_id, subject_id, index_date, rule_id, score)
-{final_union};
+        delete_filter = f"WHERE ruleset_id = {ruleset_id}"
+        if include_cohort_id and cohort_id is not None:
+            delete_filter += f" AND cohort_definition_id = {cohort_id}"
+
+        insert_columns = (
+            "ruleset_id, cohort_definition_id, subject_id, index_date, rule_id, score"
+            if include_cohort_id
+            else "ruleset_id, subject_id, index_date, rule_id, score"
+        )
+
+        sql = f"""
+        {codeset_sql}
+        
+        DELETE FROM {target_full_name} {delete_filter};
+        INSERT INTO {target_full_name} ({insert_columns})
+        {final_union};
 """
         
         # Strip T-SQL specific bits that might not be handled by all translators

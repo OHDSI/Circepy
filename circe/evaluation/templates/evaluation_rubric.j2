@@ -19,23 +19,25 @@
 
 ## Rule Details
 
-{%- for rule in rubric.rules %}
+{% for rule in rubric.rules %}
 
 ### {{ rule.rule_id }}. {{ rule.name }}
-**Weight:** {{ format_number(rule.weight) }}  
-**Mode:** {{ 'Negative (Exclusion)' if rule.polarity == -1 else 'Positive (Evidence)' }}  
+**Weight:** {{ format_number(rule.weight) }}
+
+**Mode:** {{ 'Negative (Exclusion)' if rule.polarity == -1 else 'Positive (Evidence)' }}
+
 {% if rule.category %}
 **Category:** {{ rule.category }}
 {% endif %}
 
 Matched if the person has {{ ct.Group(rule.expression) }}
 
-{%- endfor %}
+{% endfor %}
 
-{% if rubric.concept_sets and rubric.concept_sets|length > 0 %}
+{%- if rubric.concept_sets and rubric.concept_sets|length > 0 -%}
 
 ## Concept Sets
 
-{% include 'concept_set.j2' %}
+{%- include 'concept_set.j2' -%}
 
 {%- endif -%}
