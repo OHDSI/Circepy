@@ -120,19 +120,25 @@ CREATE TABLE {table_full_name} (
             if rule.category:
                 rule_comment += f" [Category: {rule.category}]"
 
-            cohort_select = (
-                f"E.{cohort_id_field} as cohort_definition_id" if include_cohort_id else "CAST(NULL AS BIGINT) as cohort_definition_id"
-            )
-
-            rule_query = f"""
-            {rule_comment}
-            SELECT DISTINCT
+            if include_cohort_id:
+                select_columns = f"""
               {ruleset_id} as ruleset_id,
-              {cohort_select},
+              E.{cohort_id_field} as cohort_definition_id,
               E.{subject_id_field} as subject_id,
               E.{index_date_field} as index_date,
               {rule.rule_id} as rule_id,
-              CAST(COALESCE(R.score, 0) AS FLOAT) as score
+              CAST(COALESCE(R.score, 0) AS FLOAT) as score"""
+            else:
+                select_columns = f"""
+              {ruleset_id} as ruleset_id,
+              E.{subject_id_field} as subject_id,
+              E.{index_date_field} as index_date,
+              {rule.rule_id} as rule_id,
+              CAST(COALESCE(R.score, 0) AS FLOAT) as score"""
+
+            rule_query = f"""
+            {rule_comment}
+            SELECT DISTINCT{select_columns}
             FROM {index_event_table} E
             LEFT JOIN (
               SELECT CG.person_id, P.start_date, {rule.weight} * {rule.polarity} as score
