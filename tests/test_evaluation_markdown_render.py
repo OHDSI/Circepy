@@ -75,11 +75,30 @@ class TestEvaluationMarkdownRender(unittest.TestCase):
         )
         rubric = EvaluationRubric(rules=[rule], concept_sets=[cs])
         
-        result = self.renderer.render_rubric(rubric)
-        
+        result = self.renderer.render_rubric(rubric, show_concept_sets=True)
+
         self.assertIn("## Concept Sets", result)
         # The header in concept_set.j2 is just "### {{ cs.name }}"
         self.assertIn("### My Concept Set", result)
+
+    def test_render_rubric_hides_concept_sets_by_default(self):
+        # Create a rubric with concept sets
+        cs = ConceptSet(id=1, name="My Concept Set", expression={"items": []})
+
+        rule = EvaluationRule(
+            rule_id=1,
+            name="CS Rule",
+            weight=1.0,
+            polarity=1,
+            expression=CriteriaGroup()
+        )
+        rubric = EvaluationRubric(rules=[rule], concept_sets=[cs])
+
+        result = self.renderer.render_rubric(rubric)
+
+        # Should NOT contain concept sets section
+        self.assertNotIn("## Concept Sets", result)
+        self.assertNotIn("### My Concept Set", result)
 
     def test_render_complex_expression(self):
         # Create a more complex expression

@@ -47,14 +47,16 @@ class EvaluationMarkdownRender:
     def render_rubric(
         self, 
         rubric: Union[EvaluationRubric, str], 
-        title: Optional[str] = None
+        title: Optional[str] = None,
+        show_concept_sets: bool = False
     ) -> str:
         """Render an evaluation rubric to markdown format.
         
         Args:
             rubric: The evaluation rubric to render, or JSON string
             title: Optional title for the markdown output
-            
+            show_concept_sets: Whether to include concept sets in the output (default: False)
+
         Returns:
             Markdown formatted string describing the rubric
         """
@@ -74,7 +76,8 @@ class EvaluationMarkdownRender:
         return template.render(
             rubric=rubric,
             conceptSets=self._concept_sets,
-            title=title or "Evaluation Rubric"
+            title=title or "Evaluation Rubric",
+            show_concept_sets=show_concept_sets
         )
 
     def _codeset_name(self, codeset_id: Optional[int], default_name: str = "any") -> str:
