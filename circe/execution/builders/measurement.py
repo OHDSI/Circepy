@@ -5,18 +5,18 @@ import ibis
 from ...cohortdefinition.criteria import Measurement
 from ..build_context import BuildContext
 from .common import (
-    apply_age_filter,
     apply_codeset_filter,
     apply_concept_criteria,
-    apply_date_range,
     apply_first_event,
-    apply_gender_filter,
     apply_numeric_range,
     apply_provider_specialty_filter,
     apply_visit_concept_filters,
-    standardize_output,
 )
-from .groups import apply_criteria_group
+from .patterns import (
+    apply_age_and_gender_filters,
+    apply_primary_concept_and_date_filters,
+    finalize_criteria_events,
+)
 from .registry import register
 
 
@@ -24,18 +24,20 @@ from .registry import register
 def build_measurement(criteria: Measurement, ctx: BuildContext):
     table = ctx.table("measurement")
     concept_column = criteria.get_concept_id_column()
-    table = apply_codeset_filter(table, concept_column, criteria.codeset_id, ctx)
+    table = apply_primary_concept_and_date_filters(
+        table,
+        ctx=ctx,
+        concept_column=concept_column,
+        codeset_id=criteria.codeset_id,
+        start_column=criteria.get_start_date_column(),
+        start_range=criteria.occurrence_start_date,
+        end_column=criteria.get_end_date_column(),
+        end_range=criteria.occurrence_end_date,
+    )
     if criteria.first:
         table = apply_first_event(
             table, criteria.get_start_date_column(), criteria.get_primary_key_column()
         )
-
-    table = apply_date_range(
-        table, criteria.get_start_date_column(), criteria.occurrence_start_date
-    )
-    table = apply_date_range(
-        table, criteria.get_end_date_column(), criteria.occurrence_end_date
-    )
 
     table = apply_concept_criteria(
         table,
@@ -106,11 +108,14 @@ def build_measurement(criteria: Measurement, ctx: BuildContext):
         )
         table = table.filter(abnormal_predicate)
 
-    if criteria.age:
-        table = apply_age_filter(
-            table, criteria.age, ctx, criteria.get_start_date_column()
-        )
-    table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
+    table = apply_age_and_gender_filters(
+        table,
+        ctx=ctx,
+        age_column=criteria.get_start_date_column(),
+        age_range=criteria.age,
+        genders=criteria.gender,
+        gender_selection=criteria.gender_cs,
+    )
     table = apply_provider_specialty_filter(
         table,
         getattr(criteria, "provider_specialty", None),
@@ -129,13 +134,15 @@ def build_measurement(criteria: Measurement, ctx: BuildContext):
             ctx,
         )
 
-    events = standardize_output(
+    events = finalize_criteria_events(
         table,
+        criteria=criteria,
+        ctx=ctx,
         primary_key=criteria.get_primary_key_column(),
         start_column=criteria.get_start_date_column(),
         end_column=criteria.get_end_date_column(),
     )
-    return apply_criteria_group(events, criteria.correlated_criteria, ctx)
+    return events
 
 
 def _maybe_normalize_units(table, units, value_range):

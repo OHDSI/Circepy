@@ -3,17 +3,18 @@ from __future__ import annotations
 from ...cohortdefinition.criteria import DoseEra
 from ..build_context import BuildContext
 from .common import (
-    apply_age_filter,
     apply_codeset_filter,
     apply_concept_criteria,
     apply_date_range,
     apply_first_event,
-    apply_gender_filter,
     apply_interval_range,
     apply_numeric_range,
-    standardize_output,
 )
-from .groups import apply_criteria_group
+from .patterns import (
+    apply_age_and_gender_filters,
+    apply_age_at_start_end_filters,
+    finalize_criteria_events,
+)
 from .registry import register
 
 
@@ -38,21 +39,32 @@ def build_dose_era(criteria: DoseEra, ctx: BuildContext):
         table, "dose_era_start_date", "dose_era_end_date", criteria.era_length
     )
 
-    if criteria.age_at_start:
-        table = apply_age_filter(
-            table, criteria.age_at_start, ctx, "dose_era_start_date"
-        )
-    if criteria.age_at_end:
-        table = apply_age_filter(table, criteria.age_at_end, ctx, "dose_era_end_date")
-    table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
+    table = apply_age_at_start_end_filters(
+        table,
+        ctx=ctx,
+        start_column="dose_era_start_date",
+        end_column="dose_era_end_date",
+        age_at_start=criteria.age_at_start,
+        age_at_end=criteria.age_at_end,
+    )
+    table = apply_age_and_gender_filters(
+        table,
+        ctx=ctx,
+        age_column="dose_era_start_date",
+        age_range=None,
+        genders=criteria.gender,
+        gender_selection=criteria.gender_cs,
+    )
 
     if criteria.first:
         table = apply_first_event(table, "dose_era_start_date", "dose_era_id")
 
-    events = standardize_output(
+    events = finalize_criteria_events(
         table,
+        criteria=criteria,
+        ctx=ctx,
         primary_key="dose_era_id",
         start_column="dose_era_start_date",
         end_column="dose_era_end_date",
     )
-    return apply_criteria_group(events, criteria.correlated_criteria, ctx)
+    return events

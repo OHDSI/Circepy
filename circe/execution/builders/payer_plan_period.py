@@ -3,16 +3,17 @@ from __future__ import annotations
 from ...cohortdefinition.criteria import PayerPlanPeriod
 from ..build_context import BuildContext
 from .common import (
-    apply_age_filter,
     apply_codeset_filter,
     apply_date_range,
     apply_first_event,
-    apply_gender_filter,
     apply_interval_range,
     apply_user_defined_period,
-    standardize_output,
 )
-from .groups import apply_criteria_group
+from .patterns import (
+    apply_age_and_gender_filters,
+    apply_age_at_start_end_filters,
+    finalize_criteria_events,
+)
 from .registry import register
 
 
@@ -34,16 +35,22 @@ def build_payer_plan_period(criteria: PayerPlanPeriod, ctx: BuildContext):
         criteria.period_length,
     )
 
-    if criteria.age_at_start:
-        table = apply_age_filter(
-            table, criteria.age_at_start, ctx, "payer_plan_period_start_date"
-        )
-    if criteria.age_at_end:
-        table = apply_age_filter(
-            table, criteria.age_at_end, ctx, "payer_plan_period_end_date"
-        )
-
-    table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
+    table = apply_age_at_start_end_filters(
+        table,
+        ctx=ctx,
+        start_column="payer_plan_period_start_date",
+        end_column="payer_plan_period_end_date",
+        age_at_start=criteria.age_at_start,
+        age_at_end=criteria.age_at_end,
+    )
+    table = apply_age_and_gender_filters(
+        table,
+        ctx=ctx,
+        age_column="payer_plan_period_start_date",
+        age_range=None,
+        genders=criteria.gender,
+        gender_selection=criteria.gender_cs,
+    )
 
     table = apply_codeset_filter(table, "payer_concept_id", criteria.payer_concept, ctx)
     table = apply_codeset_filter(table, "plan_concept_id", criteria.plan_concept, ctx)
@@ -76,10 +83,12 @@ def build_payer_plan_period(criteria: PayerPlanPeriod, ctx: BuildContext):
     if criteria.first:
         table = apply_first_event(table, start_column, "payer_plan_period_id")
 
-    events = standardize_output(
+    events = finalize_criteria_events(
         table,
+        criteria=criteria,
+        ctx=ctx,
         primary_key="payer_plan_period_id",
         start_column=start_column,
         end_column=end_column,
     )
-    return apply_criteria_group(events, criteria.correlated_criteria, ctx)
+    return events

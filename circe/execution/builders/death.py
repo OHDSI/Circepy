@@ -5,14 +5,11 @@ import ibis
 from ...cohortdefinition.criteria import Death
 from ..build_context import BuildContext
 from .common import (
-    apply_age_filter,
     apply_codeset_filter,
     apply_concept_criteria,
     apply_date_range,
-    apply_gender_filter,
-    standardize_output,
 )
-from .groups import apply_criteria_group
+from .patterns import apply_age_and_gender_filters, finalize_criteria_events
 from .registry import register
 
 
@@ -43,19 +40,24 @@ def build_death(criteria: Death, ctx: BuildContext):
             ctx,
         )
 
-    if criteria.age:
-        table = apply_age_filter(
-            table, criteria.age, ctx, criteria.get_start_date_column()
-        )
-    table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
+    table = apply_age_and_gender_filters(
+        table,
+        ctx=ctx,
+        age_column=criteria.get_start_date_column(),
+        age_range=criteria.age,
+        genders=criteria.gender,
+        gender_selection=criteria.gender_cs,
+    )
 
     window = ibis.window(order_by=[table.person_id, table.death_date])
     table = table.mutate(death_event_id=ibis.row_number().over(window))
 
-    events = standardize_output(
+    events = finalize_criteria_events(
         table,
+        criteria=criteria,
+        ctx=ctx,
         primary_key="death_event_id",
         start_column="death_date",
         end_column="death_date",
     )
-    return apply_criteria_group(events, criteria.correlated_criteria, ctx)
+    return events

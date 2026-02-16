@@ -3,20 +3,17 @@ from __future__ import annotations
 from ...cohortdefinition.criteria import VisitDetail
 from ..build_context import BuildContext
 from .common import (
-    apply_age_filter,
     apply_care_site_filter,
     apply_codeset_filter,
     apply_concept_set_selection,
     apply_date_range,
     apply_first_event,
-    apply_gender_filter,
     apply_interval_range,
     apply_location_region_filter,
     apply_provider_specialty_filter,
     project_event_columns,
-    standardize_output,
 )
-from .groups import apply_criteria_group
+from .patterns import apply_age_and_gender_filters, finalize_criteria_events
 from .registry import register
 
 
@@ -52,9 +49,14 @@ def build_visit_detail(criteria: VisitDetail, ctx: BuildContext):
         criteria.visit_detail_length,
     )
 
-    if criteria.age:
-        table = apply_age_filter(table, criteria.age, ctx, "visit_detail_end_date")
-    table = apply_gender_filter(table, [], criteria.gender_cs, ctx)
+    table = apply_age_and_gender_filters(
+        table,
+        ctx=ctx,
+        age_column="visit_detail_end_date",
+        age_range=criteria.age,
+        genders=[],
+        gender_selection=criteria.gender_cs,
+    )
     table = apply_provider_specialty_filter(
         table,
         None,
@@ -79,10 +81,12 @@ def build_visit_detail(criteria: VisitDetail, ctx: BuildContext):
         include_visit_occurrence=True,
     )
 
-    events = standardize_output(
+    events = finalize_criteria_events(
         table,
+        criteria=criteria,
+        ctx=ctx,
         primary_key="visit_detail_id",
         start_column="visit_detail_start_date",
         end_column="visit_detail_end_date",
     )
-    return apply_criteria_group(events, criteria.correlated_criteria, ctx)
+    return events
