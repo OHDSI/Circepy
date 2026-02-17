@@ -59,5 +59,64 @@ class TestEvaluationBuilder(unittest.TestCase):
         self.assertIn("CAST(COALESCE(R.score, 0) AS FLOAT)", sql)
         self.assertIn("person_id", sql)
 
+    def test_within_days_symmetric_backwards_compatibility(self):
+        """Test that within_days(N) still creates a symmetric window."""
+        with EvaluationBuilder("Symmetric") as ev:
+            ev.add_rule("Rule", weight=1).condition(1).within_days(5)
+        
+        rule = ev.rubric.rules[0]
+        window = rule.expression.criteria_list[0].start_window
+        self.assertEqual(window.start.days, 5)
+        self.assertEqual(window.start.coeff, -1)
+        self.assertEqual(window.end.days, 5)
+        self.assertEqual(window.end.coeff, 1)
+
+    def test_within_days_asymmetric_explicit(self):
+        """Test within_days(before=X, after=Y)."""
+        with EvaluationBuilder("Asymmetric") as ev:
+            ev.add_rule("Rule", weight=1).condition(1).within_days(before=7, after=14)
+            
+        rule = ev.rubric.rules[0]
+        window = rule.expression.criteria_list[0].start_window
+        self.assertEqual(window.start.days, 7)
+        self.assertEqual(window.start.coeff, -1)
+        self.assertEqual(window.end.days, 14)
+        self.assertEqual(window.end.coeff, 1)
+
+    def test_within_days_before_only(self):
+        """Test within_days(before=X)."""
+        with EvaluationBuilder("BeforeOnly") as ev:
+            ev.add_rule("Rule", weight=1).condition(1).within_days(before=10)
+            
+        rule = ev.rubric.rules[0]
+        window = rule.expression.criteria_list[0].start_window
+        self.assertEqual(window.start.days, 10)
+        self.assertEqual(window.start.coeff, -1)
+        self.assertEqual(window.end.days, 0)
+        self.assertEqual(window.end.coeff, 1)
+
+    def test_within_days_after_only(self):
+        """Test within_days(after=X)."""
+        with EvaluationBuilder("AfterOnly") as ev:
+            ev.add_rule("Rule", weight=1).condition(1).within_days(after=10)
+            
+        rule = ev.rubric.rules[0]
+        window = rule.expression.criteria_list[0].start_window
+        self.assertEqual(window.start.days, 0)
+        self.assertEqual(window.start.coeff, -1)
+        self.assertEqual(window.end.days, 10)
+        self.assertEqual(window.end.coeff, 1)
+
+    def test_priority_days_over_before_after(self):
+        """Test that 'days' argument takes precedence if provided."""
+        with EvaluationBuilder("Priority") as ev:
+            # Should be symmetric 5, ignoring before=10/after=10
+            ev.add_rule("Rule", weight=1).condition(1).within_days(days=5, before=10, after=10)
+            
+        rule = ev.rubric.rules[0]
+        window = rule.expression.criteria_list[0].start_window
+        self.assertEqual(window.start.days, 5)
+        self.assertEqual(window.end.days, 5)
+
 if __name__ == "__main__":
     unittest.main()

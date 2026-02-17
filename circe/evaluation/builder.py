@@ -261,9 +261,18 @@ class RuleBuilder:
     def within_days_after(self, days: int) -> 'RuleBuilder':
         return self._set_time_window(days_before=0, days_after=days)
 
-    def within_days(self, days: int) -> 'RuleBuilder':
-        """Set symmetric temporal window (days before AND after index date)."""
-        return self._set_time_window(days_before=days, days_after=days)
+    def within_days(self, days: Optional[int] = None, before: int = 0, after: int = 0) -> 'RuleBuilder':
+        """
+        Set temporal window.
+
+        Args:
+            days: If provided, sets a symmetric window (days before AND days after).
+            before: Days before index (used if days is None).
+            after: Days after index (used if days is None).
+        """
+        if days is not None:
+            return self._set_time_window(days_before=days, days_after=days)
+        return self._set_time_window(days_before=before, days_after=after)
 
     def anytime_before(self) -> 'RuleBuilder':
         return self._set_time_window(days_before=99999, days_after=0)
