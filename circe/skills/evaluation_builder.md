@@ -110,6 +110,7 @@ rule.at_least(N)
 rule.within_days_before(N)      # N days before index
 rule.within_days_after(N)       # N days after index
 rule.within_days(N)             # N days before AND after index (symmetric window)
+rule.within_days(before=N, after=M) # Asymmetric window
 rule.anytime_before()           # Any time before index
 rule.anytime_after()            # Any time after index
 
