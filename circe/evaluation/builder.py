@@ -41,8 +41,9 @@ class EvaluationBuilder:
         >>> rubric = ev.rubric
     """
     
-    def __init__(self, title: str = "Untitled Rubric"):
+    def __init__(self, title: str = "Untitled Rubric", description: str = ""):
         self._title = title
+        self._description = description
         self._concept_sets: List[ConceptSet] = []
         self._rules: List[RuleBuilder] = []
         self._rubric: Optional[EvaluationRubric] = None
@@ -101,16 +102,16 @@ class EvaluationBuilder:
             self._concept_sets.append(cs)
         return self
 
-    def add_rule(self, name: str, weight: float, polarity: int = 1, category: Optional[str] = None) -> 'RuleBuilder':
+    def add_rule(self, name: str, weight: float, polarity: int = 1, category: Optional[str] = None, description: str = "") -> 'RuleBuilder':
         """Add a simple one-line rule."""
         rule_id = len(self._rules) + 1
-        builder = RuleBuilder(self, rule_id, name, weight, polarity, category)
+        builder = RuleBuilder(self, rule_id, name, weight, polarity, category, description)
         self._rules.append(builder)
         return builder
 
-    def rule(self, name: str, weight: float, polarity: int = 1, category: Optional[str] = None) -> 'RuleBuilder':
+    def rule(self, name: str, weight: float, polarity: int = 1, category: Optional[str] = None, description: str = "") -> 'RuleBuilder':
         """Alias for add_rule, ideal for 'with' blocks."""
-        return self.add_rule(name, weight, polarity, category)
+        return self.add_rule(name, weight, polarity, category, description)
 
     @property
     def rubric(self) -> EvaluationRubric:
@@ -124,6 +125,7 @@ class EvaluationBuilder:
         """Construct the final EvaluationRubric."""
         rules = [rb._build_rule() for rb in self._rules]
         return EvaluationRubric(
+            description=self._description,
             concept_sets=self._concept_sets,
             rules=rules
         )
@@ -151,13 +153,14 @@ class RuleBuilder:
         'dose_era': DoseEraQuery,
     }
 
-    def __init__(self, parent_eval: EvaluationBuilder, rule_id: int, name: str, weight: float, polarity: int, category: Optional[str]):
+    def __init__(self, parent_eval: EvaluationBuilder, rule_id: int, name: str, weight: float, polarity: int, category: Optional[str], description: str = ""):
         self._parent_eval = parent_eval
         self._rule_id = rule_id
         self._name = name
         self._weight = weight
         self._polarity = polarity
         self._category = category
+        self._description = description
         self._group = GroupConfig(type="ALL")
         self._in_context: bool = False
 
@@ -305,6 +308,7 @@ class RuleBuilder:
         return EvaluationRule(
             rule_id=self._rule_id,
             name=self._name,
+            description=self._description,
             weight=self._weight,
             polarity=self._polarity,
             category=self._category,

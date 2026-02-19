@@ -15,6 +15,7 @@ class EvaluationRule(CirceBaseModel):
     """
     rule_id: int = Field(..., description="Unique identifier for the rule")
     name: str = Field(..., description="Human-readable name for the rule")
+    description: str = Field("", description="Optional description of the rule")
     expression: CriteriaGroup = Field(..., description="CIRCE criteria expression to evaluate")
     weight: float = Field(..., description="Score awarded if criteria is matched")
     category: Optional[str] = Field(None, description="Rule category (e.g., Primary, Validation)")
@@ -27,6 +28,7 @@ class EvaluationRubric(CirceBaseModel):
     """
     A collection of rules and concept sets targeting a specific phenotype.
     """
+    description: str = Field("", description="Optional description of the rubric")
     concept_sets: List[ConceptSet] = Field(default_factory=list, description="Concept sets used by the rules")
     rules: List[EvaluationRule] = Field(..., description="List of evaluation rules")
 
