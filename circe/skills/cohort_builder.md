@@ -256,8 +256,6 @@ if __name__ == "__main__":
         print(f"Saved: {path}")
 ```
 
-```
-
 ## Modifying Existing Cohorts
 
 If you have an existing cohort definition in your context (as a `CohortExpression` object or JSON), you can modify it instead of creating a new one from scratch.
