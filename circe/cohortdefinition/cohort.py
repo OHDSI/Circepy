@@ -45,8 +45,8 @@ class CohortExpression(CirceBaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.CohortExpression
     """
 
-    concept_sets: Optional[List[ConceptSet]] = Field(
-        default=None,
+    concept_sets: List[ConceptSet] = Field(
+        default_factory=list,
         validation_alias=AliasChoices("ConceptSets", "conceptSets"),
         serialization_alias="ConceptSets"
     )
@@ -89,8 +89,8 @@ class CohortExpression(CirceBaseModel):
         validation_alias=AliasChoices("Title", "title"),
         serialization_alias="Title"
     )
-    inclusion_rules: Optional[List[InclusionRule]] = Field(
-        default=None,
+    inclusion_rules: List[InclusionRule] = Field(
+        default_factory=list,
         validation_alias=AliasChoices("InclusionRules", "inclusionRules"),
         serialization_alias="InclusionRules"
     )
@@ -99,14 +99,30 @@ class CohortExpression(CirceBaseModel):
         validation_alias=AliasChoices("CensorWindow", "censorWindow"),
         serialization_alias="CensorWindow"
     )
-    censoring_criteria: Optional[List[CriteriaType]] = Field(
-        default=None,
-        validation_alias=AliasChoices("CensoringCriteria", "censoringCriteria"),
+    censoring_criteria: List[CriteriaType] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("CensoringCriteria", "censoring_criteria", "censoringCriteria"),
         serialization_alias="CensoringCriteria"
     )
 
     model_config = ConfigDict(populate_by_name=True)
     
+    @field_validator('inclusion_rules', mode='before')
+    @classmethod
+    def allow_none_inclusion_rules(cls, v: Any) -> Any:
+        """Convert None to empty list for inclusion_rules."""
+        if v is None:
+            return []
+        return v
+
+    @field_validator('concept_sets', mode='before')
+    @classmethod
+    def allow_none_concept_sets(cls, v: Any) -> Any:
+        """Convert None to empty list for concept_sets."""
+        if v is None:
+            return []
+        return v
+
     @field_validator('end_strategy', mode='before')
     @classmethod
     def deserialize_end_strategy(cls, v: Any) -> Any:
@@ -141,6 +157,8 @@ class CohortExpression(CirceBaseModel):
         Censoring criteria come as [{"ConditionOccurrence": {...}}, ...] 
         and need to be unwrapped and deserialized to Criteria objects.
         """
+        if v is None:
+            return []
         if not v or not isinstance(v, list):
             return v
         
@@ -224,8 +242,6 @@ class CohortExpression(CirceBaseModel):
         """
         if not isinstance(concept_set, ConceptSet):
             raise TypeError("Expected ConceptSet instance")
-        if self.concept_sets is None:
-            self.concept_sets = []
         self.concept_sets.append(concept_set)
 
     def remove_concept_set_by_id(self, id_: int) -> None:
@@ -241,8 +257,6 @@ class CohortExpression(CirceBaseModel):
         """
         if not isinstance(rule, InclusionRule):
             raise TypeError("Expected InclusionRule instance")
-        if self.inclusion_rules is None:
-            self.inclusion_rules = []
         self.inclusion_rules.append(rule)
 
     def remove_inclusion_rule_by_name(self, name: str) -> None:
@@ -258,8 +272,6 @@ class CohortExpression(CirceBaseModel):
         """
         if not isinstance(criteria, Criteria):
             raise TypeError("Expected Criteria instance")
-        if self.censoring_criteria is None:
-            self.censoring_criteria = []
         self.censoring_criteria.append(criteria)
 
     def remove_censoring_criteria_by_type(self, criteria_type: str) -> None:
@@ -381,6 +393,171 @@ class CohortExpression(CirceBaseModel):
             return [self._normalize_for_checksum(item) for item in data]
             
         return data
+
+    # =========================================================================
+    # VALIDATION AND PROPERTY CHECKING METHODS
+    # =========================================================================
+
+    def is_first_event(self) -> bool:
+        """Check if cohort uses first event criteria.
+
+        Returns:
+            True if all primary criteria have first=True, False otherwise.
+        """
+        if not self.primary_criteria or not self.primary_criteria.criteria_list:
+            return False
+
+        # Check if all criteria have first=True
+        for criteria in self.primary_criteria.criteria_list:
+            # Get the first attribute, handling both direct attribute and nested structure
+            first_value = getattr(criteria, 'first', None)
+            if first_value is not True:
+                return False
+
+        return True
+
+    def has_exclusion_rules(self) -> bool:
+        """Check if cohort has exclusion rules (inclusion rules).
+
+        Note: In CIRCE terminology, "inclusion rules" act as exclusion criteria.
+
+        Returns:
+            True if the cohort has any inclusion rules.
+        """
+        return bool(self.inclusion_rules and len(self.inclusion_rules) > 0)
+
+    def get_exclusion_count(self) -> int:
+        """Get the number of exclusion rules (inclusion rules).
+
+        Returns:
+            The number of inclusion rules.
+        """
+        return len(self.inclusion_rules) if self.inclusion_rules else 0
+
+    def has_inclusion_rule_by_name(self, name: str) -> bool:
+        """Check if an inclusion rule with the given name exists.
+
+        This is useful for checking if specific rules are shared between cohorts.
+
+        Args:
+            name: The name of the inclusion rule to search for.
+
+        Returns:
+            True if an inclusion rule with the given name exists.
+        """
+        if not self.inclusion_rules:
+            return False
+
+        for rule in self.inclusion_rules:
+            if getattr(rule, 'name', None) == name:
+                return True
+
+        return False
+
+    def has_censoring_criteria(self) -> bool:
+        """Check if cohort has censoring criteria.
+
+        Returns:
+            True if censoring criteria are defined.
+        """
+        return bool(self.censoring_criteria and len(self.censoring_criteria) > 0)
+
+    def get_censoring_criteria_types(self) -> List[str]:
+        """Get list of censoring criteria class names.
+
+        Returns:
+            List of class names (e.g., ['ConditionOccurrence', 'DrugExposure']).
+        """
+        if not self.censoring_criteria:
+            return []
+
+        return [criteria.__class__.__name__ for criteria in self.censoring_criteria]
+
+    def has_additional_criteria(self) -> bool:
+        """Check if cohort has additional criteria defined and not empty.
+
+        Returns:
+            True if additional criteria are defined and not empty.
+        """
+        if not self.additional_criteria:
+            return False
+
+        # Check if the criteria group is not empty
+        return not self.additional_criteria.is_empty()
+
+    def has_end_strategy(self) -> bool:
+        """Check if cohort has an end strategy defined.
+
+        Returns:
+            True if an end strategy is defined.
+        """
+        return self.end_strategy is not None
+
+    def get_end_strategy_type(self) -> Optional[str]:
+        """Get the type of end strategy.
+
+        Returns:
+            'DateOffset', 'CustomEra', or None if no end strategy is defined.
+        """
+        if not self.end_strategy:
+            return None
+
+        class_name = self.end_strategy.__class__.__name__
+        if class_name == 'DateOffsetStrategy':
+            return 'DateOffset'
+        elif class_name == 'CustomEraStrategy':
+            return 'CustomEra'
+        else:
+            return class_name
+
+    def get_primary_criteria_types(self) -> List[str]:
+        """Get list of primary criteria class names.
+
+        Returns:
+            List of class names (e.g., ['ConditionOccurrence', 'DrugExposure']).
+        """
+        if not self.primary_criteria or not self.primary_criteria.criteria_list:
+            return []
+
+        return [criteria.__class__.__name__ for criteria in self.primary_criteria.criteria_list]
+
+    def has_observation_window(self) -> bool:
+        """Check if observation window is defined in primary criteria.
+
+        Returns:
+            True if observation window is defined.
+        """
+        if not self.primary_criteria:
+            return False
+
+        return self.primary_criteria.observation_window is not None
+
+    def get_primary_limit_type(self) -> Optional[str]:
+        """Get the primary limit type.
+
+        Returns:
+            The primary limit type (e.g., 'All', 'First') or None.
+        """
+        if not self.primary_criteria or not self.primary_criteria.primary_limit:
+            return None
+
+        return getattr(self.primary_criteria.primary_limit, 'type', None)
+
+    def get_concept_set_count(self) -> int:
+        """Get the number of concept sets.
+
+        Returns:
+            The number of concept sets.
+        """
+        return len(self.concept_sets) if self.concept_sets else 0
+
+    def has_concept_sets(self) -> bool:
+        """Check if concept sets are defined.
+
+        Returns:
+            True if concept sets are defined.
+        """
+        return bool(self.concept_sets and len(self.concept_sets) > 0)
 
     def _repr_markdown_(self) -> str:
         """IPython notebook markdown representation.

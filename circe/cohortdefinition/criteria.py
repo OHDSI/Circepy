@@ -1004,8 +1004,8 @@ class CriteriaGroup(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.CriteriaGroup
     """
-    criteria_list: Optional[List['CorelatedCriteria']] = Field(
-        default=None,
+    criteria_list: List['CorelatedCriteria'] = Field(
+        default_factory=list,
         validation_alias=AliasChoices("CriteriaList", "criteriaList"),
         serialization_alias="CriteriaList"
     )
@@ -1014,13 +1014,13 @@ class CriteriaGroup(BaseModel):
         validation_alias=AliasChoices("Count", "count"),
         serialization_alias="Count"
     )
-    groups: Optional[List['CriteriaGroup']] = Field(
-        default=None,
+    groups: List['CriteriaGroup'] = Field(
+        default_factory=list,
         validation_alias=AliasChoices("Groups", "groups"),
         serialization_alias="Groups"
     )
-    demographic_criteria_list: Optional[List[DemographicCriteria]] = Field(
-        default=None,
+    demographic_criteria_list: List[DemographicCriteria] = Field(
+        default_factory=list,
         validation_alias=AliasChoices("DemographicCriteriaList", "demographicCriteriaList"),
         serialization_alias="DemographicCriteriaList"
     )
@@ -1039,10 +1039,19 @@ class CriteriaGroup(BaseModel):
         has_demographic = self.demographic_criteria_list and len(self.demographic_criteria_list) > 0
         return not (has_criteria or has_groups or has_demographic)
     
+    @field_validator('demographic_criteria_list', mode='before')
+    @classmethod
+    def allow_none_demographic(cls, v: Any) -> Any:
+        if v is None:
+            return []
+        return v
+
     @field_validator('groups', mode='before')
     @classmethod
     def deserialize_groups(cls, v: Any) -> Any:
         # Same Logic as before, just local
+        if v is None:
+            return []
         if not v or not isinstance(v, list):
             return v
         result = []
@@ -1061,6 +1070,8 @@ class CriteriaGroup(BaseModel):
     @classmethod
     def deserialize_criteria_list(cls, v: Any) -> Any:
         # Logic adapted for local CorelatedCriteria
+        if v is None:
+            return []
         if not v or not isinstance(v, list):
             return v
         
@@ -1238,8 +1249,8 @@ class PrimaryCriteria(BaseModel):
     
     Java equivalent: org.ohdsi.circe.cohortdefinition.PrimaryCriteria
     """
-    criteria_list: Optional[List[CriteriaType]] = Field(
-        default=None,
+    criteria_list: List[CriteriaType] = Field(
+        default_factory=list,
         validation_alias=AliasChoices("CriteriaList", "criteriaList"),
         serialization_alias="CriteriaList"
     )
@@ -1259,6 +1270,8 @@ class PrimaryCriteria(BaseModel):
     @field_validator('criteria_list', mode='before')
     @classmethod
     def deserialize_criteria_list(cls, v: Any) -> Any:
+        if v is None:
+            return []
         if not v or not isinstance(v, list):
             return v
         
