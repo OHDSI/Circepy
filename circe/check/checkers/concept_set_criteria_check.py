@@ -8,9 +8,9 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from ..warning_severity import WarningSeverity
 from ..operations.operations import Operations
 from ..utils.criteria_name_helper import CriteriaNameHelper
+from ..warning_severity import WarningSeverity
 from .base_criteria_check import BaseCriteriaCheck
 from .warning_reporter import WarningReporter
 from .warning_reporter_helper import WarningReporterHelper
@@ -18,9 +18,9 @@ from .warning_reporter_helper import WarningReporterHelper
 # Import at runtime to avoid circular dependencies
 try:
     from ...cohortdefinition.criteria import (
-        Criteria,
         ConditionEra,
         ConditionOccurrence,
+        Criteria,
         Death,
         DeviceExposure,
         DoseEra,
@@ -30,17 +30,17 @@ try:
         Observation,
         ProcedureOccurrence,
         Specimen,
-        VisitOccurrence,
         VisitDetail,
+        VisitOccurrence,
     )
 except ImportError:
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
         from ...cohortdefinition.criteria import (
-            Criteria,
             ConditionEra,
             ConditionOccurrence,
+            Criteria,
             Death,
             DeviceExposure,
             DoseEra,
@@ -50,8 +50,8 @@ except ImportError:
             Observation,
             ProcedureOccurrence,
             Specimen,
-            VisitOccurrence,
             VisitDetail,
+            VisitOccurrence,
         )
 
 
@@ -100,8 +100,8 @@ class ConceptSetCriteriaCheck(BaseCriteriaCheck):
             Observation,
             ProcedureOccurrence,
             Specimen,
-            VisitOccurrence,
             VisitDetail,
+            VisitOccurrence,
         )
 
         Operations.match(criteria).is_a(ConditionEra).then(

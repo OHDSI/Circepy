@@ -7,9 +7,9 @@ It mirrors the Java CIRCE-BE check package structure.
 
 from .check import Check
 from .checker import Checker
+from .constants import Constants
 from .warning import Warning
 from .warning_severity import WarningSeverity
-from .constants import Constants
 
 __all__ = [
     "Check",

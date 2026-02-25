@@ -8,18 +8,20 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Union, Any, TYPE_CHECKING
-from pydantic import (
-    BaseModel,
-    Field,
-    ConfigDict,
-    model_validator,
-    field_validator,
-    Discriminator,
-    AliasChoices,
-    model_serializer,
-)
 from enum import Enum
+from typing import TYPE_CHECKING, Any, List, Optional, Union
+
+from pydantic import (
+    AliasChoices,
+    BaseModel,
+    ConfigDict,
+    Discriminator,
+    Field,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
+
 from .utils import to_pascal_alias
 
 

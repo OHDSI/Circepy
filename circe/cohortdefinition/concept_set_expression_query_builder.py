@@ -9,6 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional
+
 from ..vocabulary.concept import Concept, ConceptSetExpression, ConceptSetItem
 from .builders.utils import BuilderUtils
 

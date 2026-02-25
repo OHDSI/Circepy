@@ -9,8 +9,9 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Tuple
-from ..warning_severity import WarningSeverity
+
 from ..utils.criteria_name_helper import CriteriaNameHelper
+from ..warning_severity import WarningSeverity
 from .base_criteria_check import BaseCriteriaCheck
 from .warning_reporter import WarningReporter
 
@@ -93,11 +94,11 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
             Measurement,
             Observation,
             ObservationPeriod,
+            PayerPlanPeriod,
             ProcedureOccurrence,
             Specimen,
-            VisitOccurrence,
             VisitDetail,
-            PayerPlanPeriod,
+            VisitOccurrence,
         )
 
         if isinstance(c1, ConditionEra):

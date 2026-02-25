@@ -10,7 +10,8 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
+
 from .warning import Warning
 
 if TYPE_CHECKING:

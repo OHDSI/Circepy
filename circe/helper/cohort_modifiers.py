@@ -51,7 +51,6 @@ from ..cohortdefinition.criteria import (
 )
 from ..vocabulary.concept import Concept
 
-
 # ---------------------------------------------------------------------------
 # Constants – OMOP standard concept IDs for gender
 # ---------------------------------------------------------------------------

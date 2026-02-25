@@ -8,12 +8,12 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from ..warning_severity import WarningSeverity
-from ..utils.criteria_name_helper import CriteriaNameHelper
-from .base_corelated_criteria_check import BaseCorelatedCriteriaCheck
-from .warning_reporter import WarningReporter
-from .comparisons import Comparisons
 from ..operations.operations import Operations
+from ..utils.criteria_name_helper import CriteriaNameHelper
+from ..warning_severity import WarningSeverity
+from .base_corelated_criteria_check import BaseCorelatedCriteriaCheck
+from .comparisons import Comparisons
+from .warning_reporter import WarningReporter
 
 # Import at runtime to avoid circular dependencies
 try:

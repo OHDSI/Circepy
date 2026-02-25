@@ -7,11 +7,12 @@ This module provides a simple R CirceR-style API for working with cohort definit
 - cohort_print_friendly(): Generate Markdown from cohort expression
 """
 
-from typing import Optional, List
+from typing import List, Optional
+
 from .cohortdefinition import (
+    BuildExpressionQueryOptions,
     CohortExpression,
     CohortExpressionQueryBuilder,
-    BuildExpressionQueryOptions,
     MarkdownRender,
 )
 from .vocabulary.concept import ConceptSet

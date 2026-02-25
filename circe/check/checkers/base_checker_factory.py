@@ -10,6 +10,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import Callable
+
 from .warning_reporter import WarningReporter
 
 # Import at runtime to avoid circular dependencies

@@ -8,30 +8,32 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Any, ClassVar, Union, TYPE_CHECKING
-from pydantic import (
-    BaseModel,
-    Field,
-    ConfigDict,
-    model_serializer,
-    AliasChoices,
-    field_validator,
-)
 from enum import Enum
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Union
+
+from pydantic import (
+    AliasChoices,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_serializer,
+)
+
 from ..vocabulary.concept import Concept
 from .core import (
+    CirceBaseModel,
+    CollapseSettings,
+    ConceptSetSelection,
     DateAdjustment,
     DateRange,
+    EndStrategy,
     NumericRange,
-    ConceptSetSelection,
-    TextFilter,
-    Window,
+    ObservationFilter,
     Period,
     ResultLimit,
-    ObservationFilter,
-    CollapseSettings,
-    EndStrategy,
-    CirceBaseModel,
+    TextFilter,
+    Window,
 )
 
 

@@ -9,18 +9,19 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from datetime import datetime
-from typing import Optional, List, Callable, TYPE_CHECKING
-from ...cohortdefinition.core import NumericRange, DateRange, Period
-from ...vocabulary.concept import ConceptSet, Concept
+from typing import TYPE_CHECKING, Callable, List, Optional
+
+from ...cohortdefinition.core import DateRange, NumericRange, Period
+from ...vocabulary.concept import Concept, ConceptSet
 
 if TYPE_CHECKING:
-    from ...cohortdefinition.criteria import Criteria
     from ...cohortdefinition.core import ObservationFilter, Window
+    from ...cohortdefinition.criteria import Criteria
 else:
     # Import at runtime to avoid circular dependencies
     try:
-        from ...cohortdefinition.criteria import Criteria
         from ...cohortdefinition.core import ObservationFilter, Window
+        from ...cohortdefinition.criteria import Criteria
     except ImportError:
         pass
 
@@ -48,7 +49,7 @@ class Comparisons:
             return False
 
         # Import here to avoid circular dependencies
-        from ...cohortdefinition.core import NumericRange, DateRange, Period
+        from ...cohortdefinition.core import DateRange, NumericRange, Period
 
         if isinstance(range_val, NumericRange):
             if range_val.value is None or range_val.extent is None:
@@ -253,8 +254,8 @@ class Comparisons:
             Observation,
             ProcedureOccurrence,
             Specimen,
-            VisitOccurrence,
             VisitDetail,
+            VisitOccurrence,
         )
 
         if isinstance(c1, ConditionEra):

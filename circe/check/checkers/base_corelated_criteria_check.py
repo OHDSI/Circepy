@@ -14,13 +14,13 @@ from .warning_reporter import WarningReporter
 # Import at runtime to avoid circular dependencies
 try:
     from ...cohortdefinition.cohort import CohortExpression
-    from ...cohortdefinition.criteria import Criteria, CorelatedCriteria
+    from ...cohortdefinition.criteria import CorelatedCriteria, Criteria
 except ImportError:
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
         from ...cohortdefinition.cohort import CohortExpression
-        from ...cohortdefinition.criteria import Criteria, CorelatedCriteria
+        from ...cohortdefinition.criteria import CorelatedCriteria, Criteria
 
 
 class BaseCorelatedCriteriaCheck(BaseIterableCheck):

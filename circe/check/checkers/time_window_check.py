@@ -9,25 +9,26 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import Optional
-from ..warning_severity import WarningSeverity
-from ..utils.criteria_name_helper import CriteriaNameHelper
-from .base_corelated_criteria_check import BaseCorelatedCriteriaCheck
-from .warning_reporter import WarningReporter
-from .comparisons import Comparisons
+
 from ..operations.operations import Operations
+from ..utils.criteria_name_helper import CriteriaNameHelper
+from ..warning_severity import WarningSeverity
+from .base_corelated_criteria_check import BaseCorelatedCriteriaCheck
+from .comparisons import Comparisons
+from .warning_reporter import WarningReporter
 
 # Import at runtime to avoid circular dependencies
 try:
     from ...cohortdefinition.cohort import CohortExpression
-    from ...cohortdefinition.criteria import CorelatedCriteria
     from ...cohortdefinition.core import ObservationFilter
+    from ...cohortdefinition.criteria import CorelatedCriteria
 except ImportError:
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
         from ...cohortdefinition.cohort import CohortExpression
-        from ...cohortdefinition.criteria import CorelatedCriteria
         from ...cohortdefinition.core import ObservationFilter
+        from ...cohortdefinition.criteria import CorelatedCriteria
 
 
 class TimeWindowCheck(BaseCorelatedCriteriaCheck):

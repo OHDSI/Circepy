@@ -8,11 +8,13 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Set, List, Optional, Any
-from pydantic import BaseModel, Field, ConfigDict
-from .base import CriteriaSqlBuilder
-from .utils import CriteriaColumn, BuilderOptions, BuilderUtils
+from typing import Any, List, Optional, Set
+
+from pydantic import BaseModel, ConfigDict, Field
+
 from ..criteria import DeviceExposure
+from .base import CriteriaSqlBuilder
+from .utils import BuilderOptions, BuilderUtils, CriteriaColumn
 
 
 class DeviceExposureSqlBuilder(CriteriaSqlBuilder[DeviceExposure]):

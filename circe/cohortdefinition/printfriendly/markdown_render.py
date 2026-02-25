@@ -11,14 +11,15 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Union
+import json
 from datetime import datetime
 from pathlib import Path
-import json
+from typing import List, Optional, Union
+
 import jinja2
 
-from ..cohort import CohortExpression
 from ...vocabulary.concept import ConceptSet
+from ..cohort import CohortExpression
 
 
 class MarkdownRender:

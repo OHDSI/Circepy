@@ -10,8 +10,8 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 
 from ..warning_severity import WarningSeverity
 from .base_value_check import BaseValueCheck
-from .warning_reporter import WarningReporter
 from .text_checker_factory import TextCheckerFactory
+from .warning_reporter import WarningReporter
 
 
 class TextCheck(BaseValueCheck):

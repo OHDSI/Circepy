@@ -10,6 +10,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List
+
 from .check import Check
 from .warning import Warning
 
@@ -39,32 +40,32 @@ class Checker(Check):
             A list of Check instances to run against the expression.
         """
         # Import checkers here to avoid circular dependencies
-        from .checkers.unused_concepts_check import UnusedConceptsCheck
+        from .checkers.attribute_check import AttributeCheck
+        from .checkers.concept_check import ConceptCheck
+        from .checkers.concept_set_criteria_check import ConceptSetCriteriaCheck
+        from .checkers.concept_set_selection_check import ConceptSetSelectionCheck
+        from .checkers.criteria_contradictions_check import CriteriaContradictionsCheck
+        from .checkers.death_time_window_check import DeathTimeWindowCheck
+        from .checkers.domain_type_check import DomainTypeCheck
+        from .checkers.drug_domain_check import DrugDomainCheck
+        from .checkers.drug_era_check import DrugEraCheck
+        from .checkers.duplicates_concept_set_check import DuplicatesConceptSetCheck
+        from .checkers.duplicates_criteria_check import DuplicatesCriteriaCheck
+        from .checkers.empty_concept_set_check import EmptyConceptSetCheck
+        from .checkers.events_progression_check import EventsProgressionCheck
         from .checkers.exit_criteria_check import ExitCriteriaCheck
         from .checkers.exit_criteria_days_offset_check import (
             ExitCriteriaDaysOffsetCheck,
         )
-        from .checkers.range_check import RangeCheck
-        from .checkers.concept_check import ConceptCheck
-        from .checkers.concept_set_selection_check import ConceptSetSelectionCheck
-        from .checkers.attribute_check import AttributeCheck
-        from .checkers.text_check import TextCheck
         from .checkers.incomplete_rule_check import IncompleteRuleCheck
         from .checkers.initial_event_check import InitialEventCheck
         from .checkers.no_exit_criteria_check import NoExitCriteriaCheck
-        from .checkers.concept_set_criteria_check import ConceptSetCriteriaCheck
-        from .checkers.drug_era_check import DrugEraCheck
         from .checkers.ocurrence_check import OcurrenceCheck
-        from .checkers.duplicates_criteria_check import DuplicatesCriteriaCheck
-        from .checkers.duplicates_concept_set_check import DuplicatesConceptSetCheck
-        from .checkers.drug_domain_check import DrugDomainCheck
-        from .checkers.empty_concept_set_check import EmptyConceptSetCheck
-        from .checkers.events_progression_check import EventsProgressionCheck
-        from .checkers.time_window_check import TimeWindowCheck
+        from .checkers.range_check import RangeCheck
+        from .checkers.text_check import TextCheck
         from .checkers.time_pattern_check import TimePatternCheck
-        from .checkers.domain_type_check import DomainTypeCheck
-        from .checkers.criteria_contradictions_check import CriteriaContradictionsCheck
-        from .checkers.death_time_window_check import DeathTimeWindowCheck
+        from .checkers.time_window_check import TimeWindowCheck
+        from .checkers.unused_concepts_check import UnusedConceptsCheck
 
         checks: List[Check] = [
             UnusedConceptsCheck(),

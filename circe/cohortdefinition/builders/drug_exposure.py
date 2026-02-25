@@ -10,9 +10,10 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional, Set
+
 from ..criteria import DrugExposure
 from .base import CriteriaSqlBuilder
-from .utils import BuilderOptions, CriteriaColumn, BuilderUtils
+from .utils import BuilderOptions, BuilderUtils, CriteriaColumn
 
 # SQL template - equivalent to Java ResourceHelper.GetResourceAsString
 DRUG_EXPOSURE_TEMPLATE = """-- Begin Drug Exposure Criteria

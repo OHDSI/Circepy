@@ -9,9 +9,9 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from ..warning_severity import WarningSeverity
+from .attribute_checker_factory import AttributeCheckerFactory
 from .base_value_check import BaseValueCheck
 from .warning_reporter import WarningReporter
-from .attribute_checker_factory import AttributeCheckerFactory
 
 
 class AttributeCheck(BaseValueCheck):

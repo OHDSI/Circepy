@@ -9,27 +9,30 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional
+
 from ..warning_severity import WarningSeverity
 from ..warnings.concept_set_warning import ConceptSetWarning
 from .base_check import BaseCheck
-from .warning_reporter import WarningReporter
 from .criteria_checker_factory import CriteriaCheckerFactory
+from .warning_reporter import WarningReporter
 
 # Import at runtime to avoid circular dependencies
 try:
     from ...cohortdefinition.cohort import CohortExpression
-    from ...cohortdefinition.criteria import Criteria, CorelatedCriteria
     from ...cohortdefinition.core import CustomEraStrategy
-    from ...cohortdefinition.criteria import CriteriaGroup
+    from ...cohortdefinition.criteria import CorelatedCriteria, Criteria, CriteriaGroup
     from ...vocabulary.concept import ConceptSet
 except ImportError:
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
         from ...cohortdefinition.cohort import CohortExpression
-        from ...cohortdefinition.criteria import Criteria, CorelatedCriteria
         from ...cohortdefinition.core import CustomEraStrategy
-        from ...cohortdefinition.criteria import CriteriaGroup
+        from ...cohortdefinition.criteria import (
+            CorelatedCriteria,
+            Criteria,
+            CriteriaGroup,
+        )
         from ...vocabulary.concept import ConceptSet
 
 

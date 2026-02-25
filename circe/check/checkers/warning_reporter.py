@@ -9,7 +9,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Protocol, Any
+from typing import Any, Protocol
 
 
 class WarningReporter(Protocol):

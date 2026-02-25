@@ -9,53 +9,54 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import Callable, List, Optional
+
 from .base_checker_factory import BaseCheckerFactory
 from .warning_reporter import WarningReporter
 
 # Import at runtime to avoid circular dependencies
 try:
-    from ...vocabulary.concept import ConceptSet
+    from ...cohortdefinition.core import ConceptSetSelection
     from ...cohortdefinition.criteria import (
-        Criteria,
         ConditionEra,
         ConditionOccurrence,
+        Criteria,
         Death,
         DeviceExposure,
         DoseEra,
         DrugEra,
         DrugExposure,
+        LocationRegion,
         Measurement,
         Observation,
         ProcedureOccurrence,
         Specimen,
-        VisitOccurrence,
         VisitDetail,
-        LocationRegion,
+        VisitOccurrence,
     )
-    from ...cohortdefinition.core import ConceptSetSelection
+    from ...vocabulary.concept import ConceptSet
 except ImportError:
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
-        from ...vocabulary.concept import ConceptSet
+        from ...cohortdefinition.core import ConceptSetSelection
         from ...cohortdefinition.criteria import (
-            Criteria,
             ConditionEra,
             ConditionOccurrence,
+            Criteria,
             Death,
             DeviceExposure,
             DoseEra,
             DrugEra,
             DrugExposure,
+            LocationRegion,
             Measurement,
             Observation,
             ProcedureOccurrence,
             Specimen,
-            VisitOccurrence,
             VisitDetail,
-            LocationRegion,
+            VisitOccurrence,
         )
-        from ...cohortdefinition.core import ConceptSetSelection
+        from ...vocabulary.concept import ConceptSet
 
 
 class CriteriaCheckerFactory:
@@ -99,6 +100,7 @@ class CriteriaCheckerFactory:
             A function that returns True if the criteria uses the concept set
         """
         # Import here to avoid circular dependencies
+        from ...cohortdefinition.core import ConceptSetSelection
         from ...cohortdefinition.criteria import (
             ConditionEra,
             ConditionOccurrence,
@@ -107,15 +109,14 @@ class CriteriaCheckerFactory:
             DoseEra,
             DrugEra,
             DrugExposure,
+            LocationRegion,
             Measurement,
             Observation,
             ProcedureOccurrence,
             Specimen,
-            VisitOccurrence,
             VisitDetail,
-            LocationRegion,
+            VisitOccurrence,
         )
-        from ...cohortdefinition.core import ConceptSetSelection
 
         def check_condition_era(c: "ConditionEra") -> bool:
             return c.codeset_id == self._concept_set.id

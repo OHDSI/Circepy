@@ -8,9 +8,9 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+from ..operations.operations import Operations
 from .base_check import BaseCheck
 from .warning_reporter import WarningReporter
-from ..operations.operations import Operations
 
 # Import at runtime to avoid circular dependencies
 try:

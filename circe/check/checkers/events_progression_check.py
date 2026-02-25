@@ -10,6 +10,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 
 from enum import Enum
 from typing import Optional
+
 from ..warning_severity import WarningSeverity
 from .base_check import BaseCheck
 from .warning_reporter import WarningReporter

@@ -22,15 +22,15 @@ try:
         DoseEra,
         DrugEra,
         DrugExposure,
+        LocationRegion,
         Measurement,
         Observation,
-        ProcedureOccurrence,
-        Specimen,
-        VisitOccurrence,
-        VisitDetail,
         ObservationPeriod,
         PayerPlanPeriod,
-        LocationRegion,
+        ProcedureOccurrence,
+        Specimen,
+        VisitDetail,
+        VisitOccurrence,
     )
 except ImportError:
     from typing import TYPE_CHECKING
@@ -44,15 +44,15 @@ except ImportError:
             DoseEra,
             DrugEra,
             DrugExposure,
+            LocationRegion,
             Measurement,
             Observation,
-            ProcedureOccurrence,
-            Specimen,
-            VisitOccurrence,
-            VisitDetail,
             ObservationPeriod,
             PayerPlanPeriod,
-            LocationRegion,
+            ProcedureOccurrence,
+            Specimen,
+            VisitDetail,
+            VisitOccurrence,
         )
 
 
@@ -84,15 +84,15 @@ class CriteriaNameHelper:
             DoseEra,
             DrugEra,
             DrugExposure,
+            LocationRegion,
             Measurement,
             Observation,
-            ProcedureOccurrence,
-            Specimen,
-            VisitOccurrence,
-            VisitDetail,
             ObservationPeriod,
             PayerPlanPeriod,
-            LocationRegion,
+            ProcedureOccurrence,
+            Specimen,
+            VisitDetail,
+            VisitOccurrence,
         )
 
         return (

@@ -9,6 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List
+
 from ..warning import Warning
 from ..warning_severity import WarningSeverity
 from ..warnings.incomplete_rule_warning import IncompleteRuleWarning

@@ -2,12 +2,12 @@
 Chat module for interacting with LLMs to generate cohort definitions.
 """
 
-import sys
-import os
 import json
+import os
 import re
+import sys
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
 from circe.prompt_builder import CohortPromptBuilder, ConceptSet
 

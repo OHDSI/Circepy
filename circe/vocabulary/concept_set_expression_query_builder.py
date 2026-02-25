@@ -9,8 +9,9 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional
-from .concept import Concept, ConceptSetExpression, ConceptSetItem
+
 from ..cohortdefinition.builders.utils import BuilderUtils
+from .concept import Concept, ConceptSetExpression, ConceptSetItem
 
 
 class ConceptSetExpressionQueryBuilder:

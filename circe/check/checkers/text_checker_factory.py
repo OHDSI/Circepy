@@ -9,37 +9,38 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import Callable, Optional
+
 from ..constants import Constants
+from ..operations.operations import Operations
 from .base_checker_factory import BaseCheckerFactory
 from .warning_reporter import WarningReporter
-from ..operations.operations import Operations
 
 # Import at runtime to avoid circular dependencies
 try:
+    from ...cohortdefinition.core import TextFilter
     from ...cohortdefinition.criteria import (
+        ConditionOccurrence,
         Criteria,
         DemographicCriteria,
-        ConditionOccurrence,
         DeviceExposure,
         DrugExposure,
         Observation,
         Specimen,
     )
-    from ...cohortdefinition.core import TextFilter
 except ImportError:
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
+        from ...cohortdefinition.core import TextFilter
         from ...cohortdefinition.criteria import (
+            ConditionOccurrence,
             Criteria,
             DemographicCriteria,
-            ConditionOccurrence,
             DeviceExposure,
             DrugExposure,
             Observation,
             Specimen,
         )
-        from ...cohortdefinition.core import TextFilter
 
 
 class TextCheckerFactory(BaseCheckerFactory):

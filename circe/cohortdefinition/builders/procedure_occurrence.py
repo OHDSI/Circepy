@@ -10,9 +10,10 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional, Set
+
 from ..criteria import Criteria
 from .base import CriteriaSqlBuilder
-from .utils import BuilderOptions, CriteriaColumn, BuilderUtils
+from .utils import BuilderOptions, BuilderUtils, CriteriaColumn
 
 # SQL template - equivalent to Java ResourceHelper.GetResourceAsString
 # Note: Uses lowercase select/from to match Java output

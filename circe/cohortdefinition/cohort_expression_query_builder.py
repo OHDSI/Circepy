@@ -9,54 +9,55 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 import json
-from typing import List, Optional, Dict, Any, Union
+from typing import Any, Dict, List, Optional, Union
+
+from .builders import (
+    ConditionEraSqlBuilder,
+    ConditionOccurrenceSqlBuilder,
+    DeathSqlBuilder,
+    DeviceExposureSqlBuilder,
+    DoseEraSqlBuilder,
+    DrugEraSqlBuilder,
+    DrugExposureSqlBuilder,
+    LocationRegionSqlBuilder,
+    MeasurementSqlBuilder,
+    ObservationPeriodSqlBuilder,
+    ObservationSqlBuilder,
+    PayerPlanPeriodSqlBuilder,
+    ProcedureOccurrenceSqlBuilder,
+    SpecimenSqlBuilder,
+    VisitDetailSqlBuilder,
+    VisitOccurrenceSqlBuilder,
+)
+from .builders.utils import BuilderOptions, BuilderUtils, CriteriaColumn
 from .cohort import CohortExpression
+from .concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
+from .core import CustomEraStrategy, DateOffsetStrategy, Period
 from .criteria import (
-    Criteria,
-    CorelatedCriteria,
-    DemographicCriteria,
-    CriteriaGroup,
-    PrimaryCriteria,
-    LocationRegion,
     ConditionEra,
     ConditionOccurrence,
+    CorelatedCriteria,
+    Criteria,
+    CriteriaGroup,
     Death,
+    DemographicCriteria,
     DeviceExposure,
     DoseEra,
     DrugEra,
     DrugExposure,
+    LocationRegion,
     Measurement,
     Observation,
     ObservationPeriod,
+    Occurrence,
     PayerPlanPeriod,
+    PrimaryCriteria,
     ProcedureOccurrence,
     Specimen,
-    VisitOccurrence,
     VisitDetail,
-    Occurrence,
-)
-from .core import Period, DateOffsetStrategy, CustomEraStrategy
-from .builders.utils import BuilderOptions, BuilderUtils, CriteriaColumn
-from .builders import (
-    ConditionOccurrenceSqlBuilder,
-    DeathSqlBuilder,
-    DeviceExposureSqlBuilder,
-    MeasurementSqlBuilder,
-    ObservationSqlBuilder,
-    SpecimenSqlBuilder,
-    VisitOccurrenceSqlBuilder,
-    DrugExposureSqlBuilder,
-    ProcedureOccurrenceSqlBuilder,
-    ConditionEraSqlBuilder,
-    DrugEraSqlBuilder,
-    DoseEraSqlBuilder,
-    ObservationPeriodSqlBuilder,
-    PayerPlanPeriodSqlBuilder,
-    VisitDetailSqlBuilder,
-    LocationRegionSqlBuilder,
+    VisitOccurrence,
 )
 from .interfaces import IGetCriteriaSqlDispatcher, IGetEndStrategySqlDispatcher
-from .concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
 
 
 class BuildExpressionQueryOptions:
@@ -935,7 +936,7 @@ DROP TABLE #inclusion_rules;
         # End date selects
         end_date_selects = []
 
-        from .core import EndStrategy, DateOffsetStrategy, CustomEraStrategy
+        from .core import CustomEraStrategy, DateOffsetStrategy, EndStrategy
 
         if not isinstance(expression.end_strategy, DateOffsetStrategy):
             end_date_selects.append(
@@ -1232,24 +1233,22 @@ DROP TABLE #inclusion_rules;
         inner_criteria = criteria.criteria
         if isinstance(inner_criteria, dict):
             # Try to deserialize it - import here to avoid circular dependency issues
-            from .criteria import (
-                ConditionOccurrence as CO,
-                DrugExposure as DE,
-                ProcedureOccurrence as PO,
-                VisitOccurrence as VO,
-                Observation as O,
-                Measurement as M,
-                DeviceExposure as DevE,
-                Specimen as S,
-                Death as D,
-                VisitDetail as VD,
-                ObservationPeriod as OP,
-                PayerPlanPeriod as PPP,
-                LocationRegion as LR,
-                ConditionEra as CE,
-                DrugEra as DrE,
-                DoseEra as DoE,
-            )
+            from .criteria import ConditionEra as CE
+            from .criteria import ConditionOccurrence as CO
+            from .criteria import Death as D
+            from .criteria import DeviceExposure as DevE
+            from .criteria import DoseEra as DoE
+            from .criteria import DrugEra as DrE
+            from .criteria import DrugExposure as DE
+            from .criteria import LocationRegion as LR
+            from .criteria import Measurement as M
+            from .criteria import Observation as O
+            from .criteria import ObservationPeriod as OP
+            from .criteria import PayerPlanPeriod as PPP
+            from .criteria import ProcedureOccurrence as PO
+            from .criteria import Specimen as S
+            from .criteria import VisitDetail as VD
+            from .criteria import VisitOccurrence as VO
 
             criteria_type = None
             criteria_data = None
@@ -1560,24 +1559,22 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
         # Handle case where criteria is still a dict (shouldn't happen, but be defensive)
         if isinstance(criteria, dict):
             # Try to deserialize it - import here to avoid circular dependency issues
-            from .criteria import (
-                ConditionOccurrence as CO,
-                DrugExposure as DE,
-                ProcedureOccurrence as PO,
-                VisitOccurrence as VO,
-                Observation as O,
-                Measurement as M,
-                DeviceExposure as DevE,
-                Specimen as S,
-                Death as D,
-                VisitDetail as VD,
-                ObservationPeriod as OP,
-                PayerPlanPeriod as PPP,
-                LocationRegion as LR,
-                ConditionEra as CE,
-                DrugEra as DrE,
-                DoseEra as DoE,
-            )
+            from .criteria import ConditionEra as CE
+            from .criteria import ConditionOccurrence as CO
+            from .criteria import Death as D
+            from .criteria import DeviceExposure as DevE
+            from .criteria import DoseEra as DoE
+            from .criteria import DrugEra as DrE
+            from .criteria import DrugExposure as DE
+            from .criteria import LocationRegion as LR
+            from .criteria import Measurement as M
+            from .criteria import Observation as O
+            from .criteria import ObservationPeriod as OP
+            from .criteria import PayerPlanPeriod as PPP
+            from .criteria import ProcedureOccurrence as PO
+            from .criteria import Specimen as S
+            from .criteria import VisitDetail as VD
+            from .criteria import VisitOccurrence as VO
 
             criteria_type = None
             criteria_data = None

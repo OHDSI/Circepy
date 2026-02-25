@@ -8,27 +8,29 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Any, Union, TYPE_CHECKING
 import json
+from typing import TYPE_CHECKING, Any, List, Optional, Union
+
 from pydantic import (
-    BaseModel,
-    Field,
-    ConfigDict,
-    model_validator,
-    field_validator,
     AliasChoices,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
 )
+
 from .core import (
-    ResultLimit,
-    Period,
-    CollapseSettings,
-    EndStrategy,
-    DateOffsetStrategy,
-    CustomEraStrategy,
-    ObservationFilter,
     CirceBaseModel,
+    CollapseSettings,
+    CustomEraStrategy,
+    DateOffsetStrategy,
+    EndStrategy,
+    ObservationFilter,
+    Period,
+    ResultLimit,
 )
-from .criteria import Criteria, PrimaryCriteria, CriteriaGroup, CriteriaType
+from .criteria import Criteria, CriteriaGroup, CriteriaType, PrimaryCriteria
 
 if TYPE_CHECKING:
     from ..check.warning import Warning
@@ -177,22 +179,22 @@ class CohortExpression(CirceBaseModel):
             return v
 
         from .criteria import (
+            ConditionEra,
             ConditionOccurrence,
-            DrugExposure,
-            ProcedureOccurrence,
-            VisitOccurrence,
-            Observation,
-            Measurement,
-            DeviceExposure,
-            Specimen,
             Death,
-            VisitDetail,
+            DeviceExposure,
+            DoseEra,
+            DrugEra,
+            DrugExposure,
+            LocationRegion,
+            Measurement,
+            Observation,
             ObservationPeriod,
             PayerPlanPeriod,
-            LocationRegion,
-            ConditionEra,
-            DrugEra,
-            DoseEra,
+            ProcedureOccurrence,
+            Specimen,
+            VisitDetail,
+            VisitOccurrence,
         )
 
         criteria_class_map = {

@@ -9,8 +9,8 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from .base_value_check import BaseValueCheck
-from .warning_reporter import WarningReporter
 from .concept_checker_factory import ConceptCheckerFactory
+from .warning_reporter import WarningReporter
 
 
 class ConceptCheck(BaseValueCheck):

@@ -1,10 +1,12 @@
-from typing import Any, List, Set, Type
 import textwrap
 from enum import Enum
+from typing import Any, List, Set, Type
+
 from pydantic import BaseModel
+
 from .cohort import CohortExpression, ConceptSet
-from .criteria import Criteria, CriteriaGroup
 from .core import Period
+from .criteria import Criteria, CriteriaGroup
 
 
 def to_python_code(obj: Any) -> str:

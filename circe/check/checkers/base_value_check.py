@@ -10,6 +10,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import Optional
+
 from .base_check import BaseCheck
 from .warning_reporter import WarningReporter
 
@@ -17,11 +18,11 @@ from .warning_reporter import WarningReporter
 try:
     from ...cohortdefinition.cohort import CohortExpression
     from ...cohortdefinition.criteria import (
-        Criteria,
         CorelatedCriteria,
+        Criteria,
+        CriteriaGroup,
         DemographicCriteria,
         PrimaryCriteria,
-        CriteriaGroup,
     )
 except ImportError:
     from typing import TYPE_CHECKING
@@ -29,11 +30,11 @@ except ImportError:
     if TYPE_CHECKING:
         from ...cohortdefinition.cohort import CohortExpression
         from ...cohortdefinition.criteria import (
-            Criteria,
             CorelatedCriteria,
+            Criteria,
+            CriteriaGroup,
             DemographicCriteria,
             PrimaryCriteria,
-            CriteriaGroup,
         )
 
 
@@ -152,11 +153,11 @@ class BaseValueCheck(BaseCheck):
         """
         # Import here to avoid circular dependencies
         from ...cohortdefinition.criteria import (
-            Criteria,
             CorelatedCriteria,
+            Criteria,
+            CriteriaGroup,
             DemographicCriteria,
         )
-        from ...cohortdefinition.criteria import CriteriaGroup
 
         # Check CriteriaGroup
         if isinstance(criteria, CriteriaGroup):

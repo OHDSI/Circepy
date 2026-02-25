@@ -11,8 +11,10 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 
 from abc import ABC, abstractmethod
 from typing import Optional
+
+from .builders.utils import BuilderOptions
+from .core import CustomEraStrategy, DateOffsetStrategy
 from .criteria import (
-    LocationRegion,
     ConditionEra,
     ConditionOccurrence,
     Death,
@@ -20,17 +22,16 @@ from .criteria import (
     DoseEra,
     DrugEra,
     DrugExposure,
+    LocationRegion,
     Measurement,
     Observation,
     ObservationPeriod,
     PayerPlanPeriod,
     ProcedureOccurrence,
     Specimen,
-    VisitOccurrence,
     VisitDetail,
+    VisitOccurrence,
 )
-from .core import DateOffsetStrategy, CustomEraStrategy
-from .builders.utils import BuilderOptions
 
 
 class IGetCriteriaSqlDispatcher(ABC):

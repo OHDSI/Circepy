@@ -9,20 +9,21 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List
-from ..warning_severity import WarningSeverity
-from ..utils.criteria_name_helper import CriteriaNameHelper
+
 from ..operations.execution import Execution
+from ..operations.operations import Operations
+from ..utils.criteria_name_helper import CriteriaNameHelper
+from ..warning_severity import WarningSeverity
 from .base_criteria_check import BaseCriteriaCheck
 from .warning_reporter import WarningReporter
 from .warning_reporter_helper import WarningReporterHelper
-from ..operations.operations import Operations
 
 # Import at runtime to avoid circular dependencies
 try:
     from ...cohortdefinition.cohort import CohortExpression
     from ...cohortdefinition.criteria import (
-        Criteria,
         ConditionOccurrence,
+        Criteria,
         Death,
         DeviceExposure,
         DrugExposure,
@@ -30,8 +31,8 @@ try:
         Observation,
         ProcedureOccurrence,
         Specimen,
-        VisitOccurrence,
         VisitDetail,
+        VisitOccurrence,
     )
 except ImportError:
     from typing import TYPE_CHECKING
@@ -39,8 +40,8 @@ except ImportError:
     if TYPE_CHECKING:
         from ...cohortdefinition.cohort import CohortExpression
         from ...cohortdefinition.criteria import (
-            Criteria,
             ConditionOccurrence,
+            Criteria,
             Death,
             DeviceExposure,
             DrugExposure,
@@ -48,8 +49,8 @@ except ImportError:
             Observation,
             ProcedureOccurrence,
             Specimen,
-            VisitOccurrence,
             VisitDetail,
+            VisitOccurrence,
         )
 
 
@@ -99,8 +100,8 @@ class DomainTypeCheck(BaseCriteriaCheck):
             Observation,
             ProcedureOccurrence,
             Specimen,
-            VisitOccurrence,
             VisitDetail,
+            VisitOccurrence,
         )
 
         Operations.match(criteria).is_a(ConditionOccurrence).then(

@@ -8,7 +8,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from .api import cohort_expression_from_json, build_cohort_query, cohort_print_friendly
+from .api import build_cohort_query, cohort_expression_from_json, cohort_print_friendly
 from .cohortdefinition import BuildExpressionQueryOptions
 from .cohortdefinition.code_generator import to_python_code
 

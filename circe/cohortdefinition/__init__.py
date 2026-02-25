@@ -10,62 +10,57 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from .cohort import CohortExpression
-from .criteria import (
-    Criteria,
-    CorelatedCriteria,
-    DemographicCriteria,
-    Occurrence,
-    CriteriaColumn,
-    InclusionRule,
-    # Moved from core
-    CriteriaGroup,
-    PrimaryCriteria,
-    WindowedCriteria,
-    # Criteria Domain Classes
-    ConditionOccurrence,
-    DrugExposure,
-    ProcedureOccurrence,
-    VisitOccurrence,
-    Observation,
-    Measurement,
-    DeviceExposure,
-    Specimen,
-    Death,
-    VisitDetail,
-    ObservationPeriod,
-    PayerPlanPeriod,
-    LocationRegion,
-    # Era Criteria Classes
-    ConditionEra,
-    DrugEra,
-    DoseEra,
-    # Geographic Criteria
-    GeoCriteria,
-)
-from .core import (
-    CollapseType,
-    DateType,
-    ResultLimit,
-    Period,
-    DateRange,
-    NumericRange,
-    DateAdjustment,
-    ObservationFilter,
-    CollapseSettings,
-    EndStrategy,
-    ConceptSetSelection,
-    # Supporting Classes
-    TextFilter,
-    WindowBound,
-    Window,
-    DateOffsetStrategy,
-    CustomEraStrategy,
-)
 from .cohort_expression_query_builder import (
-    CohortExpressionQueryBuilder,
     BuildExpressionQueryOptions,
+    CohortExpressionQueryBuilder,
 )
 from .concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
+from .core import (  # Supporting Classes
+    CollapseSettings,
+    CollapseType,
+    ConceptSetSelection,
+    CustomEraStrategy,
+    DateAdjustment,
+    DateOffsetStrategy,
+    DateRange,
+    DateType,
+    EndStrategy,
+    NumericRange,
+    ObservationFilter,
+    Period,
+    ResultLimit,
+    TextFilter,
+    Window,
+    WindowBound,
+)
+from .criteria import (  # Moved from core; Criteria Domain Classes; Era Criteria Classes; Geographic Criteria
+    ConditionEra,
+    ConditionOccurrence,
+    CorelatedCriteria,
+    Criteria,
+    CriteriaColumn,
+    CriteriaGroup,
+    Death,
+    DemographicCriteria,
+    DeviceExposure,
+    DoseEra,
+    DrugEra,
+    DrugExposure,
+    GeoCriteria,
+    InclusionRule,
+    LocationRegion,
+    Measurement,
+    Observation,
+    ObservationPeriod,
+    Occurrence,
+    PayerPlanPeriod,
+    PrimaryCriteria,
+    ProcedureOccurrence,
+    Specimen,
+    VisitDetail,
+    VisitOccurrence,
+    WindowedCriteria,
+)
 from .interfaces import IGetCriteriaSqlDispatcher, IGetEndStrategySqlDispatcher
 from .printfriendly import MarkdownRender
 

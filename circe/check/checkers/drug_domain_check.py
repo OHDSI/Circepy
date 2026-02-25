@@ -9,24 +9,25 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional
+
+from ..operations.operations import Operations
 from ..warning_severity import WarningSeverity
 from .base_check import BaseCheck
 from .warning_reporter import WarningReporter
-from ..operations.operations import Operations
 
 # Import at runtime to avoid circular dependencies
 try:
     from ...cohortdefinition.cohort import CohortExpression
-    from ...cohortdefinition.criteria import Criteria
     from ...cohortdefinition.core import CustomEraStrategy
+    from ...cohortdefinition.criteria import Criteria
     from ...vocabulary.concept import ConceptSet
 except ImportError:
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
         from ...cohortdefinition.cohort import CohortExpression
-        from ...cohortdefinition.criteria import Criteria
         from ...cohortdefinition.core import CustomEraStrategy
+        from ...cohortdefinition.criteria import Criteria
         from ...vocabulary.concept import ConceptSet
 
 
@@ -109,8 +110,8 @@ class DrugDomainCheck(BaseCheck):
             Observation,
             ProcedureOccurrence,
             Specimen,
-            VisitOccurrence,
             VisitDetail,
+            VisitOccurrence,
         )
 
         return (

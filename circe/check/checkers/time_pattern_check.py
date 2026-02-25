@@ -8,25 +8,26 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional
 from collections import Counter
-from ..warning_severity import WarningSeverity
+from typing import List, Optional
+
 from ..utils.criteria_name_helper import CriteriaNameHelper
+from ..warning_severity import WarningSeverity
 from .base_corelated_criteria_check import BaseCorelatedCriteriaCheck
 from .warning_reporter import WarningReporter
 
 # Import at runtime to avoid circular dependencies
 try:
     from ...cohortdefinition.cohort import CohortExpression
-    from ...cohortdefinition.criteria import CorelatedCriteria
     from ...cohortdefinition.core import Window
+    from ...cohortdefinition.criteria import CorelatedCriteria
 except ImportError:
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
         from ...cohortdefinition.cohort import CohortExpression
-        from ...cohortdefinition.criteria import CorelatedCriteria
         from ...cohortdefinition.core import Window
+        from ...cohortdefinition.criteria import CorelatedCriteria
 
 
 class TimeWindowInfo:

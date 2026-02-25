@@ -9,10 +9,11 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import TYPE_CHECKING
+
 from ..warning_severity import WarningSeverity
 from .base_check import BaseCheck
-from .warning_reporter import WarningReporter
 from .comparisons import Comparisons
+from .warning_reporter import WarningReporter
 
 if TYPE_CHECKING:
     from ...cohortdefinition.cohort import CohortExpression

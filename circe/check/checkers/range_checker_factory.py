@@ -9,62 +9,63 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import Callable, Optional
+
 from ..constants import Constants
-from .base_checker_factory import BaseCheckerFactory
-from .warning_reporter import WarningReporter
-from .comparisons import Comparisons
 from ..operations.operations import Operations
+from .base_checker_factory import BaseCheckerFactory
+from .comparisons import Comparisons
+from .warning_reporter import WarningReporter
 
 # Import at runtime to avoid circular dependencies
 try:
+    from ...cohortdefinition.cohort import CohortExpression
+    from ...cohortdefinition.core import DateRange, NumericRange, Period
     from ...cohortdefinition.criteria import (
-        Criteria,
-        DemographicCriteria,
         ConditionEra,
         ConditionOccurrence,
+        Criteria,
         Death,
+        DemographicCriteria,
         DeviceExposure,
         DoseEra,
         DrugEra,
         DrugExposure,
+        LocationRegion,
         Measurement,
         Observation,
         ObservationPeriod,
+        PayerPlanPeriod,
         ProcedureOccurrence,
         Specimen,
-        VisitOccurrence,
         VisitDetail,
-        PayerPlanPeriod,
-        LocationRegion,
+        VisitOccurrence,
     )
-    from ...cohortdefinition.core import NumericRange, DateRange, Period
-    from ...cohortdefinition.cohort import CohortExpression
 except ImportError:
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
+        from ...cohortdefinition.cohort import CohortExpression
+        from ...cohortdefinition.core import DateRange, NumericRange, Period
         from ...cohortdefinition.criteria import (
-            Criteria,
-            DemographicCriteria,
             ConditionEra,
             ConditionOccurrence,
+            Criteria,
             Death,
+            DemographicCriteria,
             DeviceExposure,
             DoseEra,
             DrugEra,
             DrugExposure,
+            LocationRegion,
             Measurement,
             Observation,
             ObservationPeriod,
+            PayerPlanPeriod,
             ProcedureOccurrence,
             Specimen,
-            VisitOccurrence,
             VisitDetail,
-            PayerPlanPeriod,
-            LocationRegion,
+            VisitOccurrence,
         )
-        from ...cohortdefinition.core import NumericRange, DateRange, Period
-        from ...cohortdefinition.cohort import CohortExpression
 
 
 class RangeCheckerFactory(BaseCheckerFactory):
@@ -124,15 +125,15 @@ class RangeCheckerFactory(BaseCheckerFactory):
             DoseEra,
             DrugEra,
             DrugExposure,
+            LocationRegion,
             Measurement,
             Observation,
             ObservationPeriod,
+            PayerPlanPeriod,
             ProcedureOccurrence,
             Specimen,
-            VisitOccurrence,
             VisitDetail,
-            PayerPlanPeriod,
-            LocationRegion,
+            VisitOccurrence,
         )
 
         if isinstance(criteria, ConditionEra):
@@ -620,7 +621,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
             return
 
         # Import here to avoid circular dependencies
-        from ...cohortdefinition.core import NumericRange, DateRange
+        from ...cohortdefinition.core import DateRange, NumericRange
 
         def warning(template: str) -> None:
             self._reporter(template, self._group_name, criteria_name, attribute)

@@ -9,9 +9,10 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import Optional
+
+from ...vocabulary.concept import ConceptSet
 from ..warning_severity import WarningSeverity
 from .base_warning import BaseWarning
-from ...vocabulary.concept import ConceptSet
 
 
 class ConceptSetWarning(BaseWarning):

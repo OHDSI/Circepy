@@ -9,19 +9,20 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import Callable, List, Optional
+
 from ..constants import Constants
+from ..operations.operations import Operations
 from .base_checker_factory import BaseCheckerFactory
 from .warning_reporter import WarningReporter
-from ..operations.operations import Operations
 
 # Import at runtime to avoid circular dependencies
 try:
     from ...cohortdefinition.criteria import (
-        Criteria,
-        DemographicCriteria,
         ConditionEra,
         ConditionOccurrence,
+        Criteria,
         Death,
+        DemographicCriteria,
         DeviceExposure,
         DoseEra,
         DrugEra,
@@ -29,10 +30,10 @@ try:
         Measurement,
         Observation,
         ObservationPeriod,
+        PayerPlanPeriod,
         ProcedureOccurrence,
         Specimen,
         VisitOccurrence,
-        PayerPlanPeriod,
     )
     from ...vocabulary.concept import Concept
 except ImportError:
@@ -40,11 +41,11 @@ except ImportError:
 
     if TYPE_CHECKING:
         from ...cohortdefinition.criteria import (
-            Criteria,
-            DemographicCriteria,
             ConditionEra,
             ConditionOccurrence,
+            Criteria,
             Death,
+            DemographicCriteria,
             DeviceExposure,
             DoseEra,
             DrugEra,
@@ -52,10 +53,10 @@ except ImportError:
             Measurement,
             Observation,
             ObservationPeriod,
+            PayerPlanPeriod,
             ProcedureOccurrence,
             Specimen,
             VisitOccurrence,
-            PayerPlanPeriod,
         )
         from ...vocabulary.concept import Concept
 
@@ -113,10 +114,10 @@ class ConceptCheckerFactory(BaseCheckerFactory):
             Measurement,
             Observation,
             ObservationPeriod,
+            PayerPlanPeriod,
             ProcedureOccurrence,
             Specimen,
             VisitOccurrence,
-            PayerPlanPeriod,
         )
 
         def check_condition_era(c: "ConditionEra") -> None:
