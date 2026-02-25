@@ -16,27 +16,26 @@ from .text_checker_factory import TextCheckerFactory
 
 class TextCheck(BaseValueCheck):
     """Check for empty TextFilter values in criteria.
-    
+
     Java equivalent: org.ohdsi.circe.check.checkers.TextCheck
     """
-    
+
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.
-        
+
         Returns:
             WARNING severity level
         """
         return WarningSeverity.WARNING
-    
+
     def _get_factory(self, reporter: WarningReporter, name: str) -> TextCheckerFactory:
         """Get a text checker factory.
-        
+
         Args:
             reporter: The warning reporter to use
             name: The name of the criteria group
-            
+
         Returns:
             A TextCheckerFactory instance
         """
         return TextCheckerFactory.get_factory(reporter, name)
-

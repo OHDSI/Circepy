@@ -15,19 +15,20 @@ from .concept_checker_factory import ConceptCheckerFactory
 
 class ConceptCheck(BaseValueCheck):
     """Check for empty concept arrays in criteria.
-    
+
     Java equivalent: org.ohdsi.circe.check.checkers.ConceptCheck
     """
-    
-    def _get_factory(self, reporter: WarningReporter, name: str) -> ConceptCheckerFactory:
+
+    def _get_factory(
+        self, reporter: WarningReporter, name: str
+    ) -> ConceptCheckerFactory:
         """Get a concept checker factory.
-        
+
         Args:
             reporter: The warning reporter to use
             name: The name of the criteria group
-            
+
         Returns:
             A ConceptCheckerFactory instance
         """
         return ConceptCheckerFactory.get_factory(reporter, name)
-

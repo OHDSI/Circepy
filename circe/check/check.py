@@ -25,22 +25,21 @@ else:
 
 class Check(ABC):
     """Base interface for validation checks.
-    
+
     Java equivalent: org.ohdsi.circe.check.Check
-    
+
     All validation checks must implement this interface and provide
     a method to check a cohort expression and return warnings.
     """
-    
+
     @abstractmethod
-    def check(self, expression: 'CohortExpression') -> List[Warning]:
+    def check(self, expression: "CohortExpression") -> List[Warning]:
         """Check a cohort expression and return any warnings.
-        
+
         Args:
             expression: The cohort expression to validate
-            
+
         Returns:
             A list of warnings found during validation. Empty list if no issues.
         """
         pass
-

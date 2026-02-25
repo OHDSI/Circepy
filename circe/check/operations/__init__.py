@@ -11,12 +11,13 @@ from .operations import Operations
 
 # Type alias for convenience (Callable[[], None])
 from typing import Callable
+
 Executable = Callable[[], None]
 
 __all__ = [
-    'Execution',
-    'Executable',
-    'ConditionalOperations',
-    'ExecutiveOperations',
-    'Operations',
+    "Execution",
+    "Executable",
+    "ConditionalOperations",
+    "ExecutiveOperations",
+    "Operations",
 ]

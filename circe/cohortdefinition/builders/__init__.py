@@ -30,14 +30,14 @@ from .location_region import LocationRegionSqlBuilder
 
 __all__ = [
     # Utility classes
-    "BuilderUtils", "BuilderOptions", "CriteriaColumn",
-    
+    "BuilderUtils",
+    "BuilderOptions",
+    "CriteriaColumn",
     # Base builder class
     "CriteriaSqlBuilder",
-    
     # Specific builders
     "ConditionOccurrenceSqlBuilder",
-    "DrugExposureSqlBuilder", 
+    "DrugExposureSqlBuilder",
     "ProcedureOccurrenceSqlBuilder",
     "DeathSqlBuilder",
     "VisitOccurrenceSqlBuilder",
@@ -51,5 +51,5 @@ __all__ = [
     "ObservationPeriodSqlBuilder",
     "PayerPlanPeriodSqlBuilder",
     "VisitDetailSqlBuilder",
-    "LocationRegionSqlBuilder"
+    "LocationRegionSqlBuilder",
 ]

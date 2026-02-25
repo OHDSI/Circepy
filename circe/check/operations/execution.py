@@ -14,13 +14,12 @@ from typing import Protocol
 
 class Execution(Protocol):
     """Functional interface for deferred execution.
-    
+
     Java equivalent: org.ohdsi.circe.check.operations.Execution
-    
+
     This interface represents an operation that can be executed later.
     """
-    
+
     def apply(self) -> None:
         """Execute the operation."""
         ...
-

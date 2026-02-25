@@ -18,29 +18,32 @@ try:
     from ..cohortdefinition.cohort import CohortExpression
 except ImportError:
     from typing import TYPE_CHECKING
+
     if TYPE_CHECKING:
         from ..cohortdefinition.cohort import CohortExpression
 
 
 class Checker(Check):
     """Main checker class that runs all validation checks.
-    
+
     Java equivalent: org.ohdsi.circe.check.Checker
-    
+
     This class orchestrates running all validation checks against a
     cohort expression and collects all warnings.
     """
-    
+
     def _get_checks(self) -> List[Check]:
         """Get the list of all checks to run.
-        
+
         Returns:
             A list of Check instances to run against the expression.
         """
         # Import checkers here to avoid circular dependencies
         from .checkers.unused_concepts_check import UnusedConceptsCheck
         from .checkers.exit_criteria_check import ExitCriteriaCheck
-        from .checkers.exit_criteria_days_offset_check import ExitCriteriaDaysOffsetCheck
+        from .checkers.exit_criteria_days_offset_check import (
+            ExitCriteriaDaysOffsetCheck,
+        )
         from .checkers.range_check import RangeCheck
         from .checkers.concept_check import ConceptCheck
         from .checkers.concept_set_selection_check import ConceptSetSelectionCheck
@@ -62,7 +65,7 @@ class Checker(Check):
         from .checkers.domain_type_check import DomainTypeCheck
         from .checkers.criteria_contradictions_check import CriteriaContradictionsCheck
         from .checkers.death_time_window_check import DeathTimeWindowCheck
-        
+
         checks: List[Check] = [
             UnusedConceptsCheck(),
             ExitCriteriaCheck(),
@@ -89,15 +92,15 @@ class Checker(Check):
             CriteriaContradictionsCheck(),
             DeathTimeWindowCheck(),
         ]
-        
+
         return checks
-    
-    def check(self, expression: 'CohortExpression') -> List[Warning]:
+
+    def check(self, expression: "CohortExpression") -> List[Warning]:
         """Run all validation checks against a cohort expression.
-        
+
         Args:
             expression: The cohort expression to validate
-            
+
         Returns:
             A list of all warnings found by all checks.
         """
@@ -105,4 +108,3 @@ class Checker(Check):
         for check in self._get_checks():
             result.extend(check.check(expression))
         return result
-

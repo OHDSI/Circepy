@@ -11,29 +11,60 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 
 from .cohort import CohortExpression
 from .criteria import (
-    Criteria, CorelatedCriteria, DemographicCriteria, 
-    Occurrence, CriteriaColumn, InclusionRule,
+    Criteria,
+    CorelatedCriteria,
+    DemographicCriteria,
+    Occurrence,
+    CriteriaColumn,
+    InclusionRule,
     # Moved from core
-    CriteriaGroup, PrimaryCriteria, WindowedCriteria,
+    CriteriaGroup,
+    PrimaryCriteria,
+    WindowedCriteria,
     # Criteria Domain Classes
-    ConditionOccurrence, DrugExposure, ProcedureOccurrence,
-    VisitOccurrence, Observation, Measurement, DeviceExposure,
-    Specimen, Death, VisitDetail, ObservationPeriod,
-    PayerPlanPeriod, LocationRegion,
+    ConditionOccurrence,
+    DrugExposure,
+    ProcedureOccurrence,
+    VisitOccurrence,
+    Observation,
+    Measurement,
+    DeviceExposure,
+    Specimen,
+    Death,
+    VisitDetail,
+    ObservationPeriod,
+    PayerPlanPeriod,
+    LocationRegion,
     # Era Criteria Classes
-    ConditionEra, DrugEra, DoseEra,
+    ConditionEra,
+    DrugEra,
+    DoseEra,
     # Geographic Criteria
-    GeoCriteria
+    GeoCriteria,
 )
 from .core import (
-    CollapseType, DateType, ResultLimit, Period, DateRange, 
-    NumericRange, DateAdjustment, ObservationFilter, 
-    CollapseSettings, EndStrategy, ConceptSetSelection,
+    CollapseType,
+    DateType,
+    ResultLimit,
+    Period,
+    DateRange,
+    NumericRange,
+    DateAdjustment,
+    ObservationFilter,
+    CollapseSettings,
+    EndStrategy,
+    ConceptSetSelection,
     # Supporting Classes
-    TextFilter, WindowBound, Window,
-    DateOffsetStrategy, CustomEraStrategy
+    TextFilter,
+    WindowBound,
+    Window,
+    DateOffsetStrategy,
+    CustomEraStrategy,
 )
-from .cohort_expression_query_builder import CohortExpressionQueryBuilder, BuildExpressionQueryOptions
+from .cohort_expression_query_builder import (
+    CohortExpressionQueryBuilder,
+    BuildExpressionQueryOptions,
+)
 from .concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
 from .interfaces import IGetCriteriaSqlDispatcher, IGetEndStrategySqlDispatcher
 from .printfriendly import MarkdownRender
@@ -41,42 +72,63 @@ from .printfriendly import MarkdownRender
 __all__ = [
     # Main cohort class
     "CohortExpression",
-    
     # Criteria classes
-    "Criteria", "CorelatedCriteria", "DemographicCriteria", 
-    "Occurrence", "CriteriaColumn", "InclusionRule",
-    
+    "Criteria",
+    "CorelatedCriteria",
+    "DemographicCriteria",
+    "Occurrence",
+    "CriteriaColumn",
+    "InclusionRule",
     # Criteria Domain Classes
-    "ConditionOccurrence", "DrugExposure", "ProcedureOccurrence",
-    "VisitOccurrence", "Observation", "Measurement", "DeviceExposure",
-    "Specimen", "Death", "VisitDetail", "ObservationPeriod",
-    "PayerPlanPeriod", "LocationRegion",
-    
+    "ConditionOccurrence",
+    "DrugExposure",
+    "ProcedureOccurrence",
+    "VisitOccurrence",
+    "Observation",
+    "Measurement",
+    "DeviceExposure",
+    "Specimen",
+    "Death",
+    "VisitDetail",
+    "ObservationPeriod",
+    "PayerPlanPeriod",
+    "LocationRegion",
     # Era Criteria Classes
-    "ConditionEra", "DrugEra", "DoseEra",
-    
+    "ConditionEra",
+    "DrugEra",
+    "DoseEra",
     # Geographic Criteria
     "GeoCriteria",
-    
     # Core classes
-    "CollapseType", "DateType", "ResultLimit", "Period", "DateRange", 
-    "NumericRange", "DateAdjustment", "ObservationFilter", 
-    "CollapseSettings", "EndStrategy", "PrimaryCriteria", 
-    "CriteriaGroup", "ConceptSetSelection",
-    
+    "CollapseType",
+    "DateType",
+    "ResultLimit",
+    "Period",
+    "DateRange",
+    "NumericRange",
+    "DateAdjustment",
+    "ObservationFilter",
+    "CollapseSettings",
+    "EndStrategy",
+    "PrimaryCriteria",
+    "CriteriaGroup",
+    "ConceptSetSelection",
     # Supporting Classes
-    "TextFilter", "WindowBound", "Window", "WindowedCriteria",
-    "DateOffsetStrategy", "CustomEraStrategy",
-    
+    "TextFilter",
+    "WindowBound",
+    "Window",
+    "WindowedCriteria",
+    "DateOffsetStrategy",
+    "CustomEraStrategy",
     # Query Builders
-    "CohortExpressionQueryBuilder", "BuildExpressionQueryOptions",
+    "CohortExpressionQueryBuilder",
+    "BuildExpressionQueryOptions",
     "ConceptSetExpressionQueryBuilder",
-    
     # Interfaces
-    "IGetCriteriaSqlDispatcher", "IGetEndStrategySqlDispatcher",
-    
+    "IGetCriteriaSqlDispatcher",
+    "IGetEndStrategySqlDispatcher",
     # Print-Friendly
-    "MarkdownRender"
+    "MarkdownRender",
 ]
 
 # Rebuild models with forward references after all imports are complete

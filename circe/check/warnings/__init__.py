@@ -10,8 +10,8 @@ from .concept_set_warning import ConceptSetWarning
 from .incomplete_rule_warning import IncompleteRuleWarning
 
 __all__ = [
-    'BaseWarning',
-    'DefaultWarning',
-    'ConceptSetWarning',
-    'IncompleteRuleWarning',
+    "BaseWarning",
+    "DefaultWarning",
+    "ConceptSetWarning",
+    "IncompleteRuleWarning",
 ]

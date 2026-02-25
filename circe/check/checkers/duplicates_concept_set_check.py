@@ -28,23 +28,23 @@ else:
 
 class DuplicatesConceptSetCheck(BaseCheck):
     """Check for duplicate concept sets.
-    
+
     Java equivalent: org.ohdsi.circe.check.checkers.DuplicatesConceptSetCheck
     """
-    
+
     DUPLICATES_WARNING = "Concept set %s contains the same concepts like %s"
-    
+
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.
-        
+
         Returns:
             WARNING severity level
         """
         return WarningSeverity.WARNING
-    
-    def _check(self, expression: 'CohortExpression', reporter: WarningReporter) -> None:
+
+    def _check(self, expression: "CohortExpression", reporter: WarningReporter) -> None:
         """Check for duplicate concept sets.
-        
+
         Args:
             expression: The cohort expression to check
             reporter: The warning reporter to use
@@ -56,10 +56,8 @@ class DuplicatesConceptSetCheck(BaseCheck):
                 # Create comparison function for this concept set
                 compare_func = Comparisons.compare_concept_set(concept_set)
                 duplicates = [
-                    cs for cs in expression.concept_sets[i + 1:]
-                    if compare_func(cs)
+                    cs for cs in expression.concept_sets[i + 1 :] if compare_func(cs)
                 ]
                 if duplicates:
                     names = ", ".join(cs.name for cs in duplicates)
                     reporter(self.DUPLICATES_WARNING, concept_set.name, names)
-

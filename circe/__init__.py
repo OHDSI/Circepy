@@ -34,16 +34,50 @@ from .api import (
 )
 
 from circe.cohortdefinition import (
-    CohortExpression, Criteria, CorelatedCriteria, DemographicCriteria,
-    Occurrence, CriteriaColumn, InclusionRule, CollapseType, DateType,
-    ResultLimit, Period, DateRange, NumericRange, DateAdjustment,
-    ObservationFilter, CollapseSettings, EndStrategy, PrimaryCriteria,
-    CriteriaGroup, ConceptSetSelection, Window, TextFilter, GeoCriteria, WindowedCriteria,
-    DateOffsetStrategy, CustomEraStrategy, ConditionOccurrence, DrugExposure,
-    InclusionRule, WindowBound,
-    ProcedureOccurrence, VisitOccurrence, Observation, Measurement, DeviceExposure,
-    Specimen, Death, VisitDetail, ObservationPeriod, PayerPlanPeriod, LocationRegion,
-    ConditionEra, DrugEra, DoseEra
+    CohortExpression,
+    Criteria,
+    CorelatedCriteria,
+    DemographicCriteria,
+    Occurrence,
+    CriteriaColumn,
+    InclusionRule,
+    CollapseType,
+    DateType,
+    ResultLimit,
+    Period,
+    DateRange,
+    NumericRange,
+    DateAdjustment,
+    ObservationFilter,
+    CollapseSettings,
+    EndStrategy,
+    PrimaryCriteria,
+    CriteriaGroup,
+    ConceptSetSelection,
+    Window,
+    TextFilter,
+    GeoCriteria,
+    WindowedCriteria,
+    DateOffsetStrategy,
+    CustomEraStrategy,
+    ConditionOccurrence,
+    DrugExposure,
+    InclusionRule,
+    WindowBound,
+    ProcedureOccurrence,
+    VisitOccurrence,
+    Observation,
+    Measurement,
+    DeviceExposure,
+    Specimen,
+    Death,
+    VisitDetail,
+    ObservationPeriod,
+    PayerPlanPeriod,
+    LocationRegion,
+    ConditionEra,
+    DrugEra,
+    DoseEra,
 )
 
 from typing import Dict
@@ -57,6 +91,7 @@ import importlib
 import inspect
 from pydantic import BaseModel
 import circe as package
+
 
 def safe_model_rebuild(package):
     """
@@ -88,7 +123,6 @@ def safe_model_rebuild(package):
                         pass
     except Exception:
         pass
-
 
 
 def get_json_schema() -> dict:
@@ -142,7 +176,7 @@ def get_json_schema() -> dict:
         "Window": Window,
         "TextFilter": TextFilter,
         "InclusionRule": InclusionRule,
-        "WindowBound": WindowBound
+        "WindowBound": WindowBound,
     }
 
     # Build root-level $defs with each schema
@@ -163,12 +197,9 @@ def get_json_schema() -> dict:
         "version": "1.3.3",
         "type": "object",
         "$defs": defs,
-        "properties": {
-            "CohortExpression": {"$ref": "#/$defs/CohortExpression"}
-        },
-        "required": ["CohortExpression"]
+        "properties": {"CohortExpression": {"$ref": "#/$defs/CohortExpression"}},
+        "required": ["CohortExpression"],
     }
-
 
 
 # ---------------------------------------------------------------------
@@ -181,10 +212,13 @@ __all__ = [
     "CohortExpression",
     "get_json_schema",
     # Vocabulary classes
-    "Concept", "ConceptSet", "ConceptSetExpression", "ConceptSetItem",
+    "Concept",
+    "ConceptSet",
+    "ConceptSetExpression",
+    "ConceptSetItem",
     # API functions
     "cohort_expression_from_json",
     "build_cohort_query",
     "cohort_print_friendly",
-    "safe_model_rebuild"
+    "safe_model_rebuild",
 ]
