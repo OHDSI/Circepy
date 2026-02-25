@@ -7,11 +7,12 @@ This module provides a simple R CirceR-style API for working with cohort definit
 - cohort_print_friendly(): Generate Markdown from cohort expression
 """
 
-from typing import Optional, List
+from typing import List, Optional
+
 from .cohortdefinition import (
+    BuildExpressionQueryOptions,
     CohortExpression,
     CohortExpressionQueryBuilder,
-    BuildExpressionQueryOptions,
     MarkdownRender,
 )
 from .vocabulary.concept import ConceptSet
@@ -19,47 +20,51 @@ from .vocabulary.concept import ConceptSet
 
 def cohort_expression_from_json(json_str: str) -> CohortExpression:
     """Load a cohort expression from a JSON string.
-    
+
     This is equivalent to R CirceR's `cohortExpressionFromJson()` function.
-    
+
     Args:
         json_str: JSON string containing the cohort definition
-        
+
     Returns:
         CohortExpression instance
-        
+
     Raises:
         ValueError: If the JSON is invalid or doesn't conform to the schema
-        
+
     Example:
         >>> json_str = '{"ConceptSets": [], "PrimaryCriteria": {...}}'
         >>> expression = cohort_expression_from_json(json_str)
     """
     import json
-    
+
     # Parse JSON
     data = json.loads(json_str)
-    
+
     # Handle cdmVersionRange as string
-    if 'cdmVersionRange' in data and isinstance(data['cdmVersionRange'], str):
-        data.pop('cdmVersionRange', None)
+    if "cdmVersionRange" in data and isinstance(data["cdmVersionRange"], str):
+        data.pop("cdmVersionRange", None)
 
     # Handle empty censorWindow
-    if 'censorWindow' in data and data['censorWindow'] == {}:
-        data.pop('censorWindow', None)
+    if "censorWindow" in data and data["censorWindow"] == {}:
+        data.pop("censorWindow", None)
 
     # Ensure ConceptSetExpression objects have required fields
-    if 'conceptSets' in data and data['conceptSets']:
-        for concept_set in data['conceptSets']:
-            if isinstance(concept_set, dict) and 'expression' in concept_set and concept_set['expression'] is not None:
-                expr = concept_set['expression']
+    if "conceptSets" in data and data["conceptSets"]:
+        for concept_set in data["conceptSets"]:
+            if (
+                isinstance(concept_set, dict)
+                and "expression" in concept_set
+                and concept_set["expression"] is not None
+            ):
+                expr = concept_set["expression"]
                 if isinstance(expr, dict):
-                    if 'isExcluded' not in expr:
-                        expr['isExcluded'] = False
-                    if 'includeMapped' not in expr:
-                        expr['includeMapped'] = False
-                    if 'includeDescendants' not in expr:
-                        expr['includeDescendants'] = False
+                    if "isExcluded" not in expr:
+                        expr["isExcluded"] = False
+                    if "includeMapped" not in expr:
+                        expr["includeMapped"] = False
+                    if "includeDescendants" not in expr:
+                        expr["includeDescendants"] = False
 
     try:
         return CohortExpression.model_validate(data)
@@ -68,8 +73,7 @@ def cohort_expression_from_json(json_str: str) -> CohortExpression:
 
 
 def build_cohort_query(
-    expression: CohortExpression,
-    options: Optional[BuildExpressionQueryOptions] = None
+    expression: CohortExpression, options: Optional[BuildExpressionQueryOptions] = None
 ) -> str:
     """Generate SQL query from a cohort expression.
 
@@ -101,12 +105,12 @@ def cohort_print_friendly(
     expression: CohortExpression,
     concept_sets: Optional[List[ConceptSet]] = None,
     title: Optional[str] = None,
-    include_concept_sets: bool = False
+    include_concept_sets: bool = False,
 ) -> str:
     """Generate human-readable Markdown from a cohort expression.
-    
+
     This is equivalent to R CirceR's `cohortPrintFriendly()` function.
-    
+
     Args:
         expression: CohortExpression instance
         concept_sets: Optional list of concept sets (uses expression.concept_sets if None)
@@ -114,7 +118,7 @@ def cohort_print_friendly(
         title: Optional title for the output (default: None)
     Returns:
         Markdown string
-        
+
     Example:
         >>> expression = cohort_expression_from_json(json_str)
         >>> markdown = cohort_print_friendly(expression)
@@ -123,7 +127,8 @@ def cohort_print_friendly(
     """
     if concept_sets is None:
         concept_sets = expression.concept_sets or []
-    
-    renderer = MarkdownRender(concept_sets=concept_sets, include_concept_sets=include_concept_sets)
-    return renderer.render_cohort_expression(expression, title=title)
 
+    renderer = MarkdownRender(
+        concept_sets=concept_sets, include_concept_sets=include_concept_sets
+    )
+    return renderer.render_cohort_expression(expression, title=title)
