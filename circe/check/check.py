@@ -10,7 +10,8 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
+
 from .warning import Warning
 
 if TYPE_CHECKING:
@@ -25,22 +26,21 @@ else:
 
 class Check(ABC):
     """Base interface for validation checks.
-    
+
     Java equivalent: org.ohdsi.circe.check.Check
-    
+
     All validation checks must implement this interface and provide
     a method to check a cohort expression and return warnings.
     """
-    
+
     @abstractmethod
-    def check(self, expression: 'CohortExpression') -> List[Warning]:
+    def check(self, expression: "CohortExpression") -> List[Warning]:
         """Check a cohort expression and return any warnings.
-        
+
         Args:
             expression: The cohort expression to validate
-            
+
         Returns:
             A list of warnings found during validation. Empty list if no issues.
         """
         pass
-

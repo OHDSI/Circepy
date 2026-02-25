@@ -34,7 +34,7 @@ class TestCohortExpressionBasics(unittest.TestCase):
         """Test CohortExpression with no parameters."""
         cohort = CohortExpression()
         
-        self.assertIsNone(cohort.concept_sets)
+        self.assertEqual(cohort.concept_sets, [])
         self.assertIsNone(cohort.qualified_limit)
         self.assertIsNone(cohort.additional_criteria)
         self.assertIsNone(cohort.end_strategy)
@@ -43,9 +43,9 @@ class TestCohortExpressionBasics(unittest.TestCase):
         self.assertIsNone(cohort.expression_limit)
         self.assertIsNone(cohort.collapse_settings)
         self.assertIsNone(cohort.title)
-        self.assertIsNone(cohort.inclusion_rules)
+        self.assertEqual(cohort.inclusion_rules, [])
         self.assertIsNone(cohort.censor_window)
-        self.assertIsNone(cohort.censoring_criteria)
+        self.assertEqual(cohort.censoring_criteria, [])
     
     def test_cohort_expression_with_title(self):
         """Test CohortExpression with title."""
@@ -370,8 +370,42 @@ class TestCohortExpressionEdgeCases(unittest.TestCase):
         
         self.assertIsNone(cohort.title)
         self.assertIsNone(cohort.primary_criteria)
-        self.assertIsNone(cohort.concept_sets)
+        self.assertEqual(cohort.concept_sets, [])
     
+    def test_cohort_expression_inclusion_rules_none_to_list(self):
+        """Test that inclusion_rules=None is converted to empty list."""
+        # Test via constructor
+        cohort = CohortExpression(inclusion_rules=None)
+        self.assertEqual(cohort.inclusion_rules, [])
+
+        # Test via JSON validation
+        cohort_json = CohortExpression.model_validate({"InclusionRules": None})
+        self.assertEqual(cohort_json.inclusion_rules, [])
+
+    def test_cohort_expression_list_defaults(self):
+        """Test defaults and None handling for list fields."""
+        # 1. Default Initialization
+        c = CohortExpression()
+        self.assertEqual(c.concept_sets, [])
+        self.assertEqual(c.censoring_criteria, [])
+        self.assertEqual(c.inclusion_rules, [])
+
+        # 2. None Initialization
+        c_none = CohortExpression(
+            concept_sets=None,
+            censoring_criteria=None,
+            inclusion_rules=None
+        )
+        self.assertEqual(c_none.concept_sets, [])
+        self.assertEqual(c_none.censoring_criteria, [])
+        self.assertEqual(c_none.inclusion_rules, [])
+
+        # 3. JSON Null
+        c_json = CohortExpression.model_validate_json('{"ConceptSets": null, "CensoringCriteria": null, "InclusionRules": null}')
+        self.assertEqual(c_json.concept_sets, [])
+        self.assertEqual(c_json.censoring_criteria, [])
+        self.assertEqual(c_json.inclusion_rules, [])
+
     def test_cohort_expression_empty_string_title(self):
         """Test CohortExpression with empty string title."""
         cohort = CohortExpression(title="")
