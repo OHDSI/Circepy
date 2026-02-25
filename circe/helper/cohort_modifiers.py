@@ -36,12 +36,17 @@ from ..cohortdefinition.core import (
     ObservationFilter,
     Period,
     ResultLimit,
+    Window,
+    WindowBound,
 )
 from ..cohortdefinition.criteria import (
+    CorelatedCriteria,
     Criteria,
     CriteriaGroup,
     CriteriaType,
     DemographicCriteria,
+    InclusionRule,
+    Occurrence,
     PrimaryCriteria,
 )
 from ..vocabulary.concept import Concept
@@ -99,9 +104,13 @@ def _ensure_observation_window(pc: PrimaryCriteria) -> ObservationFilter:
 
 
 def _ensure_collapse_settings(expr: CohortExpression) -> CollapseSettings:
-    """Return the CollapseSettings, creating a default one if absent."""
+    """Return the CollapseSettings, creating a default one if absent.
+
+    Note: Creates with collapse_type=None to avoid enabling era collapsing
+    by default. The caller should explicitly set collapse_type if needed.
+    """
     if expr.collapse_settings is None:
-        expr.collapse_settings = CollapseSettings(era_pad=0, collapse_type=CollapseType.ERA)
+        expr.collapse_settings = CollapseSettings(era_pad=0, collapse_type=None)
     return expr.collapse_settings
 
 
@@ -228,52 +237,6 @@ def set_allow_all_events(
 
 
 # ===========================================================================
-# 5. Limit to N Events
-# ===========================================================================
-
-def set_limit_to_n_events(
-    cohort_expression: CohortExpression,
-    n: int,
-) -> CohortExpression:
-    """Restrict the cohort to at most the first *n* qualifying events per person.
-
-    This is implemented by setting the qualified limit type to ``"First"``
-    and expressing the constraint via the ``QualifiedLimit``. If *n* == 1
-    this is equivalent to :func:`set_limit_to_first_event`.
-
-    .. note::
-        The OHDSI Circe JSON schema does not have a native "limit to N"
-        field, so this function sets the limit type to ``"First"`` (keeping
-        only the earliest event). For true top-N behaviour you would need
-        post-processing outside the cohort definition.  This function is
-        therefore a convenience wrapper around *first-event* semantics.
-
-    Args:
-        cohort_expression: The cohort expression to modify.
-        n: Maximum number of events (>= 1).
-
-    Returns:
-        The modified *cohort_expression*.
-
-    Raises:
-        ValueError: If *n* < 1.
-    """
-    if n < 1:
-        raise ValueError(f"n must be >= 1, got {n}")
-
-    if n == 1:
-        return set_limit_to_first_event(cohort_expression)
-
-    # For n > 1 we fall back to "All" since Circe doesn't natively support
-    # "first N". Users can filter downstream.
-    pc = _ensure_primary_criteria(cohort_expression)
-    pc.primary_limit = ResultLimit(type="All")
-    cohort_expression.qualified_limit = ResultLimit(type="All")
-    cohort_expression.expression_limit = ResultLimit(type="All")
-    return cohort_expression
-
-
-# ===========================================================================
 # 6. Cohort Era (Collapse / Persistence Window)
 # ===========================================================================
 
@@ -316,6 +279,7 @@ def set_age_criteria(
     cohort_expression: CohortExpression,
     min_age: Optional[int] = None,
     max_age: Optional[int] = None,
+    replace: bool = False,
 ) -> CohortExpression:
     """Restrict cohort entry to subjects within an age range at index date.
 
@@ -326,10 +290,17 @@ def set_age_criteria(
     * If only *max_age* is provided the operator is ``"lte"`` (<=).
     * If both are provided the operator is ``"bt"`` (between).
 
+    .. note::
+        By default, this function **appends** age criteria to any existing
+        demographic criteria. To replace existing age criteria instead,
+        set ``replace=True``.
+
     Args:
         cohort_expression: The cohort expression to modify.
         min_age: Minimum age (inclusive). ``None`` means no lower bound.
         max_age: Maximum age (inclusive). ``None`` means no upper bound.
+        replace: If ``True``, remove any existing age criteria before
+            adding the new one. Default is ``False`` (append).
 
     Returns:
         The modified *cohort_expression*.
@@ -340,11 +311,17 @@ def set_age_criteria(
 
     Example:
         >>> cohort = set_age_criteria(cohort, min_age=18, max_age=65)
+        >>> # Replace existing age criteria
+        >>> cohort = set_age_criteria(cohort, min_age=21, replace=True)
     """
     if min_age is None and max_age is None:
         raise ValueError("At least one of min_age or max_age must be provided")
     if min_age is not None and max_age is not None and min_age > max_age:
         raise ValueError(f"min_age ({min_age}) must be <= max_age ({max_age})")
+
+    # Remove existing age criteria if replace=True
+    if replace:
+        reset_age_criteria(cohort_expression)
 
     # Build the NumericRange
     if min_age is not None and max_age is not None:
@@ -377,11 +354,17 @@ def set_age_criteria(
 def set_gender_criteria(
     cohort_expression: CohortExpression,
     gender_concept_ids: Union[int, Sequence[int]],
+    replace: bool = False,
 ) -> CohortExpression:
     """Restrict cohort entry to subjects of a specific gender.
 
     Adds a ``DemographicCriteria`` with ``Gender`` concepts to the
     ``AdditionalCriteria`` group.
+
+    .. note::
+        By default, this function **appends** gender criteria to any existing
+        demographic criteria. To replace existing gender criteria instead,
+        set ``replace=True``.
 
     Args:
         cohort_expression: The cohort expression to modify.
@@ -389,6 +372,8 @@ def set_gender_criteria(
             Common values: ``8507`` (Male), ``8532`` (Female).
             You can also use the module-level constants
             ``GENDER_MALE_CONCEPT_ID`` and ``GENDER_FEMALE_CONCEPT_ID``.
+        replace: If ``True``, remove any existing gender criteria before
+            adding the new one. Default is ``False`` (append).
 
     Returns:
         The modified *cohort_expression*.
@@ -396,9 +381,15 @@ def set_gender_criteria(
     Example:
         >>> from circe.helper.cohort_modifiers import GENDER_FEMALE_CONCEPT_ID
         >>> cohort = set_gender_criteria(cohort, GENDER_FEMALE_CONCEPT_ID)
+        >>> # Replace existing gender criteria
+        >>> cohort = set_gender_criteria(cohort, GENDER_MALE_CONCEPT_ID, replace=True)
     """
     if isinstance(gender_concept_ids, int):
         gender_concept_ids = [gender_concept_ids]
+
+    # Remove existing gender criteria if replace=True
+    if replace:
+        reset_gender_criteria(cohort_expression)
 
     gender_concepts: List[Concept] = []
     for cid in gender_concept_ids:
@@ -503,29 +494,28 @@ def set_end_date_strategy(
 
 
 # ===========================================================================
-# 10. Washout Period
+# 10. Washout Period (alias for prior observation)
 # ===========================================================================
 
 def set_washout_period(
     cohort_expression: CohortExpression,
     days: int,
 ) -> CohortExpression:
-    """Exclude events that occur within *days* of a prior cohort entry.
+    """Require a minimum period of prior observation (washout) before entry.
 
-    This is commonly called a *washout* or *clean window*. It is implemented
-    by requiring at least *days* of prior continuous observation **and**
-    restricting to first events, which effectively removes recurrent entries
-    that are too close together.
+    This is an alias for :func:`set_prior_observation`. A washout period
+    ensures that subjects have been observed for at least *days* before
+    their qualifying event, reducing the chance that a prevalent condition
+    is mistaken for an incident one.
 
-    Specifically this function:
-
-    1. Sets ``PrimaryCriteria.ObservationWindow.PriorDays`` to *days*.
-    2. Sets the expression limit to ``"First"`` so only the earliest
-       qualifying event per person is kept.
+    .. note::
+        This function is semantically equivalent to
+        :func:`set_prior_observation`. Use whichever name better fits
+        your study's terminology.
 
     Args:
         cohort_expression: The cohort expression to modify.
-        days: Washout window in days (>= 0).
+        days: Minimum prior continuous observation in days (>= 0).
 
     Returns:
         The modified *cohort_expression*.
@@ -535,12 +525,166 @@ def set_washout_period(
 
     Example:
         >>> cohort = set_washout_period(cohort, 365)
-    """
-    if days < 0:
-        raise ValueError(f"days must be >= 0, got {days}")
 
-    set_prior_observation(cohort_expression, days)
-    set_limit_to_first_event(cohort_expression)
+    See Also:
+        :func:`set_prior_observation`
+    """
+    return set_prior_observation(cohort_expression, days)
+
+
+# ===========================================================================
+# 10b. Clean Window
+# ===========================================================================
+
+_CLEAN_WINDOW_RULE_NAME = "__clean_window__"
+
+
+def set_clean_window(
+    cohort_expression: CohortExpression,
+    days: int,
+    criteria_mode: str = "any",
+) -> CohortExpression:
+    """Exclude repeat events that occur within *days* of a prior event.
+
+    A *clean window* (sometimes called a *deduplication window*) keeps only
+    events that are separated by at least *days* from any prior qualifying
+    event.  For example, with a 7-day clean window two condition
+    occurrences 5 days apart would count as one event — the second would
+    be excluded.
+
+    This is implemented by adding an inclusion rule with one
+    ``CorelatedCriteria`` (exactly 0 occurrences in ``[-days, -1]``) per
+    primary criterion.  The *criteria_mode* parameter controls how those
+    checks are combined when the cohort has multiple primary criteria.
+
+    **criteria_mode="any"** (default)
+        Primary criteria are treated as alternatives (OR).  A person
+        enters the cohort when *any* criterion fires.  The clean window
+        must therefore ensure that **none** of the entry criteria had a
+        prior occurrence in the window.  Internally the correlated
+        criteria are joined with ``type="ALL"`` (every "exactly 0" check
+        must pass).
+
+    **criteria_mode="all"**
+        Primary criteria are treated as co-requirements (AND).  A person
+        enters only when *all* criteria fire together.  The clean window
+        should exclude an event only if the full set of criteria
+        co-occurred previously.  Internally the correlated criteria are
+        joined with ``type="ANY"`` — if *any* criterion had zero prior
+        occurrences the full combination could not have repeated, so the
+        event is kept.
+
+    The rule is tagged with the internal name ``"__clean_window__"`` so
+    that :func:`reset_clean_window` can remove it later.
+
+    Args:
+        cohort_expression: The cohort expression to modify.
+        days: Minimum gap between qualifying events (>= 1).
+        criteria_mode: How to combine checks across multiple primary
+            criteria.  ``"any"`` (default) or ``"all"``.
+
+    Returns:
+        The modified *cohort_expression*.
+
+    Raises:
+        ValueError: If *days* < 1, no primary criteria are defined, or
+            *criteria_mode* is not ``"any"`` or ``"all"``.
+
+    Example:
+        >>> # OR-style entry criteria (most common)
+        >>> cohort = set_clean_window(cohort, 7)
+        >>> # AND-style entry criteria
+        >>> cohort = set_clean_window(cohort, 7, criteria_mode="all")
+    """
+    if days < 1:
+        raise ValueError(f"days must be >= 1, got {days}")
+
+    mode = criteria_mode.strip().lower()
+    if mode not in ("any", "all"):
+        raise ValueError(
+            f"criteria_mode must be 'any' or 'all', got '{criteria_mode}'"
+        )
+
+    pc = cohort_expression.primary_criteria
+    if pc is None or not pc.criteria_list:
+        raise ValueError(
+            "Cannot set a clean window without primary criteria. "
+            "Add at least one primary criterion first."
+        )
+
+    # Remove any existing clean-window rule before adding a new one
+    reset_clean_window(cohort_expression)
+
+    # Build one correlated criteria per primary criterion.
+    # Each one says: "exactly 0 occurrences of this criterion in the
+    # [-days, -1] day window before the index event."
+    correlated_list: List[CorelatedCriteria] = []
+    for criterion in pc.criteria_list:
+        correlated = CorelatedCriteria(
+            criteria=criterion,
+            start_window=Window(
+                start=WindowBound(coeff=-1, days=days),
+                end=WindowBound(coeff=-1, days=1),
+                use_index_end=False,
+                use_event_end=False,
+            ),
+            occurrence=Occurrence(type=0, count=0, is_distinct=False),  # EXACTLY 0
+            restrict_visit=False,
+            ignore_observation_period=False,
+        )
+        correlated_list.append(correlated)
+
+    # Choose the CriteriaGroup type based on the mode.
+    #
+    # mode="any" → group type="ALL"
+    #   Every correlated criteria (each checking one entry criterion)
+    #   must show 0 prior occurrences.  This means no prior qualifying
+    #   event of *any* type occurred in the window.
+    #
+    # mode="all" → group type="ANY"
+    #   At least one correlated criteria must show 0 prior occurrences.
+    #   If any single entry criterion was absent in the window, the full
+    #   co-occurring combination could not have happened, so the event
+    #   passes the clean window.
+    group_type = "ALL" if mode == "any" else "ANY"
+
+    rule = InclusionRule(
+        name=_CLEAN_WINDOW_RULE_NAME,
+        description=(
+            f"Exclude events within {days} days of a prior qualifying event "
+            f"(criteria_mode={mode})"
+        ),
+        expression=CriteriaGroup(
+            type=group_type,
+            criteria_list=correlated_list,
+            demographic_criteria_list=[],
+            groups=[],
+        ),
+    )
+
+    cohort_expression.inclusion_rules.append(rule)
+    return cohort_expression
+
+
+def reset_clean_window(
+    cohort_expression: CohortExpression,
+) -> CohortExpression:
+    """Remove the clean-window inclusion rule, if present.
+
+    Only removes rules tagged with the internal name ``"__clean_window__"``.
+
+    Args:
+        cohort_expression: The cohort expression to modify.
+
+    Returns:
+        The modified *cohort_expression*.
+    """
+    if cohort_expression.inclusion_rules:
+        cohort_expression.inclusion_rules = [
+            r
+            for r in cohort_expression.inclusion_rules
+            if getattr(r, "name", None) != _CLEAN_WINDOW_RULE_NAME
+        ]
     return cohort_expression
 
 

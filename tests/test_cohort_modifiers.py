@@ -28,12 +28,12 @@ from circe.helper.cohort_modifiers import (
     set_post_observation,
     set_limit_to_first_event,
     set_allow_all_events,
-    set_limit_to_n_events,
     set_cohort_era,
     set_age_criteria,
     set_gender_criteria,
     set_end_date_strategy,
     set_washout_period,
+    set_clean_window,
     set_date_range,
     set_censor_event,
     clear_censor_events,
@@ -43,6 +43,7 @@ from circe.helper.cohort_modifiers import (
     reset_gender_criteria,
     reset_end_strategy,
     reset_collapse_settings,
+    reset_clean_window,
     reset_date_range,
     # Convenience
     apply_standard_rules,
@@ -141,31 +142,6 @@ class TestSetAllowAllEvents:
         assert result is empty_cohort
         assert result.primary_criteria.primary_limit.type == "All"
         assert result.expression_limit.type == "All"
-
-
-# ===========================================================================
-# 5. Limit to N Events
-# ===========================================================================
-
-class TestSetLimitToNEvents:
-    def test_n_equals_1(self, empty_cohort):
-        result = set_limit_to_n_events(empty_cohort, 1)
-        assert result.primary_criteria.primary_limit.type == "First"
-        assert result.expression_limit.type == "First"
-
-    def test_n_greater_than_1(self, empty_cohort):
-        result = set_limit_to_n_events(empty_cohort, 5)
-        assert result.primary_criteria.primary_limit.type == "All"
-        assert result.expression_limit.type == "All"
-
-    def test_n_zero_raises(self, empty_cohort):
-        with pytest.raises(ValueError, match="n must be >= 1"):
-            set_limit_to_n_events(empty_cohort, 0)
-
-    def test_n_negative_raises(self, empty_cohort):
-        with pytest.raises(ValueError):
-            set_limit_to_n_events(empty_cohort, -1)
-
 
 # ===========================================================================
 # 6. Cohort Era
@@ -313,16 +289,277 @@ class TestSetEndDateStrategy:
 # ===========================================================================
 
 class TestSetWashoutPeriod:
-    def test_sets_prior_and_first(self, empty_cohort):
+    def test_sets_prior_observation_only(self, empty_cohort):
+        """Washout sets prior observation but does NOT force first event."""
         result = set_washout_period(empty_cohort, 365)
         assert result is empty_cohort
         assert result.primary_criteria.observation_window.prior_days == 365
-        assert result.primary_criteria.primary_limit.type == "First"
-        assert result.expression_limit.type == "First"
+        # Washout should NOT touch the event limit
+        assert result.expression_limit is None
+
+    def test_preserves_all_events_limit(self, empty_cohort):
+        """Washout should not change an existing 'All' event limit."""
+        set_allow_all_events(empty_cohort)
+        set_washout_period(empty_cohort, 180)
+        assert empty_cohort.primary_criteria.primary_limit.type == "All"
+        assert empty_cohort.primary_criteria.observation_window.prior_days == 180
+
+    def test_zero_days(self, empty_cohort):
+        set_washout_period(empty_cohort, 0)
+        assert empty_cohort.primary_criteria.observation_window.prior_days == 0
 
     def test_negative_raises(self, empty_cohort):
         with pytest.raises(ValueError):
             set_washout_period(empty_cohort, -1)
+
+
+# ===========================================================================
+# 10b. Clean Window
+# ===========================================================================
+
+class TestSetCleanWindow:
+    def test_adds_inclusion_rule(self, diabetes_cohort):
+        """A clean window adds an inclusion rule to deduplicate events."""
+        result = set_clean_window(diabetes_cohort, 7)
+        assert result is diabetes_cohort
+        # Should have added exactly one inclusion rule
+        matching = [
+            r for r in result.inclusion_rules
+            if getattr(r, "name", None) == "__clean_window__"
+        ]
+        assert len(matching) == 1
+
+    def test_single_criterion_defaults_to_any_mode(self, diabetes_cohort):
+        """With one primary criterion and default mode, group type is ALL."""
+        assert len(diabetes_cohort.primary_criteria.criteria_list) == 1
+        set_clean_window(diabetes_cohort, 30)
+        rule = next(
+            r for r in diabetes_cohort.inclusion_rules
+            if getattr(r, "name", None) == "__clean_window__"
+        )
+        assert rule.description is not None
+        assert "30" in rule.description
+        assert "criteria_mode=any" in rule.description
+        group = rule.expression
+        assert group is not None
+        assert group.type == "ALL"
+        assert len(group.criteria_list) == 1
+        correlated = group.criteria_list[0]
+        assert correlated.occurrence.type == 0  # EXACTLY
+        assert correlated.occurrence.count == 0
+        assert correlated.start_window.start.coeff == -1
+        assert correlated.start_window.start.days == 30
+        assert correlated.start_window.end.coeff == -1
+        assert correlated.start_window.end.days == 1
+
+    def test_single_criterion_both_modes_equivalent(self, diabetes_cohort):
+        """With one criterion, 'any' and 'all' produce the same correlated list."""
+        set_clean_window(diabetes_cohort, 7, criteria_mode="any")
+        rule_any = next(
+            r for r in diabetes_cohort.inclusion_rules
+            if getattr(r, "name", None) == "__clean_window__"
+        )
+        n_any = len(rule_any.expression.criteria_list)
+
+        set_clean_window(diabetes_cohort, 7, criteria_mode="all")
+        rule_all = next(
+            r for r in diabetes_cohort.inclusion_rules
+            if getattr(r, "name", None) == "__clean_window__"
+        )
+        n_all = len(rule_all.expression.criteria_list)
+
+        # Same count (1), but different group types
+        assert n_any == n_all == 1
+        assert rule_any.expression.type == "ALL"
+        assert rule_all.expression.type == "ANY"
+
+    # -----------------------------------------------------------------------
+    # criteria_mode="any" (default) – OR-style primary criteria
+    # -----------------------------------------------------------------------
+
+    def test_any_mode_multi_criteria_uses_all_group(self):
+        """mode='any': group type is ALL so every criterion must show 0 prior."""
+        cohort = CohortExpression.model_validate({
+            "PrimaryCriteria": {
+                "CriteriaList": [
+                    {"ConditionOccurrence": {"CodesetId": 1, "First": True}},
+                    {"DrugExposure": {"CodesetId": 2, "First": True}},
+                ],
+                "ObservationWindow": {"PriorDays": 0, "PostDays": 0},
+                "PrimaryCriteriaLimit": {"Type": "All"},
+            }
+        })
+        set_clean_window(cohort, 7, criteria_mode="any")
+        rule = next(
+            r for r in cohort.inclusion_rules
+            if getattr(r, "name", None) == "__clean_window__"
+        )
+        group = rule.expression
+        assert group.type == "ALL"
+        assert len(group.criteria_list) == 2
+
+        criteria_types = set()
+        for correlated in group.criteria_list:
+            criteria_types.add(type(correlated.criteria).__name__)
+            assert correlated.occurrence.type == 0
+            assert correlated.occurrence.count == 0
+            assert correlated.start_window.start.days == 7
+        assert criteria_types == {"ConditionOccurrence", "DrugExposure"}
+
+    # -----------------------------------------------------------------------
+    # criteria_mode="all" – AND-style primary criteria
+    # -----------------------------------------------------------------------
+
+    def test_all_mode_multi_criteria_uses_any_group(self):
+        """mode='all': group type is ANY – event passes if any criterion was absent."""
+        cohort = CohortExpression.model_validate({
+            "PrimaryCriteria": {
+                "CriteriaList": [
+                    {"ConditionOccurrence": {"CodesetId": 1, "First": True}},
+                    {"DrugExposure": {"CodesetId": 2, "First": True}},
+                ],
+                "ObservationWindow": {"PriorDays": 0, "PostDays": 0},
+                "PrimaryCriteriaLimit": {"Type": "All"},
+            }
+        })
+        set_clean_window(cohort, 7, criteria_mode="all")
+        rule = next(
+            r for r in cohort.inclusion_rules
+            if getattr(r, "name", None) == "__clean_window__"
+        )
+        group = rule.expression
+        assert group.type == "ANY"
+        assert len(group.criteria_list) == 2
+        assert "criteria_mode=all" in rule.description
+
+    def test_all_mode_three_criteria(self):
+        """mode='all' scales to three criteria with ANY group."""
+        cohort = CohortExpression.model_validate({
+            "PrimaryCriteria": {
+                "CriteriaList": [
+                    {"ConditionOccurrence": {"CodesetId": 1, "First": True}},
+                    {"DrugExposure": {"CodesetId": 2, "First": True}},
+                    {"ProcedureOccurrence": {"CodesetId": 3, "First": True}},
+                ],
+                "ObservationWindow": {"PriorDays": 0, "PostDays": 0},
+                "PrimaryCriteriaLimit": {"Type": "All"},
+            }
+        })
+        set_clean_window(cohort, 14, criteria_mode="all")
+        rule = next(
+            r for r in cohort.inclusion_rules
+            if getattr(r, "name", None) == "__clean_window__"
+        )
+        assert rule.expression.type == "ANY"
+        assert len(rule.expression.criteria_list) == 3
+
+    # -----------------------------------------------------------------------
+    # Invalid criteria_mode
+    # -----------------------------------------------------------------------
+
+    def test_invalid_criteria_mode_raises(self, diabetes_cohort):
+        with pytest.raises(ValueError, match="criteria_mode must be"):
+            set_clean_window(diabetes_cohort, 7, criteria_mode="first")
+
+    # -----------------------------------------------------------------------
+    # Replace, reset, edge cases
+    # -----------------------------------------------------------------------
+
+    def test_replaces_existing_clean_window(self, diabetes_cohort):
+        """Calling set_clean_window twice replaces the old rule."""
+        set_clean_window(diabetes_cohort, 7)
+        set_clean_window(diabetes_cohort, 14)
+        matching = [
+            r for r in diabetes_cohort.inclusion_rules
+            if getattr(r, "name", None) == "__clean_window__"
+        ]
+        assert len(matching) == 1
+        assert "14" in matching[0].description
+
+    def test_replace_changes_mode(self, diabetes_cohort):
+        """Replacing a clean window can switch from 'any' to 'all'."""
+        set_clean_window(diabetes_cohort, 7, criteria_mode="any")
+        rule = next(
+            r for r in diabetes_cohort.inclusion_rules
+            if getattr(r, "name", None) == "__clean_window__"
+        )
+        assert rule.expression.type == "ALL"
+
+        set_clean_window(diabetes_cohort, 7, criteria_mode="all")
+        rule = next(
+            r for r in diabetes_cohort.inclusion_rules
+            if getattr(r, "name", None) == "__clean_window__"
+        )
+        assert rule.expression.type == "ANY"
+
+    def test_preserves_other_inclusion_rules(self, diabetes_cohort):
+        """Clean window should not remove user-defined inclusion rules."""
+        from circe.cohortdefinition.criteria import InclusionRule as IR
+        user_rule = IR(name="my_rule", description="custom")
+        diabetes_cohort.inclusion_rules.append(user_rule)
+        set_clean_window(diabetes_cohort, 7)
+        names = [getattr(r, "name", None) for r in diabetes_cohort.inclusion_rules]
+        assert "my_rule" in names
+        assert "__clean_window__" in names
+
+    def test_no_primary_criteria_raises(self, empty_cohort):
+        """Cannot set a clean window if no primary criteria exist."""
+        with pytest.raises(ValueError, match="primary criteria"):
+            set_clean_window(empty_cohort, 7)
+
+    def test_days_less_than_1_raises(self, diabetes_cohort):
+        with pytest.raises(ValueError, match="days must be >= 1"):
+            set_clean_window(diabetes_cohort, 0)
+
+    def test_negative_days_raises(self, diabetes_cohort):
+        with pytest.raises(ValueError):
+            set_clean_window(diabetes_cohort, -5)
+
+    def test_reset_clean_window(self, diabetes_cohort):
+        """reset_clean_window removes only the clean-window rule."""
+        from circe.cohortdefinition.criteria import InclusionRule as IR
+        user_rule = IR(name="keep_me", description="custom")
+        diabetes_cohort.inclusion_rules.append(user_rule)
+        set_clean_window(diabetes_cohort, 7)
+        assert len(diabetes_cohort.inclusion_rules) == 2
+        reset_clean_window(diabetes_cohort)
+        assert len(diabetes_cohort.inclusion_rules) == 1
+        assert diabetes_cohort.inclusion_rules[0].name == "keep_me"
+
+    def test_reset_clean_window_noop_when_absent(self, empty_cohort):
+        """reset_clean_window should not raise when no rule is present."""
+        result = reset_clean_window(empty_cohort)
+        assert result is empty_cohort
+
+    def test_replace_updates_count_after_criteria_change(self):
+        """If primary criteria change between calls, the new rule reflects them."""
+        from circe.cohortdefinition import DrugExposure
+        cohort = CohortExpression.model_validate({
+            "PrimaryCriteria": {
+                "CriteriaList": [
+                    {"ConditionOccurrence": {"CodesetId": 1, "First": True}},
+                ],
+                "ObservationWindow": {"PriorDays": 0, "PostDays": 0},
+                "PrimaryCriteriaLimit": {"Type": "All"},
+            }
+        })
+        set_clean_window(cohort, 7)
+        rule = next(
+            r for r in cohort.inclusion_rules
+            if getattr(r, "name", None) == "__clean_window__"
+        )
+        assert len(rule.expression.criteria_list) == 1
+
+        # Now add a second primary criterion and reset the clean window
+        cohort.primary_criteria.criteria_list.append(
+            DrugExposure(codeset_id=2)
+        )
+        set_clean_window(cohort, 7)
+        rule = next(
+            r for r in cohort.inclusion_rules
+            if getattr(r, "name", None) == "__clean_window__"
+        )
+        assert len(rule.expression.criteria_list) == 2
 
 
 # ===========================================================================
@@ -551,5 +788,9 @@ class TestJsonRoundTrip:
         assert parsed.primary_criteria.observation_window.prior_days == 180
         assert parsed.primary_criteria.primary_limit.type == "First"
         assert parsed.collapse_settings.era_pad == 30
+
+
+
+
 
 
