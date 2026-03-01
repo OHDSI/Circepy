@@ -14,7 +14,7 @@ from circe.cohortdefinition import (
     Window,
     WindowBound,
 )
-from circe.execution.errors import UnsupportedFeatureError
+from circe.cohortdefinition.core import DateRange, NumericRange
 from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 
@@ -222,22 +222,35 @@ def test_correlated_criteria_respects_restrict_visit_and_start_window():
     assert set(result.person_id) == {1}
 
 
-def test_additional_demographic_criteria_groups_raise_unsupported_feature():
+def test_additional_demographic_criteria_groups_filter_primary_events():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
     conn = ibis.duckdb.connect()
-    _seed_common_tables(conn, ibis, persons=(1, 2))
+    _seed_common_tables(conn, ibis, persons=(1, 2, 3))
+    conn.create_table(
+        "person",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2, 3],
+                "year_of_birth": [1980, 1980, 2010],
+                "gender_concept_id": [8507, 8507, 8507],
+                "race_concept_id": [8527, 8516, 8527],
+                "ethnicity_concept_id": [38003564, 38003564, 38003563],
+            }
+        ),
+        overwrite=True,
+    )
     conn.create_table(
         "condition_occurrence",
         obj=ibis.memtable(
             {
-                "person_id": [1, 2],
-                "condition_occurrence_id": [100, 200],
-                "condition_concept_id": [111, 111],
-                "condition_start_date": ["2020-01-01", "2020-01-01"],
-                "condition_end_date": ["2020-01-01", "2020-01-01"],
-                "visit_occurrence_id": [10, 20],
+                "person_id": [1, 2, 3],
+                "condition_occurrence_id": [100, 200, 300],
+                "condition_concept_id": [111, 111, 111],
+                "condition_start_date": ["2020-01-03", "2020-01-03", "2020-01-03"],
+                "condition_end_date": ["2020-01-03", "2020-01-03", "2020-01-03"],
+                "visit_occurrence_id": [10, 20, 30],
             }
         ),
         overwrite=True,
@@ -249,13 +262,16 @@ def test_additional_demographic_criteria_groups_raise_unsupported_feature():
         additional_criteria=CriteriaGroup(
             type="ALL",
             demographic_criteria_list=[
-                DemographicCriteria(gender=[Concept(conceptId=8507)])
+                DemographicCriteria(
+                    age=NumericRange(op="gte", value=18),
+                    gender=[Concept(conceptId=8507)],
+                    race=[Concept(conceptId=8527)],
+                    ethnicity=[Concept(conceptId=38003564)],
+                    occurrence_start_date=DateRange(op="gte", value="2020-01-02"),
+                )
             ],
         ),
     )
 
-    with pytest.raises(
-        UnsupportedFeatureError,
-        match="Demographic criteria groups are not implemented",
-    ):
-        _ = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    assert set(result.person_id) == {1}
