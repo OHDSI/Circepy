@@ -4,6 +4,7 @@ Simple library API for CIRCE Python
 This module provides a simple R CirceR-style API for working with cohort definitions:
 - cohort_expression_from_json(): Load cohort expression from JSON string
 - build_cohort_query(): Generate SQL from cohort expression
+- build_cohort_ibis(): Build cohort as an ibis relation (experimental)
 - cohort_print_friendly(): Generate Markdown from cohort expression
 """
 
@@ -99,6 +100,26 @@ def build_cohort_query(
 
     builder = CohortExpressionQueryBuilder()
     return builder.build_expression_query(expression, options)
+
+
+def build_cohort_ibis(
+    expression: CohortExpression,
+    *,
+    backend,
+    cdm_schema: str,
+    results_schema: Optional[str] = None,
+    options: Optional[BuildExpressionQueryOptions] = None,
+):
+    """Build a cohort as an ibis table through the execution subsystem."""
+    from .execution import build_cohort_ibis as _build_cohort_ibis
+
+    return _build_cohort_ibis(
+        expression,
+        backend=backend,
+        cdm_schema=cdm_schema,
+        results_schema=results_schema,
+        options=options,
+    )
 
 
 def cohort_print_friendly(

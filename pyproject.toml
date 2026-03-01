@@ -54,6 +54,12 @@ docs = [
     "sphinx>=5.0.0",
     "sphinx-rtd-theme>=1.0.0",
 ]
+ibis = [
+    "ibis-framework>=11.0.0; python_version >= '3.9'",
+]
+ibis-duckdb = [
+    "ibis-framework[duckdb]>=11.0.0; python_version >= '3.9'",
+]
 
 [project.urls]
 Homepage = "https://github.com/OHDSI/Circepy"
