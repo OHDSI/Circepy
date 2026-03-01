@@ -485,7 +485,8 @@ def normalize_criterion(criteria: Criteria) -> NormalizedCriterion:
         normalized = _normalize_location_region(criteria)
     else:
         raise UnsupportedCriterionError(
-            f"Unsupported criterion for Ibis executor: {criteria.__class__.__name__}"
+            "Ibis executor normalization error: unsupported criterion type "
+            f"{criteria.__class__.__name__}."
         )
 
     if (

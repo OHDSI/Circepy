@@ -125,7 +125,8 @@ def normalize_cohort(
     primary = expression.primary_criteria
     if primary is None or not primary.criteria_list:
         raise ExecutionNormalizationError(
-            "CohortExpression must contain non-empty primary criteria."
+            "Ibis executor normalization error: CohortExpression must contain at "
+            "least one primary criterion."
         )
 
     normalized_criteria = tuple(
@@ -142,7 +143,8 @@ def normalize_cohort(
     normalized_end_strategy = normalize_end_strategy(expression.end_strategy)
     if normalized_end_strategy is not None and normalized_end_strategy.kind == "custom_era":
         raise UnsupportedFeatureError(
-            "custom_era end_strategy is not implemented in the Ibis executor."
+            "Ibis executor normalization error: custom_era end strategy is not "
+            "supported."
         )
 
     return NormalizedCohort(

@@ -73,5 +73,6 @@ def lower_criterion(
     if lowerer is not None:
         return lowerer(criterion, criterion_index=criterion_index)
     raise UnsupportedCriterionError(
-        f"No lowerer available for {criterion.criterion_type}."
+        "Ibis executor lowering error: no lowerer registered for "
+        f"{criterion.criterion_type}."
     )

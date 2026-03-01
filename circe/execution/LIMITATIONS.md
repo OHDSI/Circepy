@@ -1,7 +1,7 @@
-# Ibis Executor MVP Limitations
+# Ibis Executor Limitations
 
-The `circe.execution` subsystem is intentionally scoped as an MVP path and is
-not full semantic parity with the legacy SQL builder yet.
+The `circe.execution` subsystem is experimental and feature-complete for the
+currently implemented semantics.
 
 Current explicit limitations:
 
