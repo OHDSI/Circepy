@@ -4,12 +4,14 @@ from typing import Any, Callable, Mapping
 
 from ..errors import CompilationError
 from ..normalize.cohort import NormalizedConceptSet, NormalizedConceptSetItem
+from ..plan.schema import CONCEPT_ID
+from ..typing import Table
 
 
-TableGetter = Callable[[str, str | None], Any]
+TableGetter = Callable[[str, str | None], Table]
 
 
-class ConceptSetResolver:
+class CachedConceptSetResolver:
     """Resolve concept sets to concrete concept IDs using vocabulary tables."""
 
     def __init__(
@@ -22,9 +24,14 @@ class ConceptSetResolver:
         self._table_getter = table_getter
         self._vocabulary_schema = vocabulary_schema
         self._concept_sets = concept_sets
+        self._cache: dict[int, tuple[int, ...]] = {}
 
     def resolve_codeset(self, codeset_id: int) -> tuple[int, ...]:
-        concept_set = self._concept_sets.get(int(codeset_id))
+        normalized_id = int(codeset_id)
+        if normalized_id in self._cache:
+            return self._cache[normalized_id]
+
+        concept_set = self._concept_sets.get(normalized_id)
         if concept_set is None or not concept_set.items:
             return ()
 
@@ -37,7 +44,9 @@ class ConceptSetResolver:
             else:
                 include_ids.update(expanded)
 
-        return tuple(sorted(include_ids - exclude_ids))
+        resolved = tuple(sorted(include_ids - exclude_ids))
+        self._cache[normalized_id] = resolved
+        return resolved
 
     def _expand_item(self, item: NormalizedConceptSetItem) -> set[int]:
         base_ids: set[int] = {int(item.concept_id)}
@@ -54,7 +63,8 @@ class ConceptSetResolver:
             return self._table_getter(table_name, self._vocabulary_schema)
         except Exception as exc:  # pragma: no cover - backend specific error types
             raise CompilationError(
-                f"Failed to access vocabulary table '{table_name}'."
+                "Ibis executor compilation error: failed to access vocabulary "
+                f"table '{table_name}'."
             ) from exc
 
     def _descendant_ids(self, ancestor_ids: set[int]) -> set[int]:
@@ -70,7 +80,7 @@ class ConceptSetResolver:
             )
             .filter(concept_ancestor.ancestor_concept_id.isin(tuple(ancestor_ids)))
             .filter(concept.invalid_reason.isnull())
-            .select(concept_ancestor.descendant_concept_id.name("concept_id"))
+            .select(concept_ancestor.descendant_concept_id.name(CONCEPT_ID))
             .distinct()
         )
         return self._execute_concept_id_query(query)
@@ -84,7 +94,7 @@ class ConceptSetResolver:
             concept_relationship.filter(concept_relationship.concept_id_2.isin(tuple(input_ids)))
             .filter(concept_relationship.relationship_id == "Maps to")
             .filter(concept_relationship.invalid_reason.isnull())
-            .select(concept_relationship.concept_id_1.name("concept_id"))
+            .select(concept_relationship.concept_id_1.name(CONCEPT_ID))
             .distinct()
         )
         return self._execute_concept_id_query(query)
@@ -93,12 +103,15 @@ class ConceptSetResolver:
         try:
             rows = query.execute()
         except Exception as exc:  # pragma: no cover - backend specific error types
-            raise CompilationError("Failed executing concept set expansion query.") from exc
+            raise CompilationError(
+                "Ibis executor compilation error: failed executing concept-set "
+                "expansion query."
+            ) from exc
 
         values: list[Any]
         if hasattr(rows, "columns"):  # pandas DataFrame
-            if "concept_id" in rows.columns:
-                values = rows["concept_id"].tolist()
+            if CONCEPT_ID in rows.columns:
+                values = rows[CONCEPT_ID].tolist()
             else:
                 values = rows.iloc[:, 0].tolist()
         elif isinstance(rows, (list, tuple, set)):
