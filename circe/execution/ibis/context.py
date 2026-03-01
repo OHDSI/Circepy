@@ -9,6 +9,19 @@ from ..typing import IbisBackendLike, Table
 from .codesets import CachedConceptSetResolver
 
 
+def _table_with_schema_fallback(
+    backend: IbisBackendLike,
+    table_name: str,
+    schema: str | None,
+) -> Table:
+    try:
+        if schema is not None:
+            return backend.table(table_name, database=schema)
+    except TypeError:
+        pass
+    return backend.table(table_name)
+
+
 @frozen_slots_dataclass
 class ExecutionContext:
     backend: IbisBackendLike
@@ -28,12 +41,7 @@ class ExecutionContext:
         )
 
     def _table_from_schema(self, table_name: str, schema: str | None) -> Table:
-        try:
-            if schema is not None:
-                return self.backend.table(table_name, database=schema)
-        except TypeError:
-            pass
-        return self.backend.table(table_name)
+        return _table_with_schema_fallback(self.backend, table_name, schema)
 
     def concept_ids_for_codeset(self, codeset_id: int) -> tuple[int, ...]:
         return self.codeset_resolver.resolve_codeset(codeset_id)
@@ -55,12 +63,7 @@ def make_execution_context(
     )
 
     def _table_getter(table_name: str, schema: str | None) -> Table:
-        try:
-            if schema is not None:
-                return backend.table(table_name, database=schema)
-        except TypeError:
-            pass
-        return backend.table(table_name)
+        return _table_with_schema_fallback(backend, table_name, schema)
 
     resolver = CachedConceptSetResolver(
         table_getter=_table_getter,
