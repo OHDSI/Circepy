@@ -6,9 +6,19 @@ This module provides a simple R CirceR-style API for working with cohort definit
 - build_cohort_query(): Generate SQL from cohort expression
 - build_cohort(): Build cohort as a relational expression (experimental)
 - write_cohort(): Materialize a cohort relation to a database table
+- create_generation_tables(): Initialize generation metadata tables
+- generate_cohort(): Generate one cohort with policy/checksum handling
+- generate_cohort_set(): Generate multiple cohorts with aggregated statuses
+- generate_* supports optional data_version_token for opt-in data-aware invalidation
+- get_generated_cohort_status(): Inspect generation/checksum status for a cohort
+- apply_subset(): Apply subset operators to a cohort relation
+- generate_subset(): Generate a subset cohort with dependency-aware checksums
+- get_generated_cohort_counts(): Get row/person/date metrics for a generated cohort
+- validate_generated_cohort(): Validate generated cohort table rows
 - cohort_print_friendly(): Generate Markdown from cohort expression
 """
 
+from collections.abc import Iterable
 from typing import List, Literal, Optional
 
 from .cohortdefinition import (
@@ -18,6 +28,25 @@ from .cohortdefinition import (
     MarkdownRender,
 )
 from .execution.typing import IbisBackendLike, Table
+from .generation.config import (
+    CohortSetDefinition,
+    GenerationConfig,
+    GenerationPolicy,
+    GenerationTarget,
+    NamedCohortExpression,
+)
+from .generation.metadata import (
+    GeneratedCohortCounts,
+    GenerationSetStatus,
+    GenerationStatus,
+    ValidationResult,
+)
+from .generation.subsets.definitions import (
+    CohortSubsetOperator,
+    DemographicSubsetOperator,
+    LimitSubsetOperator,
+    SubsetDefinition,
+)
 from .vocabulary.concept import ConceptSet
 
 
@@ -153,6 +182,175 @@ def write_cohort(
 # Compatibility aliases for transition period.
 build_cohort_ibis = build_cohort
 write_cohort_ibis = write_cohort
+
+
+def create_generation_tables(
+    *,
+    backend: IbisBackendLike,
+    config: GenerationConfig,
+) -> None:
+    """Create generation metadata/checksum tables when missing."""
+    from .generation import create_generation_tables as _create_generation_tables
+
+    _create_generation_tables(backend=backend, config=config)
+
+
+def generate_cohort(
+    expression: CohortExpression,
+    *,
+    backend: IbisBackendLike,
+    cohort_id: int,
+    config: GenerationConfig,
+    cohort_name: Optional[str] = None,
+    policy: Optional[GenerationPolicy] = None,
+    options: Optional[BuildExpressionQueryOptions] = None,
+    data_version_token: Optional[str] = None,
+) -> GenerationStatus:
+    """Generate one cohort with metadata/checksum policy handling.
+
+    Incremental behavior is definition/dependency-based by default.
+    Pass `data_version_token` to opt in to data-version-aware invalidation.
+    """
+    from .generation import generate_cohort as _generate_cohort
+
+    return _generate_cohort(
+        expression,
+        backend=backend,
+        cohort_id=cohort_id,
+        cohort_name=cohort_name,
+        config=config,
+        policy=policy,
+        options=options,
+        data_version_token=data_version_token,
+    )
+
+
+def generate_cohort_set(
+    cohorts: Iterable[GenerationTarget | NamedCohortExpression] | CohortSetDefinition,
+    *,
+    backend: IbisBackendLike,
+    config: GenerationConfig,
+    policy: Optional[GenerationPolicy] = None,
+    options: Optional[BuildExpressionQueryOptions] = None,
+    cohort_ids: Optional[set[int]] = None,
+    cohort_names: Optional[set[str]] = None,
+    changed_only: bool = False,
+    continue_on_error: bool = False,
+    data_version_token: Optional[str] = None,
+) -> GenerationSetStatus:
+    """Generate a cohort set and return aggregated statuses.
+
+    Incremental behavior is definition/dependency-based by default.
+    Pass `data_version_token` to opt in to data-version-aware invalidation.
+    """
+    from .generation import generate_cohort_set as _generate_cohort_set
+
+    return _generate_cohort_set(
+        cohorts,
+        backend=backend,
+        config=config,
+        policy=policy,
+        options=options,
+        cohort_ids=cohort_ids,
+        cohort_names=cohort_names,
+        changed_only=changed_only,
+        continue_on_error=continue_on_error,
+        data_version_token=data_version_token,
+    )
+
+
+def get_generated_cohort_status(
+    *,
+    backend: IbisBackendLike,
+    cohort_id: int,
+    config: GenerationConfig,
+) -> GenerationStatus:
+    """Return generation metadata/checksum status for a cohort."""
+    from .generation import get_generated_cohort_status as _get_generated_cohort_status
+
+    return _get_generated_cohort_status(
+        backend,
+        cohort_id=cohort_id,
+        config=config,
+    )
+
+
+def apply_subset(
+    relation: Table,
+    *,
+    backend: IbisBackendLike,
+    config: GenerationConfig,
+    definition: SubsetDefinition,
+) -> Table:
+    """Apply a subset definition as a relation transform."""
+    from .generation.subsets.api import apply_subset as _apply_subset
+
+    return _apply_subset(
+        relation,
+        backend=backend,
+        config=config,
+        definition=definition,
+    )
+
+
+def generate_subset(
+    definition: SubsetDefinition,
+    *,
+    backend: IbisBackendLike,
+    generated_cohort_id: int,
+    config: GenerationConfig,
+    policy: Optional[GenerationPolicy] = None,
+    data_version_token: Optional[str] = None,
+) -> GenerationStatus:
+    """Generate and persist a subset cohort with dependency-aware checksums.
+
+    Incremental behavior is definition/dependency-based by default.
+    Pass `data_version_token` to opt in to data-version-aware invalidation.
+    """
+    from .generation.subsets.api import generate_subset as _generate_subset
+
+    return _generate_subset(
+        definition,
+        backend=backend,
+        generated_cohort_id=generated_cohort_id,
+        config=config,
+        policy=policy,
+        data_version_token=data_version_token,
+    )
+
+
+def get_generated_cohort_counts(
+    *,
+    backend: IbisBackendLike,
+    cohort_id: int,
+    config: GenerationConfig,
+) -> GeneratedCohortCounts:
+    """Return generated cohort row/person/date metrics."""
+    from .generation.validate import (
+        get_generated_cohort_counts as _get_generated_cohort_counts,
+    )
+
+    return _get_generated_cohort_counts(
+        backend,
+        cohort_id=cohort_id,
+        config=config,
+    )
+
+
+def validate_generated_cohort(
+    *,
+    backend: IbisBackendLike,
+    cohort_id: int,
+    config: GenerationConfig,
+) -> ValidationResult:
+    """Validate generated cohort rows and return structured diagnostics."""
+    from .generation.validate import validate_generated_cohort as _validate_generated_cohort
+
+    return _validate_generated_cohort(
+        backend,
+        cohort_id=cohort_id,
+        config=config,
+    )
 
 
 def cohort_print_friendly(
