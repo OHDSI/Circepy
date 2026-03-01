@@ -3,23 +3,25 @@ from __future__ import annotations
 import ibis
 
 from ..errors import UnsupportedFeatureError
+from ..plan.schema import END_DATE, PERSON_ID, START_DATE
 
 
 def attach_observation_bounds(events, ctx):
     observation_period = ctx.table("observation_period").select(
-        "person_id",
+        PERSON_ID,
         "observation_period_start_date",
         "observation_period_end_date",
     )
     joined = events.join(
         observation_period,
-        (events.person_id == observation_period.person_id)
+        (events[PERSON_ID] == observation_period[PERSON_ID])
         & (
-            events.start_date
+            events[START_DATE]
             >= observation_period.observation_period_start_date.cast("date")
         )
         & (
-            events.start_date <= observation_period.observation_period_end_date.cast("date")
+            events[START_DATE]
+            <= observation_period.observation_period_end_date.cast("date")
         ),
     )
     return joined.select(
@@ -31,15 +33,16 @@ def attach_observation_bounds(events, ctx):
 
 def _apply_date_offset_strategy(with_bounds, strategy):
     offset = int(strategy.payload.get("offset", 0))
-    date_field = str(strategy.payload.get("date_field", "start_date")).lower()
+    date_field = str(strategy.payload.get("date_field", START_DATE)).lower()
 
-    if date_field in {"startdate", "start_date"}:
-        base_date = with_bounds.start_date
-    elif date_field in {"enddate", "end_date"}:
-        base_date = with_bounds.end_date
+    if date_field in {"startdate", START_DATE}:
+        base_date = with_bounds[START_DATE]
+    elif date_field in {"enddate", END_DATE}:
+        base_date = with_bounds[END_DATE]
     else:
         raise UnsupportedFeatureError(
-            f"Unsupported date field for date_offset strategy: {date_field}"
+            "Ibis executor end-strategy error: unsupported date_offset date field "
+            f"{date_field!r}."
         )
 
     candidate = base_date + ibis.interval(days=offset)
@@ -51,8 +54,8 @@ def _replace_end_date(events, with_bounds, new_end_expr):
     selected = projected.select(
         *[
             projected[c]
-            if c != "end_date"
-            else projected._new_end_date.cast("date").name("end_date")
+            if c != END_DATE
+            else projected._new_end_date.cast("date").name(END_DATE)
             for c in events.columns
         ]
     )
@@ -71,7 +74,7 @@ def apply_end_strategy(events, strategy, ctx):
 
     if strategy.kind == "custom_era":
         raise UnsupportedFeatureError(
-            "custom_era end strategy is not implemented in the Ibis executor."
+            "Ibis executor end-strategy error: custom_era is not supported."
         )
 
     # Fallback: preserve default semantics of op_end_date clipping.

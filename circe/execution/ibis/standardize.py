@@ -3,19 +3,19 @@ from __future__ import annotations
 import ibis
 
 from ..plan.events import EventSource
-
-STANDARD_EVENT_COLUMNS = (
-    "person_id",
-    "event_id",
-    "start_date",
-    "end_date",
-    "domain",
-    "concept_id",
-    "source_concept_id",
-    "visit_occurrence_id",
-    "criterion_index",
-    "criterion_type",
-    "source_table",
+from ..plan.schema import (
+    CONCEPT_ID,
+    CRITERION_INDEX,
+    CRITERION_TYPE,
+    DOMAIN,
+    END_DATE,
+    EVENT_ID,
+    PERSON_ID,
+    SOURCE_CONCEPT_ID,
+    SOURCE_TABLE,
+    STANDARD_EVENT_COLUMNS,
+    START_DATE,
+    VISIT_OCCURRENCE_ID,
 )
 
 
@@ -39,16 +39,16 @@ def standardize_event_table(
         visit_occ_expr = table[source.visit_occurrence_column].cast("int64")
 
     standardized = table.select(
-        table[source.person_id_column].cast("int64").name("person_id"),
-        table[source.event_id_column].cast("int64").name("event_id"),
-        table[source.start_date_column].cast("date").name("start_date"),
-        table[source.end_date_column].cast("date").name("end_date"),
-        ibis.literal(source.domain).name("domain"),
-        concept_expr.name("concept_id"),
-        source_concept_expr.name("source_concept_id"),
-        visit_occ_expr.name("visit_occurrence_id"),
-        ibis.literal(int(criterion_index), type="int64").name("criterion_index"),
-        ibis.literal(criterion_type).name("criterion_type"),
-        ibis.literal(source.table_name).name("source_table"),
+        table[source.person_id_column].cast("int64").name(PERSON_ID),
+        table[source.event_id_column].cast("int64").name(EVENT_ID),
+        table[source.start_date_column].cast("date").name(START_DATE),
+        table[source.end_date_column].cast("date").name(END_DATE),
+        ibis.literal(source.domain).name(DOMAIN),
+        concept_expr.name(CONCEPT_ID),
+        source_concept_expr.name(SOURCE_CONCEPT_ID),
+        visit_occ_expr.name(VISIT_OCCURRENCE_ID),
+        ibis.literal(int(criterion_index), type="int64").name(CRITERION_INDEX),
+        ibis.literal(criterion_type).name(CRITERION_TYPE),
+        ibis.literal(source.table_name).name(SOURCE_TABLE),
     )
     return standardized

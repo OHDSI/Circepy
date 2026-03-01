@@ -4,6 +4,7 @@ import ibis
 
 from ..ibis.compiler import compile_event_plan
 from ..lower.criteria import lower_criterion
+from ..plan.schema import END_DATE, PERSON_ID
 from .end_strategy import attach_observation_bounds
 
 
@@ -21,7 +22,7 @@ def _compile_censor_events(criteria, ctx):
         table = compile_event_plan(plan, ctx)
         compiled.append(
             table.select(
-                table.person_id.cast("int64").name("person_id"),
+                table.person_id.cast("int64").name(PERSON_ID),
                 table.start_date.cast("date").name("censor_start_date"),
             )
         )
@@ -66,8 +67,8 @@ def apply_censoring(events, criteria, window, ctx):
     return projected.select(
         *[
             projected[c]
-            if c != "end_date"
-            else projected._new_end_date.cast("date").name("end_date")
+            if c != END_DATE
+            else projected._new_end_date.cast("date").name(END_DATE)
             for c in events.columns
         ]
     )

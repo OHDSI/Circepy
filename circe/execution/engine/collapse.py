@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import ibis
 
+from ..plan.schema import END_DATE, PERSON_ID, START_DATE
+
 
 def _apply_censor_window(events, censor_window):
     if censor_window is None:
@@ -50,11 +52,11 @@ def _collapse_era(intervals, era_pad: int):
         _max_padded_end=grouped._padded_end_date.max(),
     )
     return collapsed.select(
-        collapsed.person_id.cast("int64").name("person_id"),
-        collapsed.start_date.cast("date").name("start_date"),
+        collapsed.person_id.cast("int64").name(PERSON_ID),
+        collapsed.start_date.cast("date").name(START_DATE),
         (
             collapsed._max_padded_end - ibis.interval(days=int(era_pad))
-        ).cast("date").name("end_date"),
+        ).cast("date").name(END_DATE),
     )
 
 
@@ -67,9 +69,9 @@ def collapse_events(events, collapse_settings, censor_window):
         return _apply_censor_window(events, censor_window)
 
     intervals = events.select(
-        events.person_id.cast("int64").name("person_id"),
-        events.start_date.cast("date").name("start_date"),
-        events.end_date.cast("date").name("end_date"),
+        events.person_id.cast("int64").name(PERSON_ID),
+        events.start_date.cast("date").name(START_DATE),
+        events.end_date.cast("date").name(END_DATE),
     )
     intervals = _apply_censor_window(intervals, censor_window)
     return _collapse_era(intervals, collapse_settings.era_pad)

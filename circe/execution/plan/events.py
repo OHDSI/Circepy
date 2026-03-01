@@ -4,6 +4,7 @@ from typing import Any, Optional, Tuple, Union
 
 from .._dataclass import frozen_slots_dataclass
 from .predicates import DateRangePredicate, NumericRangePredicate
+from .schema import PERSON_ID
 
 
 @frozen_slots_dataclass
@@ -13,7 +14,7 @@ class EventSource:
     event_id_column: str
     start_date_column: str
     end_date_column: str
-    person_id_column: str = "person_id"
+    person_id_column: str = PERSON_ID
     concept_column: str | None = None
     source_concept_column: str | None = None
     visit_occurrence_column: str | None = None

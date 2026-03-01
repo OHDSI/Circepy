@@ -22,6 +22,20 @@ from .events import (
 )
 from .groups import GroupPredicate
 from .predicates import DateRangePredicate, NumericRangePredicate
+from .schema import (
+    CONCEPT_ID,
+    CRITERION_INDEX,
+    CRITERION_TYPE,
+    DOMAIN,
+    END_DATE,
+    EVENT_ID,
+    PERSON_ID,
+    SOURCE_CONCEPT_ID,
+    SOURCE_TABLE,
+    STANDARD_EVENT_COLUMNS,
+    START_DATE,
+    VISIT_OCCURRENCE_ID,
+)
 
 __all__ = [
     "CohortPlan",
@@ -31,6 +45,18 @@ __all__ = [
     "GroupPredicate",
     "DateRangePredicate",
     "NumericRangePredicate",
+    "PERSON_ID",
+    "EVENT_ID",
+    "START_DATE",
+    "END_DATE",
+    "VISIT_OCCURRENCE_ID",
+    "DOMAIN",
+    "CONCEPT_ID",
+    "SOURCE_CONCEPT_ID",
+    "CRITERION_INDEX",
+    "CRITERION_TYPE",
+    "SOURCE_TABLE",
+    "STANDARD_EVENT_COLUMNS",
     "FilterByCodeset",
     "FilterByConceptSet",
     "FilterByDateRange",

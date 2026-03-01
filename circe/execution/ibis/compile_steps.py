@@ -20,6 +20,7 @@ from ..plan.events import (
     StandardizeEventShape,
 )
 from ..plan.predicates import DateRangePredicate, NumericRangePredicate
+from ..plan.schema import END_DATE, PERSON_ID, START_DATE
 from .context import ExecutionContext
 from .person_filters import (
     apply_person_age_filter,
@@ -52,12 +53,18 @@ def _apply_numeric_predicate(expr, predicate: NumericRangePredicate):
         return expr <= value
     if op in {"bt", "between"}:
         if extent is None:
-            raise CompilationError("Between numeric range requires extent.")
+            raise CompilationError(
+                "Ibis executor compilation error: numeric range 'between' "
+                "requires an extent value."
+            )
         lower = min(value, extent)
         upper = max(value, extent)
         return (expr >= lower) & (expr <= upper)
 
-    raise CompilationError(f"Unsupported numeric range op: {predicate.op}")
+    raise CompilationError(
+        "Ibis executor compilation error: unsupported numeric range op "
+        f"{predicate.op!r}."
+    )
 
 
 def _apply_date_predicate(expr, predicate: DateRangePredicate):
@@ -84,13 +91,19 @@ def _apply_date_predicate(expr, predicate: DateRangePredicate):
         return expr.cast("date") <= value_expr
     if op in {"bt", "between"}:
         if extent is None:
-            raise CompilationError("Between date range requires extent.")
+            raise CompilationError(
+                "Ibis executor compilation error: date range 'between' "
+                "requires an extent value."
+            )
         extent_expr = ibis.literal(extent).cast("date")
         lower = ibis.least(value_expr, extent_expr)
         upper = ibis.greatest(value_expr, extent_expr)
         return (expr.cast("date") >= lower) & (expr.cast("date") <= upper)
 
-    raise CompilationError(f"Unsupported date range op: {predicate.op}")
+    raise CompilationError(
+        "Ibis executor compilation error: unsupported date range op "
+        f"{predicate.op!r}."
+    )
 
 
 def apply_step(step, *, table, source, ctx: ExecutionContext):
@@ -139,7 +152,10 @@ def apply_step(step, *, table, source, ctx: ExecutionContext):
             return table.filter(table[step.column] != step.text)
         if op in {"contains", "like"}:
             return table.filter(table[step.column].contains(step.text))
-        raise CompilationError(f"Unsupported text filter op: {step.op}")
+        raise CompilationError(
+            "Ibis executor compilation error: unsupported text filter op "
+            f"{step.op!r}."
+        )
 
     if isinstance(step, FilterByPersonAge):
         return apply_person_age_filter(
@@ -175,19 +191,24 @@ def apply_step(step, *, table, source, ctx: ExecutionContext):
 
     if isinstance(step, KeepFirstPerPerson):
         order_by = [table[c] for c in step.order_by if c in table.columns]
-        window = ibis.window(group_by=table.person_id, order_by=order_by)
+        window = ibis.window(group_by=table[PERSON_ID], order_by=order_by)
         ranked = table.mutate(_exec_rn=ibis.row_number().over(window))
         return ranked.filter(ranked._exec_rn == 0).drop("_exec_rn")
 
     if isinstance(step, ApplyDateAdjustment):
         return table.mutate(
-            start_date=(table.start_date + ibis.interval(days=step.start_offset_days)),
-            end_date=(table.end_date + ibis.interval(days=step.end_offset_days)),
+            **{
+                START_DATE: (
+                    table[START_DATE] + ibis.interval(days=step.start_offset_days)
+                ),
+                END_DATE: table[END_DATE] + ibis.interval(days=step.end_offset_days),
+            }
         )
 
     if isinstance(step, RestrictToCorrelatedWindow):
         raise UnsupportedFeatureError(
-            "Correlated-window restriction is not implemented in MVP."
+            "Ibis executor compilation error: RestrictToCorrelatedWindow step "
+            "is not implemented."
         )
 
     if isinstance(step, StandardizeEventShape):
@@ -198,4 +219,7 @@ def apply_step(step, *, table, source, ctx: ExecutionContext):
             criterion_index=step.criterion_index,
         )
 
-    raise CompilationError(f"Unsupported step type: {step.__class__.__name__}")
+    raise CompilationError(
+        "Ibis executor compilation error: unsupported plan step "
+        f"{step.__class__.__name__}."
+    )

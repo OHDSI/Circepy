@@ -7,6 +7,8 @@ from ..ibis.compiler import compile_event_plan
 from ..ibis.context import ExecutionContext
 from ..normalize.windows import NormalizedObservationWindow
 from ..plan.cohort import CohortPlan
+from ..plan.schema import DOMAIN, EVENT_ID, PERSON_ID, START_DATE
+from ..typing import Table
 from .groups import apply_additional_criteria
 
 
@@ -18,10 +20,10 @@ def _union_all(tables):
 
 
 def _assign_primary_event_ids(events):
-    ordering = [events.start_date, events.event_id, events.domain]
-    person_window = ibis.window(group_by=events.person_id, order_by=ordering)
+    ordering = [events[START_DATE], events[EVENT_ID], events[DOMAIN]]
+    person_window = ibis.window(group_by=events[PERSON_ID], order_by=ordering)
     ranked = events.mutate(_primary_rn=ibis.row_number().over(person_window))
-    return ranked.mutate(event_id=(ranked._primary_rn + 1)).drop("_primary_rn")
+    return ranked.mutate(**{EVENT_ID: ranked._primary_rn + 1}).drop("_primary_rn")
 
 
 def _apply_observation_window(
@@ -30,17 +32,17 @@ def _apply_observation_window(
     window: NormalizedObservationWindow,
 ):
     observation_period = ctx.table("observation_period").select(
-        "person_id",
+        PERSON_ID,
         "observation_period_start_date",
         "observation_period_end_date",
     )
     joined = events.join(
         observation_period,
-        events.person_id == observation_period.person_id,
+        events[PERSON_ID] == observation_period[PERSON_ID],
     )
     lower = joined.observation_period_start_date + ibis.interval(days=window.prior_days)
     upper = joined.observation_period_end_date - ibis.interval(days=window.post_days)
-    filtered = joined.filter((joined.start_date >= lower) & (joined.start_date <= upper))
+    filtered = joined.filter((joined[START_DATE] >= lower) & (joined[START_DATE] <= upper))
     return filtered.select(*[filtered[c] for c in events.columns])
 
 
@@ -48,16 +50,19 @@ def _apply_primary_limit(events, primary_limit_type: str):
     if primary_limit_type in {"all", ""}:
         return events
     window = ibis.window(
-        group_by=events.person_id,
-        order_by=[events.start_date, events.event_id],
+        group_by=events[PERSON_ID],
+        order_by=[events[START_DATE], events[EVENT_ID]],
     )
     ranked = events.mutate(_limit_rn=ibis.row_number().over(window))
     return ranked.filter(ranked._limit_rn == 0).drop("_limit_rn")
 
 
-def build_primary_events(plan: CohortPlan, ctx: ExecutionContext):
+def build_primary_events(plan: CohortPlan, ctx: ExecutionContext) -> Table:
     if not plan.primary_event_plans:
-        raise ExecutionNormalizationError("No primary criteria were lowered to plans.")
+        raise ExecutionNormalizationError(
+            "Ibis executor primary build error: no primary criteria were lowered "
+            "to executable plans."
+        )
 
     compiled = []
     for primary in plan.primary_event_plans:

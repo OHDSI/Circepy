@@ -4,6 +4,7 @@ import ibis
 
 from ..errors import CompilationError
 from ..plan.predicates import NumericRangePredicate
+from ..plan.schema import PERSON_ID
 from .context import ExecutionContext
 
 
@@ -29,20 +30,26 @@ def _apply_numeric_predicate(expr, predicate: NumericRangePredicate):
         return expr <= value
     if op in {"bt", "between"}:
         if extent is None:
-            raise CompilationError("Between numeric range requires extent.")
+            raise CompilationError(
+                "Ibis executor compilation error: person numeric range "
+                "'between' requires an extent value."
+            )
         lower = min(value, extent)
         upper = max(value, extent)
         return (expr >= lower) & (expr <= upper)
 
-    raise CompilationError(f"Unsupported numeric range op: {predicate.op}")
+    raise CompilationError(
+        "Ibis executor compilation error: unsupported person numeric range op "
+        f"{predicate.op!r}."
+    )
 
 
 def apply_person_age_filter(table, ctx: ExecutionContext, *, date_column: str, predicate):
     person = ctx.table("person").select(
-        "person_id",
+        PERSON_ID,
         "year_of_birth",
     )
-    joined = table.join(person, table.person_id == person.person_id)
+    joined = table.join(person, table[PERSON_ID] == person[PERSON_ID])
     event_date = joined[date_column].cast("date")
     age_years = event_date.year() - joined.year_of_birth
     filtered = joined.filter(_apply_numeric_predicate(age_years, predicate))
@@ -65,8 +72,8 @@ def apply_person_gender_filter(
     if not all_ids:
         return table
 
-    person = ctx.table("person").select("person_id", "gender_concept_id")
-    joined = table.join(person, table.person_id == person.person_id)
+    person = ctx.table("person").select(PERSON_ID, "gender_concept_id")
+    joined = table.join(person, table[PERSON_ID] == person[PERSON_ID])
     filtered = joined.filter(joined.gender_concept_id.isin(all_ids))
     return filtered.select(*[filtered[c] for c in table.columns])
 
@@ -88,8 +95,8 @@ def _apply_person_concept_filter(
     if not all_ids:
         return table
 
-    person = ctx.table("person").select("person_id", person_column)
-    joined = table.join(person, table.person_id == person.person_id)
+    person = ctx.table("person").select(PERSON_ID, person_column)
+    joined = table.join(person, table[PERSON_ID] == person[PERSON_ID])
     filtered = joined.filter(joined[person_column].isin(all_ids))
     return filtered.select(*[filtered[c] for c in table.columns])
 
