@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from circe.cohortdefinition import (
     ConditionEra,
     CohortExpression,
@@ -27,7 +25,6 @@ from circe.cohortdefinition import (
 from circe.execution.normalize.criteria import normalize_criterion
 from circe.cohortdefinition.core import ConceptSetSelection, NumericRange
 from circe.execution.normalize.cohort import normalize_cohort
-from circe.execution.errors import UnsupportedFeatureError
 from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 
@@ -196,7 +193,7 @@ def test_normalize_cohort_preserves_expression_level_concept_set_flags():
     assert normalized_item.is_excluded is False
 
 
-def test_normalize_criterion_rejects_criterion_local_correlated_criteria():
+def test_normalize_criterion_preserves_criterion_local_correlated_criteria():
     criteria = ConditionOccurrence(
         codeset_id=1,
         correlated_criteria=CriteriaGroup(
@@ -210,11 +207,10 @@ def test_normalize_criterion_rejects_criterion_local_correlated_criteria():
         ),
     )
 
-    with pytest.raises(
-        UnsupportedFeatureError,
-        match="criterion.correlated_criteria is not implemented",
-    ):
-        _ = normalize_criterion(criteria)
+    normalized = normalize_criterion(criteria)
+    assert normalized.correlated_criteria is not None
+    assert normalized.correlated_criteria.mode == "ALL"
+    assert len(normalized.correlated_criteria.criteria) == 1
 
 
 def test_normalize_criterion_includes_race_and_ethnicity_person_filters():

@@ -3,7 +3,7 @@ from __future__ import annotations
 from ..ibis.context import ExecutionContext
 from ..lower.criteria import lower_criterion
 from ..normalize.cohort import NormalizedCohort
-from ..plan.cohort import CohortPlan
+from ..plan.cohort import CohortPlan, PrimaryEventInput
 from .censoring import apply_censoring
 from .collapse import collapse_events
 from .end_strategy import apply_end_strategy
@@ -14,7 +14,10 @@ from .primary import build_primary_events
 
 def build_cohort_table(normalized: NormalizedCohort, ctx: ExecutionContext):
     primary_plans = tuple(
-        lower_criterion(criterion, criterion_index=index)
+        PrimaryEventInput(
+            event_plan=lower_criterion(criterion, criterion_index=index),
+            correlated_criteria=criterion.correlated_criteria,
+        )
         for index, criterion in enumerate(normalized.primary.criteria)
     )
     cohort_plan = CohortPlan(

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+from typing import TYPE_CHECKING
 from typing import Optional, Tuple
 
 from ...cohortdefinition.criteria import (
@@ -23,13 +25,16 @@ from ...cohortdefinition.criteria import (
 )
 from ...vocabulary.concept import Concept
 from .._dataclass import frozen_slots_dataclass
-from ..errors import UnsupportedCriterionError, UnsupportedFeatureError
+from ..errors import UnsupportedCriterionError
 from .windows import (
     NormalizedDateRange,
     NormalizedNumericRange,
     normalize_date_range,
     normalize_numeric_range,
 )
+
+if TYPE_CHECKING:
+    from .groups import NormalizedCriteriaGroup
 
 
 @frozen_slots_dataclass
@@ -60,6 +65,7 @@ class NormalizedCriterion:
     occurrence_start_date: NormalizedDateRange | None
     occurrence_end_date: NormalizedDateRange | None
     person_filters: NormalizedPersonFilters
+    correlated_criteria: "NormalizedCriteriaGroup | None" = None
 
 
 def _concept_ids(values: Optional[list[Concept]]) -> Tuple[int, ...]:
@@ -445,45 +451,50 @@ def _normalize_location_region(criteria: LocationRegion) -> NormalizedCriterion:
 
 
 def normalize_criterion(criteria: Criteria) -> NormalizedCriterion:
+    if isinstance(criteria, ConditionOccurrence):
+        normalized = _normalize_condition_occurrence(criteria)
+    elif isinstance(criteria, DrugExposure):
+        normalized = _normalize_drug_exposure(criteria)
+    elif isinstance(criteria, VisitOccurrence):
+        normalized = _normalize_visit_occurrence(criteria)
+    elif isinstance(criteria, Measurement):
+        normalized = _normalize_measurement(criteria)
+    elif isinstance(criteria, ProcedureOccurrence):
+        normalized = _normalize_procedure_occurrence(criteria)
+    elif isinstance(criteria, Observation):
+        normalized = _normalize_observation(criteria)
+    elif isinstance(criteria, VisitDetail):
+        normalized = _normalize_visit_detail(criteria)
+    elif isinstance(criteria, DeviceExposure):
+        normalized = _normalize_device_exposure(criteria)
+    elif isinstance(criteria, Specimen):
+        normalized = _normalize_specimen(criteria)
+    elif isinstance(criteria, Death):
+        normalized = _normalize_death(criteria)
+    elif isinstance(criteria, ObservationPeriod):
+        normalized = _normalize_observation_period(criteria)
+    elif isinstance(criteria, PayerPlanPeriod):
+        normalized = _normalize_payer_plan_period(criteria)
+    elif isinstance(criteria, ConditionEra):
+        normalized = _normalize_condition_era(criteria)
+    elif isinstance(criteria, DrugEra):
+        normalized = _normalize_drug_era(criteria)
+    elif isinstance(criteria, DoseEra):
+        normalized = _normalize_dose_era(criteria)
+    elif isinstance(criteria, LocationRegion):
+        normalized = _normalize_location_region(criteria)
+    else:
+        raise UnsupportedCriterionError(
+            f"Unsupported criterion for Ibis executor: {criteria.__class__.__name__}"
+        )
+
     if (
         criteria.correlated_criteria is not None
         and not criteria.correlated_criteria.is_empty()
     ):
-        raise UnsupportedFeatureError(
-            "criterion.correlated_criteria is not implemented yet in the Ibis executor."
-        )
-    if isinstance(criteria, ConditionOccurrence):
-        return _normalize_condition_occurrence(criteria)
-    if isinstance(criteria, DrugExposure):
-        return _normalize_drug_exposure(criteria)
-    if isinstance(criteria, VisitOccurrence):
-        return _normalize_visit_occurrence(criteria)
-    if isinstance(criteria, Measurement):
-        return _normalize_measurement(criteria)
-    if isinstance(criteria, ProcedureOccurrence):
-        return _normalize_procedure_occurrence(criteria)
-    if isinstance(criteria, Observation):
-        return _normalize_observation(criteria)
-    if isinstance(criteria, VisitDetail):
-        return _normalize_visit_detail(criteria)
-    if isinstance(criteria, DeviceExposure):
-        return _normalize_device_exposure(criteria)
-    if isinstance(criteria, Specimen):
-        return _normalize_specimen(criteria)
-    if isinstance(criteria, Death):
-        return _normalize_death(criteria)
-    if isinstance(criteria, ObservationPeriod):
-        return _normalize_observation_period(criteria)
-    if isinstance(criteria, PayerPlanPeriod):
-        return _normalize_payer_plan_period(criteria)
-    if isinstance(criteria, ConditionEra):
-        return _normalize_condition_era(criteria)
-    if isinstance(criteria, DrugEra):
-        return _normalize_drug_era(criteria)
-    if isinstance(criteria, DoseEra):
-        return _normalize_dose_era(criteria)
-    if isinstance(criteria, LocationRegion):
-        return _normalize_location_region(criteria)
-    raise UnsupportedCriterionError(
-        f"Unsupported criterion for Ibis executor: {criteria.__class__.__name__}"
-    )
+        from .groups import normalize_criteria_group
+
+        normalized_group = normalize_criteria_group(criteria.correlated_criteria)
+        normalized = replace(normalized, correlated_criteria=normalized_group)
+
+    return normalized

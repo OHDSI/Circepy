@@ -8,6 +8,8 @@ from circe.cohortdefinition import (
     ConditionEra,
     CohortExpression,
     ConditionOccurrence,
+    CorelatedCriteria,
+    CriteriaGroup,
     Death,
     DeviceExposure,
     DoseEra,
@@ -17,6 +19,7 @@ from circe.cohortdefinition import (
     Measurement,
     Observation,
     ObservationPeriod,
+    Occurrence,
     PayerPlanPeriod,
     PrimaryCriteria,
     ProcedureOccurrence,
@@ -186,6 +189,49 @@ def test_build_cohort_ibis_condition_occurrence_with_race_and_ethnicity_filters(
 
     expression = CohortExpression(
         concept_sets=[_make_concept_set(1, 111)],
+        primary_criteria=PrimaryCriteria(criteria_list=[criteria]),
+    )
+
+    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    assert set(result.person_id) == {1}
+
+
+def test_build_cohort_ibis_applies_criterion_local_correlated_criteria():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 1, 2],
+                "condition_occurrence_id": [160, 161, 260],
+                "condition_concept_id": [111, 222, 111],
+                "condition_start_date": ["2020-01-01", "2020-01-03", "2020-01-01"],
+                "condition_end_date": ["2020-01-01", "2020-01-03", "2020-01-01"],
+                "visit_occurrence_id": [10, 10, 20],
+            }
+        ),
+        overwrite=True,
+    )
+
+    criteria = ConditionOccurrence(
+        codeset_id=1,
+        correlated_criteria=CriteriaGroup(
+            type="ALL",
+            criteria_list=[
+                CorelatedCriteria(
+                    criteria=ConditionOccurrence(codeset_id=2),
+                    occurrence=Occurrence(type=Occurrence._AT_LEAST, count=1),
+                )
+            ],
+        ),
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(1, 111), _make_concept_set(2, 222)],
         primary_criteria=PrimaryCriteria(criteria_list=[criteria]),
     )
 

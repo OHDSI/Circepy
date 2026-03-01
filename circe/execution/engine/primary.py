@@ -7,6 +7,7 @@ from ..ibis.compiler import compile_event_plan
 from ..ibis.context import ExecutionContext
 from ..normalize.windows import NormalizedObservationWindow
 from ..plan.cohort import CohortPlan
+from .groups import apply_additional_criteria
 
 
 def _union_all(tables):
@@ -58,7 +59,12 @@ def build_primary_events(plan: CohortPlan, ctx: ExecutionContext):
     if not plan.primary_event_plans:
         raise ExecutionNormalizationError("No primary criteria were lowered to plans.")
 
-    compiled = [compile_event_plan(primary, ctx) for primary in plan.primary_event_plans]
+    compiled = []
+    for primary in plan.primary_event_plans:
+        events = compile_event_plan(primary.event_plan, ctx)
+        events = apply_additional_criteria(events, primary.correlated_criteria, ctx)
+        compiled.append(events)
+
     events = _union_all(compiled)
     events = _assign_primary_event_ids(events)
 

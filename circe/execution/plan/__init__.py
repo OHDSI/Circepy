@@ -1,4 +1,4 @@
-from .cohort import CohortPlan
+from .cohort import CohortPlan, PrimaryEventInput
 from .events import (
     ApplyDateAdjustment,
     EventPlan,
@@ -25,6 +25,7 @@ from .predicates import DateRangePredicate, NumericRangePredicate
 
 __all__ = [
     "CohortPlan",
+    "PrimaryEventInput",
     "EventPlan",
     "EventSource",
     "GroupPredicate",
