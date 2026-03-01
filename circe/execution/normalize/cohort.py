@@ -54,10 +54,32 @@ def _extract_codesets(concept_sets: list[ConceptSet]) -> Dict[int, FrozenSet[int
             continue
         set_id = int(concept_set.id)
         expression = concept_set.expression
-        if not expression or not expression.items:
+        if not expression:
             continue
-        for item in expression.items:
-            if item is None or item.concept is None or item.concept.concept_id is None:
+
+        if bool(expression.include_descendants) or bool(expression.include_mapped):
+            raise UnsupportedFeatureError(
+                "ConceptSet expansion flags includeDescendants/includeMapped are not "
+                f"implemented in the Ibis executor (codeset_id={set_id})."
+            )
+
+        if expression.concept is not None and expression.concept.concept_id is not None:
+            concept_id = int(expression.concept.concept_id)
+            if expression.is_excluded:
+                excluded[set_id].add(concept_id)
+            else:
+                included[set_id].add(concept_id)
+
+        for item in expression.items or []:
+            if item is None:
+                continue
+            if bool(item.include_descendants) or bool(item.include_mapped):
+                raise UnsupportedFeatureError(
+                    "ConceptSet item flags includeDescendants/includeMapped are not "
+                    "implemented in the Ibis executor "
+                    f"(codeset_id={set_id}, concept_id={getattr(item.concept, 'concept_id', None)})."
+                )
+            if item.concept is None or item.concept.concept_id is None:
                 continue
             concept_id = int(item.concept.concept_id)
             if item.is_excluded:

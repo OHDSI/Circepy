@@ -44,7 +44,7 @@ from .visit_occurrence import lower_visit_occurrence
 LowerFn = Callable[[NormalizedCriterion], EventPlan]
 
 
-LOWERERS: Dict[Type[Criteria], Callable[..., EventPlan]] = {
+LOWERERS: Dict[Type[Criteria], LowerFn] = {
     ConditionOccurrence: lower_condition_occurrence,
     DrugExposure: lower_drug_exposure,
     VisitOccurrence: lower_visit_occurrence,
@@ -69,9 +69,9 @@ def lower_criterion(
     *,
     criterion_index: int,
 ) -> EventPlan:
-    for criteria_cls, fn in LOWERERS.items():
-        if isinstance(criterion.raw_criteria, criteria_cls):
-            return fn(criterion, criterion_index=criterion_index)
+    lowerer = LOWERERS.get(type(criterion.raw_criteria))
+    if lowerer is not None:
+        return lowerer(criterion, criterion_index=criterion_index)
     raise UnsupportedCriterionError(
         f"No lowerer available for {criterion.criterion_type}."
     )

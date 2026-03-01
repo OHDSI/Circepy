@@ -8,11 +8,13 @@ from circe.cohortdefinition import (
     ConditionOccurrence,
     CorelatedCriteria,
     CriteriaGroup,
+    DemographicCriteria,
     Occurrence,
     PrimaryCriteria,
     Window,
     WindowBound,
 )
+from circe.execution.errors import UnsupportedFeatureError
 from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 
@@ -218,3 +220,42 @@ def test_correlated_criteria_respects_restrict_visit_and_start_window():
     result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
     # Person 1 matches (same visit, +5 days). Person 2 fails (different visit and +9 days).
     assert set(result.person_id) == {1}
+
+
+def test_additional_demographic_criteria_groups_raise_unsupported_feature():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis, persons=(1, 2))
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2],
+                "condition_occurrence_id": [100, 200],
+                "condition_concept_id": [111, 111],
+                "condition_start_date": ["2020-01-01", "2020-01-01"],
+                "condition_end_date": ["2020-01-01", "2020-01-01"],
+                "visit_occurrence_id": [10, 20],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(1, 111)],
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
+        additional_criteria=CriteriaGroup(
+            type="ALL",
+            demographic_criteria_list=[
+                DemographicCriteria(gender=[Concept(conceptId=8507)])
+            ],
+        ),
+    )
+
+    with pytest.raises(
+        UnsupportedFeatureError,
+        match="Demographic criteria groups are not implemented",
+    ):
+        _ = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()

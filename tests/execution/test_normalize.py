@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from circe.cohortdefinition import (
     ConditionEra,
     CohortExpression,
@@ -25,6 +27,7 @@ from circe.cohortdefinition import (
 from circe.execution.normalize.criteria import normalize_criterion
 from circe.cohortdefinition.core import NumericRange
 from circe.execution.normalize.cohort import normalize_cohort
+from circe.execution.errors import UnsupportedFeatureError
 from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 
@@ -140,3 +143,68 @@ def test_normalize_new_domains():
     for criteria, expected_table in cases:
         normalized = normalize_criterion(criteria)
         assert normalized.source_table == expected_table
+
+
+def test_normalize_cohort_rejects_concept_set_item_expansion_flags():
+    expression = CohortExpression(
+        concept_sets=[
+            ConceptSet(
+                id=1,
+                expression=ConceptSetExpression(
+                    items=[
+                        ConceptSetItem(
+                            concept=Concept(conceptId=111),
+                            includeDescendants=True,
+                        )
+                    ]
+                ),
+            )
+        ],
+        primary_criteria=PrimaryCriteria(
+            criteria_list=[ConditionOccurrence(codeset_id=1)]
+        ),
+    )
+
+    with pytest.raises(UnsupportedFeatureError, match="includeDescendants/includeMapped"):
+        _ = normalize_cohort(expression)
+
+
+def test_normalize_cohort_rejects_concept_set_expression_expansion_flags():
+    expression = CohortExpression(
+        concept_sets=[
+            ConceptSet(
+                id=1,
+                expression=ConceptSetExpression(
+                    concept=Concept(conceptId=111),
+                    includeMapped=True,
+                ),
+            )
+        ],
+        primary_criteria=PrimaryCriteria(
+            criteria_list=[ConditionOccurrence(codeset_id=1)]
+        ),
+    )
+
+    with pytest.raises(UnsupportedFeatureError, match="includeDescendants/includeMapped"):
+        _ = normalize_cohort(expression)
+
+
+def test_normalize_criterion_rejects_criterion_local_correlated_criteria():
+    criteria = ConditionOccurrence(
+        codeset_id=1,
+        correlated_criteria=CriteriaGroup(
+            type="ALL",
+            criteria_list=[
+                CorelatedCriteria(
+                    criteria=ConditionOccurrence(codeset_id=1),
+                    occurrence=Occurrence(type=Occurrence._AT_LEAST, count=1),
+                )
+            ],
+        ),
+    )
+
+    with pytest.raises(
+        UnsupportedFeatureError,
+        match="criterion.correlated_criteria is not implemented",
+    ):
+        _ = normalize_criterion(criteria)

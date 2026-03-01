@@ -1,15 +1,12 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Optional
 
 from ..cohortdefinition import BuildExpressionQueryOptions, CohortExpression
 from .engine.cohort import build_cohort_table
 from .ibis.context import ExecutionContext
 from .normalize.cohort import normalize_cohort
-
-if TYPE_CHECKING:
-    import ibis
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +23,10 @@ def build_cohort_ibis(
 
     This path coexists with the existing SQL-builder API and keeps the
     `circe.cohortdefinition` public model layer unchanged.
+
+    Note:
+        This executor is currently MVP-scoped. Unsupported semantics fail fast
+        with `UnsupportedFeatureError`; see `circe/execution/LIMITATIONS.md`.
     """
 
     logger.debug("Normalizing CohortExpression for Ibis execution")

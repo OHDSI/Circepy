@@ -772,6 +772,50 @@ def test_build_cohort_ibis_location_region():
     assert all(result.domain == "location_region")
 
 
+def test_build_cohort_ibis_location_region_keeps_repeated_location_history_rows():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "location",
+        obj=ibis.memtable(
+            {
+                "location_id": [10],
+                "region_concept_id": [15151],
+            }
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "location_history",
+        obj=ibis.memtable(
+            {
+                "entity_id": [1, 1],
+                "location_id": [10, 10],
+                "start_date": ["2020-01-01", "2020-02-01"],
+                "end_date": ["2020-01-31", "2020-02-28"],
+                "domain_id": ["PERSON", "PERSON"],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(14, 15151)],
+        primary_criteria=PrimaryCriteria(
+            criteria_list=[LocationRegion(codeset_id=14)]
+        ),
+    )
+
+    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+
+    assert len(result) == 2
+    assert set(result.person_id) == {1}
+    assert sorted(result.start_date.astype(str).tolist()) == ["2020-01-01", "2020-02-01"]
+
+
 def test_build_cohort_ibis_rejects_non_mvp_features():
     expression = CohortExpression(
         primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence()]),
