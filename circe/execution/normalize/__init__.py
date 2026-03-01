@@ -1,4 +1,10 @@
-from .cohort import NormalizedCohort, NormalizedPrimaryCriteria, normalize_cohort
+from .cohort import (
+    NormalizedCohort,
+    NormalizedConceptSet,
+    NormalizedConceptSetItem,
+    NormalizedPrimaryCriteria,
+    normalize_cohort,
+)
 from .collapse import NormalizedCollapseSettings, normalize_collapse_settings
 from .criteria import NormalizedCriterion, NormalizedPersonFilters, normalize_criterion
 from .end_strategy import NormalizedEndStrategy
@@ -26,6 +32,8 @@ __all__ = [
     "normalize_collapse_settings",
     "normalize_period",
     "NormalizedCohort",
+    "NormalizedConceptSet",
+    "NormalizedConceptSetItem",
     "NormalizedPrimaryCriteria",
     "NormalizedCollapseSettings",
     "NormalizedCriterion",

@@ -36,6 +36,11 @@ def build_cohort_ibis(
         backend=backend,
         cdm_schema=cdm_schema,
         results_schema=results_schema,
+        vocabulary_schema=(
+            options.vocabulary_schema
+            if options is not None and options.vocabulary_schema
+            else cdm_schema
+        ),
         options=options,
         concept_sets=normalized.concept_sets,
     )

@@ -4,6 +4,7 @@ import pytest
 
 from circe.api import build_cohort_ibis
 from circe.cohortdefinition import (
+    BuildExpressionQueryOptions,
     ConditionEra,
     CohortExpression,
     ConditionOccurrence,
@@ -63,6 +64,41 @@ def _seed_common_tables(conn, ibis):
     )
 
 
+def _seed_vocabulary_tables(conn, ibis):
+    conn.create_table(
+        "concept",
+        obj=ibis.memtable(
+            {
+                "concept_id": [100, 101, 102, 200, 201],
+                "invalid_reason": [None, None, "D", None, None],
+            }
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "concept_ancestor",
+        obj=ibis.memtable(
+            {
+                "ancestor_concept_id": [100, 100],
+                "descendant_concept_id": [101, 102],
+            }
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "concept_relationship",
+        obj=ibis.memtable(
+            {
+                "concept_id_1": [200, 201],
+                "concept_id_2": [100, 101],
+                "relationship_id": ["Maps to", "Maps to"],
+                "invalid_reason": [None, "D"],
+            }
+        ),
+        overwrite=True,
+    )
+
+
 def test_build_cohort_ibis_condition_occurrence_mvp():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
@@ -109,6 +145,148 @@ def test_build_cohort_ibis_condition_occurrence_mvp():
     }
     assert set(result.person_id) == {1}
     assert len(result) == 1
+
+
+def test_build_cohort_ibis_concept_set_resolves_descendants_and_mapped():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    _seed_vocabulary_tables(conn, ibis)
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 1, 1, 1, 1, 2],
+                "condition_occurrence_id": [1000, 1001, 1002, 1003, 1004, 1005],
+                "condition_concept_id": [100, 101, 102, 200, 201, 999],
+                "condition_start_date": [
+                    "2020-01-01",
+                    "2020-01-02",
+                    "2020-01-03",
+                    "2020-01-04",
+                    "2020-01-05",
+                    "2020-01-01",
+                ],
+                "condition_end_date": [
+                    "2020-01-01",
+                    "2020-01-02",
+                    "2020-01-03",
+                    "2020-01-04",
+                    "2020-01-05",
+                    "2020-01-01",
+                ],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[
+            ConceptSet(
+                id=1,
+                expression=ConceptSetExpression(
+                    items=[
+                        ConceptSetItem(
+                            concept=Concept(conceptId=100),
+                            includeDescendants=True,
+                            includeMapped=True,
+                        ),
+                        ConceptSetItem(
+                            concept=Concept(conceptId=101),
+                            isExcluded=True,
+                            includeMapped=True,
+                        ),
+                    ]
+                ),
+            )
+        ],
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
+    )
+
+    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    assert set(result.person_id) == {1}
+    assert set(result.concept_id) == {100, 200}
+
+
+def test_build_cohort_ibis_uses_vocabulary_schema_option_for_expansion():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    conn.raw_sql("CREATE SCHEMA vocab")
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 1],
+                "condition_occurrence_id": [2000, 2001],
+                "condition_concept_id": [100, 101],
+                "condition_start_date": ["2020-01-01", "2020-01-02"],
+                "condition_end_date": ["2020-01-01", "2020-01-02"],
+            }
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "concept",
+        obj=ibis.memtable(
+            {"concept_id": [100, 101, 102], "invalid_reason": [None, None, "D"]}
+        ),
+        database="vocab",
+        overwrite=True,
+    )
+    conn.create_table(
+        "concept_ancestor",
+        obj=ibis.memtable(
+            {"ancestor_concept_id": [100], "descendant_concept_id": [101]}
+        ),
+        database="vocab",
+        overwrite=True,
+    )
+    conn.create_table(
+        "concept_relationship",
+        obj=ibis.memtable(
+            {
+                "concept_id_1": [9999, 9998],
+                "concept_id_2": [100, 101],
+                "relationship_id": ["Maps to", "Maps to"],
+                "invalid_reason": [None, "D"],
+            }
+        ),
+        database="vocab",
+        overwrite=True,
+    )
+
+    options = BuildExpressionQueryOptions()
+    options.vocabulary_schema = "vocab"
+
+    expression = CohortExpression(
+        concept_sets=[
+            ConceptSet(
+                id=1,
+                expression=ConceptSetExpression(
+                    items=[
+                        ConceptSetItem(
+                            concept=Concept(conceptId=100),
+                            includeDescendants=True,
+                        )
+                    ]
+                ),
+            )
+        ],
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
+    )
+
+    result = build_cohort_ibis(
+        expression,
+        backend=conn,
+        cdm_schema="main",
+        options=options,
+    ).execute()
+    assert set(result.concept_id) == {100, 101}
 
 
 def test_build_cohort_ibis_drug_exposure_mvp():

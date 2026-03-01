@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from collections import defaultdict
-from typing import Dict, FrozenSet, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 from ...cohortdefinition import BuildExpressionQueryOptions, CohortExpression
 from ...vocabulary.concept import ConceptSet
@@ -32,10 +31,24 @@ class NormalizedPrimaryCriteria:
 
 
 @frozen_slots_dataclass
+class NormalizedConceptSetItem:
+    concept_id: int
+    is_excluded: bool
+    include_descendants: bool
+    include_mapped: bool
+
+
+@frozen_slots_dataclass
+class NormalizedConceptSet:
+    set_id: int
+    items: Tuple[NormalizedConceptSetItem, ...]
+
+
+@frozen_slots_dataclass
 class NormalizedCohort:
     title: str | None
     options: BuildExpressionQueryOptions | None
-    concept_sets: Dict[int, FrozenSet[int]]
+    concept_sets: Dict[int, NormalizedConceptSet]
     primary: NormalizedPrimaryCriteria
     additional_criteria: NormalizedCriteriaGroup | None
     inclusion_rules: Tuple[NormalizedInclusionRule, ...]
@@ -45,9 +58,23 @@ class NormalizedCohort:
     end_strategy: NormalizedEndStrategy | None
 
 
-def _extract_codesets(concept_sets: list[ConceptSet]) -> Dict[int, FrozenSet[int]]:
-    included: dict[int, set[int]] = defaultdict(set)
-    excluded: dict[int, set[int]] = defaultdict(set)
+def _normalized_item(
+    *,
+    concept_id: int,
+    is_excluded: bool,
+    include_descendants: bool,
+    include_mapped: bool,
+) -> NormalizedConceptSetItem:
+    return NormalizedConceptSetItem(
+        concept_id=int(concept_id),
+        is_excluded=bool(is_excluded),
+        include_descendants=bool(include_descendants),
+        include_mapped=bool(include_mapped),
+    )
+
+
+def _extract_codesets(concept_sets: list[ConceptSet]) -> Dict[int, NormalizedConceptSet]:
+    output: Dict[int, NormalizedConceptSet] = {}
 
     for concept_set in concept_sets or []:
         if concept_set is None or concept_set.id is None:
@@ -57,39 +84,37 @@ def _extract_codesets(concept_sets: list[ConceptSet]) -> Dict[int, FrozenSet[int
         if not expression:
             continue
 
-        if bool(expression.include_descendants) or bool(expression.include_mapped):
-            raise UnsupportedFeatureError(
-                "ConceptSet expansion flags includeDescendants/includeMapped are not "
-                f"implemented in the Ibis executor (codeset_id={set_id})."
-            )
+        items: list[NormalizedConceptSetItem] = []
 
         if expression.concept is not None and expression.concept.concept_id is not None:
-            concept_id = int(expression.concept.concept_id)
-            if expression.is_excluded:
-                excluded[set_id].add(concept_id)
-            else:
-                included[set_id].add(concept_id)
+            items.append(
+                _normalized_item(
+                    concept_id=int(expression.concept.concept_id),
+                    is_excluded=bool(expression.is_excluded),
+                    include_descendants=bool(expression.include_descendants),
+                    include_mapped=bool(expression.include_mapped),
+                )
+            )
 
         for item in expression.items or []:
             if item is None:
                 continue
-            if bool(item.include_descendants) or bool(item.include_mapped):
-                raise UnsupportedFeatureError(
-                    "ConceptSet item flags includeDescendants/includeMapped are not "
-                    "implemented in the Ibis executor "
-                    f"(codeset_id={set_id}, concept_id={getattr(item.concept, 'concept_id', None)})."
-                )
             if item.concept is None or item.concept.concept_id is None:
                 continue
-            concept_id = int(item.concept.concept_id)
-            if item.is_excluded:
-                excluded[set_id].add(concept_id)
-            else:
-                included[set_id].add(concept_id)
+            items.append(
+                _normalized_item(
+                    concept_id=int(item.concept.concept_id),
+                    is_excluded=bool(item.is_excluded),
+                    include_descendants=bool(item.include_descendants),
+                    include_mapped=bool(item.include_mapped),
+                )
+            )
 
-    output: Dict[int, FrozenSet[int]] = {}
-    for set_id, include_values in included.items():
-        output[set_id] = frozenset(include_values - excluded.get(set_id, set()))
+        output[set_id] = NormalizedConceptSet(
+            set_id=set_id,
+            items=tuple(items),
+        )
+
     return output
 
 

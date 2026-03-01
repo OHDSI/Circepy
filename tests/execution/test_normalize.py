@@ -64,7 +64,11 @@ def test_normalize_cohort_extracts_codesets_and_keeps_expression_immutable():
     after = expression.model_dump_json(by_alias=True, exclude_none=False)
     assert before == after
     assert normalized.title == "Normalize Test"
-    assert normalized.concept_sets[1] == frozenset({111})
+    assert 1 in normalized.concept_sets
+    assert tuple(item.concept_id for item in normalized.concept_sets[1].items) == (
+        111,
+        999,
+    )
     assert len(normalized.primary.criteria) == 1
     criterion = normalized.primary.criteria[0]
     assert criterion.criterion_type == "ConditionOccurrence"
@@ -145,7 +149,7 @@ def test_normalize_new_domains():
         assert normalized.source_table == expected_table
 
 
-def test_normalize_cohort_rejects_concept_set_item_expansion_flags():
+def test_normalize_cohort_preserves_concept_set_item_expansion_flags():
     expression = CohortExpression(
         concept_sets=[
             ConceptSet(
@@ -165,11 +169,11 @@ def test_normalize_cohort_rejects_concept_set_item_expansion_flags():
         ),
     )
 
-    with pytest.raises(UnsupportedFeatureError, match="includeDescendants/includeMapped"):
-        _ = normalize_cohort(expression)
+    normalized = normalize_cohort(expression)
+    assert normalized.concept_sets[1].items[0].include_descendants is True
 
 
-def test_normalize_cohort_rejects_concept_set_expression_expansion_flags():
+def test_normalize_cohort_preserves_expression_level_concept_set_flags():
     expression = CohortExpression(
         concept_sets=[
             ConceptSet(
@@ -185,8 +189,11 @@ def test_normalize_cohort_rejects_concept_set_expression_expansion_flags():
         ),
     )
 
-    with pytest.raises(UnsupportedFeatureError, match="includeDescendants/includeMapped"):
-        _ = normalize_cohort(expression)
+    normalized = normalize_cohort(expression)
+    normalized_item = normalized.concept_sets[1].items[0]
+    assert normalized_item.concept_id == 111
+    assert normalized_item.include_mapped is True
+    assert normalized_item.is_excluded is False
 
 
 def test_normalize_criterion_rejects_criterion_local_correlated_criteria():
