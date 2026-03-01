@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ...execution.typing import IbisBackendLike, Table
 from ..config import GenerationConfig
-from ..tables import COHORT_RESULT_SCHEMA
+from ..tables import COHORT_RESULT_SCHEMA, table_relation
 from .cohort import apply_cohort_subset_operator
 from .definitions import (
     CohortSubsetOperator,
@@ -41,7 +41,7 @@ def apply_subset(
     for operator in definition.operators:
         if isinstance(operator, DemographicSubsetOperator):
             if person is None:
-                person = backend.table("person", database=config.cdm_schema)
+                person = table_relation(backend, "person", config.cdm_schema)
             current = apply_demographic_operator(
                 current,
                 person=person,
@@ -51,9 +51,10 @@ def apply_subset(
 
         if isinstance(operator, LimitSubsetOperator):
             if observation_period is None:
-                observation_period = backend.table(
+                observation_period = table_relation(
+                    backend,
                     "observation_period",
-                    database=config.cdm_schema,
+                    config.cdm_schema,
                 )
             current = apply_limit_operator(
                 current,
@@ -63,7 +64,7 @@ def apply_subset(
             continue
 
         if isinstance(operator, CohortSubsetOperator):
-            cohorts = backend.table(config.cohort_table, database=config.results_schema)
+            cohorts = table_relation(backend, config.cohort_table, config.results_schema)
             subset_relation = cohorts.filter(
                 cohorts.cohort_definition_id == int(operator.subset_cohort_id)
             ).select(

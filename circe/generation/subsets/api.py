@@ -19,6 +19,7 @@ from ..tables import (
     SUBSET_METADATA_SCHEMA,
     cohort_row_count,
     create_generation_tables,
+    table_relation,
     utc_now_iso,
 )
 from .compiler import apply_subset as compile_subset
@@ -38,7 +39,7 @@ def _parent_relation(
     definition: SubsetDefinition,
     config: GenerationConfig,
 ) -> Table:
-    cohort_table = backend.table(config.cohort_table, database=config.results_schema)
+    cohort_table = table_relation(backend, config.cohort_table, config.results_schema)
     return cohort_table.filter(
         cohort_table.cohort_definition_id == int(definition.parent_cohort_id)
     ).select(
@@ -237,7 +238,7 @@ def generate_subset(
         table_name=config.subset_metadata_table,
         schema=SUBSET_METADATA_SCHEMA,
         database=config.results_schema,
-        key_field="subset_definition_id",
+        key_field="generated_cohort_id",
         row={
             "subset_definition_id": subset_definition_id,
             "subset_name": definition.subset_name,

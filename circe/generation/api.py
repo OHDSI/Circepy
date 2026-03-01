@@ -41,6 +41,7 @@ def _target_to_named(target: GenerationTarget) -> NamedCohortExpression:
         cohort_id=target.cohort_id,
         expression=target.expression,
         cohort_name=target.cohort_name,
+        options=target.options,
     )
 
 
@@ -247,12 +248,14 @@ def generate_cohort_set(
         if cohort_names is not None and target.cohort_name not in cohort_names:
             continue
 
+        target_options = target.options if target.options is not None else options
+
         if changed_only:
             expression_hash = fingerprint_expression(target.expression)
-            options_hash = fingerprint_options(options)
+            options_hash = fingerprint_options(target_options)
             combined_hash = fingerprint_generation_request(
                 target.expression,
-                options,
+                target_options,
                 engine_version=DEFAULT_ENGINE_VERSION,
                 target_table=config.cohort_table,
                 data_version_token=data_version_token,
@@ -291,7 +294,7 @@ def generate_cohort_set(
                     cohort_name=target.cohort_name,
                     config=config,
                     policy=policy,
-                    options=options,
+                    options=target_options,
                     data_version_token=data_version_token,
                 )
             )

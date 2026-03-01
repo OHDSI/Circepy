@@ -109,7 +109,7 @@ def create_generation_tables(backend, config: GenerationConfig) -> None:
     )
 
 
-def _table_relation(backend, table_name: str, schema: str | None):
+def table_relation(backend, table_name: str, schema: str | None):
     if schema is not None:
         try:
             return backend.table(table_name, database=schema)
@@ -122,7 +122,7 @@ def read_rows(backend, table_name: str, schema: str | None = None) -> list[dict[
     if not table_exists(backend, table_name, schema):
         return []
 
-    rows = _table_relation(backend, table_name, schema).execute()
+    rows = table_relation(backend, table_name, schema).execute()
     if hasattr(rows, "to_dict"):
         return list(rows.to_dict(orient="records"))
     return []
@@ -190,7 +190,7 @@ def cohort_row_count(backend, *, config: GenerationConfig, cohort_id: int) -> in
     if not table_exists(backend, config.cohort_table, config.results_schema):
         return 0
 
-    relation = _table_relation(backend, config.cohort_table, config.results_schema)
+    relation = table_relation(backend, config.cohort_table, config.results_schema)
     if "cohort_definition_id" not in relation.columns:
         return 0
     count_expr = relation.filter(relation.cohort_definition_id == int(cohort_id)).count()

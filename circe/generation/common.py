@@ -6,7 +6,7 @@ import ibis
 
 from ..execution.typing import IbisBackendLike, Table
 from .config import GenerationConfig, GenerationPolicy
-from .tables import COHORT_RESULT_SCHEMA, read_rows, table_exists
+from .tables import COHORT_RESULT_SCHEMA, read_rows, table_exists, table_relation
 
 
 def project_to_cohort_relation(relation: Table, *, cohort_id: int) -> Table:
@@ -56,7 +56,7 @@ def target_rows_relation(
     )
 
     if table_exists(backend, config.cohort_table, config.results_schema):
-        existing = backend.table(config.cohort_table, database=config.results_schema)
+        existing = table_relation(backend, config.cohort_table, config.results_schema)
         if "cohort_definition_id" in existing.columns:
             keep = existing.filter(existing.cohort_definition_id != int(cohort_id))
             normalized_keep = keep.select(

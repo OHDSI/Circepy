@@ -54,3 +54,4 @@ low-level execution API.
 
 - Subset operators currently target canonical OMOP cohort table columns.
 - Subset metadata dependency payload is JSON-serialized text for portability.
+- Metadata/checksum upserts currently rewrite whole tables (portable MVP path).

@@ -48,6 +48,7 @@ class NamedCohortExpression:
     cohort_id: int
     expression: CohortExpression
     cohort_name: str | None = None
+    options: BuildExpressionQueryOptions | None = None
 
 
 @frozen_slots_dataclass

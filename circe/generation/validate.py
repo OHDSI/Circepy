@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from .config import GenerationConfig
 from .metadata import GeneratedCohortCounts, ValidationResult
-from .tables import COHORT_RESULT_SCHEMA, table_exists
+from .tables import COHORT_RESULT_SCHEMA, table_exists, table_relation
 
 
 def _cohort_rows(backend, *, cohort_id: int, config: GenerationConfig):
     if not table_exists(backend, config.cohort_table, config.results_schema):
         return None
-    relation = backend.table(config.cohort_table, database=config.results_schema)
+    relation = table_relation(backend, config.cohort_table, config.results_schema)
     if "cohort_definition_id" not in relation.columns:
         return None
     return relation.filter(relation.cohort_definition_id == int(cohort_id))
@@ -75,7 +75,7 @@ def validate_generated_cohort(
             warnings=tuple(warnings),
         )
 
-    rows = backend.table(config.cohort_table, database=config.results_schema)
+    rows = table_relation(backend, config.cohort_table, config.results_schema)
     required = set(COHORT_RESULT_SCHEMA.keys())
     missing = required.difference(rows.columns)
     if missing:

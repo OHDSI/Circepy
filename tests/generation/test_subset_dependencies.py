@@ -155,3 +155,47 @@ def test_subset_regenerates_when_referenced_cohort_changes(ibis_duckdb_conn):
         policy="replace_if_changed",
     )
     assert regenerated.status in {"generated", "replaced"}
+
+
+def test_subset_metadata_keeps_rows_per_generated_cohort_id(ibis_duckdb_conn):
+    ibis, conn = ibis_duckdb_conn
+    seed_base_tables(ibis, conn, concept_id=111, rows=1)
+
+    config = GenerationConfig(cdm_schema="main", results_schema="main")
+    _ = generate_cohort(
+        make_expression(111),
+        backend=conn,
+        cohort_id=420,
+        config=config,
+        policy="replace",
+    )
+
+    definition = SubsetDefinition(
+        subset_name="multi-output",
+        parent_cohort_id=420,
+        operators=(),
+    )
+
+    first = generate_subset(
+        definition,
+        backend=conn,
+        generated_cohort_id=421,
+        config=config,
+        policy="replace",
+    )
+    second = generate_subset(
+        definition,
+        backend=conn,
+        generated_cohort_id=422,
+        config=config,
+        policy="replace",
+    )
+    assert first.status in {"generated", "replaced"}
+    assert second.status in {"generated", "replaced"}
+
+    metadata_rows = conn.table(config.subset_metadata_table, database="main").execute()
+    scoped = metadata_rows[
+        (metadata_rows["subset_name"] == "multi-output")
+        & (metadata_rows["parent_cohort_id"] == 420)
+    ]
+    assert set(int(v) for v in scoped["generated_cohort_id"].tolist()) == {421, 422}

@@ -242,6 +242,7 @@ def generate_cohort_set(
 
     Incremental behavior is definition/dependency-based by default.
     Pass `data_version_token` to opt in to data-version-aware invalidation.
+    `GenerationTarget.options` overrides the shared `options` argument per target.
     """
     from .generation import generate_cohort_set as _generate_cohort_set
 
