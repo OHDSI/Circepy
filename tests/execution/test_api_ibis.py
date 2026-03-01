@@ -102,7 +102,7 @@ def _seed_vocabulary_tables(conn, ibis):
     )
 
 
-def test_build_cohort_ibis_condition_occurrence_mvp():
+def test_build_cohort_ibis_condition_occurrence():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -381,7 +381,7 @@ def test_build_cohort_ibis_uses_vocabulary_schema_option_for_expansion():
     assert set(result.concept_id) == {100, 101}
 
 
-def test_build_cohort_ibis_drug_exposure_mvp():
+def test_build_cohort_ibis_drug_exposure():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -413,7 +413,7 @@ def test_build_cohort_ibis_drug_exposure_mvp():
     assert all(result.domain == "drug_exposure")
 
 
-def test_build_cohort_ibis_visit_occurrence_mvp():
+def test_build_cohort_ibis_visit_occurrence():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -1086,7 +1086,7 @@ def test_build_cohort_ibis_location_region_keeps_repeated_location_history_rows(
     assert sorted(result.start_date.astype(str).tolist()) == ["2020-01-01", "2020-02-01"]
 
 
-def test_build_cohort_ibis_rejects_non_mvp_features():
+def test_build_cohort_ibis_rejects_unsupported_features():
     expression = CohortExpression(
         primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence()]),
         end_strategy=CustomEraStrategy(drug_codeset_id=1, gap_days=30, offset=0),

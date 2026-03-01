@@ -14,7 +14,7 @@ class UnsupportedCriterionError(ExecutionError):
 
 
 class UnsupportedFeatureError(ExecutionError):
-    """Raised when a non-MVP executor feature is requested."""
+    """Raised when requested executor semantics are unsupported."""
 
 
 class CompilationError(ExecutionError):
