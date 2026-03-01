@@ -4,10 +4,9 @@ import logging
 
 from ..cohortdefinition import BuildExpressionQueryOptions, CohortExpression
 from .engine.cohort import build_cohort_table
-from .ibis.codesets import CachedConceptSetResolver
-from .ibis.context import ExecutionContext
+from .ibis.context import make_execution_context
 from .normalize.cohort import normalize_cohort
-from .typing import BackendLike, Table
+from .typing import IbisBackendLike, Table
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +14,7 @@ logger = logging.getLogger(__name__)
 def build_cohort_ibis(
     expression: CohortExpression,
     *,
-    backend: BackendLike,
+    backend: IbisBackendLike,
     cdm_schema: str,
     results_schema: str | None = None,
     options: BuildExpressionQueryOptions | None = None,
@@ -33,34 +32,12 @@ def build_cohort_ibis(
     logger.debug("Normalizing CohortExpression for Ibis execution")
     normalized = normalize_cohort(expression, options)
 
-    vocabulary_schema = (
-        options.vocabulary_schema
-        if options is not None and options.vocabulary_schema
-        else cdm_schema
-    )
-
-    def _table_getter(table_name: str, schema: str | None) -> Table:
-        try:
-            if schema is not None:
-                return backend.table(table_name, database=schema)
-        except TypeError:
-            pass
-        return backend.table(table_name)
-
-    resolver = CachedConceptSetResolver(
-        table_getter=_table_getter,
-        vocabulary_schema=vocabulary_schema,
-        concept_sets=normalized.concept_sets,
-    )
-
-    ctx = ExecutionContext(
+    ctx = make_execution_context(
         backend=backend,
         cdm_schema=cdm_schema,
         results_schema=results_schema,
-        vocabulary_schema=vocabulary_schema,
         options=options,
         concept_sets=normalized.concept_sets,
-        codeset_resolver=resolver,
     )
 
     logger.debug("Compiling normalized plan to Ibis")

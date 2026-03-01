@@ -3,9 +3,8 @@ from __future__ import annotations
 import pytest
 
 from circe.cohortdefinition import CohortExpression, PrimaryCriteria
-from circe.execution.ibis.codesets import CachedConceptSetResolver
 from circe.execution.ibis.compiler import compile_event_plan
-from circe.execution.ibis.context import ExecutionContext
+from circe.execution.ibis.context import make_execution_context
 from circe.execution.lower.criteria import lower_criterion
 from circe.execution.normalize.cohort import normalize_cohort
 from circe.execution.plan.schema import STANDARD_EVENT_COLUMNS
@@ -40,18 +39,6 @@ def _seed_common_tables(conn, ibis):
         ),
         overwrite=True,
     )
-
-
-def _table_getter(conn):
-    def get_table(table_name: str, schema: str | None):
-        try:
-            if schema is not None:
-                return conn.table(table_name, database=schema)
-        except TypeError:
-            pass
-        return conn.table(table_name)
-
-    return get_table
 
 
 @pytest.mark.parametrize(("source_table", "factory", "concept_id"), domain_criteria_cases())
@@ -112,19 +99,12 @@ def test_compile_contract_emits_standard_schema(source_table, factory, concept_i
 
     conn.create_table(source_table, obj=ibis.memtable(source_data), overwrite=True)
 
-    resolver = CachedConceptSetResolver(
-        table_getter=_table_getter(conn),
-        vocabulary_schema="main",
-        concept_sets=normalized.concept_sets,
-    )
-    ctx = ExecutionContext(
+    ctx = make_execution_context(
         backend=conn,
         cdm_schema="main",
         results_schema=None,
-        vocabulary_schema="main",
         options=None,
         concept_sets=normalized.concept_sets,
-        codeset_resolver=resolver,
     )
 
     result = compile_event_plan(plan, ctx).execute()

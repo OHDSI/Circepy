@@ -8,7 +8,11 @@ else:  # pragma: no cover - typing-only fallback when ibis is not installed
     Table = Any
 
 
-class BackendLike(Protocol):
+class IbisBackendLike(Protocol):
     """Minimal backend surface required by the Ibis executor."""
 
     def table(self, name: str, database: str | None = None) -> Table: ...
+
+
+# Backward-compatible alias for existing imports.
+BackendLike = IbisBackendLike
