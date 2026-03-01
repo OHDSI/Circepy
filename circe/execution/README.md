@@ -3,6 +3,12 @@
 The `circe.execution` package is an experimental, table-first Ibis executor for
 `CohortExpression` models. It runs in parallel with the existing SQL builder.
 
+## Public Functions
+
+- `build_cohort(...)` is the canonical expression-building entrypoint.
+- `write_cohort(...)` is a thin materialization wrapper over `build_cohort(...)`.
+- `build_cohort_ibis` and `write_cohort_ibis` are transition aliases.
+
 ## Layered Architecture
 
 1. `normalize/`

@@ -16,7 +16,12 @@ def test_execution_package_imports():
     import circe.execution.normalize
     import circe.execution.plan
 
+    assert hasattr(circe.execution, "build_cohort")
+    assert hasattr(circe.execution, "write_cohort")
     assert hasattr(circe.execution, "build_cohort_ibis")
+    assert hasattr(circe.execution, "write_cohort_ibis")
+    assert circe.execution.build_cohort_ibis is circe.execution.build_cohort
+    assert circe.execution.write_cohort_ibis is circe.execution.write_cohort
 
 
 def test_normalized_dataclasses_are_frozen():

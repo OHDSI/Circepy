@@ -84,8 +84,11 @@ from circe.cohortdefinition import (
 )
 
 from .api import (
+    build_cohort,
     build_cohort_ibis,
     build_cohort_query,
+    write_cohort,
+    write_cohort_ibis,
     cohort_expression_from_json,
     cohort_print_friendly,
 )
@@ -220,8 +223,11 @@ __all__ = [
     "ConceptSetItem",
     # API functions
     "cohort_expression_from_json",
+    "build_cohort",
     "build_cohort_query",
+    "write_cohort",
     "build_cohort_ibis",
+    "write_cohort_ibis",
     "cohort_print_friendly",
     "safe_model_rebuild",
 ]

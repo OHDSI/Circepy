@@ -4,11 +4,12 @@ Simple library API for CIRCE Python
 This module provides a simple R CirceR-style API for working with cohort definitions:
 - cohort_expression_from_json(): Load cohort expression from JSON string
 - build_cohort_query(): Generate SQL from cohort expression
-- build_cohort_ibis(): Build cohort as an ibis relation (experimental)
+- build_cohort(): Build cohort as a relational expression (experimental)
+- write_cohort(): Materialize a cohort relation to a database table
 - cohort_print_friendly(): Generate Markdown from cohort expression
 """
 
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from .cohortdefinition import (
     BuildExpressionQueryOptions,
@@ -16,6 +17,7 @@ from .cohortdefinition import (
     CohortExpressionQueryBuilder,
     MarkdownRender,
 )
+from .execution.typing import IbisBackendLike, Table
 from .vocabulary.concept import ConceptSet
 
 
@@ -102,24 +104,55 @@ def build_cohort_query(
     return builder.build_expression_query(expression, options)
 
 
-def build_cohort_ibis(
+def build_cohort(
     expression: CohortExpression,
     *,
-    backend,
+    backend: IbisBackendLike,
     cdm_schema: str,
     results_schema: Optional[str] = None,
     options: Optional[BuildExpressionQueryOptions] = None,
-):
-    """Build a cohort as an ibis table through the execution subsystem."""
-    from .execution import build_cohort_ibis as _build_cohort_ibis
+) -> Table:
+    """Build a cohort as a relational table expression."""
+    from .execution import build_cohort as _build_cohort
 
-    return _build_cohort_ibis(
+    return _build_cohort(
         expression,
         backend=backend,
         cdm_schema=cdm_schema,
         results_schema=results_schema,
         options=options,
     )
+
+
+def write_cohort(
+    expression: CohortExpression,
+    *,
+    backend: IbisBackendLike,
+    cdm_schema: str,
+    target_table: str,
+    results_schema: Optional[str] = None,
+    options: Optional[BuildExpressionQueryOptions] = None,
+    if_exists: Literal["fail", "replace"] = "fail",
+    temporary: bool = False,
+) -> None:
+    """Build and materialize a cohort relation to a database table."""
+    from .execution import write_cohort as _write_cohort
+
+    _write_cohort(
+        expression,
+        backend=backend,
+        cdm_schema=cdm_schema,
+        target_table=target_table,
+        results_schema=results_schema,
+        options=options,
+        if_exists=if_exists,
+        temporary=temporary,
+    )
+
+
+# Compatibility aliases for transition period.
+build_cohort_ibis = build_cohort
+write_cohort_ibis = write_cohort
 
 
 def cohort_print_friendly(

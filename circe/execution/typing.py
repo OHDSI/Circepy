@@ -12,3 +12,15 @@ class IbisBackendLike(Protocol):
     """Minimal backend surface required by the Ibis executor."""
 
     def table(self, name: str, database: str | None = None) -> Table: ...
+
+    def create_table(
+        self,
+        name: str,
+        /,
+        obj: Any = None,
+        *,
+        schema: Any | None = None,
+        database: str | None = None,
+        temp: bool = False,
+        overwrite: bool = False,
+    ) -> Any: ...
