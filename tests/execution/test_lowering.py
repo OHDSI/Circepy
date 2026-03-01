@@ -24,6 +24,8 @@ from circe.execution.plan.events import (
     FilterByCodeset,
     FilterByConceptSet,
     FilterByNumericRange,
+    FilterByPersonEthnicity,
+    FilterByPersonRace,
     KeepFirstPerPerson,
     FilterByText,
     StandardizeEventShape,
@@ -152,3 +154,13 @@ def test_lowering_new_domains_emit_standardized_plans(
         step for step in plan.steps if isinstance(step, StandardizeEventShape)
     ]
     assert len(standardize) == 1
+
+
+def test_lowering_emits_race_and_ethnicity_person_filters():
+    criteria = ConditionOccurrence(codeset_id=1)
+    criteria.__dict__["race"] = [Concept(conceptId=8527)]
+    criteria.__dict__["ethnicity"] = [Concept(conceptId=38003564)]
+
+    plan = lower_criterion(normalize_criterion(criteria), criterion_index=9)
+    assert any(isinstance(step, FilterByPersonRace) for step in plan.steps)
+    assert any(isinstance(step, FilterByPersonEthnicity) for step in plan.steps)

@@ -37,6 +37,10 @@ class NormalizedPersonFilters:
     age: NormalizedNumericRange | None = None
     gender_concept_ids: Tuple[int, ...] = ()
     gender_codeset_id: int | None = None
+    race_concept_ids: Tuple[int, ...] = ()
+    race_codeset_id: int | None = None
+    ethnicity_concept_ids: Tuple[int, ...] = ()
+    ethnicity_codeset_id: int | None = None
 
 
 @frozen_slots_dataclass
@@ -81,27 +85,21 @@ def _person_filters_from_criterion(criteria: Criteria) -> NormalizedPersonFilter
             and criteria.gender_cs.codeset_id is not None
             else None
         ),
+        race_concept_ids=_concept_ids(getattr(criteria, "race", None)),
+        race_codeset_id=(
+            int(criteria.race_cs.codeset_id)
+            if getattr(criteria, "race_cs", None)
+            and criteria.race_cs.codeset_id is not None
+            else None
+        ),
+        ethnicity_concept_ids=_concept_ids(getattr(criteria, "ethnicity", None)),
+        ethnicity_codeset_id=(
+            int(criteria.ethnicity_cs.codeset_id)
+            if getattr(criteria, "ethnicity_cs", None)
+            and criteria.ethnicity_cs.codeset_id is not None
+            else None
+        ),
     )
-
-
-def _raise_if_unsupported_demographic_filters(criteria: Criteria) -> None:
-    race_values = getattr(criteria, "race", None)
-    ethnicity_values = getattr(criteria, "ethnicity", None)
-    race_codeset = getattr(criteria, "race_cs", None)
-    ethnicity_codeset = getattr(criteria, "ethnicity_cs", None)
-
-    has_race_or_ethnicity = bool(race_values) or bool(ethnicity_values)
-    has_codeset = (
-        (race_codeset is not None and race_codeset.codeset_id is not None)
-        or (
-            ethnicity_codeset is not None
-            and ethnicity_codeset.codeset_id is not None
-        )
-    )
-    if has_race_or_ethnicity or has_codeset:
-        raise UnsupportedFeatureError(
-            "Criterion-level race/ethnicity filters are not implemented in the Ibis executor."
-        )
 
 
 def _build_normalized_criterion(
@@ -454,7 +452,6 @@ def normalize_criterion(criteria: Criteria) -> NormalizedCriterion:
         raise UnsupportedFeatureError(
             "criterion.correlated_criteria is not implemented yet in the Ibis executor."
         )
-    _raise_if_unsupported_demographic_filters(criteria)
     if isinstance(criteria, ConditionOccurrence):
         return _normalize_condition_occurrence(criteria)
     if isinstance(criteria, DrugExposure):

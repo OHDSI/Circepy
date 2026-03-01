@@ -10,7 +10,9 @@ from ..plan.events import (
     FilterByDateRange,
     FilterByNumericRange,
     FilterByPersonAge,
+    FilterByPersonEthnicity,
     FilterByPersonGender,
+    FilterByPersonRace,
     FilterByText,
     JoinLocationRegion,
     KeepFirstPerPerson,
@@ -19,7 +21,12 @@ from ..plan.events import (
 )
 from ..plan.predicates import DateRangePredicate, NumericRangePredicate
 from .context import ExecutionContext
-from .person_filters import apply_person_age_filter, apply_person_gender_filter
+from .person_filters import (
+    apply_person_age_filter,
+    apply_person_ethnicity_filter,
+    apply_person_gender_filter,
+    apply_person_race_filter,
+)
 from .standardize import standardize_event_table
 
 
@@ -144,6 +151,22 @@ def apply_step(step, *, table, source, ctx: ExecutionContext):
 
     if isinstance(step, FilterByPersonGender):
         return apply_person_gender_filter(
+            table,
+            ctx,
+            concept_ids=step.concept_ids,
+            codeset_id=step.codeset_id,
+        )
+
+    if isinstance(step, FilterByPersonRace):
+        return apply_person_race_filter(
+            table,
+            ctx,
+            concept_ids=step.concept_ids,
+            codeset_id=step.codeset_id,
+        )
+
+    if isinstance(step, FilterByPersonEthnicity):
+        return apply_person_ethnicity_filter(
             table,
             ctx,
             concept_ids=step.concept_ids,

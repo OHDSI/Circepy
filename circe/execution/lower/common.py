@@ -13,7 +13,9 @@ from ..plan.events import (
     FilterByDateRange,
     FilterByNumericRange,
     FilterByPersonAge,
+    FilterByPersonEthnicity,
     FilterByPersonGender,
+    FilterByPersonRace,
     FilterByText,
     KeepFirstPerPerson,
     PlanStep,
@@ -77,6 +79,28 @@ def lower_common_steps(criterion: NormalizedCriterion) -> List[PlanStep]:
             FilterByPersonGender(
                 concept_ids=criterion.person_filters.gender_concept_ids,
                 codeset_id=criterion.person_filters.gender_codeset_id,
+            )
+        )
+
+    if (
+        criterion.person_filters.race_concept_ids
+        or criterion.person_filters.race_codeset_id is not None
+    ):
+        steps.append(
+            FilterByPersonRace(
+                concept_ids=criterion.person_filters.race_concept_ids,
+                codeset_id=criterion.person_filters.race_codeset_id,
+            )
+        )
+
+    if (
+        criterion.person_filters.ethnicity_concept_ids
+        or criterion.person_filters.ethnicity_codeset_id is not None
+    ):
+        steps.append(
+            FilterByPersonEthnicity(
+                concept_ids=criterion.person_filters.ethnicity_concept_ids,
+                codeset_id=criterion.person_filters.ethnicity_codeset_id,
             )
         )
 

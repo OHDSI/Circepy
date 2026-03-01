@@ -69,3 +69,58 @@ def apply_person_gender_filter(
     joined = table.join(person, table.person_id == person.person_id)
     filtered = joined.filter(joined.gender_concept_id.isin(all_ids))
     return filtered.select(*[filtered[c] for c in table.columns])
+
+
+def _apply_person_concept_filter(
+    table,
+    ctx: ExecutionContext,
+    *,
+    person_column: str,
+    concept_ids: tuple[int, ...],
+    codeset_id: int | None,
+):
+    all_ids = list(concept_ids)
+    if codeset_id is not None:
+        for cid in ctx.concept_ids_for_codeset(codeset_id):
+            if cid not in all_ids:
+                all_ids.append(cid)
+
+    if not all_ids:
+        return table
+
+    person = ctx.table("person").select("person_id", person_column)
+    joined = table.join(person, table.person_id == person.person_id)
+    filtered = joined.filter(joined[person_column].isin(all_ids))
+    return filtered.select(*[filtered[c] for c in table.columns])
+
+
+def apply_person_race_filter(
+    table,
+    ctx: ExecutionContext,
+    *,
+    concept_ids: tuple[int, ...],
+    codeset_id: int | None,
+):
+    return _apply_person_concept_filter(
+        table,
+        ctx,
+        person_column="race_concept_id",
+        concept_ids=concept_ids,
+        codeset_id=codeset_id,
+    )
+
+
+def apply_person_ethnicity_filter(
+    table,
+    ctx: ExecutionContext,
+    *,
+    concept_ids: tuple[int, ...],
+    codeset_id: int | None,
+):
+    return _apply_person_concept_filter(
+        table,
+        ctx,
+        person_column="ethnicity_concept_id",
+        concept_ids=concept_ids,
+        codeset_id=codeset_id,
+    )

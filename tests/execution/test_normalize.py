@@ -25,7 +25,7 @@ from circe.cohortdefinition import (
     VisitDetail,
 )
 from circe.execution.normalize.criteria import normalize_criterion
-from circe.cohortdefinition.core import NumericRange
+from circe.cohortdefinition.core import ConceptSetSelection, NumericRange
 from circe.execution.normalize.cohort import normalize_cohort
 from circe.execution.errors import UnsupportedFeatureError
 from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
@@ -215,3 +215,20 @@ def test_normalize_criterion_rejects_criterion_local_correlated_criteria():
         match="criterion.correlated_criteria is not implemented",
     ):
         _ = normalize_criterion(criteria)
+
+
+def test_normalize_criterion_includes_race_and_ethnicity_person_filters():
+    criteria = ConditionOccurrence(codeset_id=1)
+    criteria.__dict__["race"] = [Concept(conceptId=8527)]
+    criteria.__dict__["race_cs"] = ConceptSetSelection(codeset_id=2, is_exclusion=False)
+    criteria.__dict__["ethnicity"] = [Concept(conceptId=38003564)]
+    criteria.__dict__["ethnicity_cs"] = ConceptSetSelection(
+        codeset_id=3,
+        is_exclusion=False,
+    )
+
+    normalized = normalize_criterion(criteria)
+    assert normalized.person_filters.race_concept_ids == (8527,)
+    assert normalized.person_filters.race_codeset_id == 2
+    assert normalized.person_filters.ethnicity_concept_ids == (38003564,)
+    assert normalized.person_filters.ethnicity_codeset_id == 3

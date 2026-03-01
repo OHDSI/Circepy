@@ -147,6 +147,52 @@ def test_build_cohort_ibis_condition_occurrence_mvp():
     assert len(result) == 1
 
 
+def test_build_cohort_ibis_condition_occurrence_with_race_and_ethnicity_filters():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "person",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2],
+                "year_of_birth": [1980, 1980],
+                "gender_concept_id": [8507, 8507],
+                "race_concept_id": [8527, 8516],
+                "ethnicity_concept_id": [38003564, 38003563],
+            }
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2],
+                "condition_occurrence_id": [150, 151],
+                "condition_concept_id": [111, 111],
+                "condition_start_date": ["2020-01-01", "2020-01-01"],
+                "condition_end_date": ["2020-01-01", "2020-01-01"],
+            }
+        ),
+        overwrite=True,
+    )
+
+    criteria = ConditionOccurrence(codeset_id=1)
+    criteria.__dict__["race"] = [Concept(conceptId=8527)]
+    criteria.__dict__["ethnicity"] = [Concept(conceptId=38003564)]
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(1, 111)],
+        primary_criteria=PrimaryCriteria(criteria_list=[criteria]),
+    )
+
+    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    assert set(result.person_id) == {1}
+
+
 def test_build_cohort_ibis_concept_set_resolves_descendants_and_mapped():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
