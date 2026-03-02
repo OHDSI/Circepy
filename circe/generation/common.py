@@ -27,6 +27,15 @@ def upsert_single_row(
     key_field: str,
     row: dict[str, Any],
 ) -> None:
+    """
+    Upsert one metadata row by key using read/filter/rewrite semantics.
+
+    This implementation is intentionally simple for current generation metadata
+    volumes. It reads all rows from the target table, applies an in-memory
+    replacement for the keyed row, and rewrites the full table via
+    `overwrite_rows(...)`. Treat this path as provisional until a backend-native
+    incremental upsert strategy is introduced.
+    """
     from .tables import overwrite_rows
 
     rows = read_rows(backend, table_name, database)

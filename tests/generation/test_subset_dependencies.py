@@ -199,3 +199,57 @@ def test_subset_metadata_keeps_rows_per_generated_cohort_id(ibis_duckdb_conn):
         & (metadata_rows["parent_cohort_id"] == 420)
     ]
     assert set(int(v) for v in scoped["generated_cohort_id"].tolist()) == {421, 422}
+
+
+def test_subset_skip_preserves_checksum_and_subset_metadata_rows(ibis_duckdb_conn):
+    ibis, conn = ibis_duckdb_conn
+    seed_base_tables(ibis, conn, concept_id=111, rows=1)
+
+    config = GenerationConfig(cdm_schema="main", results_schema="main")
+    _ = generate_cohort(
+        make_expression(111),
+        backend=conn,
+        cohort_id=430,
+        config=config,
+        policy="replace",
+    )
+
+    definition = SubsetDefinition(
+        subset_name="skip-semantics",
+        parent_cohort_id=430,
+        operators=(),
+    )
+    first = generate_subset(
+        definition,
+        backend=conn,
+        generated_cohort_id=431,
+        config=config,
+        policy="replace",
+    )
+    assert first.status in {"generated", "replaced"}
+
+    checksum_before = conn.table(config.checksum_table, database="main").execute()
+    checksum_before = checksum_before[checksum_before["cohort_id"] == 431].iloc[0].to_dict()
+
+    subset_before = conn.table(config.subset_metadata_table, database="main").execute()
+    subset_before = subset_before[subset_before["generated_cohort_id"] == 431].iloc[0].to_dict()
+
+    skipped = generate_subset(
+        definition,
+        backend=conn,
+        generated_cohort_id=431,
+        config=config,
+        policy="replace_if_changed",
+    )
+    assert skipped.status == "skipped"
+    assert skipped.message is not None
+    assert "checksum/subset metadata unchanged" in skipped.message
+
+    checksum_after = conn.table(config.checksum_table, database="main").execute()
+    checksum_after = checksum_after[checksum_after["cohort_id"] == 431].iloc[0].to_dict()
+
+    subset_after = conn.table(config.subset_metadata_table, database="main").execute()
+    subset_after = subset_after[subset_after["generated_cohort_id"] == 431].iloc[0].to_dict()
+
+    assert checksum_after == checksum_before
+    assert subset_after == subset_before

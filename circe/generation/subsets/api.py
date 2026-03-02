@@ -75,7 +75,13 @@ def generate_subset(
     policy: GenerationPolicy | None = None,
     data_version_token: str | None = None,
 ) -> GenerationStatus:
-    """Generate and persist a subset cohort with dependency-aware checksums."""
+    """
+    Generate and persist a subset cohort with dependency-aware checksums.
+
+    Skip semantics: when policy resolves to a skip outcome, only the primary
+    generation metadata row is refreshed with status=`skipped`. Checksum and
+    subset metadata rows are intentionally left unchanged on skip.
+    """
     create_generation_tables(backend, config)
 
     subset_definition_id = _resolve_subset_definition_id(definition)
@@ -154,7 +160,10 @@ def generate_subset(
             combined_hash=combined_hash,
             previous_combined_hash=previous_hash,
             generated_at=generated_at,
-            message="Skipped because checksum matched existing generation.",
+            message=(
+                "Skipped because checksum matched existing generation; "
+                "checksum/subset metadata unchanged."
+            ),
         )
 
     parent_rows = _parent_relation(
