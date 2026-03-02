@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+from ..execution.ibis_compat import literal_rows_relation
 from .config import GenerationConfig
 
 COHORT_METADATA_SCHEMA: dict[str, str] = {
@@ -152,20 +153,7 @@ def overwrite_rows(
             backend.create_table(table_name, schema=schema, overwrite=True)
             return
 
-        import ibis
-
-        ordered_columns = list(schema.keys())
-        payload = {
-            column: [row.get(column) for row in rows]
-            for column in ordered_columns
-        }
-        memtable = ibis.memtable(payload)
-        relation = memtable.select(
-            *[
-                memtable[column].cast(dtype).name(column)
-                for column, dtype in schema.items()
-            ]
-        )
+        relation = literal_rows_relation(rows, schema=schema, backend=backend)
 
         if database is not None:
             try:

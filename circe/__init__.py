@@ -36,6 +36,8 @@ from typing import Dict
 
 from pydantic import BaseModel
 
+from .execution.databricks_compat import apply_databricks_post_connect_workaround
+
 import circe as package
 from circe.cohortdefinition import (
     CohortExpression,
@@ -104,6 +106,8 @@ from .api import (
 # Main exports
 from .cohortdefinition import CohortExpression
 from .vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
+
+apply_databricks_post_connect_workaround()
 
 
 def safe_model_rebuild(package):
