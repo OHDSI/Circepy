@@ -11,6 +11,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 
 from .utils import BuilderUtils, BuilderOptions, CriteriaColumn
 from .base import CriteriaSqlBuilder
+from circe.extensions import get_registry
 from .condition_occurrence import ConditionOccurrenceSqlBuilder
 from .drug_exposure import DrugExposureSqlBuilder
 from .procedure_occurrence import ProcedureOccurrenceSqlBuilder
@@ -27,6 +28,12 @@ from .observation_period import ObservationPeriodSqlBuilder
 from .payer_plan_period import PayerPlanPeriodSqlBuilder
 from .visit_detail import VisitDetailSqlBuilder
 from .location_region import LocationRegionSqlBuilder
+
+# Extension support
+def get_builder_for_criteria(criteria):
+    """Get a SQL builder for a criteria instance, checking extensions first."""
+    registry = get_registry()
+    return registry.get_builder(criteria)
 
 __all__ = [
     # Utility classes
@@ -51,5 +58,6 @@ __all__ = [
     "ObservationPeriodSqlBuilder",
     "PayerPlanPeriodSqlBuilder",
     "VisitDetailSqlBuilder",
-    "LocationRegionSqlBuilder"
+    "LocationRegionSqlBuilder",
+    "get_builder_for_criteria"
 ]

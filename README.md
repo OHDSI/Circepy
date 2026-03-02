@@ -197,12 +197,23 @@ This package provides a complete Python implementation of CIRCE-BE with:
   - Measurement, Observation
   - Visit Occurrence/Detail
   - Device Exposure, Specimen
-  - Death, Location Region
-  - Observation Period, Payer Plan Period
-  - And more...
-- **Full cohort expression validation** with comprehensive error checking
-- **Markdown rendering** for human-readable cohort descriptions
-- **Complete CLI interface** with 4 commands (validate, generate-sql, render-markdown, process)
+  - Specimen, Death
+  - Payer Plan Period, Location Region
+- **Full Cohort Expression Validation** with 40+ checker implementations
+- **Markdown Rendering** for human-readable descriptions
+- **Complete CLI Interface** for validation, SQL, and rendering
+- **Extension System** to support custom CDM domains
+
+## Extensions
+
+`circe_py` includes a powerful extension system that allows adding support for custom CDM domains.
+
+Included Extensions:
+
+- **OHDSI Waveform Extension**: Support for the OHDSI Waveform Extension specification (waveform_occurrence, waveform_registry, waveform_channel_metadata, waveform_feature). See [waveform_extension/README.md](waveform_extension/README.md).
+
+For information on how to implement your own extension, see the [Developer Guide for Extensions](docs/developer/extensions.rst).
+
 - **Java interoperability** - supports both camelCase and snake_case field names for seamless Java CIRCE-BE compatibility
 
 ## ⚠️ Java Fidelity Requirement

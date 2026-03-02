@@ -1,0 +1,39 @@
+{%- import 'input_types.j2' as inputTypes -%}
+
+{%- macro WaveformOccurrence(c, level, isPlural=true, countCriteria={}, indexLabel="cohort entry") -%}
+  {%- set attrs = [] -%}
+  
+  {# Reuse core WindowCriteria logic if possible, or reimplement #}
+  {%- if countCriteria and countCriteria.occurrence and countCriteria.occurrence.count_window -%}
+     {# Simplifying for example #}
+     {%- set temp -%}occurring relative to {{ indexLabel }}{%- endset -%}
+     {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+  
+  {%- if c.occurrence_start_datetime -%}
+      {%- set temp -%}starting {{ inputTypes.DateRange(c.occurrence_start_datetime) }}{%- endset -%}
+      {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+  
+  {%- if c.occurrence_end_datetime -%}
+      {%- set temp -%}ending {{ inputTypes.DateRange(c.occurrence_end_datetime) }}{%- endset -%}
+      {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+
+  {%- if c.waveform_occurrence_concept_id -%}
+    {%- set temp -%}waveform type: {{ inputTypes.ConceptList(c.waveform_occurrence_concept_id) }}{%- endset -%}
+    {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+
+  {%- if c.num_of_files -%}
+    {%- set temp -%}with {{ inputTypes.NumericRange(c.num_of_files) }} files{%- endset -%}
+    {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+
+  waveform occurrence{% if isPlural and not c.first %}s{% endif %}
+  {%- if c.first %} for the first time in the person's history{% endif -%}
+  {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
+  .
+{%- endmacro -%}
+
+{{ WaveformOccurrence(criteria, level, isPlural, countCriteria, indexLabel) }}
