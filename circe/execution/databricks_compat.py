@@ -40,6 +40,10 @@ def apply_databricks_post_connect_workaround(*, backend_cls=None) -> bool:
     `_post_connect` for memtable support and can fail in read-only/locked-down
     schemas. This workaround suppresses only that known failure mode and should
     be removed once upstream behavior is fixed.
+
+    Activation note:
+    This helper is applied eagerly by package import paths to ensure the patch
+    is active before backend connection setup reaches `_post_connect`.
     """
     backend_cls = _databricks_backend_class() if backend_cls is None else backend_cls
     if backend_cls is None:

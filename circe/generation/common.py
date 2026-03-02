@@ -35,6 +35,9 @@ def upsert_single_row(
     replacement for the keyed row, and rewrites the full table via
     `overwrite_rows(...)`. Treat this path as provisional until a backend-native
     incremental upsert strategy is introduced.
+
+    Follow-up task: replace this with backend-native MERGE/UPDATE behavior for
+    metadata tables where available.
     """
     from .tables import overwrite_rows
 

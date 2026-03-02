@@ -14,6 +14,8 @@ from .errors import (
     UnsupportedFeatureError,
 )
 
+# Temporary import-time compatibility patch for Databricks connect-time setup.
+# Keep until Ibis issue #11598 is resolved upstream.
 apply_databricks_post_connect_workaround()
 
 __all__ = [

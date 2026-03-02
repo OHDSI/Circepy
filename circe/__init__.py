@@ -107,6 +107,8 @@ from .api import (
 from .cohortdefinition import CohortExpression
 from .vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
+# Temporary import-time compatibility patch for Databricks connect-time setup.
+# Keep until Ibis issue #11598 is resolved upstream.
 apply_databricks_post_connect_workaround()
 
 
