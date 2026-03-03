@@ -185,6 +185,19 @@ The skill documentation includes:
 - Inclusion/exclusion criteria syntax
 - Named rule contexts for attrition tracking
 
+### Experimental Ibis Execution API
+
+An experimental backend-native execution API is available under
+`circe.execution`.
+
+```python
+from circe.execution import ExecutionOptions, IbisExecutor
+
+# Requires optional extras, e.g. `pip install ohdsi-circe-python-alpha[ibis-duckdb]`
+executor = IbisExecutor(conn, ExecutionOptions(cdm_schema="main"))
+events = executor.build(cohort)  # lazy ibis relation
+```
+
 ## What's Included
 
 This package provides a complete Python implementation of CIRCE-BE with:
@@ -241,6 +254,7 @@ circe/
 │   ├── operations/            # Check operations
 │   ├── utils/                 # Check utilities
 │   └── warnings/              # Warning classes
+├── execution/                 # Experimental backend-native execution APIs
 ├── helper/                    # Utility helper classes
 ├── api.py                     # High-level API functions
 └── cli.py                     # Command-line interface
