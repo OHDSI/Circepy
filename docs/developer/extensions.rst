@@ -1,36 +1,54 @@
 Extending circe_py
 ===================
 
-This guide explains how to extend `circe_py` with custom criteria types. This is useful when you have data in your CDM that isn't part of the standard OMOP domains (e.g., weather data, genomic features, or specialized clinical registries).
+This guide explains how to extend ``circe_py`` with custom criteria types using the ``@register_criteria`` decorator. Once decorated, your criteria class automatically gets:
+
+1. **Registry registration** — discoverable by SQL builders, markdown renderers, and serialization
+2. **Auto-generated fluent query class** — ``BaseQuery`` subclass created via introspection
+3. **Dynamic builder methods** — ``CohortBuilder``, ``EvaluationBuilder``, and ``CriteriaGroupBuilder`` gain ``with_``, ``require_``, ``exclude_``, and domain methods automatically
 
 Architecture Overview
 ---------------------
 
-The extension system consists of three main components:
+.. code-block:: text
 
-1. **Criteria Class**: A Pydantic model that defines the fields available in your new criteria.
-2. **SQL Builder**: A class that translates your criteria into SQL.
-3. **Markdown Template**: A Jinja2 template that generates a human-readable description.
+    @register_criteria("WeatherCondition", extension="weather")
+    class WeatherCondition(Criteria):
+        ...
 
-Registration is handled by the `ExtensionRegistry`.
+    ↓ Automatically:
+    1. registry.register_criteria_class("WeatherCondition", cls)
+    2. WeatherConditionQuery = _make_query_class("WeatherCondition", cls)
+    3. registry.register_domain_query("WeatherCondition", WeatherConditionQuery)
+
+    ↓ Enables:
+    cohort.with_weather_condition(cs_id)       # CohortBuilder entry
+    cohort.require_weather_condition(cs_id)     # CohortWithEntry inclusion
+    rule.weather_condition(cs_id)               # EvaluationBuilder rule
+
+The extension system has three components:
+
+1. **Criteria Class** — Pydantic model decorated with ``@register_criteria``
+2. **SQL Builder** — translates criteria to SQL (registered manually)
+3. **Markdown Template** — human-readable output (registered manually)
 
 Example: Weather Conditions
 ---------------------------
 
-Imagine you want to create a cohort based on weather conditions (e.g., "Patients diagnosed with asthma during extreme cold").
-
 Step 1: Define the Criteria Class
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Your class must inherit from `circe.cohortdefinition.criteria.Criteria`. Use Pydantic's `Field` and `AliasChoices` to maintain compatibility with both Pythonic (`snake_case`) and Java-style (`PascalCase`) field names.
+Decorate your ``Criteria`` subclass with ``@register_criteria``. The decorator handles all registry plumbing.
 
 .. code-block:: python
 
    from typing import Optional, List
    from pydantic import Field, AliasChoices
-   from circe.cohortdefinition.criteria import Criteria, CriteriaGroup
+   from circe.cohortdefinition.criteria import Criteria
    from circe.vocabulary.concept import Concept
+   from circe.extensions import register_criteria
 
+   @register_criteria(extension="weather")
    class WeatherCondition(Criteria):
        """Criteria for weather data linked to persons."""
        weather_concept_id: Optional[List[Concept]] = Field(
@@ -44,112 +62,128 @@ Your class must inherit from `circe.cohortdefinition.criteria.Criteria`. Use Pyd
            serialization_alias="TemperatureCelsius"
        )
 
-   # Resolve forward references (required for complex criteria types)
    WeatherCondition.model_rebuild()
+
+After this single decorator, ``WeatherCondition`` is fully registered. A ``WeatherConditionQuery`` class is auto-generated and all builder classes gain dynamic methods.
 
 Step 2: Implement the SQL Builder
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The SQL builder must inherit from `circe.cohortdefinition.builders.base.CriteriaSqlBuilder`.
+Decorate your builder with ``@register_sql_builder``:
 
 .. code-block:: python
 
-   from typing import Set
    from circe.cohortdefinition.builders.base import CriteriaSqlBuilder
    from circe.cohortdefinition.builders.utils import CriteriaColumn, BuilderOptions
+   from circe.extensions import register_sql_builder
 
+   @register_sql_builder(WeatherCondition)
    class WeatherConditionSqlBuilder(CriteriaSqlBuilder[WeatherCondition]):
        def get_query_template(self) -> str:
            return """
-   SELECT C.person_id, C.weather_id as event_id, C.observation_date as start_date, C.observation_date as end_date,
-          NULL as visit_occurrence_id, C.observation_date as sort_date
+   SELECT C.person_id, C.weather_id as event_id, C.observation_date as start_date,
+          C.observation_date as end_date, NULL as visit_occurrence_id, C.observation_date as sort_date
    FROM @cdm_database_schema.weather_data C
    WHERE @whereClause
    """
 
-       def get_default_columns(self) -> Set[CriteriaColumn]:
+       def get_default_columns(self):
            return {CriteriaColumn.START_DATE, CriteriaColumn.END_DATE}
 
-       def get_table_column_for_criteria_column(self, column: CriteriaColumn) -> str:
-           if column == CriteriaColumn.START_DATE:
-               return "C.observation_date"
-           elif column == CriteriaColumn.END_DATE:
-               return "C.observation_date"
-           raise ValueError(f"Unsupported column: {column}")
+       def get_table_column_for_criteria_column(self, column):
+           return "C.observation_date"
 
-       def get_criteria_sql_with_options(self, criteria: WeatherCondition, options: BuilderOptions) -> str:
+       def get_criteria_sql_with_options(self, criteria, options):
            query = self.get_query_template()
            where_clauses = ["1=1"]
-           
            if criteria.weather_concept_id:
                ids = [str(c.concept_id) for c in criteria.weather_concept_id if c.concept_id]
                if ids:
                    where_clauses.append(f"C.weather_concept_id IN ({','.join(ids)})")
-           
            if criteria.temperature_celsius is not None:
                where_clauses.append(f"C.temp_c >= {criteria.temperature_celsius}")
+           return query.replace("@cdm_database_schema", options.cdm_database_schema)\
+                       .replace("@whereClause", " AND ".join(where_clauses))
 
-           query = query.replace("@cdm_database_schema", options.cdm_database_schema)
-           query = query.replace("@whereClause", " AND ".join(where_clauses))
-           return query
+Step 3: Register the Extension Name
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Step 3: Register the Extension
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Use the extension registry to link your classes and templates.
+With decorators, only the named extension needs manual registration:
 
 .. code-block:: python
 
    from circe.extensions import get_registry
-   from pathlib import Path
 
-   def register_weather_extension():
-       registry = get_registry()
-       
-       # 1. Register the Criteria Class
-       registry.register_criteria_class("WeatherCondition", WeatherCondition)
-       
-       # 2. Register the SQL Builder
-       registry.register_sql_builder(WeatherCondition, WeatherConditionSqlBuilder)
-       
-       # 3. Register Markdown Template
-       # Ensure templates/weather_condition.j2 exists
-       template_path = Path(__file__).parent / "templates"
-       registry.add_template_path(template_path)
-       registry.register_markdown_template(WeatherCondition, "weather_condition.j2")
+   def register():
+       get_registry().register_named_extension("weather", version="1.0.0")
 
-Step 4: Create a Markdown Template
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Fluent Builder Support
+----------------------
 
-Create a file named `weather_condition.j2`:
+Once ``@register_criteria`` is applied, all builder classes gain dynamic methods via ``__getattr__``:
 
-.. code-block:: jinja
+**CohortBuilder** (entry events):
 
-   Weather condition: {{ criteria.weather_concept_id[0].concept_name if criteria.weather_concept_id else 'Any' }}
-   {% if criteria.temperature_celsius %} with temperature >= {{ criteria.temperature_celsius }}°C{% endif %}.
+.. code-block:: python
+
+   cohort = CohortBuilder("Weather Cohort")
+   cohort.with_weather_condition(concept_set_id)
+
+**CohortWithEntry / CohortWithCriteria** (inclusion/exclusion):
+
+.. code-block:: python
+
+   cohort.with_condition(0).require_weather_condition(1, anytime_before=True)
+   cohort.with_condition(0).exclude_weather_condition(1, within_days_before=30)
+
+**EvaluationBuilder** (rubric rules):
+
+.. code-block:: python
+
+   ev = EvaluationBuilder("Weather Rubric")
+   ev.add_rule("Cold Weather", weight=5).weather_condition(cs_id).at_least(1)
+
+**CriteriaGroupBuilder** (nested groups):
+
+.. code-block:: python
+
+   cohort.with_condition(0).any_of().weather_condition(1).end_group()
+
+The method name mapping is:
+  - ``with_<snake_case>`` → entry event for ``PascalCase`` domain
+  - ``require_<snake_case>`` → inclusion criterion
+  - ``exclude_<snake_case>`` → exclusion criterion
+  - ``censor_on_<snake_case>`` → censoring criterion
+  - ``<snake_case>`` → alias for ``require_`` (on ``CriteriaGroupBuilder`` and ``RuleBuilder``)
+
+Entry Points
+------------
+
+For packages that depend on ``circe_py``, configure automatic discovery via ``pyproject.toml``:
+
+.. code-block:: toml
+
+   [project.entry-points."circe_py.extensions"]
+   weather = "weather_extension:register"
+
+This allows ``circe_py`` to auto-load your extension without explicit import.
 
 Full End-to-End Usage
 ---------------------
 
-Once registered, you can use your custom criteria just like any built-in type.
-
 .. code-block:: python
 
-   from circe.cohortdefinition import CohortExpression, PrimaryCriteria
-   from circe.vocabulary.concept import Concept
+   # Import triggers @register_criteria decorators
+   import weather_extension
+   weather_extension.register()
 
-   # Setup
-   register_weather_extension()
+   from circe.cohort_builder.builder import CohortBuilder
 
-   # Define cohort
-   weather_criteria = WeatherCondition(
-       weather_concept_id=[Concept(concept_id=123, concept_name="Snowing")],
-       temperature_celsius=-5.0
+   cohort = CohortBuilder("Cold Weather Asthma")
+   cohort.with_concept_sets(asthma_cs, cold_weather_cs)
+   expr = (
+       cohort
+       .with_condition(0)                              # Entry: asthma diagnosis
+       .require_weather_condition(1, within_days=7)     # Within 7 days of cold weather
+       .build()
    )
-   
-   cohort = CohortExpression(
-       primary_criteria=PrimaryCriteria(criteria_list=[weather_criteria])
-   )
-
-   # generate SQL or Markdown as usual
-   # ...

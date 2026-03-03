@@ -993,6 +993,20 @@ class CohortBuilder:
         """Set entry event to a dose era."""
         return self._create_entry_event(DoseEraQuery, concept_set_id)
 
+    def __getattr__(self, name: str):
+        """Dynamic dispatch for extension entry events (with_* pattern)."""
+        from circe.extensions import get_registry, _snake_to_pascal
+        if name.startswith('with_'):
+            domain_snake = name[5:]
+            pascal_domain = _snake_to_pascal(domain_snake)
+            domain_queries = get_registry().get_domain_query_map()
+            if pascal_domain in domain_queries:
+                query_cls = domain_queries[pascal_domain]
+                def method(concept_set_id, _q=query_cls, **kwargs):
+                    return self._create_entry_event(_q, concept_set_id, **kwargs)
+                return method
+        raise AttributeError(f"'{type(self).__name__}' has no attribute '{name}'")
+
 class InclusionRuleContext:
     """
     Context manager for named inclusion rules.
@@ -1077,6 +1091,24 @@ class InclusionRuleContext:
         result = self._builder._ensure_state().exclude_measurement(concept_set_id, **kwargs)
         self._builder._update_state(result)
         return self
+
+    def __getattr__(self, name: str):
+        """Dynamic dispatch for extension domains (require_*, exclude_* patterns)."""
+        from circe.extensions import get_registry, _snake_to_pascal
+        domain_queries = get_registry().get_domain_query_map()
+        for prefix in ('require_', 'exclude_'):
+            if name.startswith(prefix):
+                domain_snake = name[len(prefix):]
+                pascal_domain = _snake_to_pascal(domain_snake)
+                if pascal_domain in domain_queries:
+                    is_exclusion = prefix == 'exclude_'
+                    method_name = f"{'exclude' if is_exclusion else 'require'}_{domain_snake}"
+                    def method(concept_set_id, _mn=method_name, **kwargs):
+                        result = getattr(self._builder._ensure_state(), _mn)(concept_set_id, **kwargs)
+                        self._builder._update_state(result)
+                        return self
+                    return method
+        raise AttributeError(f"'{type(self).__name__}' has no attribute '{name}'")
 
 class CohortWithEntry:
     """
@@ -1482,7 +1514,34 @@ class CohortWithEntry:
     def exclude_any_of(self, **kwargs) -> 'CohortWithCriteria':
         """Delegate to CohortWithCriteria. See CohortWithCriteria.exclude_any_of for documentation."""
         return self._to_criteria().exclude_any_of(**kwargs)
-    
+
+    def __getattr__(self, name: str):
+        """Dynamic dispatch for extension domains on CohortWithEntry."""
+        from circe.extensions import get_registry, _snake_to_pascal
+        domain_queries = get_registry().get_domain_query_map()
+        _TIME_PARAMS = ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']
+        for prefix in ('require_', 'exclude_', 'or_with_', 'censor_on_'):
+            if name.startswith(prefix):
+                domain_snake = name[len(prefix):]
+                pascal_domain = _snake_to_pascal(domain_snake)
+                if pascal_domain in domain_queries:
+                    query_cls = domain_queries[pascal_domain]
+                    is_exclusion = prefix == 'exclude_'
+                    is_censor = prefix == 'censor_on_'
+                    if prefix == 'or_with_':
+                        def or_method(concept_set_id, _q=query_cls, **kwargs):
+                            return self._add_or_entry(_q, concept_set_id, **kwargs)
+                        return or_method
+                    def method(concept_set_id, _q=query_cls, _ex=is_exclusion, _cen=is_censor, _tp=_TIME_PARAMS, **kwargs):
+                        query = _q(concept_set_id, parent=self, is_exclusion=_ex, is_censor=_cen)
+                        if kwargs:
+                            query.apply_params(**kwargs)
+                            if any(p in kwargs for p in _tp):
+                                return query._finalize()
+                        return query
+                    return method
+        raise AttributeError(f"'{type(self).__name__}' has no attribute '{name}'")
+
     def _to_criteria(self) -> 'CohortWithCriteria':
         """Transition to criteria state."""
         return CohortWithCriteria(
@@ -2372,7 +2431,30 @@ class CohortWithCriteria:
         self._settings.age_min = min_age
         self._settings.age_max = max_age
         return self
-    
+
+    def __getattr__(self, name: str):
+        """Dynamic dispatch for extension domains on CohortWithCriteria."""
+        from circe.extensions import get_registry, _snake_to_pascal
+        domain_queries = get_registry().get_domain_query_map()
+        _TIME_PARAMS = ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']
+        for prefix in ('require_', 'exclude_', 'censor_on_'):
+            if name.startswith(prefix):
+                domain_snake = name[len(prefix):]
+                pascal_domain = _snake_to_pascal(domain_snake)
+                if pascal_domain in domain_queries:
+                    query_cls = domain_queries[pascal_domain]
+                    is_exclusion = prefix == 'exclude_'
+                    is_censor = prefix == 'censor_on_'
+                    def method(concept_set_id, _q=query_cls, _ex=is_exclusion, _cen=is_censor, _tp=_TIME_PARAMS, **kwargs):
+                        query = _q(concept_set_id, parent=self, is_exclusion=_ex, is_censor=_cen)
+                        if kwargs:
+                            query.apply_params(**kwargs)
+                            if any(p in kwargs for p in _tp):
+                                return query._finalize()
+                        return query
+                    return method
+        raise AttributeError(f"'{type(self).__name__}' has no attribute '{name}'")
+
     def build(self) -> CohortExpression:
         """
         Build the final CohortExpression.
@@ -2683,6 +2765,12 @@ def _config_to_criteria(config: QueryConfig):
         if source_field:
             kwargs[source_field] = config.source_concept_set_id
     
+    # Handle extension extra_fields: pass directly to criteria constructor
+    if config.extra_fields:
+        for key, val in config.extra_fields.items():
+            if key in criteria_class.model_fields:
+                kwargs[key] = val
+
     # Filter out None values
     kwargs = {k: v for k, v in kwargs.items() if v is not None}
     

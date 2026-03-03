@@ -100,6 +100,9 @@ class QueryConfig:
     # Observation specific
     qualifier_concepts: List[int] = field(default_factory=list)
     value_as_string: Optional[str] = None
+    
+    # Extension-specific fields (populated by auto-generated query classes)
+    extra_fields: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -742,3 +745,29 @@ class CriteriaGroupBuilder:
         new_group = GroupConfig(type="AT_LEAST", count=count)
         self._group.criteria.append(new_group)
         return CriteriaGroupBuilder(self, new_group)
+
+    def __getattr__(self, name: str):
+        """Dynamic dispatch for extension domain methods.
+        
+        Supports patterns like:
+            .require_waveform_feature(cs_id, ...)
+            .exclude_waveform_feature(cs_id, ...)
+            .waveform_feature(cs_id, ...)  # alias for require_
+        """
+        from circe.extensions import get_registry, _snake_to_pascal
+        registry = get_registry()
+        domain_queries = registry.get_domain_query_map()
+        
+        for prefix in ('require_', 'exclude_', ''):
+            if prefix and not name.startswith(prefix):
+                continue
+            domain_snake = name[len(prefix):] if prefix else name
+            pascal_domain = _snake_to_pascal(domain_snake)
+            if pascal_domain in domain_queries:
+                query_cls = domain_queries[pascal_domain]
+                is_exclusion = prefix == 'exclude_'
+                def method(concept_set_id, _q=query_cls, _ex=is_exclusion, **kwargs):
+                    return _q(concept_set_id, parent=self, is_exclusion=_ex).apply_params(**kwargs)._finalize()
+                return method
+        
+        raise AttributeError(f"'{type(self).__name__}' has no attribute '{name}'")

@@ -186,7 +186,9 @@ class RuleBuilder:
 
     def _add_domain_criteria(self, domain_name: str, concept_set_id: int, **kwargs) -> 'RuleBuilder':
         """Generic method to add domain criteria."""
-        query_class = self._get_domain_queries().get(domain_name)
+        from circe.extensions import _snake_to_pascal
+        queries = self._get_domain_queries()
+        query_class = queries.get(domain_name) or queries.get(_snake_to_pascal(domain_name))
         if not query_class:
             raise ValueError(f"Unknown domain: {domain_name}")
         query_class(concept_set_id, parent=self).apply_params(**kwargs)._finalize()
@@ -240,6 +242,21 @@ class RuleBuilder:
 
     def dose_era(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
         return self._add_domain_criteria('dose_era', concept_set_id, **kwargs)
+
+    def __getattr__(self, name: str):
+        """Dynamic dispatch for extension domain methods on RuleBuilder.
+        
+        Supports calling extension domains directly by snake_case name:
+            rule.waveform_feature(concept_set_id, ...)
+        """
+        from circe.extensions import get_registry, _snake_to_pascal
+        pascal_domain = _snake_to_pascal(name)
+        domain_queries = get_registry().get_domain_query_map()
+        if pascal_domain in domain_queries:
+            def method(concept_set_id, **kwargs):
+                return self._add_domain_criteria(name, concept_set_id, **kwargs)
+            return method
+        raise AttributeError(f"'{type(self).__name__}' has no attribute '{name}'")
 
     def _modify_last_criteria(self, modifier_fn) -> 'RuleBuilder':
         """Generic helper for modifying the last criteria."""
@@ -443,9 +460,21 @@ def _config_to_criteria(config: QueryConfig):
         if (config.value_min is not None or config.value_max is not None) and 'value_as_number' in cls.model_fields:
             _apply_numeric_range(config, kwargs, 'value_min', 'value_max', 'value_as_number')
 
+    if config.domain == 'Measurement':
+        if config.unit_concepts:
+            kwargs['unit'] = [Concept(concept_id=c, concept_name="Unit") for c in config.unit_concepts]
+        if config.value_as_concept_concepts:
+            kwargs['value_as_concept'] = [Concept(concept_id=c) for c in config.value_as_concept_concepts]
+
     # Handle Measurement-specific abnormal flag
     if config.domain == 'Measurement':
         if config.abnormal is not None and 'abnormal' in cls.model_fields:
             kwargs['abnormal'] = config.abnormal
+
+    # Handle extension extra_fields: pass directly to criteria constructor
+    if config.extra_fields:
+        for key, val in config.extra_fields.items():
+            if key in cls.model_fields:
+                kwargs[key] = val
 
     return cls(**{k: v for k, v in kwargs.items() if v is not None})

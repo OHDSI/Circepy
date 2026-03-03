@@ -199,3 +199,128 @@ def get_registry() -> ExtensionRegistry:
     if not _registry._loaded_entry_points:
         _registry.load_entry_point_extensions()
     return _registry
+
+
+def _snake_to_pascal(name: str) -> str:
+    """Convert snake_case to PascalCase. E.g. 'waveform_feature' -> 'WaveformFeature'."""
+    return ''.join(word.capitalize() for word in name.split('_'))
+
+
+def _pascal_to_snake(name: str) -> str:
+    """Convert PascalCase to snake_case. E.g. 'WaveformFeature' -> 'waveform_feature'."""
+    import re
+    return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+
+
+def _make_query_class(domain_name: str, criteria_cls: type) -> type:
+    """Dynamically create a BaseQuery subclass from a Criteria class.
+    
+    The generated class:
+    - Sets domain=domain_name in __init__
+    - Overrides apply_params to store criteria-field-matching kwargs in config.extra_fields
+    
+    Args:
+        domain_name: PascalCase domain name (e.g. 'WaveformFeature')
+        criteria_cls: The Criteria subclass to introspect
+        
+    Returns:
+        A new BaseQuery subclass
+    """
+    from circe.cohort_builder.query_builder import BaseQuery
+    
+    # Introspect the criteria's Pydantic fields
+    field_names = set(criteria_cls.model_fields.keys())
+    
+    def _init(self, concept_set_id=None, **kwargs):
+        BaseQuery.__init__(self, domain_name, concept_set_id, **kwargs)
+    
+    def _apply_params(self, **kwargs):
+        BaseQuery.apply_params(self, **kwargs)
+        # Store any kwarg that matches a criteria field in extra_fields
+        for key, val in kwargs.items():
+            if key in field_names:
+                self._config.extra_fields[key] = val
+        return self
+    
+    query_cls = type(
+        f"{domain_name}Query",
+        (BaseQuery,),
+        {
+            '__init__': _init,
+            'apply_params': _apply_params,
+        }
+    )
+    return query_cls
+
+
+def register_criteria(domain_name: str = None, extension: str = None, template: str = None):
+    """Decorator that auto-registers a Criteria subclass and generates its fluent query class.
+    
+    This replaces the manual pattern of:
+        1. registry.register_criteria_class("MyDomain", MyDomain)
+        2. Writing a BaseQuery subclass
+        3. registry.register_domain_query("MyDomain", MyDomainQuery)
+        4. registry.register_markdown_template(MyDomain, "my_domain.j2")
+    
+    Usage::
+    
+        @register_criteria(extension="waveform", template="waveform_occurrence.j2")
+        class WaveformOccurrence(Criteria):
+            ...
+    
+    Args:
+        domain_name: Override the domain name (defaults to the class name)
+        extension: The extension name this criteria belongs to (e.g. "waveform")
+        template: Jinja2 template filename for markdown rendering (e.g. "waveform_occurrence.j2").
+                  The templates/ directory relative to the criteria module is auto-discovered.
+    """
+    def decorator(cls):
+        import inspect
+        from pathlib import Path
+        
+        name = domain_name or cls.__name__
+        registry = get_registry()
+        
+        # 1. Register the criteria class
+        registry.register_criteria_class(name, cls)
+        
+        # 2. Auto-generate and register a BaseQuery subclass
+        query_cls = _make_query_class(name, cls)
+        registry.register_domain_query(name, query_cls, criteria_class=cls)
+        
+        # 3. Register markdown template if provided
+        if template:
+            cls_file = inspect.getfile(cls)
+            template_dir = Path(cls_file).parent / "templates"
+            if template_dir.is_dir():
+                registry.add_template_path(template_dir)
+            registry.register_markdown_template(cls, template)
+        
+        # 4. Stash metadata on the class for introspection
+        cls._circe_domain = name
+        cls._circe_query_class = query_cls
+        if extension:
+            cls._circe_extension = extension
+        
+        return cls
+    return decorator
+
+
+def register_sql_builder(criteria_class):
+    """Decorator that auto-registers a CriteriaSqlBuilder for a Criteria class.
+    
+    Usage::
+    
+        @register_sql_builder(WaveformOccurrence)
+        class WaveformOccurrenceSqlBuilder(CriteriaSqlBuilder[WaveformOccurrence]):
+            ...
+    
+    Args:
+        criteria_class: The Criteria subclass this builder handles
+    """
+    def decorator(cls):
+        registry = get_registry()
+        registry.register_sql_builder(criteria_class, cls)
+        cls._circe_criteria_class = criteria_class
+        return cls
+    return decorator

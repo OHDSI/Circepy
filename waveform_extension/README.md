@@ -81,12 +81,45 @@ criteria = WaveformRegistry(
 
 ## Architecture
 
-The extension demonstrates the full circe_py extension capabilities:
+The extension uses the `@register_criteria` decorator for automatic registration:
 
-- **Criteria Classes** (`criteria.py`): 4 Pydantic models matching OHDSI spec
+- **Criteria Classes** (`criteria.py`): 4 Pydantic models with `@register_criteria(extension="waveform")`
 - **SQL Builders** (`builders/*.py`): 4 builders generating OHDSI-compliant SQL
 - **Markdown Templates** (`templates/*.j2`): 4 Jinja2 templates for human-readable output
-- **Registration** (`__init__.py`): Single function to register all components
+- **Registration** (`__init__.py`): SQL builders and templates only (criteria auto-register via decorator)
+
+## Fluent Builder Usage
+
+### CohortBuilder
+
+```python
+import waveform_extension
+waveform_extension.register()
+
+from circe.cohort_builder.builder import CohortBuilder
+
+cohort = CohortBuilder("ICU Waveform Cohort")
+cohort.with_concept_sets(ecg_cs, hr_cs)
+
+# Entry event: waveform occurrence
+expr = (
+    cohort
+    .with_waveform_occurrence(0)                      # ECG monitoring session
+    .require_waveform_feature(1, within_days=30)       # Heart rate within 30 days
+    .build()
+)
+```
+
+### EvaluationBuilder
+
+```python
+from circe.evaluation.builder import EvaluationBuilder
+
+ev = EvaluationBuilder("Waveform QC Rubric")
+hr_id = ev.concept_set("Heart Rate", 3027018)
+ev.add_rule("Has Heart Rate", weight=10).waveform_feature(hr_id).at_least(1)
+rubric = ev.build()
+```
 
 ## Running the Examples
 
