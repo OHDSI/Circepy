@@ -14,10 +14,10 @@ from .common import (
     standardize_output,
 )
 from .groups import apply_criteria_group
-from .registry import register
+from ...extensions import register_ibis_builder
 
 
-@register("Specimen")
+@register_ibis_builder("Specimen")
 def build_specimen(criteria: Specimen, ctx: BuildContext):
     table = ctx.table("specimen")
 

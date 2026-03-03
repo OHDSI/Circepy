@@ -17,10 +17,10 @@ from .common import (
     standardize_output,
 )
 from .groups import apply_criteria_group
-from .registry import register
+from ...extensions import register_ibis_builder
 
 
-@register("DrugExposure")
+@register_ibis_builder("DrugExposure")
 def build_drug_exposure(criteria: DrugExposure, ctx: BuildContext):
     table = ctx.table("drug_exposure")
 

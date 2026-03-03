@@ -14,4 +14,4 @@ from . import specimen  # noqa: F401
 from . import visit_detail  # noqa: F401
 from . import visit_occurrence  # noqa: F401
 from .pipeline import build_primary_events  # noqa: F401
-from .registry import build_events, register  # noqa: F401
+from .registry import build_events  # noqa: F401

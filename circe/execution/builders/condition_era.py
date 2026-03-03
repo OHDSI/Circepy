@@ -13,10 +13,10 @@ from .common import (
     standardize_output,
 )
 from .groups import apply_criteria_group
-from .registry import register
+from ...extensions import register_ibis_builder
 
 
-@register("ConditionEra")
+@register_ibis_builder("ConditionEra")
 def build_condition_era(criteria: ConditionEra, ctx: BuildContext):
     table = ctx.table("condition_era")
 

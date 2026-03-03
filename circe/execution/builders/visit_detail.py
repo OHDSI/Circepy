@@ -17,10 +17,10 @@ from .common import (
     standardize_output,
 )
 from .groups import apply_criteria_group
-from .registry import register
+from ...extensions import register_ibis_builder
 
 
-@register("VisitDetail")
+@register_ibis_builder("VisitDetail")
 def build_visit_detail(criteria: VisitDetail, ctx: BuildContext):
     table = ctx.table("visit_detail")
 

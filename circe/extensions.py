@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .cohortdefinition.criteria import Criteria
     from .cohortdefinition.builders.base import CriteriaSqlBuilder
+    from collections.abc import Callable
 
 class ExtensionRegistry:
     """Central registry for OMOP CDM extensions."""
@@ -26,6 +27,9 @@ class ExtensionRegistry:
         
         # Maps criteria types to SQL builder classes
         self._sql_builders: Dict[Type['Criteria'], Type['CriteriaSqlBuilder']] = {}
+        
+        # Maps criteria names to Ibis builder functions
+        self._ibis_builders: Dict[str, 'Callable'] = {}
         
         # Maps criteria types to markdown template names
         self._markdown_templates: Dict[Type['Criteria'], str] = {}
@@ -89,6 +93,15 @@ class ExtensionRegistry:
             builder_cls: The CriteriaSqlBuilder subclass
         """
         self._sql_builders[criteria_cls] = builder_cls
+        
+    def register_ibis_builder(self, criteria_name: str, builder_func: 'Callable') -> None:
+        """Register an Ibis builder for a criteria type name.
+        
+        Args:
+            criteria_name: The name of the Criteria subclass
+            builder_func: The function that builds the Ibis table for this criteria
+        """
+        self._ibis_builders[criteria_name] = builder_func
     
     def register_markdown_template(self, criteria_cls: Type['Criteria'], template_name: str) -> None:
         """Register a Jinja2 template for markdown rendering.
@@ -139,6 +152,17 @@ class ExtensionRegistry:
         """
         builder_cls = self._sql_builders.get(type(criteria))
         return builder_cls() if builder_cls else None
+        
+    def get_ibis_builder(self, criteria_name: str) -> Optional['Callable']:
+        """Get the Ibis builder for a criteria name.
+        
+        Args:
+            criteria_name: The name of the criteria type
+            
+        Returns:
+            The registered Ibis builder function, or None if not found
+        """
+        return self._ibis_builders.get(criteria_name)
     
     def get_template(self, criteria: 'Criteria') -> Optional[str]:
         """Get the markdown template name for a criteria instance.
@@ -190,6 +214,15 @@ class ExtensionRegistry:
             except Exception:
                 # Silently fail for now, or consider logging
                 pass
+                
+        # Validate that all registered criteria have a corresponding SQL builder
+        for name, cls in self._criteria_classes.items():
+            if cls not in self._sql_builders:
+                raise NotImplementedError(
+                    f"Criteria {name} is registered but lacks a SQL builder. "
+                    "Extension developers must provide a SQL builder implementation "
+                    "using @register_sql_builder."
+                )
 
 # Global registry instance
 _registry = ExtensionRegistry()
@@ -323,4 +356,23 @@ def register_sql_builder(criteria_class):
         registry.register_sql_builder(criteria_class, cls)
         cls._circe_criteria_class = criteria_class
         return cls
+    return decorator
+
+
+def register_ibis_builder(criteria_name: str):
+    """Decorator that registers an Ibis execution builder for a criteria class by name.
+    
+    Usage::
+    
+        @register_ibis_builder("WaveformOccurrence")
+        def build_waveform_occurrence(criteria: WaveformOccurrence, ctx: BuildContext):
+            ...
+            
+    Args:
+        criteria_name: The string name of the Criteria subclass this builder handles
+    """
+    def decorator(func):
+        registry = get_registry()
+        registry.register_ibis_builder(criteria_name, func)
+        return func
     return decorator

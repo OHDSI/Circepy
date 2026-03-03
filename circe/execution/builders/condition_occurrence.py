@@ -14,10 +14,10 @@ from .common import (
     standardize_output,
 )
 from .groups import apply_criteria_group
-from .registry import register
+from ...extensions import register_ibis_builder
 
 
-@register("ConditionOccurrence")
+@register_ibis_builder("ConditionOccurrence")
 def build_condition_occurrence(criteria: ConditionOccurrence, ctx: BuildContext):
     table = ctx.table("condition_occurrence")
 

@@ -13,10 +13,10 @@ from .common import (
     standardize_output,
 )
 from .groups import apply_criteria_group
-from .registry import register
+from ...extensions import register_ibis_builder
 
 
-@register("PayerPlanPeriod")
+@register_ibis_builder("PayerPlanPeriod")
 def build_payer_plan_period(criteria: PayerPlanPeriod, ctx: BuildContext):
     table = ctx.table("payer_plan_period")
 

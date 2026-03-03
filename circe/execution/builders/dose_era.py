@@ -14,10 +14,10 @@ from .common import (
     standardize_output,
 )
 from .groups import apply_criteria_group
-from .registry import register
+from ...extensions import register_ibis_builder
 
 
-@register("DoseEra")
+@register_ibis_builder("DoseEra")
 def build_dose_era(criteria: DoseEra, ctx: BuildContext):
     table = ctx.table("dose_era")
 

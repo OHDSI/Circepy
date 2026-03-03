@@ -16,10 +16,10 @@ from .common import (
     standardize_output,
 )
 from .groups import apply_criteria_group
-from .registry import register
+from ...extensions import register_ibis_builder
 
 
-@register("DeviceExposure")
+@register_ibis_builder("DeviceExposure")
 def build_device_exposure(criteria: DeviceExposure, ctx: BuildContext):
     table = ctx.table("device_exposure")
 

@@ -15,10 +15,10 @@ from .common import (
     standardize_output,
 )
 from .groups import apply_criteria_group
-from .registry import register
+from ...extensions import register_ibis_builder
 
 
-@register("ProcedureOccurrence")
+@register_ibis_builder("ProcedureOccurrence")
 def build_procedure_occurrence(criteria: ProcedureOccurrence, ctx: BuildContext):
     table = ctx.table("procedure_occurrence")
 

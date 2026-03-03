@@ -26,11 +26,12 @@ Architecture Overview
     cohort.require_weather_condition(cs_id)     # CohortWithEntry inclusion
     rule.weather_condition(cs_id)               # EvaluationBuilder rule
 
-The extension system has three components:
+The extension system has four components:
 
 1. **Criteria Class** — Pydantic model decorated with ``@register_criteria``
-2. **SQL Builder** — translates criteria to SQL (registered manually)
-3. **Markdown Template** — human-readable output (registered manually)
+2. **SQL Builder** — translates criteria to SQL (registered manually via ``@register_sql_builder``)
+3. **Ibis Builder** (Optional) - translates criteria to Ibis relations (registered via ``@register_ibis_builder``)
+4. **Markdown Template** — human-readable output (registered manually)
 
 Example: Weather Conditions
 ---------------------------
@@ -105,7 +106,34 @@ Decorate your builder with ``@register_sql_builder``:
            return query.replace("@cdm_database_schema", options.cdm_database_schema)\
                        .replace("@whereClause", " AND ".join(where_clauses))
 
-Step 3: Register the Extension Name
+Step 3: Implement the Ibis Builder (Optional)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If your extension supports Ibis execution, decorate your Ibis builder function with ``@register_ibis_builder``:
+
+.. code-block:: python
+
+   from circe.extensions import register_ibis_builder
+   from circe.execution.build_context import BuildContext
+   import ibis.expr.types as ir
+
+   @register_ibis_builder("WeatherCondition")
+   def build_weather_condition(criteria: WeatherCondition, ctx: BuildContext) -> ir.Table:
+       # Access the initialized database connection via ctx.conn or the mapped tables via ctx.table()
+       table = ctx.table("weather_data")
+       
+       # Use Ibis expressions to filter the table based on the criteria
+       if criteria.weather_concept_id:
+           ids = [c.concept_id for c in criteria.weather_concept_id if c.concept_id]
+           table = table.filter(table.weather_concept_id.isin(ids))
+           
+       if criteria.temperature_celsius is not None:
+           table = table.filter(table.temp_c >= criteria.temperature_celsius)
+           
+       # Return the finalized Ibis table relation
+       return table
+
+Step 4: Register the Extension Name
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 With decorators, only the named extension needs manual registration:

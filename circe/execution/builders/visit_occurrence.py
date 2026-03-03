@@ -15,10 +15,10 @@ from .common import (
     standardize_output,
 )
 from .groups import apply_criteria_group
-from .registry import register
+from ...extensions import register_ibis_builder
 
 
-@register("VisitOccurrence")
+@register_ibis_builder("VisitOccurrence")
 def build_visit_occurrence(criteria: VisitOccurrence, ctx: BuildContext):
     table = ctx.table("visit_occurrence")
 

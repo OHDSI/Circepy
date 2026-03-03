@@ -12,10 +12,10 @@ from .common import (
     standardize_output,
 )
 from .groups import apply_criteria_group
-from .registry import register
+from ...extensions import register_ibis_builder
 
 
-@register("ObservationPeriod")
+@register_ibis_builder("ObservationPeriod")
 def build_observation_period(criteria: ObservationPeriod, ctx: BuildContext):
     table = ctx.table("observation_period")
 

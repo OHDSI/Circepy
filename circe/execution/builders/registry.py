@@ -9,23 +9,15 @@ import ibis.expr.types as ir
 from ...cohortdefinition.criteria import Criteria
 from ..build_context import BuildContext
 
-_REGISTRY: Dict[str, Callable[[Criteria, BuildContext], ir.Table]] = {}
-
-
-def register(criteria_name: str):
-    def decorator(func: Callable[[Criteria, BuildContext], ir.Table]):
-        _REGISTRY[criteria_name] = func
-        return func
-
-    return decorator
+from ...extensions import get_registry
 
 
 def get_builder(criteria: Criteria):
     name = criteria.__class__.__name__
-    try:
-        return _REGISTRY[name]
-    except KeyError as exc:
-        raise ValueError(f"No builder registered for criteria {name}") from exc
+    builder = get_registry().get_ibis_builder(name)
+    if not builder:
+        raise NotImplementedError(f"Ibis execution not implemented for criteria: {name}")
+    return builder
 
 
 def build_events(criteria: Criteria, ctx: BuildContext) -> ir.Table:

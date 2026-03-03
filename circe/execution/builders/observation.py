@@ -16,10 +16,10 @@ from .common import (
     standardize_output,
 )
 from .groups import apply_criteria_group
-from .registry import register
+from ...extensions import register_ibis_builder
 
 
-@register("Observation")
+@register_ibis_builder("Observation")
 def build_observation(criteria: Observation, ctx: BuildContext):
     table = ctx.table("observation")
     table = apply_codeset_filter(

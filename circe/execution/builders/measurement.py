@@ -17,10 +17,10 @@ from .common import (
     standardize_output,
 )
 from .groups import apply_criteria_group
-from .registry import register
+from ...extensions import register_ibis_builder
 
 
-@register("Measurement")
+@register_ibis_builder("Measurement")
 def build_measurement(criteria: Measurement, ctx: BuildContext):
     table = ctx.table("measurement")
     concept_column = criteria.get_concept_id_column()
