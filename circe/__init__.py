@@ -19,7 +19,7 @@ Author: CIRCE Python Implementation Team
 License: Apache License 2.0
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "CIRCE Python Implementation Team"
 __email__ = "circe-python@ohdsi.org"
 __license__ = "Apache License 2.0"

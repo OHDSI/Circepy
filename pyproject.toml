@@ -49,6 +49,10 @@ dev = [
     "mypy>=1.0.0",
     "sqlglot>=23.0.0",
     "duckdb>=0.9.0",
+    "polars>=0.18.0",
+    "pyarrow>=22.0.0",
+    "ibis-framework[duckdb]>=11.0.0; python_version >= '3.9'",
+    "polars>=0.20.0; python_version >= '3.9'",
 ]
 docs = [
     "sphinx>=5.0.0",
