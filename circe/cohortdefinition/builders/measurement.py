@@ -15,6 +15,9 @@ from .utils import CriteriaColumn, BuilderOptions, BuilderUtils
 from ..criteria import Measurement
 
 
+from circe.extensions import register_sql_builder
+
+@register_sql_builder(Measurement)
 class MeasurementSqlBuilder(CriteriaSqlBuilder[Measurement]):
     """SQL builder for Measurement criteria.
     

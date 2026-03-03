@@ -14,6 +14,9 @@ from .utils import CriteriaColumn, BuilderOptions, BuilderUtils
 from ..criteria import DrugEra
 
 
+from circe.extensions import register_sql_builder
+
+@register_sql_builder(DrugEra)
 class DrugEraSqlBuilder(CriteriaSqlBuilder[DrugEra]):
     """SQL builder for Drug Era criteria.
     

@@ -641,6 +641,38 @@ class DoseEraQuery(BaseQuery):
         super().__init__("DoseEra", concept_set_id, **kwargs)
 
 
+# ---------------------------------------------------------------------------
+# Register built-in domain query classes in the extension registry.
+# This enables unified registry-based lookup for all domains (built-in + extension).
+# ---------------------------------------------------------------------------
+def _register_builtin_queries():
+    from circe.extensions import get_registry
+    registry = get_registry()
+    _builtin_queries = {
+        "ConditionOccurrence": ConditionQuery,
+        "DrugExposure": DrugQuery,
+        "DrugEra": DrugEraQuery,
+        "Measurement": MeasurementQuery,
+        "ProcedureOccurrence": ProcedureQuery,
+        "VisitOccurrence": VisitQuery,
+        "Observation": ObservationQuery,
+        "Death": DeathQuery,
+        "ConditionEra": ConditionEraQuery,
+        "DeviceExposure": DeviceExposureQuery,
+        "Specimen": SpecimenQuery,
+        "ObservationPeriod": ObservationPeriodQuery,
+        "PayerPlanPeriod": PayerPlanPeriodQuery,
+        "LocationRegion": LocationRegionQuery,
+        "VisitDetail": VisitDetailQuery,
+        "DoseEra": DoseEraQuery,
+    }
+    for domain, query_cls in _builtin_queries.items():
+        if domain not in registry.get_domain_query_map():
+            registry.register_domain_query(domain, query_cls)
+
+_register_builtin_queries()
+
+
 class CriteriaGroupBuilder:
     def __init__(self, parent: Union['CriteriaGroupBuilder', 'CohortWithCriteria', 'BaseQuery'], group: GroupConfig):
         self._parent = parent

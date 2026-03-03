@@ -23,15 +23,22 @@ class EvaluationMarkdownRender:
         Args:
             concept_sets: Optional list of concept sets for resolving codeset IDs to names
         """
+        from circe.extensions import get_registry
+        registry = get_registry()
+
         self._concept_sets = concept_sets or []
         
         # Initialize Jinja2 environment with multiple loaders
         # This allows us to access both evaluation-specific templates and cohort ones
+        loaders = [
+            jinja2.PackageLoader('circe.evaluation', 'templates'),
+            jinja2.PackageLoader('circe.cohortdefinition.printfriendly', 'templates'),
+        ]
+        for path in registry.template_paths:
+            loaders.append(jinja2.FileSystemLoader(str(path)))
+
         self._env = jinja2.Environment(
-            loader=jinja2.ChoiceLoader([
-                jinja2.PackageLoader('circe.evaluation', 'templates'),
-                jinja2.PackageLoader('circe.cohortdefinition.printfriendly', 'templates')
-            ]),
+            loader=jinja2.ChoiceLoader(loaders),
             trim_blocks=True,
             lstrip_blocks=True,
             autoescape=False
@@ -43,6 +50,11 @@ class EvaluationMarkdownRender:
         self._env.globals['codeset_name'] = self._codeset_name
         self._env.globals['format_date'] = self._format_date
         self._env.globals['format_number'] = self._format_number
+
+        # Add extension helper to look up template name for a criteria instance
+        def get_template_for_criteria(criteria):
+            return registry.get_template(criteria)
+        self._env.globals['get_template_for_criteria'] = get_template_for_criteria
 
     def render_rubric(
         self, 

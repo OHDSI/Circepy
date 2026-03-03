@@ -13,8 +13,9 @@ from pydantic import BaseModel, Field, ConfigDict
 from .base import CriteriaSqlBuilder
 from .utils import CriteriaColumn, BuilderOptions, BuilderUtils
 from ..criteria import Death
+from circe.extensions import register_sql_builder
 
-
+@register_sql_builder(Death)
 class DeathSqlBuilder(CriteriaSqlBuilder[Death]):
     """SQL builder for Death criteria.
     

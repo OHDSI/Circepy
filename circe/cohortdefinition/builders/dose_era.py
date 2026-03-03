@@ -14,6 +14,9 @@ from .utils import CriteriaColumn, BuilderOptions, BuilderUtils
 from ..criteria import DoseEra
 
 
+from circe.extensions import register_sql_builder
+
+@register_sql_builder(DoseEra)
 class DoseEraSqlBuilder(CriteriaSqlBuilder[DoseEra]):
     """SQL builder for Dose Era criteria.
     

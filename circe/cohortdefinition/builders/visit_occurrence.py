@@ -15,6 +15,9 @@ from .utils import CriteriaColumn, BuilderOptions, BuilderUtils
 from ..criteria import VisitOccurrence
 
 
+from circe.extensions import register_sql_builder
+
+@register_sql_builder(VisitOccurrence)
 class VisitOccurrenceSqlBuilder(CriteriaSqlBuilder[VisitOccurrence]):
     """SQL builder for Visit Occurrence criteria.
     

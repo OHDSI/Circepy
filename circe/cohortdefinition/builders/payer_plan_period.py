@@ -14,6 +14,9 @@ from .utils import CriteriaColumn, BuilderOptions, BuilderUtils
 from ..criteria import PayerPlanPeriod
 
 
+from circe.extensions import register_sql_builder
+
+@register_sql_builder(PayerPlanPeriod)
 class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
     """SQL builder for Payer Plan Period criteria.
     

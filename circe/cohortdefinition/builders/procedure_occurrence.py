@@ -10,9 +10,10 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import List, Optional, Set
-from ..criteria import Criteria
+from ..criteria import Criteria, ProcedureOccurrence
 from .base import CriteriaSqlBuilder
 from .utils import BuilderOptions, CriteriaColumn, BuilderUtils
+from circe.extensions import register_sql_builder
 
 # SQL template - equivalent to Java ResourceHelper.GetResourceAsString
 # Note: Uses lowercase select/from to match Java output
@@ -31,6 +32,7 @@ FROM
 """
 
 
+@register_sql_builder(ProcedureOccurrence)
 class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
     """SQL builder for procedure occurrence criteria.
     

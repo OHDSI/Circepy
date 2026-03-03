@@ -14,6 +14,9 @@ from .utils import CriteriaColumn, BuilderOptions, BuilderUtils
 from ..criteria import VisitDetail
 
 
+from circe.extensions import register_sql_builder
+
+@register_sql_builder(VisitDetail)
 class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
     """SQL builder for Visit Detail criteria.
     

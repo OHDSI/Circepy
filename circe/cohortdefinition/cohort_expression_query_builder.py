@@ -418,26 +418,6 @@ DROP TABLE #drugTarget;
         """Initialize the query builder."""
         self.concept_set_query_builder = ConceptSetExpressionQueryBuilder()
 
-        # Initialize builders
-        self.condition_occurrence_sql_builder = ConditionOccurrenceSqlBuilder()
-        self.death_sql_builder = DeathSqlBuilder()
-        self.device_exposure_sql_builder = DeviceExposureSqlBuilder()
-        self.measurement_sql_builder = MeasurementSqlBuilder()
-        self.observation_sql_builder = ObservationSqlBuilder()
-        self.specimen_sql_builder = SpecimenSqlBuilder()
-        self.visit_occurrence_sql_builder = VisitOccurrenceSqlBuilder()
-        self.drug_exposure_sql_builder = DrugExposureSqlBuilder()
-        self.procedure_occurrence_sql_builder = ProcedureOccurrenceSqlBuilder()
-
-        # Add these missing builders:
-        self.condition_era_sql_builder = ConditionEraSqlBuilder()
-        self.drug_era_sql_builder = DrugEraSqlBuilder()
-        self.dose_era_sql_builder = DoseEraSqlBuilder()
-        self.observation_period_sql_builder = ObservationPeriodSqlBuilder()
-        self.payer_plan_period_sql_builder = PayerPlanPeriodSqlBuilder()
-        self.visit_detail_sql_builder = VisitDetailSqlBuilder()
-        self.location_region_sql_builder = LocationRegionSqlBuilder()
-
     def get_occurrence_operator(self, occurrence_type: int) -> str:
         """Get occurrence operator string.
         
@@ -1329,46 +1309,11 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
              if isinstance(criteria, dict):
                  raise ValueError(f"Invalid criteria dict structure: {criteria}")
 
-        # Check for extension builder first
-        extension_builder = get_builder_for_criteria(criteria)
-        if extension_builder:
-            return self._get_criteria_sql_from_builder(extension_builder, criteria, options)
-
-        # Import here to avoid circular dependency - use the already imported names
-        if isinstance(criteria, ConditionOccurrence):
-            return self._get_criteria_sql_from_builder(self.condition_occurrence_sql_builder, criteria, options)
-        elif isinstance(criteria, Death):
-            return self._get_criteria_sql_from_builder(self.death_sql_builder, criteria, options)
-        elif isinstance(criteria, DeviceExposure):
-            return self._get_criteria_sql_from_builder(self.device_exposure_sql_builder, criteria, options)
-        elif isinstance(criteria, Measurement):
-            return self._get_criteria_sql_from_builder(self.measurement_sql_builder, criteria, options)
-        elif isinstance(criteria, Observation):
-            return self._get_criteria_sql_from_builder(self.observation_sql_builder, criteria, options)
-        elif isinstance(criteria, Specimen):
-            return self._get_criteria_sql_from_builder(self.specimen_sql_builder, criteria, options)
-        elif isinstance(criteria, VisitOccurrence):
-            return self._get_criteria_sql_from_builder(self.visit_occurrence_sql_builder, criteria, options)
-        elif isinstance(criteria, DrugExposure):
-            return self._get_criteria_sql_from_builder(self.drug_exposure_sql_builder, criteria, options)
-        elif isinstance(criteria, ProcedureOccurrence):
-            return self._get_criteria_sql_from_builder(self.procedure_occurrence_sql_builder, criteria, options)
-        elif isinstance(criteria, DrugEra):
-            return self._get_criteria_sql_from_builder(self.drug_era_sql_builder, criteria, options)
-        elif isinstance(criteria, ConditionEra):
-            return self._get_criteria_sql_from_builder(self.condition_era_sql_builder, criteria, options)
-        elif isinstance(criteria, DoseEra):
-            return self._get_criteria_sql_from_builder(self.dose_era_sql_builder, criteria, options)
-        elif isinstance(criteria, ObservationPeriod):
-            return self._get_criteria_sql_from_builder(self.observation_period_sql_builder, criteria, options)
-        elif isinstance(criteria, PayerPlanPeriod):
-            return self._get_criteria_sql_from_builder(self.payer_plan_period_sql_builder, criteria, options)
-        elif isinstance(criteria, VisitDetail):
-            return self._get_criteria_sql_from_builder(self.visit_detail_sql_builder, criteria, options)
-        elif isinstance(criteria, LocationRegion):
-            return self._get_criteria_sql_from_builder(self.location_region_sql_builder, criteria, options)
-        else:
-            raise ValueError(f"Unsupported criteria type: {type(criteria)}")
+        # Unified registry lookup - covers both built-in and extension builders
+        builder = get_builder_for_criteria(criteria)
+        if builder:
+            return self._get_criteria_sql_from_builder(builder, criteria, options)
+        raise ValueError(f"No SQL builder registered for criteria type: {type(criteria).__name__}")
 
     def _get_criteria_sql_from_builder(self, builder: Any, criteria: Criteria,
                                        options: Optional[BuilderOptions]) -> str:

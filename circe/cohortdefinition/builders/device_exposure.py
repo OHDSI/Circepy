@@ -15,6 +15,9 @@ from .utils import CriteriaColumn, BuilderOptions, BuilderUtils
 from ..criteria import DeviceExposure
 
 
+from circe.extensions import register_sql_builder
+
+@register_sql_builder(DeviceExposure)
 class DeviceExposureSqlBuilder(CriteriaSqlBuilder[DeviceExposure]):
     """SQL builder for Device Exposure criteria.
     

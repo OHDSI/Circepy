@@ -15,6 +15,9 @@ from .utils import CriteriaColumn, BuilderOptions, BuilderUtils
 from ..criteria import Specimen
 
 
+from circe.extensions import register_sql_builder
+
+@register_sql_builder(Specimen)
 class SpecimenSqlBuilder(CriteriaSqlBuilder[Specimen]):
     """SQL builder for Specimen criteria.
     

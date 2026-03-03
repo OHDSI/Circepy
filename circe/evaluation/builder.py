@@ -135,28 +135,19 @@ class RuleBuilder:
     
     @staticmethod
     def _get_domain_queries() -> Dict[str, Type[Any]]:
-        """Get the merged domain query mapping including extensions."""
+        """Get the merged domain query mapping including extensions.
+        
+        The registry holds PascalCase domain names. We add shorthand snake_case
+        aliases for domains whose abbreviated name doesn't match their PascalCase.
+        """
         from circe.extensions import get_registry
-        base_queries = {
-            'condition': ConditionQuery,
-            'drug': DrugQuery,
-            'drug_era': DrugEraQuery,
-            'measurement': MeasurementQuery,
-            'procedure': ProcedureQuery,
-            'visit': VisitQuery,
-            'observation': ObservationQuery,
-            'death': DeathQuery,
-            'condition_era': ConditionEraQuery,
-            'device_exposure': DeviceExposureQuery,
-            'specimen': SpecimenQuery,
-            'observation_period': ObservationPeriodQuery,
-            'payer_plan_period': PayerPlanPeriodQuery,
-            'location_region': LocationRegionQuery,
-            'visit_detail': VisitDetailQuery,
-            'dose_era': DoseEraQuery,
-        }
-        base_queries.update(get_registry().get_domain_query_map())
-        return base_queries
+        queries = dict(get_registry().get_domain_query_map())
+        # Shorthand aliases: abbreviated names → full PascalCase domains
+        for short, full in [('condition', 'ConditionOccurrence'), ('drug', 'DrugExposure'),
+                            ('procedure', 'ProcedureOccurrence'), ('visit', 'VisitOccurrence')]:
+            if full in queries:
+                queries[short] = queries[full]
+        return queries
 
     def __init__(self, parent_eval: EvaluationBuilder, rule_id: int, name: str, weight: float, polarity: int, category: Optional[str], description: str = ""):
         self._parent_eval = parent_eval
@@ -194,54 +185,18 @@ class RuleBuilder:
         query_class(concept_set_id, parent=self).apply_params(**kwargs)._finalize()
         return self
 
-    # --- Domain Methods ---
+    # Shorthand aliases for domains where abbreviated name ≠ PascalCase(name)
     def condition(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
         return self._add_domain_criteria('condition', concept_set_id, **kwargs)
 
     def drug(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
         return self._add_domain_criteria('drug', concept_set_id, **kwargs)
 
-    def drug_era(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        return self._add_domain_criteria('drug_era', concept_set_id, **kwargs)
-
-    def measurement(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        return self._add_domain_criteria('measurement', concept_set_id, **kwargs)
-
     def procedure(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
         return self._add_domain_criteria('procedure', concept_set_id, **kwargs)
 
     def visit(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
         return self._add_domain_criteria('visit', concept_set_id, **kwargs)
-
-    def observation(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        return self._add_domain_criteria('observation', concept_set_id, **kwargs)
-
-    def death(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        return self._add_domain_criteria('death', concept_set_id, **kwargs)
-
-    def condition_era(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        return self._add_domain_criteria('condition_era', concept_set_id, **kwargs)
-
-    def device_exposure(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        return self._add_domain_criteria('device_exposure', concept_set_id, **kwargs)
-
-    def specimen(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        return self._add_domain_criteria('specimen', concept_set_id, **kwargs)
-
-    def observation_period(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        return self._add_domain_criteria('observation_period', concept_set_id, **kwargs)
-
-    def payer_plan_period(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        return self._add_domain_criteria('payer_plan_period', concept_set_id, **kwargs)
-
-    def location_region(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        return self._add_domain_criteria('location_region', concept_set_id, **kwargs)
-
-    def visit_detail(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        return self._add_domain_criteria('visit_detail', concept_set_id, **kwargs)
-
-    def dose_era(self, concept_set_id: int, **kwargs) -> 'RuleBuilder':
-        return self._add_domain_criteria('dose_era', concept_set_id, **kwargs)
 
     def __getattr__(self, name: str):
         """Dynamic dispatch for extension domain methods on RuleBuilder.

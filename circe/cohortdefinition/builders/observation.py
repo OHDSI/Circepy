@@ -15,6 +15,9 @@ from .utils import CriteriaColumn, BuilderOptions, BuilderUtils
 from ..criteria import Observation
 
 
+from circe.extensions import register_sql_builder
+
+@register_sql_builder(Observation)
 class ObservationSqlBuilder(CriteriaSqlBuilder[Observation]):
     """SQL builder for Observation criteria.
     

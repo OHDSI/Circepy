@@ -14,6 +14,9 @@ from .utils import CriteriaColumn, BuilderOptions, BuilderUtils
 from ..criteria import ConditionEra
 
 
+from circe.extensions import register_sql_builder
+
+@register_sql_builder(ConditionEra)
 class ConditionEraSqlBuilder(CriteriaSqlBuilder[ConditionEra]):
     """SQL builder for Condition Era criteria.
     

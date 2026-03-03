@@ -30,6 +30,9 @@ FROM
 """
 
 
+from circe.extensions import register_sql_builder
+
+@register_sql_builder(DrugExposure)
 class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
     """SQL builder for drug exposure criteria.
     

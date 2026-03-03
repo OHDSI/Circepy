@@ -12,8 +12,9 @@ from typing import Set, List, Optional, Any
 from .base import CriteriaSqlBuilder
 from .utils import CriteriaColumn, BuilderOptions, BuilderUtils
 from ..criteria import ConditionOccurrence
+from circe.extensions import register_sql_builder
 
-
+@register_sql_builder(ConditionOccurrence)
 class ConditionOccurrenceSqlBuilder(CriteriaSqlBuilder[ConditionOccurrence]):
     """SQL builder for Condition Occurrence criteria.
     

@@ -14,6 +14,9 @@ from .utils import CriteriaColumn, BuilderOptions, BuilderUtils
 from ..criteria import LocationRegion
 
 
+from circe.extensions import register_sql_builder
+
+@register_sql_builder(LocationRegion)
 class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
     """SQL builder for Location Region criteria.
     
