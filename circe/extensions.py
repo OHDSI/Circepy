@@ -5,8 +5,9 @@ This module provides the central registry for managing extensions to circe-py,
 allowing external projects to register custom criteria classes, SQL builders,
 and markdown renderers.
 """
-from typing import Dict, List, Optional, Type, Set, Union
+from typing import Dict, List, Optional, Type, Set, Union, Any
 from pathlib import Path
+import importlib.metadata
 
 # Forward references to avoid circular imports
 # Actual imports happen inside methods or with TYPE_CHECKING
@@ -31,7 +32,33 @@ class ExtensionRegistry:
         
         # List of paths to search for Jinja2 templates
         self._template_paths: List[Path] = []
+
+        # Maps extension names to their versions
+        self._named_extensions: Dict[str, str] = {}
+        
+        # Maps domain names to query builder classes (for EvaluationBuilder)
+        self._domain_queries: Dict[str, Type[Any]] = {}
+        
+        # Flag to track if entry points have been loaded
+        self._loaded_entry_points = False
     
+    def register_named_extension(self, name: str, version: str = "0.0.0") -> None:
+        """Register a named extension with its version.
+        
+        Args:
+            name: The unique name of the extension
+            version: The version string
+        """
+        self._named_extensions[name] = version
+
+    def get_registered_extension_names(self) -> Set[str]:
+        """Get the set of names of all registered extensions.
+        
+        Returns:
+            A set of extension names.
+        """
+        return set(self._named_extensions.keys())
+
     def register_criteria_class(self, name: str, cls: Type['Criteria']) -> None:
         """Register a new criteria class for JSON deserialization.
         
@@ -41,6 +68,19 @@ class ExtensionRegistry:
         """
         self._criteria_classes[name] = cls
     
+    def get_all_criteria_classes(self, base_map: Dict[str, Type['Criteria']]) -> Dict[str, Type['Criteria']]:
+        """Merge a base criteria map with all registered extension criteria classes.
+        
+        Args:
+            base_map: The core criteria name -> class map
+            
+        Returns:
+            A unified dictionary containing both built-in and extension criteria.
+        """
+        unified = dict(base_map)
+        unified.update(self._criteria_classes)
+        return unified
+
     def register_sql_builder(self, criteria_cls: Type['Criteria'], builder_cls: Type['CriteriaSqlBuilder']) -> None:
         """Register a SQL builder for a criteria type.
         
@@ -59,6 +99,26 @@ class ExtensionRegistry:
         """
         self._markdown_templates[criteria_cls] = template_name
     
+    def register_domain_query(self, domain_name: str, query_class: Type[Any], criteria_class: Optional[Type['Criteria']] = None) -> None:
+        """Register a domain query builder for EvaluationBuilder.
+        
+        Args:
+            domain_name: The name of the domain (e.g. "waveform")
+            query_class: The query builder class
+            criteria_class: Optional criteria class associated with this domain
+        """
+        self._domain_queries[domain_name] = query_class
+        if criteria_class:
+            self.register_criteria_class(domain_name, criteria_class)
+
+    def get_domain_query_map(self) -> Dict[str, Type[Any]]:
+        """Get all registered domain query builder classes.
+        
+        Returns:
+            A dictionary mapping domain names to query builder classes.
+        """
+        return dict(self._domain_queries)
+
     def add_template_path(self, path: Path) -> None:
         """Add a path to search for Jinja2 templates.
         
@@ -107,9 +167,35 @@ class ExtensionRegistry:
         """Get all registered template paths."""
         return list(self._template_paths)
 
+    def load_entry_point_extensions(self) -> None:
+        """Discover and load extensions via Python entry points."""
+        if self._loaded_entry_points:
+            return
+            
+        self._loaded_entry_points = True
+        
+        # In Python 3.10+, entry_points() returns an EntryPoints object that is selectable
+        # For older versions, it returns a dict.
+        eps = importlib.metadata.entry_points()
+        if hasattr(eps, 'select'):
+            group_eps = eps.select(group='circe.extensions')
+        else:
+            # Fallback for older importlib_metadata or Python < 3.10 if eps is a dict
+            group_eps = eps.get('circe.extensions', [])
+            
+        for entry_point in group_eps:
+            try:
+                register_func = entry_point.load()
+                register_func()
+            except Exception:
+                # Silently fail for now, or consider logging
+                pass
+
 # Global registry instance
 _registry = ExtensionRegistry()
 
 def get_registry() -> ExtensionRegistry:
-    """Get the global extension registry instance."""
+    """Get the global extension registry instance with lazy loading of entry points."""
+    if not _registry._loaded_entry_points:
+        _registry.load_entry_point_extensions()
     return _registry

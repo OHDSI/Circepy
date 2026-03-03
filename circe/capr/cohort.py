@@ -441,8 +441,8 @@ def _build_end_strategy(exit_strat: ExitStrategy):
 
 def _query_to_criteria(query: Query):
     """Convert a Query to the appropriate domain Criteria object."""
-    
-    domain_map = {
+    from circe.extensions import get_registry
+    domain_map = get_registry().get_all_criteria_classes({
         'ConditionOccurrence': ConditionOccurrence,
         'ConditionEra': ConditionEra,
         'DrugExposure': DrugExposure,
@@ -459,7 +459,7 @@ def _query_to_criteria(query: Query):
         'ObservationPeriod': ObservationPeriod,
         'PayerPlanPeriod': PayerPlanPeriod,
         'LocationRegion': LocationRegion
-    }
+    })
     
     criteria_class = domain_map.get(query.domain)
     if not criteria_class:

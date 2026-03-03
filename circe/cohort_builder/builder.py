@@ -2510,7 +2510,8 @@ def _build_cohort_expression(
 
 def _config_to_criteria(config: QueryConfig):
     """Convert a QueryConfig to a domain criteria object."""
-    domain_map = {
+    from circe.extensions import get_registry
+    domain_map = get_registry().get_all_criteria_classes({
         'ConditionOccurrence': ConditionOccurrence,
         'ConditionEra': ConditionEra,
         'DrugExposure': DrugExposure,
@@ -2527,7 +2528,7 @@ def _config_to_criteria(config: QueryConfig):
         'PayerPlanPeriod': PayerPlanPeriod,
         'LocationRegion': LocationRegion,
         'Death': Death
-    }
+    })
     
     criteria_class = domain_map.get(config.domain)
     if not criteria_class:

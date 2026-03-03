@@ -25,6 +25,11 @@ class BuilderOptions:
     
     def __init__(self):
         self.additional_columns: List[CriteriaColumn] = []
+        self.cdm_database_schema: Optional[str] = None
+        self.target_database_schema: Optional[str] = None
+        self.target_cohort_table: Optional[str] = None
+        self.target_cohort_id: Optional[int] = None
+        self.generate_stats: bool = False
 
 
 class BuilderUtils:

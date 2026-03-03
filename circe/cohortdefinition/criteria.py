@@ -1125,7 +1125,12 @@ class CriteriaGroup(BaseModel):
         deserialized = []
         for item in v:
             if not isinstance(item, dict):
-                deserialized.append(item)
+                # If it's already an instance of a domain criteria (not Corelated), wrap it
+                if hasattr(item, 'accept') and not hasattr(item, 'occurrence'):
+                    from .criteria import CorelatedCriteria
+                    deserialized.append(CorelatedCriteria(criteria=item))
+                else:
+                    deserialized.append(item)
                 continue
             
             item_copy = dict(item)
@@ -1145,7 +1150,9 @@ class CriteriaGroup(BaseModel):
                 if isinstance(item_copy.get('criteria'), dict):
                     c_dict = item_copy['criteria']
                     c_type = next(iter(c_dict.keys()), None)
-                    if c_type and c_type in NAMES_TO_CLASSES:
+                    from circe.extensions import get_registry
+                    all_classes = get_registry().get_all_criteria_classes(NAMES_TO_CLASSES)
+                    if c_type and c_type in all_classes:
                         try:
                             c_data = dict(c_dict[c_type])
                             # PascalCase defaults
@@ -1158,7 +1165,7 @@ class CriteriaGroup(BaseModel):
                             if 'First' not in c_data and 'first' not in c_data:
                                 c_data['First'] = False
                             
-                            c_obj = NAMES_TO_CLASSES[c_type].model_validate(c_data, strict=False)
+                            c_obj = all_classes[c_type].model_validate(c_data, strict=False)
                             item_copy['criteria'] = c_obj
                         except: pass
             
@@ -1175,7 +1182,9 @@ class CriteriaGroup(BaseModel):
             elif any(k in item_copy for k in ['StartWindow', 'EndWindow', 'RestrictVisit', 'IgnoreObservationPeriod']):
                 # Implicit CorelatedCriteria
                 c_type = next((k for k in item_copy.keys() if k not in ['StartWindow', 'EndWindow', 'RestrictVisit', 'IgnoreObservationPeriod', 'Occurrence', 'criteria']), None)
-                if c_type and c_type in NAMES_TO_CLASSES:
+                from circe.extensions import get_registry
+                all_classes = get_registry().get_all_criteria_classes(NAMES_TO_CLASSES)
+                if c_type and c_type in all_classes:
                     c_data = item_copy[c_type]
                     # Explicitly deserialize inner criteria to avoid Pydantic union ambiguity
                     try:
@@ -1189,7 +1198,7 @@ class CriteriaGroup(BaseModel):
                         if 'First' not in c_data and 'first' not in c_data:
                             c_data['First'] = False
                             
-                        c_obj = NAMES_TO_CLASSES[c_type].model_validate(c_data, strict=False)
+                        c_obj = all_classes[c_type].model_validate(c_data, strict=False)
                         
                         corelated_dict = {
                             'criteria': c_obj,
@@ -1205,7 +1214,9 @@ class CriteriaGroup(BaseModel):
             else:
                 # Simple polymorphic wrapped in corelated
                 c_type = next(iter(item_copy.keys()), None)
-                if c_type and c_type in NAMES_TO_CLASSES:
+                from circe.extensions import get_registry
+                all_classes = get_registry().get_all_criteria_classes(NAMES_TO_CLASSES)
+                if c_type and c_type in all_classes:
                     try:
                         c_data = item_copy[c_type]
                         # PascalCase defaults
@@ -1218,7 +1229,7 @@ class CriteriaGroup(BaseModel):
                         if 'First' not in c_data and 'first' not in c_data:
                             c_data['First'] = False
 
-                        c_obj = NAMES_TO_CLASSES[c_type].model_validate(c_data, strict=False)
+                        c_obj = all_classes[c_type].model_validate(c_data, strict=False)
                         corelated_dict = {'criteria': c_obj}
                         deserialized.append(CorelatedCriteria.model_validate(corelated_dict))
                     except: deserialized.append(item)
@@ -1318,12 +1329,14 @@ class PrimaryCriteria(BaseModel):
             # Case-insensitive lookup
             c_type = None
             if c_type_raw:
+                from circe.extensions import get_registry
+                all_classes = get_registry().get_all_criteria_classes(NAMES_TO_CLASSES)
                 # Direct match
-                if c_type_raw in NAMES_TO_CLASSES:
+                if c_type_raw in all_classes:
                     c_type = c_type_raw
                 # Case-insensitive match
                 else:
-                    for k in NAMES_TO_CLASSES:
+                    for k in all_classes:
                         if k.lower() == c_type_raw.lower():
                             c_type = k
                             break
@@ -1336,7 +1349,7 @@ class PrimaryCriteria(BaseModel):
                     if c_type == 'ConditionOccurrence' and 'ConditionTypeExclude' not in c_data: c_data['ConditionTypeExclude'] = False
                     if 'First' not in c_data: c_data['First'] = False
                     
-                    obj = NAMES_TO_CLASSES[c_type].model_validate(c_data, strict=False)
+                    obj = all_classes[c_type].model_validate(c_data, strict=False)
                     deserialized.append(obj)
                 except: deserialized.append(item)
             else:

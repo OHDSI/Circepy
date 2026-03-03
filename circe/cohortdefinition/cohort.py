@@ -104,6 +104,11 @@ class CohortExpression(CirceBaseModel):
         validation_alias=AliasChoices("CensoringCriteria", "censoring_criteria", "censoringCriteria"),
         serialization_alias="CensoringCriteria"
     )
+    required_extensions: List[str] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("RequiredExtensions", "requiredExtensions"),
+        serialization_alias="RequiredExtensions"
+    )
 
     model_config = ConfigDict(populate_by_name=True)
     
@@ -168,8 +173,9 @@ class CohortExpression(CirceBaseModel):
             ObservationPeriod, PayerPlanPeriod, LocationRegion, ConditionEra, 
             DrugEra, DoseEra
         )
+        from circe.extensions import get_registry
         
-        criteria_class_map = {
+        criteria_class_map = get_registry().get_all_criteria_classes({
             'ConditionOccurrence': ConditionOccurrence,
             'DrugExposure': DrugExposure,
             'ProcedureOccurrence': ProcedureOccurrence,
@@ -186,7 +192,7 @@ class CohortExpression(CirceBaseModel):
             'ConditionEra': ConditionEra,
             'DrugEra': DrugEra,
             'DoseEra': DoseEra,
-        }
+        })
         
         deserialized = []
         for item in v:
@@ -220,6 +226,21 @@ class CohortExpression(CirceBaseModel):
                 deserialized.append(item)
 
         return deserialized
+
+    @model_validator(mode='after')
+    def validate_required_extensions(self) -> 'CohortExpression':
+        """Check if all required extensions are registered."""
+        if not self.required_extensions:
+            return self
+            
+        from circe.extensions import get_registry
+        registered = get_registry().get_registered_extension_names()
+        missing = [ext for ext in self.required_extensions if ext not in registered]
+        
+        if missing:
+            raise ValueError(f"Missing required extensions: {', '.join(missing)}")
+            
+        return self
 
     @model_validator(mode='before')
     @classmethod

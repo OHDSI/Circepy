@@ -2,7 +2,7 @@
 Fluent Builder for Phenotype Evaluation Rubrics.
 """
 
-from typing import Optional, List, Union, Dict, Any, TYPE_CHECKING
+from typing import Optional, List, Union, Dict, Any, Type, TYPE_CHECKING
 from dataclasses import dataclass, field
 import copy
 
@@ -133,25 +133,30 @@ class EvaluationBuilder:
 class RuleBuilder:
     """Builder for an individual EvaluationRule."""
     
-    # Define domain query mapping once
-    _DOMAIN_QUERIES = {
-        'condition': ConditionQuery,
-        'drug': DrugQuery,
-        'drug_era': DrugEraQuery,
-        'measurement': MeasurementQuery,
-        'procedure': ProcedureQuery,
-        'visit': VisitQuery,
-        'observation': ObservationQuery,
-        'death': DeathQuery,
-        'condition_era': ConditionEraQuery,
-        'device_exposure': DeviceExposureQuery,
-        'specimen': SpecimenQuery,
-        'observation_period': ObservationPeriodQuery,
-        'payer_plan_period': PayerPlanPeriodQuery,
-        'location_region': LocationRegionQuery,
-        'visit_detail': VisitDetailQuery,
-        'dose_era': DoseEraQuery,
-    }
+    @staticmethod
+    def _get_domain_queries() -> Dict[str, Type[Any]]:
+        """Get the merged domain query mapping including extensions."""
+        from circe.extensions import get_registry
+        base_queries = {
+            'condition': ConditionQuery,
+            'drug': DrugQuery,
+            'drug_era': DrugEraQuery,
+            'measurement': MeasurementQuery,
+            'procedure': ProcedureQuery,
+            'visit': VisitQuery,
+            'observation': ObservationQuery,
+            'death': DeathQuery,
+            'condition_era': ConditionEraQuery,
+            'device_exposure': DeviceExposureQuery,
+            'specimen': SpecimenQuery,
+            'observation_period': ObservationPeriodQuery,
+            'payer_plan_period': PayerPlanPeriodQuery,
+            'location_region': LocationRegionQuery,
+            'visit_detail': VisitDetailQuery,
+            'dose_era': DoseEraQuery,
+        }
+        base_queries.update(get_registry().get_domain_query_map())
+        return base_queries
 
     def __init__(self, parent_eval: EvaluationBuilder, rule_id: int, name: str, weight: float, polarity: int, category: Optional[str], description: str = ""):
         self._parent_eval = parent_eval
@@ -181,7 +186,7 @@ class RuleBuilder:
 
     def _add_domain_criteria(self, domain_name: str, concept_set_id: int, **kwargs) -> 'RuleBuilder':
         """Generic method to add domain criteria."""
-        query_class = self._DOMAIN_QUERIES.get(domain_name)
+        query_class = self._get_domain_queries().get(domain_name)
         if not query_class:
             raise ValueError(f"Unknown domain: {domain_name}")
         query_class(concept_set_id, parent=self).apply_params(**kwargs)._finalize()
@@ -376,7 +381,8 @@ def _apply_numeric_range(config: QueryConfig, kwargs: dict, config_min_field: st
 
 
 def _config_to_criteria(config: QueryConfig):
-    domain_map = {
+    from circe.extensions import get_registry
+    domain_map = get_registry().get_all_criteria_classes({
         'ConditionOccurrence': ConditionOccurrence,
         'DrugExposure': DrugExposure,
         'Measurement': Measurement,
@@ -393,7 +399,7 @@ def _config_to_criteria(config: QueryConfig):
         'PayerPlanPeriod': PayerPlanPeriod,
         'LocationRegion': LocationRegion,
         'VisitDetail': VisitDetail
-    }
+    })
     cls = domain_map.get(config.domain)
     if not cls: raise ValueError(f"Unsupported domain: {config.domain}")
     

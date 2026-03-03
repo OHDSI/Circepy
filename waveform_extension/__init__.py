@@ -11,6 +11,9 @@ def register():
     """Register the OHDSI Waveform Extension with circe_py."""
     registry = get_registry()
     
+    # 0. Register Named Extension
+    registry.register_named_extension("waveform", version="0.1.0")
+    
     # 1. Register Criteria Classes
     registry.register_criteria_class("WaveformOccurrence", WaveformOccurrence)
     registry.register_criteria_class("WaveformRegistry", WaveformRegistry)

@@ -732,7 +732,8 @@ DROP TABLE #inclusion_rules;
             # event_id, person_id, start_date, end_date, op_start_date, op_end_date, visit_occurrence_id
             additional_criteria_group_query = self.get_criteria_group_query(
                 expression.additional_criteria,
-                f"({primary_events_subquery})"
+                f"({primary_events_subquery})",
+                options
             )
 
             # Create a JOIN clause that filters pe events based on the additional criteria
@@ -888,7 +889,8 @@ DROP TABLE #inclusion_rules;
 
         return result_sql
 
-    def get_criteria_group_query(self, group: CriteriaGroup, event_table: str) -> str:
+    def get_criteria_group_query(self, group: CriteriaGroup, event_table: str, 
+                                    options: Optional[BuildExpressionQueryOptions] = None) -> str:
         """Get criteria group query.
         
         Java equivalent: getCriteriaGroupQuery()
@@ -900,7 +902,7 @@ DROP TABLE #inclusion_rules;
         index_id = 0
         if group.criteria_list:
             for cc in group.criteria_list:
-                ac_query = self.get_corelated_criteria_query(cc, event_table)
+                ac_query = self.get_corelated_criteria_query(cc, event_table, options)
                 ac_query = ac_query.replace("@indexId", str(index_id))
                 additional_criteria_queries.append(ac_query)
                 index_id += 1
@@ -914,7 +916,7 @@ DROP TABLE #inclusion_rules;
 
         if group.groups:
             for g in group.groups:
-                g_query = self.get_criteria_group_query(g, event_table)
+                g_query = self.get_criteria_group_query(g, event_table, options)
                 g_query = g_query.replace("@indexId", str(index_id))
                 additional_criteria_queries.append(g_query)
                 index_id += 1
@@ -1052,7 +1054,8 @@ DROP TABLE #inclusion_rules;
             # Note: criteria_data may be an empty dict {} which is valid
             # (e.g., {"ObservationPeriod": {}} means "any observation period")
             if criteria_type and criteria_data is not None:
-                criteria_class_map = {
+                from circe.extensions import get_registry
+                criteria_class_map = get_registry().get_all_criteria_classes({
                     'ConditionOccurrence': ConditionOccurrence,
                     'DrugExposure': DrugExposure,
                     'ProcedureOccurrence': ProcedureOccurrence,
@@ -1069,7 +1072,7 @@ DROP TABLE #inclusion_rules;
                     'ConditionEra': ConditionEra,
                     'DrugEra': DrugEra,
                     'DoseEra': DoseEra,
-                }
+                })
 
                 if criteria_type in criteria_class_map:
                     try:
@@ -1177,7 +1180,8 @@ DROP TABLE #inclusion_rules;
         return self._get_windowed_criteria_query_internal(self.WINDOWED_CRITERIA_TEMPLATE, criteria, event_table,
                                                           options)
 
-    def get_corelated_criteria_query(self, corelated_criteria: CorelatedCriteria, event_table: str) -> str:
+    def get_corelated_criteria_query(self, corelated_criteria: CorelatedCriteria, event_table: str,
+                                     options: Optional[BuildExpressionQueryOptions] = None) -> str:
         """Get corelated criteria query.
         
         Java equivalent: getCorelatedlCriteriaQuery()
@@ -1194,6 +1198,8 @@ DROP TABLE #inclusion_rules;
         count_column_expression = "cc.event_id"
 
         builder_options = BuilderOptions()
+        if options:
+            builder_options.cdm_database_schema = options.cdm_schema
         if corelated_criteria.occurrence.is_distinct:
             if corelated_criteria.occurrence.count_column is None:
                 builder_options.additional_columns.append(CriteriaColumn.DOMAIN_CONCEPT)
@@ -1278,7 +1284,8 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
             # Note: criteria_data may be an empty dict {} which is valid
             # (e.g., {"ObservationPeriod": {}} means "any observation period")
             if criteria_type and criteria_data is not None:
-                criteria_class_map = {
+                from circe.extensions import get_registry
+                criteria_class_map = get_registry().get_all_criteria_classes({
                     'ConditionOccurrence': CO,
                     'DrugExposure': DE,
                     'ProcedureOccurrence': PO,
@@ -1295,21 +1302,9 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
                     'ConditionEra': CE,
                     'DrugEra': DrE,
                     'DoseEra': DoE,
-                }
+                })
 
-            # Check if it's a registered extension criteria
-            registry = get_registry()
-            if criteria_type and criteria_type in registry._criteria_classes:
-                try:
-                    criteria_data = dict(criteria_data) if criteria_data else {}
-                    # Add defaults if needed
-                    if 'first' not in criteria_data or criteria_data.get('first') is None:
-                        criteria_data['first'] = False
-                    
-                    criteria = registry._criteria_classes[criteria_type].model_validate(criteria_data, strict=False)
-                except Exception as e:
-                    raise ValueError(f"Failed to deserialize extension criteria: {criteria_type} - {e}")
-            elif criteria_type in criteria_class_map:
+                if criteria_type in criteria_class_map:
                     try:
                         # Make a mutable copy to add defaults
                         criteria_data = dict(criteria_data) if criteria_data else {}
@@ -1328,8 +1323,8 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
                         criteria = criteria_class_map[criteria_type].model_validate(criteria_data, strict=False)
                     except Exception as e:
                         raise ValueError(f"Failed to deserialize criteria from dict: {criteria_type} - {e}")
-            else:
-                raise ValueError(f"Unknown criteria type in dict: {criteria_type}")
+                else:
+                    raise ValueError(f"Unknown criteria type in dict: {criteria_type}")
         else:
              if isinstance(criteria, dict):
                  raise ValueError(f"Invalid criteria dict structure: {criteria}")
