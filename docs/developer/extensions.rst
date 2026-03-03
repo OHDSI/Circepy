@@ -63,6 +63,16 @@ Decorate your ``Criteria`` subclass with ``@register_criteria``. The decorator h
            validation_alias=AliasChoices("TemperatureCelsius", "temperatureCelsius"),
            serialization_alias="TemperatureCelsius"
        )
+       location_id: Optional[List[int]] = Field(
+           default=None,
+           validation_alias=AliasChoices("LocationId", "locationId"),
+           serialization_alias="LocationId"
+       )
+       region_concept_id: Optional[List[Concept]] = Field(
+           default=None,
+           validation_alias=AliasChoices("RegionConceptId", "regionConceptId"),
+           serialization_alias="RegionConceptId"
+       )
 
    WeatherCondition.model_rebuild()
 
@@ -104,6 +114,12 @@ Decorate your builder with ``@register_sql_builder``:
                    where_clauses.append(f"C.weather_concept_id IN ({','.join(ids)})")
            if criteria.temperature_celsius is not None:
                where_clauses.append(f"C.temp_c >= {criteria.temperature_celsius}")
+           if criteria.location_id:
+               ids = [str(i) for i in criteria.location_id]
+               where_clauses.append(f"C.location_id IN ({','.join(ids)})")
+           if criteria.region_concept_id:
+               ids = [str(c.concept_id) for c in criteria.region_concept_id if c.concept_id]
+               where_clauses.append(f"C.region_concept_id IN ({','.join(ids)})")
            return query.replace("@cdm_database_schema", options.cdm_database_schema)\
                        .replace("@whereClause", " AND ".join(where_clauses))
 

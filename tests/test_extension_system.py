@@ -33,6 +33,16 @@ class WeatherCondition(Criteria):
         validation_alias=AliasChoices("TemperatureCelsius", "temperatureCelsius"),
         serialization_alias="TemperatureCelsius"
     )
+    location_id: Optional[List[int]] = Field(
+        default=None,
+        validation_alias=AliasChoices("LocationId", "locationId"),
+        serialization_alias="LocationId"
+    )
+    region_concept_id: Optional[List[Concept]] = Field(
+        default=None,
+        validation_alias=AliasChoices("RegionConceptId", "regionConceptId"),
+        serialization_alias="RegionConceptId"
+    )
 
 # Important: Rebuild models to resolve forward references inherited from Criteria
 WeatherCondition.model_rebuild()
@@ -72,6 +82,16 @@ WHERE @whereClause
         if criteria.temperature_celsius is not None:
             where_clauses.append(f"C.temp_c >= {criteria.temperature_celsius}")
 
+        if criteria.location_id:
+            ids = [str(i) for i in criteria.location_id]
+            if ids:
+                where_clauses.append(f"C.location_id IN ({','.join(ids)})")
+
+        if criteria.region_concept_id:
+            ids = [str(c.concept_id) for c in criteria.region_concept_id if c.concept_id]
+            if ids:
+                where_clauses.append(f"C.region_concept_id IN ({','.join(ids)})")
+
         # Ensure we have a string for replacement
         schema = options.cdm_database_schema if (options and options.cdm_database_schema) else "cdm"
         query = query.replace("@cdm_database_schema", schema)
@@ -98,7 +118,9 @@ def test_simple_extension_integration(tmp_path):
     template_file = template_dir / "weather_condition.j2"
     template_file.write_text("""
 Weather condition: {{ criteria.weather_concept_id[0].concept_name if criteria.weather_concept_id else 'Any' }}
-{% if criteria.temperature_celsius %} with temperature >= {{ criteria.temperature_celsius }}°C{% endif %}.
+{% if criteria.temperature_celsius %} with temperature >= {{ criteria.temperature_celsius }}°C{% endif %}
+{% if criteria.location_id %} in locations: {{ criteria.location_id | join(', ') }}{% endif %}
+{% if criteria.region_concept_id %} in regions: {{ criteria.region_concept_id | map(attribute='concept_name') | join(', ') }}{% endif %}.
 """)
     
     registry.add_template_path(template_dir)
