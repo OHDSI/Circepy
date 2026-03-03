@@ -102,14 +102,27 @@ def domain_spec_from_criteria(criteria: "Criteria") -> DomainSpec:
     Uses the ``criteria_compat`` methods already patched onto every
     ``Criteria`` subclass (``get_concept_id_column``, etc.) plus Pydantic
     field introspection for value columns.
+
+    Extensions whose CDM column names don't follow the standard naming
+    convention can declare a ``feature_meta`` class variable to override
+    any auto-derived field::
+
+        class WaveformOccurrence(Criteria):
+            feature_meta: ClassVar[dict] = {
+                "concept_id_column": "waveform_occurrence_concept_id",
+                "start_date_column": "waveform_occurrence_start_datetime",
+                "end_date_column": "waveform_occurrence_end_datetime",
+            }
     """
+    meta = getattr(type(criteria), "feature_meta", {})
+
     return DomainSpec(
-        table_name=criteria.snake_case_class_name(),
-        concept_id_column=criteria.get_concept_id_column(),
-        start_date_column=criteria.get_start_date_column(),
-        end_date_column=criteria.get_end_date_column(),
-        primary_key_column=criteria.get_primary_key_column(),
-        value_columns=_infer_value_columns(criteria),
+        table_name=meta.get("table_name", criteria.snake_case_class_name()),
+        concept_id_column=meta.get("concept_id_column", criteria.get_concept_id_column()),
+        start_date_column=meta.get("start_date_column", criteria.get_start_date_column()),
+        end_date_column=meta.get("end_date_column", criteria.get_end_date_column()),
+        primary_key_column=meta.get("primary_key_column", criteria.get_primary_key_column()),
+        value_columns=meta.get("value_columns", _infer_value_columns(criteria)),
     )
 
 

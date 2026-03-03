@@ -26,12 +26,13 @@ Architecture Overview
     cohort.require_weather_condition(cs_id)     # CohortWithEntry inclusion
     rule.weather_condition(cs_id)               # EvaluationBuilder rule
 
-The extension system has four components:
+The extension system has five components:
 
 1. **Criteria Class** — Pydantic model decorated with ``@register_criteria``
 2. **SQL Builder** — translates criteria to SQL (registered manually via ``@register_sql_builder``)
 3. **Ibis Builder** (Optional) - translates criteria to Ibis relations (registered via ``@register_ibis_builder``)
-4. **Markdown Template** — human-readable output (registered manually)
+4. **Feature Extraction** (Automatic) — domain metadata derived from criteria model; override via ``feature_meta`` class variable
+5. **Markdown Template** — human-readable output (registered manually)
 
 Example: Weather Conditions
 ---------------------------
@@ -133,7 +134,67 @@ If your extension supports Ibis execution, decorate your Ibis builder function w
        # Return the finalized Ibis table relation
        return table
 
-Step 4: Register the Extension Name
+Step 4: Enable Feature Extraction Support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Feature extraction is **automatically available** for any extension that registers a
+``Criteria`` subclass. Domain metadata (table name, concept column, date columns, primary
+key, and value columns) is derived from:
+
+1. The ``criteria_compat`` methods (``get_concept_id_column()``, ``get_start_date_column()``, etc.)
+2. Pydantic field introspection (``NumericRange``-typed fields are detected as value columns)
+
+However, if your extension table doesn't follow standard OMOP naming conventions (e.g.
+``weather_observation_date`` instead of ``weather_start_date``), you must declare
+a ``feature_meta`` class variable to override the auto-derived column names:
+
+.. code-block:: python
+
+   from typing import ClassVar
+
+   @register_criteria(extension="weather")
+   class WeatherCondition(Criteria):
+       """Maps to weather_data table."""
+       feature_meta: ClassVar[dict] = {
+           "table_name": "weather_data",
+           "concept_id_column": "weather_concept_id",
+           "start_date_column": "observation_date",
+           "end_date_column": "observation_date",
+           "value_columns": ["temperature_celsius"],
+       }
+       # ... fields ...
+
+Supported ``feature_meta`` keys:
+
+- ``table_name`` — CDM table name (default: auto-derived from class name)
+- ``concept_id_column`` — primary concept column
+- ``start_date_column`` — event start date/datetime column
+- ``end_date_column`` — event end date/datetime column
+- ``primary_key_column`` — primary key column
+- ``value_columns`` — list of extractable numeric column names
+
+Once declared, your extension domain is usable with the feature extraction API:
+
+.. code-block:: python
+
+   from circe.features.domain_tables import get_domain_spec, get_domain_events
+
+   spec = get_domain_spec("WeatherCondition")
+   # spec.concept_id_column == "weather_concept_id"
+
+   events = get_domain_events("WeatherCondition", ctx)
+   # Returns Ibis table with weather-specific columns retained
+
+   # Use in feature definitions:
+   from circe.features import BinaryFeature, ValueFeature
+
+   has_cold = BinaryFeature("Cold Weather", codeset_id=1,
+                             domain="WeatherCondition", window=(-7, 0))
+   temp = ValueFeature("Temperature", codeset_id=1,
+                        domain="WeatherCondition",
+                        value_column="temperature_celsius")
+
+Step 5: Register the Extension Name
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 With decorators, only the named extension needs manual registration:

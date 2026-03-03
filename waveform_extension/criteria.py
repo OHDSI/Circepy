@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import ClassVar, Optional, List
 from pydantic import Field, AliasChoices
 
 from circe.cohortdefinition.criteria import Criteria, CriteriaGroup
@@ -16,6 +16,12 @@ class WaveformOccurrence(Criteria):
     
     Reference: https://ohdsi.github.io/WaveformWG/waveform-tables.html
     """
+    feature_meta: ClassVar[dict] = {
+        "concept_id_column": "waveform_occurrence_concept_id",
+        "start_date_column": "waveform_occurrence_start_datetime",
+        "end_date_column": "waveform_occurrence_end_datetime",
+        "value_columns": ["num_of_files"],
+    }
     # Core concept - type of waveform recording
     waveform_occurrence_concept_id: Optional[List[Concept]] = Field(
         default=None,
@@ -78,6 +84,11 @@ class WaveformRegistry(Criteria):
     
     Reference: https://ohdsi.github.io/WaveformWG/waveform-tables.html
     """
+    feature_meta: ClassVar[dict] = {
+        "concept_id_column": "file_extension_concept_id",
+        "start_date_column": "file_start_datetime",
+        "end_date_column": "file_end_datetime",
+    }
     # Link to parent occurrence
     waveform_occurrence_id: Optional[NumericRange] = Field(
         default=None,
@@ -133,6 +144,9 @@ class WaveformChannelMetadata(Criteria):
     
     Reference: https://ohdsi.github.io/WaveformWG/waveform-tables.html
     """
+    feature_meta: ClassVar[dict] = {
+        "concept_id_column": "channel_concept_id",
+    }
     # Link to registry file
     waveform_registry_id: Optional[NumericRange] = Field(
         default=None,
@@ -207,6 +221,11 @@ class WaveformFeature(Criteria):
     
     Reference: https://ohdsi.github.io/WaveformWG/waveform-tables.html
     """
+    feature_meta: ClassVar[dict] = {
+        "concept_id_column": "feature_concept_id",
+        "start_date_column": "feature_start_timestamp",
+        "end_date_column": "feature_end_timestamp",
+    }
     # Parent links
     waveform_occurrence_id: Optional[NumericRange] = Field(
         default=None,
