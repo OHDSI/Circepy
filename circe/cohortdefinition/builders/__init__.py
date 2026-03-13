@@ -10,6 +10,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from .base import CriteriaSqlBuilder
+from circe.extensions import get_registry
 from .condition_era import ConditionEraSqlBuilder
 from .condition_occurrence import ConditionOccurrenceSqlBuilder
 from .death import DeathSqlBuilder
@@ -27,6 +28,12 @@ from .specimen import SpecimenSqlBuilder
 from .utils import BuilderOptions, BuilderUtils, CriteriaColumn
 from .visit_detail import VisitDetailSqlBuilder
 from .visit_occurrence import VisitOccurrenceSqlBuilder
+
+# Extension support
+def get_builder_for_criteria(criteria):
+    """Get a SQL builder for a criteria instance, checking extensions first."""
+    registry = get_registry()
+    return registry.get_builder(criteria)
 
 __all__ = [
     # Utility classes
@@ -52,4 +59,5 @@ __all__ = [
     "PayerPlanPeriodSqlBuilder",
     "VisitDetailSqlBuilder",
     "LocationRegionSqlBuilder",
+    "get_builder_for_criteria"
 ]
