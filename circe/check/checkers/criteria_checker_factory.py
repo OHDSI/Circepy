@@ -9,122 +9,170 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from typing import Callable, List, Optional
+
 from .base_checker_factory import BaseCheckerFactory
 from .warning_reporter import WarningReporter
 
 # Import at runtime to avoid circular dependencies
 try:
-    from ...vocabulary.concept import ConceptSet
-    from ...cohortdefinition.criteria import (
-        Criteria, ConditionEra, ConditionOccurrence, Death, DeviceExposure,
-        DoseEra, DrugEra, DrugExposure, Measurement, Observation,
-        ProcedureOccurrence, Specimen, VisitOccurrence, VisitDetail,
-        LocationRegion
-    )
     from ...cohortdefinition.core import ConceptSetSelection
+    from ...cohortdefinition.criteria import (
+        ConditionEra,
+        ConditionOccurrence,
+        Criteria,
+        Death,
+        DeviceExposure,
+        DoseEra,
+        DrugEra,
+        DrugExposure,
+        LocationRegion,
+        Measurement,
+        Observation,
+        ProcedureOccurrence,
+        Specimen,
+        VisitDetail,
+        VisitOccurrence,
+    )
+    from ...vocabulary.concept import ConceptSet
 except ImportError:
     from typing import TYPE_CHECKING
+
     if TYPE_CHECKING:
-        from ...vocabulary.concept import ConceptSet
-        from ...cohortdefinition.criteria import (
-            Criteria, ConditionEra, ConditionOccurrence, Death, DeviceExposure,
-            DoseEra, DrugEra, DrugExposure, Measurement, Observation,
-            ProcedureOccurrence, Specimen, VisitOccurrence, VisitDetail,
-            LocationRegion
-        )
         from ...cohortdefinition.core import ConceptSetSelection
+        from ...cohortdefinition.criteria import (
+            ConditionEra,
+            ConditionOccurrence,
+            Criteria,
+            Death,
+            DeviceExposure,
+            DoseEra,
+            DrugEra,
+            DrugExposure,
+            LocationRegion,
+            Measurement,
+            Observation,
+            ProcedureOccurrence,
+            Specimen,
+            VisitDetail,
+            VisitOccurrence,
+        )
+        from ...vocabulary.concept import ConceptSet
 
 
 class CriteriaCheckerFactory:
     """Factory for checking if criteria use a specific concept set.
-    
+
     Java equivalent: org.ohdsi.circe.check.checkers.CriteriaCheckerFactory
-    
+
     Note: This is not a BaseCheckerFactory subclass - it has a different purpose.
     It's used to check if a criteria uses a specific concept set.
     """
-    
-    def __init__(self, concept_set: 'ConceptSet'):
+
+    def __init__(self, concept_set: "ConceptSet"):
         """Initialize a criteria checker factory.
-        
+
         Args:
             concept_set: The concept set to check for
         """
         self._concept_set = concept_set
-    
+
     @staticmethod
-    def get_factory(concept_set: 'ConceptSet') -> 'CriteriaCheckerFactory':
+    def get_factory(concept_set: "ConceptSet") -> "CriteriaCheckerFactory":
         """Get a factory instance.
-        
+
         Args:
             concept_set: The concept set to check for
-            
+
         Returns:
             A new CriteriaCheckerFactory instance
         """
         return CriteriaCheckerFactory(concept_set)
-    
-    def get_criteria_checker(self, criteria: 'Criteria') -> Callable[['Criteria'], bool]:
+
+    def get_criteria_checker(
+        self, criteria: "Criteria"
+    ) -> Callable[["Criteria"], bool]:
         """Get a checker function that returns True if the criteria uses the concept set.
-        
+
         Args:
             criteria: The criteria to get a checker for
-            
+
         Returns:
             A function that returns True if the criteria uses the concept set
         """
         # Import here to avoid circular dependencies
-        from ...cohortdefinition.criteria import (
-            ConditionEra, ConditionOccurrence, Death, DeviceExposure,
-            DoseEra, DrugEra, DrugExposure, Measurement, Observation,
-            ProcedureOccurrence, Specimen, VisitOccurrence, VisitDetail,
-            LocationRegion
-        )
         from ...cohortdefinition.core import ConceptSetSelection
-        
-        def check_condition_era(c: 'ConditionEra') -> bool:
+        from ...cohortdefinition.criteria import (
+            ConditionEra,
+            ConditionOccurrence,
+            Death,
+            DeviceExposure,
+            DoseEra,
+            DrugEra,
+            DrugExposure,
+            LocationRegion,
+            Measurement,
+            Observation,
+            ProcedureOccurrence,
+            Specimen,
+            VisitDetail,
+            VisitOccurrence,
+        )
+
+        def check_condition_era(c: "ConditionEra") -> bool:
             return c.codeset_id == self._concept_set.id
-        
-        def check_condition_occurrence(c: 'ConditionOccurrence') -> bool:
-            return (c.codeset_id == self._concept_set.id or 
-                   c.condition_source_concept == self._concept_set.id)
-        
-        def check_death(c: 'Death') -> bool:
+
+        def check_condition_occurrence(c: "ConditionOccurrence") -> bool:
+            return (
+                c.codeset_id == self._concept_set.id
+                or c.condition_source_concept == self._concept_set.id
+            )
+
+        def check_death(c: "Death") -> bool:
             return c.codeset_id == self._concept_set.id
-        
-        def check_device_exposure(c: 'DeviceExposure') -> bool:
-            return (c.codeset_id == self._concept_set.id or 
-                   c.device_source_concept == self._concept_set.id)
-        
-        def check_dose_era(c: 'DoseEra') -> bool:
+
+        def check_device_exposure(c: "DeviceExposure") -> bool:
+            return (
+                c.codeset_id == self._concept_set.id
+                or c.device_source_concept == self._concept_set.id
+            )
+
+        def check_dose_era(c: "DoseEra") -> bool:
             return c.codeset_id == self._concept_set.id
-        
-        def check_drug_era(c: 'DrugEra') -> bool:
+
+        def check_drug_era(c: "DrugEra") -> bool:
             return c.codeset_id == self._concept_set.id
-        
-        def check_drug_exposure(c: 'DrugExposure') -> bool:
-            return (c.codeset_id == self._concept_set.id or 
-                   c.drug_source_concept == self._concept_set.id)
-        
-        def check_measurement(c: 'Measurement') -> bool:
-            return (c.codeset_id == self._concept_set.id or 
-                   c.measurement_source_concept == self._concept_set.id)
-        
-        def check_observation(c: 'Observation') -> bool:
-            return (c.codeset_id == self._concept_set.id or 
-                   c.observation_source_concept == self._concept_set.id)
-        
-        def check_procedure_occurrence(c: 'ProcedureOccurrence') -> bool:
-            return (c.codeset_id == self._concept_set.id or 
-                   c.procedure_source_concept == self._concept_set.id)
-        
-        def check_specimen(c: 'Specimen') -> bool:
+
+        def check_drug_exposure(c: "DrugExposure") -> bool:
+            return (
+                c.codeset_id == self._concept_set.id
+                or c.drug_source_concept == self._concept_set.id
+            )
+
+        def check_measurement(c: "Measurement") -> bool:
+            return (
+                c.codeset_id == self._concept_set.id
+                or c.measurement_source_concept == self._concept_set.id
+            )
+
+        def check_observation(c: "Observation") -> bool:
+            return (
+                c.codeset_id == self._concept_set.id
+                or c.observation_source_concept == self._concept_set.id
+            )
+
+        def check_procedure_occurrence(c: "ProcedureOccurrence") -> bool:
+            return (
+                c.codeset_id == self._concept_set.id
+                or c.procedure_source_concept == self._concept_set.id
+            )
+
+        def check_specimen(c: "Specimen") -> bool:
             return c.codeset_id == self._concept_set.id
-        
-        def check_visit_occurrence(c: 'VisitOccurrence') -> bool:
+
+        def check_visit_occurrence(c: "VisitOccurrence") -> bool:
             return c.codeset_id == self._concept_set.id
-        
-        def check_visit_detail(c: 'VisitDetail') -> bool:
+
+        def check_visit_detail(c: "VisitDetail") -> bool:
             if c.codeset_id == self._concept_set.id:
                 return True
             # Check ConceptSetSelection fields
@@ -134,13 +182,13 @@ class CriteriaCheckerFactory:
                 if css is not None and css.codeset_id == self._concept_set.id:
                     return True
             return False
-        
-        def check_location_region(c: 'LocationRegion') -> bool:
+
+        def check_location_region(c: "LocationRegion") -> bool:
             return c.codeset_id == self._concept_set.id
-        
-        def default_check(c: 'Criteria') -> bool:
+
+        def default_check(c: "Criteria") -> bool:
             return False
-        
+
         # Route to appropriate checker
         if isinstance(criteria, ConditionEra):
             return check_condition_era
@@ -172,20 +220,21 @@ class CriteriaCheckerFactory:
             return check_location_region
         else:
             return default_check
-    
-    def _get_concept_set_selection_suppliers(self, criteria: 'VisitDetail') -> List[Callable[[], Optional['ConceptSetSelection']]]:
+
+    def _get_concept_set_selection_suppliers(
+        self, criteria: "VisitDetail"
+    ) -> List[Callable[[], Optional["ConceptSetSelection"]]]:
         """Get suppliers for ConceptSetSelection fields in VisitDetail.
-        
+
         Args:
             criteria: The VisitDetail criteria
-            
+
         Returns:
             A list of functions that return ConceptSetSelection objects
         """
-        suppliers: List[Callable[[], Optional['ConceptSetSelection']]] = []
+        suppliers: List[Callable[[], Optional["ConceptSetSelection"]]] = []
         suppliers.append(lambda: criteria.place_of_service_cs)
         suppliers.append(lambda: criteria.gender_cs)
         suppliers.append(lambda: criteria.provider_specialty_cs)
         suppliers.append(lambda: criteria.visit_detail_type_cs)
         return suppliers
-

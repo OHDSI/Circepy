@@ -14,10 +14,10 @@ from enum import Enum
 
 class WarningSeverity(Enum):
     """Severity levels for validation warnings.
-    
+
     Java equivalent: org.ohdsi.circe.check.WarningSeverity
     """
+
     INFO = "INFO"
     WARNING = "WARNING"
     CRITICAL = "CRITICAL"
-

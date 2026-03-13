@@ -16,8 +16,8 @@ Since this package is currently in private development, you'll need to install i
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/azimov/circepy.git
-cd circepy
+git clone https://github.com/OHDSI/Circepy.git
+cd Circepy
 ```
 
 ### Step 2: Install in Development Mode
@@ -65,7 +65,7 @@ This installs only the core dependencies (`pydantic` and `typing-extensions`).
 > 
 > ```bash
 > # This will work in future releases
-> pip install ohdsi-circe
+> pip install ohdsi-circepy
 > ```
 
 ## Installation Options
@@ -146,7 +146,7 @@ start htmlcov/index.html  # Windows
 
 **Solution**: Ensure you installed in editable mode from the repository root:
 ```bash
-cd circepy
+cd Circepy
 pip install -e .
 ```
 
@@ -165,8 +165,8 @@ python -m circe --help
 
 **Solution**: Reinstall the package:
 ```bash
-pip uninstall ohdsi-circe circe
-cd circepy
+pip uninstall ohdsi-circepy circe
+cd Circepy
 pip install -e ".[dev]"
 ```
 
@@ -193,7 +193,7 @@ pip install --upgrade pydantic>=2.0.0
 To get the latest changes from the repository:
 
 ```bash
-cd circepy
+cd Circepy
 git pull origin main  # or git pull origin develop for latest development
 pip install -e ".[dev]"  # Reinstall if dependencies changed
 ```
@@ -203,7 +203,7 @@ pip install -e ".[dev]"  # Reinstall if dependencies changed
 To remove the package:
 
 ```bash
-pip uninstall ohdsi-circe
+pip uninstall ohdsi-circepy
 ```
 
 ## System Requirements
@@ -224,7 +224,7 @@ If you encounter installation issues:
 
 1. Check the [Troubleshooting](#troubleshooting) section above
 2. Review the [Contributing Guide](CONTRIBUTING.md)
-3. Open an issue on [GitHub Issues](https://github.com/azimov/circepy/issues)
+3. Open an issue on [GitHub Issues](https://github.com/OHDSI/Circepy/issues)
 4. Check existing issues for similar problems
 
 ## Next Steps

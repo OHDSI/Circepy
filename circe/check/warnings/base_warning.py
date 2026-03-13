@@ -14,27 +14,26 @@ from ..warning_severity import WarningSeverity
 
 class BaseWarning(Warning):
     """Base class for all validation warnings.
-    
+
     Java equivalent: org.ohdsi.circe.check.warnings.BaseWarning
-    
+
     All warning classes should extend this base class to provide
     common functionality like severity tracking.
     """
-    
+
     def __init__(self, severity: WarningSeverity):
         """Initialize a warning with a severity level.
-        
+
         Args:
             severity: The severity level of this warning
         """
         self._severity = severity
-    
+
     @property
     def severity(self) -> WarningSeverity:
         """Get the severity level of this warning.
-        
+
         Returns:
             The warning severity level
         """
         return self._severity
-

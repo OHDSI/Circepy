@@ -1,0 +1,47 @@
+    # Curated validated examples
+    EXAMPLES = {
+        "simple": ("Simple Diabetes Cohort", "Basic cohort with age restriction", '''cohort = (
+    CohortBuilder("Adults with Diabetes")
+    .with_condition(1)
+    .require_age(18)
+    .build()
+)'''),
+        "incident": ("Incident Diabetes Diagnosis", "First-time diagnosis with observation window", '''cohort = (
+    CohortBuilder("New Diabetes Diagnosis")
+    .with_condition(1)
+    .first_occurrence()
+    .with_observation(prior_days=365)
+    .min_age(18)
+    .build()
+)'''),
+        "with_criteria": ("Diabetes with Prior Medication", "Entry event with inclusion criteria", '''cohort = (
+    CohortBuilder("Diabetes with Prior Metformin")
+    .with_condition(1)
+    .first_occurrence()
+    .require_age(18, 75)
+    .begin_rule("Prior Metformin Use")
+    .require_drug(2).anytime_before()
+    .build()
+)'''),
+        "complex": ("Complex Diabetes Cohort", "Multiple criteria with time windows", '''cohort = (
+    CohortBuilder("T2DM with Metformin and Lab")
+    .with_condition(1)
+    .first_occurrence()
+    .with_observation(prior_days=365)
+    .require_age(18, 75)
+    .begin_rule("Metformin Within 30 Days")
+    .require_drug(2).within_days_after(30)
+    .begin_rule("HbA1c Within 180 Days")
+    .require_measurement(4).within_days_after(180)
+    .begin_rule("No Prior Insulin")
+    .exclude_drug(3).within_days_before(180)
+    .build()
+)'''),
+    }
+    
+    def get_example(self, key: str) -> str:
+        """Get a formatted example."""
+        if key not in self.EXAMPLES:
+            return ""
+        title, desc, code = self.EXAMPLES[key]
+        return f"### Example: {title}\n\n{desc}\n\n```python\nfrom circe.cohort_builder import CohortBuilder\n\n{code}\n```\n"
