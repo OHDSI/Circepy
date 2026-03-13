@@ -12,12 +12,13 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 
 class Constants:
     """Constants used in validation checks.
-    
+
     Java equivalent: org.ohdsi.circe.check.Constants
     """
-    
+
     class Criteria:
         """Criteria type names."""
+
         CONDITION_ERA = "condition era"
         CONDITION_OCCURRENCE = "condition occurrence"
         DEATH = "death"
@@ -35,9 +36,10 @@ class Constants:
         OBSERVATION_PERIOD = "observation period"
         LOCATION_REGION = "location region"
         DEMOGRAPHIC = "demographic"
-    
+
     class Attributes:
         """Attribute names for criteria fields."""
+
         AGE_ATTR = "age"
         QUANTITY_ATTR = "quantity"
         OCCURRENCE_START_DATE_ATTR = "occurrence start date"
@@ -103,4 +105,3 @@ class Constants:
         VISIT_DETAIL_END_DATE_ATTR = "visit detail end date"
         VISIT_DETAIL_LENGTH_ATTR = "visit detail length"
         VISIT_DETAIL_TYPE_ATTR = "visit detail type"
-
