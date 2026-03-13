@@ -91,6 +91,14 @@ from .api import (
 
 # Main exports
 from .cohortdefinition import CohortExpression
+from .execution import (
+    ExecutionOptions,
+    IbisExecutor,
+    build_ibis,
+    to_polars,
+    write_cohort,
+)
+from .io import load_expression
 from .vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 
@@ -222,4 +230,11 @@ __all__ = [
     "build_cohort_query",
     "cohort_print_friendly",
     "safe_model_rebuild",
+    # I/O and experimental execution API
+    "load_expression",
+    "ExecutionOptions",
+    "IbisExecutor",
+    "build_ibis",
+    "to_polars",
+    "write_cohort",
 ]
