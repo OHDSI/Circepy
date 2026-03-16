@@ -8,8 +8,9 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+from pydantic import BaseModel, Field, ConfigDict, model_serializer, AliasChoices, field_validator, BeforeValidator
 from enum import Enum
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Union
+from typing import Annotated, TYPE_CHECKING, Any, ClassVar, List, Optional, Union
 
 from pydantic import (
     AliasChoices,
@@ -257,6 +258,27 @@ class Criteria(CirceBaseModel):
     @model_serializer(mode="wrap")
     def _serialize_polymorphic(self, serializer, info):
         """Serialize with polymorphic type wrapper for Java compatibility."""
+        if self.__class__.__name__ == 'Criteria':
+            return serializer(self)
+            
+        # For subclasses (extensions), we want to ensure all fields are included
+        # even if serialized via a base class Union link.
+        # We manually build the dict to avoid infinite recursion with model_dump()
+        data = {}
+        for field_name, field_info in self.model_fields.items():
+            value = getattr(self, field_name)
+            if value is not None:
+                # Use serialization_alias if it exists, otherwise use field name
+                # Note: alias_generator (PascalCase) is handled via serialization_alias 
+                # effectively if we use the right property. 
+                # In Pydantic V2, serialization_alias is often the PascalCase version if configured.
+                alias = field_info.serialization_alias or field_name
+                # If it's a generic field without explicit alias, it might need PascalCase
+                # but most CIRCE fields have explicit aliases.
+                data[alias] = value
+                
+        return {self.__class__.__name__: data}
+    
         # Get the serialized data using default serialization
         data = serializer(self)
         # Wrap in class name for polymorphic deserialization in Java
@@ -1534,8 +1556,10 @@ class CriteriaGroup(BaseModel):
         return deserialized
 
 
-# Define CriteriaType Union for strict typing
-CriteriaType = Union[
+# Define CriteriaType Union for strict typing.
+# Criteria is last so known subtypes are tried first; it also acts as
+# a catch-all that accepts any registered extension subclass.
+_CriteriaTypeUnion = Union[
     ConditionOccurrence,
     DrugExposure,
     ProcedureOccurrence,
@@ -1552,7 +1576,24 @@ CriteriaType = Union[
     ConditionEra,
     DrugEra,
     DoseEra,
+    Criteria,  # catch-all for extension subclasses
 ]
+
+def _validate_criteria_extension(v: Any) -> Any:
+    """Deserialize extension criteria from a single-key dict via the extensions registry."""
+    if isinstance(v, dict) and len(v) == 1:
+        key = next(iter(v))
+        try:
+            from circe.extensions import get_registry
+            registry = get_registry()
+            cls = registry.get_criteria_class(key)
+            if cls:
+                return cls.model_validate(v[key])
+        except ImportError:
+            pass
+    return v
+
+CriteriaType = Annotated[_CriteriaTypeUnion, BeforeValidator(_validate_criteria_extension)]
 
 # Map for dynamic lookup
 NAMES_TO_CLASSES = {
