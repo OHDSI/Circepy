@@ -150,6 +150,7 @@ def test_write_cohort_rejects_append_and_overwrite_together():
 
 
 def test_has_end_strategy_handles_polymorphic_models():
+    pytest.importorskip("ibis")
     from circe.execution.builders.common import has_end_strategy
 
     assert has_end_strategy(None) is False
@@ -162,6 +163,7 @@ def test_has_end_strategy_handles_polymorphic_models():
 def test_ibis_executor_build_smoke_duckdb():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
+    pytest.importorskip("polars")
 
     conn = ibis.duckdb.connect()
 

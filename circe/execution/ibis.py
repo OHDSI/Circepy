@@ -6,6 +6,8 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, Any, List, Optional
 
 from ..io import ExpressionInput, load_expression
+from .cohort_definition_set import CohortDefinitionMember, CohortDefinitionSet
+from .cohort_generator import CohortGenerator, GenerationResult, SetGenerationResult
 from .options import ExecutionOptions, SchemaName, schema_to_str
 
 if TYPE_CHECKING:
@@ -223,3 +225,72 @@ def write_cohort(
             append=append,
             cohort_id=cohort_id,
         )
+
+
+def generate_cohort(
+    expression: ExpressionInput,
+    conn: Any,
+    *,
+    cohort_id: Any,
+    table: str,
+    schema: Optional[SchemaName] = None,
+    incremental: bool = True,
+    overwrite_on_hash_change: bool = True,
+    options: Optional[ExecutionOptions] = None,
+) -> GenerationResult:
+    """Generator-first wrapper that persists one cohort with incremental behavior."""
+    with IbisExecutor(conn, options) as executor:
+        generator = CohortGenerator(executor)
+        return generator.generate(
+            expression,
+            cohort_id=cohort_id,
+            table=table,
+            schema=schema,
+            incremental=incremental,
+            overwrite_on_hash_change=overwrite_on_hash_change,
+        )
+
+
+def generate_cohort_set(
+    definition_set: CohortDefinitionSet,
+    conn: Any,
+    *,
+    table: str,
+    schema: Optional[SchemaName] = None,
+    incremental: bool = True,
+    remove_missing: bool = False,
+    short_circuit_on_unchanged_set: bool = False,
+    options: Optional[ExecutionOptions] = None,
+) -> SetGenerationResult:
+    """Generator-first wrapper that persists many cohorts from one set."""
+    with IbisExecutor(conn, options) as executor:
+        generator = CohortGenerator(executor)
+        return generator.generate_set(
+            definition_set,
+            table=table,
+            schema=schema,
+            incremental=incremental,
+            remove_missing=remove_missing,
+            short_circuit_on_unchanged_set=short_circuit_on_unchanged_set,
+        )
+
+
+def generate_many(
+    items: List[CohortDefinitionMember],
+    conn: Any,
+    *,
+    table: str,
+    schema: Optional[SchemaName] = None,
+    incremental: bool = True,
+    options: Optional[ExecutionOptions] = None,
+) -> List[GenerationResult]:
+    """Generator-first wrapper for a list of independent cohort definitions."""
+    with IbisExecutor(conn, options) as executor:
+        generator = CohortGenerator(executor)
+        return generator.generate_many(
+            items,
+            table=table,
+            schema=schema,
+            incremental=incremental,
+        )
+

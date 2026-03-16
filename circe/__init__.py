@@ -88,17 +88,21 @@ from .api import (
     cohort_expression_from_json,
     cohort_print_friendly,
 )
-
-# Main exports
-from .cohortdefinition import CohortExpression
 from .execution import (
+    CohortDefinitionMember,
+    CohortDefinitionSet,
+    CohortGenerator,
     ExecutionOptions,
     IbisExecutor,
     build_ibis,
+    generate_cohort,
+    generate_cohort_set,
+    generate_many,
     to_polars,
     write_cohort,
 )
 from .io import load_expression
+from .skills import get_cohort_builder_skill, get_skill, list_skills
 from .vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 
@@ -237,6 +241,12 @@ __all__ = [
     "build_ibis",
     "to_polars",
     "write_cohort",
+    "CohortGenerator",
+    "CohortDefinitionSet",
+    "CohortDefinitionMember",
+    "generate_cohort",
+    "generate_cohort_set",
+    "generate_many",
     "safe_model_rebuild",
     # Skills for AI agents
     "get_cohort_builder_skill",
