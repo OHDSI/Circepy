@@ -99,13 +99,10 @@ def table_one(
 def get_standard_table_one_set() -> "FeatureSet":
     """Return a standard FeatureSet for baseline characterization.
     
-    Includes:
-    - Age, Gender (to be implemented via Bulk or specialized logic)
-    - Common comorbidities (Charlson components)
+    Includes demographics (age, gender) and bulk domain features for
+    conditions, drugs, and procedures in a 365-day lookback window.
+    Delegates to ``presets.default_covariates()``.
     """
-    from .builder import FeatureSetBuilder
+    from .presets import default_covariates
     
-    builder = FeatureSetBuilder("Standard Table 1")
-    # This is a placeholder since we don't have the specific codeset IDs here
-    # but shows the intent.
-    return builder.build()
+    return default_covariates()

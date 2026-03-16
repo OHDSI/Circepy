@@ -11,10 +11,13 @@ from .models import (
     BinaryFeature,
     BulkDomainFeature,
     CompositeFeature,
+    DemographicsFeature,
+    EraOverlapFeature,
     FeatureDefinition,
     FeatureSet,
     TemporalConfig,
     ValueFeature,
+    VisitCountFeature,
 )
 
 
@@ -30,6 +33,9 @@ class FeatureSetBuilder:
         builder.value("Latest BMI", codeset_id=2, domain="Measurement",
                       value_column="value_as_number", aggregation="latest")
         builder.bulk("ConditionOccurrence", window=(-365, 0))
+        builder.demographics(include_age=True, include_gender=True)
+        builder.visit_count(window=(-365, 0))
+        builder.era_overlap("ConditionEra", window=(-365, 0))
         builder.temporal(["ConditionOccurrence", "Measurement"], window=(-365, 0))
 
         feature_set = builder.build()
@@ -111,6 +117,65 @@ class FeatureSetBuilder:
         )
         return self
 
+    def demographics(
+        self,
+        *,
+        include_age: bool = True,
+        include_gender: bool = True,
+        include_race: bool = False,
+        include_ethnicity: bool = False,
+        include_index_year: bool = False,
+        include_index_month: bool = False,
+        name: str = "Demographics",
+    ) -> FeatureSetBuilder:
+        """Add demographic features extracted from the person table."""
+        self._feature_set.add(
+            DemographicsFeature(
+                name=name,
+                include_age=include_age,
+                include_gender=include_gender,
+                include_race=include_race,
+                include_ethnicity=include_ethnicity,
+                include_index_year=include_index_year,
+                include_index_month=include_index_month,
+            )
+        )
+        return self
+
+    def visit_count(
+        self,
+        window: Tuple[int, int] = (-365, 0),
+        *,
+        visit_concept_ids: Optional[List[int]] = None,
+        name: Optional[str] = None,
+    ) -> FeatureSetBuilder:
+        """Add a visit count feature (count of visits in the window)."""
+        self._feature_set.add(
+            VisitCountFeature(
+                name=name or "Visit Count",
+                window=window,
+                visit_concept_ids=visit_concept_ids,
+            )
+        )
+        return self
+
+    def era_overlap(
+        self,
+        domain: str = "ConditionEra",
+        window: Tuple[int, int] = (-365, 0),
+        *,
+        name: Optional[str] = None,
+    ) -> FeatureSetBuilder:
+        """Add era overlap features (one per concept with an active era)."""
+        self._feature_set.add(
+            EraOverlapFeature(
+                name=name or f"{domain} Overlap",
+                domain=domain,
+                window=window,
+            )
+        )
+        return self
+
     def temporal(
         self,
         domains: List[str],
@@ -128,3 +193,4 @@ class FeatureSetBuilder:
     def build(self) -> FeatureSet:
         """Return the finalized FeatureSet."""
         return self._feature_set
+

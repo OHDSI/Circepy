@@ -33,6 +33,15 @@ class FeatureType(str, Enum):
     BULK_DOMAIN = "bulk_domain"
     """All concepts within a domain, one feature per concept_id."""
 
+    DEMOGRAPHICS = "demographics"
+    """Patient-level attributes from the person table (age, gender, race, etc.)."""
+
+    VISIT_COUNT = "visit_count"
+    """Count of visits in a time window, optionally filtered by visit type."""
+
+    ERA_OVERLAP = "era_overlap"
+    """Condition/drug eras overlapping the index window (one per concept)."""
+
 
 class Aggregation(str, Enum):
     """Aggregation functions for continuous features."""
@@ -179,6 +188,54 @@ class BinaryFeature(FeatureDefinition):
         return payload
 
 
+class AncestorBinaryFeature(BinaryFeature):
+    """Binary feature that matches via concept_ancestor rollup.
+
+    Instead of requiring a pre-compiled codeset, this feature type joins
+    the domain table to ``concept_ancestor`` at extraction time to find
+    all descendant concepts of the given ancestor concept IDs.
+
+    Used by the Charlson Index preset to avoid requiring users to register
+    codesets for standard comorbidity concepts.
+
+    Parameters
+    ----------
+    name : str
+        Human-readable feature name.
+    ancestor_concept_ids : list[int]
+        OMOP ancestor concept IDs to expand via ``concept_ancestor``.
+    domain : str
+        OMOP domain name (e.g. ``"ConditionEra"``).
+    window : tuple[int, int]
+        ``(days_before, days_after)`` relative to the index date.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        ancestor_concept_ids: List[int],
+        domain: str = "ConditionOccurrence",
+        window: Tuple[int, int] = (-99999, 0),
+        *,
+        description: str = "",
+        tags: Optional[Dict[str, str]] = None,
+    ):
+        # codeset_id=-1 signals that ancestor rollup is used instead
+        super().__init__(
+            name, codeset_id=-1, domain=domain, window=window,
+            description=description, tags=tags,
+        )
+        self.ancestor_concept_ids = sorted(ancestor_concept_ids)
+
+    def _hash_payload(self) -> dict:
+        return {
+            "type": "ancestor_binary",
+            "domain": self.domain,
+            "ancestor_concept_ids": self.ancestor_concept_ids,
+            "window": list(self.window),
+        }
+
+
 class ValueFeature(FeatureDefinition):
     """Extract a numeric value from a domain column.
 
@@ -310,6 +367,144 @@ class BulkDomainFeature(FeatureDefinition):
             "window": list(self.window),
             "use_ancestors": self.use_ancestors,
         }
+
+
+class VisitCountFeature(FeatureDefinition):
+    """Count of visits in a time window, optionally filtered by visit type.
+
+    Parameters
+    ----------
+    name : str
+        Human-readable feature name.
+    window : tuple[int, int]
+        ``(days_before, days_after)`` relative to index date.
+    visit_concept_ids : list[int] | None
+        If provided, only count visits matching these visit_concept_id values.
+        Common values: 9201 (inpatient), 9202 (outpatient), 9203 (ER).
+        If ``None``, count all visits.
+    """
+
+    def __init__(
+        self,
+        name: str = "Visit Count",
+        window: Tuple[int, int] = (-365, 0),
+        *,
+        visit_concept_ids: Optional[List[int]] = None,
+        description: str = "",
+        tags: Optional[Dict[str, str]] = None,
+    ):
+        super().__init__(name, FeatureType.VISIT_COUNT, description=description, tags=tags)
+        self.window = window
+        self.visit_concept_ids = sorted(visit_concept_ids) if visit_concept_ids else None
+
+    def _hash_payload(self) -> dict:
+        payload = {
+            "type": self.feature_type.value,
+            "window": list(self.window),
+        }
+        if self.visit_concept_ids:
+            payload["visit_concept_ids"] = self.visit_concept_ids
+        return payload
+
+
+class EraOverlapFeature(FeatureDefinition):
+    """One binary feature per concept whose era overlaps the index window.
+
+    Unlike ``BulkDomainFeature`` (which checks event *start dates* within a
+    window), this feature checks whether an **era** (condition_era or
+    drug_era) is *active* during the window — i.e. the era's start date is
+    before the window end AND its end date is after the window start.
+
+    Parameters
+    ----------
+    name : str
+        Prefix name (e.g. ``"ConditionEra_Overlap"``).
+    domain : str
+        ``"ConditionEra"`` or ``"DrugEra"``.
+    window : tuple[int, int]
+        ``(days_before, days_after)`` relative to index date.
+    """
+
+    def __init__(
+        self,
+        name: str = "Era Overlap",
+        domain: str = "ConditionEra",
+        window: Tuple[int, int] = (-365, 0),
+        *,
+        description: str = "",
+        tags: Optional[Dict[str, str]] = None,
+    ):
+        super().__init__(name, FeatureType.ERA_OVERLAP, description=description, tags=tags)
+        self.domain = domain
+        self.window = window
+
+    def _hash_payload(self) -> dict:
+        return {
+            "type": self.feature_type.value,
+            "domain": self.domain,
+            "window": list(self.window),
+        }
+
+
+class DemographicsFeature(FeatureDefinition):
+    """Patient-level attributes extracted from the ``person`` table.
+
+    Produces multiple sub-features (each with its own hash) for the
+    selected demographic attributes.
+
+    Parameters
+    ----------
+    include_age : bool
+        Include age in years at index date.
+    include_gender : bool
+        Include binary features for each ``gender_concept_id``.
+    include_race : bool
+        Include binary features for each ``race_concept_id``.
+    include_ethnicity : bool
+        Include binary features for each ``ethnicity_concept_id``.
+    include_index_year : bool
+        Include calendar year of index date.
+    include_index_month : bool
+        Include calendar month of index date.
+    """
+
+    def __init__(
+        self,
+        name: str = "Demographics",
+        *,
+        include_age: bool = True,
+        include_gender: bool = True,
+        include_race: bool = False,
+        include_ethnicity: bool = False,
+        include_index_year: bool = False,
+        include_index_month: bool = False,
+        description: str = "",
+        tags: Optional[Dict[str, str]] = None,
+    ):
+        super().__init__(name, FeatureType.DEMOGRAPHICS, description=description, tags=tags)
+        self.include_age = include_age
+        self.include_gender = include_gender
+        self.include_race = include_race
+        self.include_ethnicity = include_ethnicity
+        self.include_index_year = include_index_year
+        self.include_index_month = include_index_month
+
+    def _hash_payload(self) -> dict:
+        return {
+            "type": self.feature_type.value,
+            "age": self.include_age,
+            "gender": self.include_gender,
+            "race": self.include_race,
+            "ethnicity": self.include_ethnicity,
+            "index_year": self.include_index_year,
+            "index_month": self.include_index_month,
+        }
+
+    def sub_hash(self, attribute: str) -> str:
+        """Deterministic hash for a specific demographic sub-feature."""
+        payload = {"parent": self.feature_hash, "attribute": attribute}
+        canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 # ----------------------------------------------------------------------
