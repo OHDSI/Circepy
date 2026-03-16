@@ -101,8 +101,8 @@ class ConceptSetSelectionCheckerFactory(BaseCheckerFactory):
 
             return check
         else:
-            return (
-                lambda c: None
+            return lambda c: (
+                None
             )  # No ConceptSetSelection checks for other criteria types
 
     def _get_check_demographic(

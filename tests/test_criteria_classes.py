@@ -45,10 +45,7 @@ class TestConditionOccurrence(unittest.TestCase):
 
     def test_condition_occurrence_initialization(self):
         """Test basic initialization of ConditionOccurrence."""
-        condition = ConditionOccurrence(
-            first=True,
-            condition_type_exclude=False
-        )
+        condition = ConditionOccurrence(first=True, condition_type_exclude=False)
         self.assertTrue(condition.first)
         self.assertFalse(condition.condition_type_exclude)
         self.assertIsNone(condition.gender)
@@ -74,9 +71,9 @@ class TestConditionOccurrence(unittest.TestCase):
             first=True,
             provider_specialty=[Concept(concept_id=7, concept_name="Cardiology")],
             age=NumericRange(op="gte", value=18, extent=65),
-            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01")
+            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01"),
         )
-        
+
         self.assertEqual(len(condition.gender), 1)
         self.assertEqual(condition.gender[0].concept_id, 8507)
         self.assertEqual(condition.stop_reason.text, "completed")
@@ -85,19 +82,29 @@ class TestConditionOccurrence(unittest.TestCase):
 
     def test_condition_occurrence_camel_case_aliases(self):
         """Test that camelCase aliases work correctly."""
-        condition = ConditionOccurrence.model_validate({
-            "occurrenceEndDate": {"op": "lt", "extent": "30", "value": "2023-01-01"},
-            "conditionSourceConcept": 12345,
-            "genderCS": {"codesetId": 1, "isExclusion": False},
-            "conditionTypeExclude": False,
-            "providerSpecialtyCS": {"codesetId": 3, "isExclusion": False},
-            "visitTypeCS": {"codesetId": 4, "isExclusion": False},
-            "conditionStatusCS": {"codesetId": 6, "isExclusion": False},
-            "codesetId": 100,
-            "first": True,
-            "occurrenceStartDate": {"op": "gte", "extent": "0", "value": "2020-01-01"}
-        })
-        
+        condition = ConditionOccurrence.model_validate(
+            {
+                "occurrenceEndDate": {
+                    "op": "lt",
+                    "extent": "30",
+                    "value": "2023-01-01",
+                },
+                "conditionSourceConcept": 12345,
+                "genderCS": {"codesetId": 1, "isExclusion": False},
+                "conditionTypeExclude": False,
+                "providerSpecialtyCS": {"codesetId": 3, "isExclusion": False},
+                "visitTypeCS": {"codesetId": 4, "isExclusion": False},
+                "conditionStatusCS": {"codesetId": 6, "isExclusion": False},
+                "codesetId": 100,
+                "first": True,
+                "occurrenceStartDate": {
+                    "op": "gte",
+                    "extent": "0",
+                    "value": "2020-01-01",
+                },
+            }
+        )
+
         self.assertIsNotNone(condition.occurrence_end_date)
         self.assertEqual(condition.condition_source_concept, 12345)
         self.assertEqual(condition.codeset_id, 100)
@@ -109,10 +116,7 @@ class TestDrugExposure(unittest.TestCase):
 
     def test_drug_exposure_initialization(self):
         """Test basic initialization of DrugExposure."""
-        drug = DrugExposure(
-            first=True,
-            drug_type_exclude=False
-        )
+        drug = DrugExposure(first=True, drug_type_exclude=False)
         self.assertTrue(drug.first)
         self.assertFalse(drug.drug_type_exclude)
         self.assertIsNone(drug.gender)
@@ -138,9 +142,9 @@ class TestDrugExposure(unittest.TestCase):
             first=True,
             provider_specialty=[Concept(concept_id=8, concept_name="Cardiology")],
             age=NumericRange(op="gte", value=18, extent=65),
-            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01")
+            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01"),
         )
-        
+
         self.assertEqual(len(drug.gender), 1)
         self.assertEqual(drug.stop_reason.text, "completed")
         self.assertEqual(drug.codeset_id, 100)
@@ -148,19 +152,29 @@ class TestDrugExposure(unittest.TestCase):
 
     def test_drug_exposure_camel_case_aliases(self):
         """Test that camelCase aliases work correctly."""
-        drug = DrugExposure.model_validate({
-            "occurrenceEndDate": {"op": "lt", "extent": "30", "value": "2023-01-01"},
-            "drugSourceConcept": 12345,
-            "genderCS": {"codesetId": 1, "isExclusion": False},
-            "drugTypeExclude": False,
-            "providerSpecialtyCS": {"codesetId": 3, "isExclusion": False},
-            "visitTypeCS": {"codesetId": 4, "isExclusion": False},
-            "routeConceptCS": {"codesetId": 7, "isExclusion": False},
-            "codesetId": 100,
-            "first": True,
-            "occurrenceStartDate": {"op": "gte", "extent": "0", "value": "2020-01-01"}
-        })
-        
+        drug = DrugExposure.model_validate(
+            {
+                "occurrenceEndDate": {
+                    "op": "lt",
+                    "extent": "30",
+                    "value": "2023-01-01",
+                },
+                "drugSourceConcept": 12345,
+                "genderCS": {"codesetId": 1, "isExclusion": False},
+                "drugTypeExclude": False,
+                "providerSpecialtyCS": {"codesetId": 3, "isExclusion": False},
+                "visitTypeCS": {"codesetId": 4, "isExclusion": False},
+                "routeConceptCS": {"codesetId": 7, "isExclusion": False},
+                "codesetId": 100,
+                "first": True,
+                "occurrenceStartDate": {
+                    "op": "gte",
+                    "extent": "0",
+                    "value": "2020-01-01",
+                },
+            }
+        )
+
         self.assertIsNotNone(drug.occurrence_end_date)
         self.assertEqual(drug.drug_source_concept, 12345)
         self.assertEqual(drug.codeset_id, 100)
@@ -172,10 +186,7 @@ class TestProcedureOccurrence(unittest.TestCase):
 
     def test_procedure_occurrence_initialization(self):
         """Test basic initialization of ProcedureOccurrence."""
-        procedure = ProcedureOccurrence(
-            first=True,
-            procedure_type_exclude=False
-        )
+        procedure = ProcedureOccurrence(first=True, procedure_type_exclude=False)
         self.assertTrue(procedure.first)
         self.assertFalse(procedure.procedure_type_exclude)
         self.assertIsNone(procedure.gender)
@@ -200,9 +211,9 @@ class TestProcedureOccurrence(unittest.TestCase):
             first=True,
             provider_specialty=[Concept(concept_id=8, concept_name="Surgery")],
             age=NumericRange(op="gte", value=18, extent=65),
-            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01")
+            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01"),
         )
-        
+
         self.assertEqual(len(procedure.gender), 1)
         self.assertEqual(procedure.procedure_source_concept, 12345)
         self.assertEqual(procedure.codeset_id, 100)
@@ -214,9 +225,7 @@ class TestVisitOccurrence(unittest.TestCase):
 
     def test_visit_occurrence_initialization(self):
         """Test basic initialization of VisitOccurrence."""
-        visit = VisitOccurrence(
-            visit_type_exclude=False
-        )
+        visit = VisitOccurrence(visit_type_exclude=False)
         self.assertFalse(visit.visit_type_exclude)
         self.assertIsNone(visit.gender)
 
@@ -232,9 +241,9 @@ class TestVisitOccurrence(unittest.TestCase):
             provider_specialty_cs=ConceptSetSelection(codeset_id=3, is_exclusion=False),
             provider_specialty=[Concept(concept_id=4, concept_name="Cardiology")],
             age=NumericRange(op="gte", value=18, extent=65),
-            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01")
+            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01"),
         )
-        
+
         self.assertEqual(len(visit.gender), 1)
         self.assertEqual(len(visit.visit_type), 1)
         self.assertEqual(visit.visit_type[0].concept_id, 2)
@@ -245,10 +254,7 @@ class TestObservation(unittest.TestCase):
 
     def test_observation_initialization(self):
         """Test basic initialization of Observation."""
-        observation = Observation(
-            first=True,
-            observation_type_exclude=False
-        )
+        observation = Observation(first=True, observation_type_exclude=False)
         self.assertTrue(observation.first)
         self.assertFalse(observation.observation_type_exclude)
         self.assertIsNone(observation.gender)
@@ -272,9 +278,9 @@ class TestObservation(unittest.TestCase):
             first=True,
             provider_specialty=[Concept(concept_id=6, concept_name="Lab")],
             age=NumericRange(op="gte", value=18, extent=65),
-            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01")
+            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01"),
         )
-        
+
         self.assertEqual(len(observation.gender), 1)
         self.assertEqual(observation.observation_source_concept, 12345)
         self.assertEqual(observation.value_as_string.text, "normal")
@@ -286,10 +292,7 @@ class TestMeasurement(unittest.TestCase):
 
     def test_measurement_initialization(self):
         """Test basic initialization of Measurement."""
-        measurement = Measurement(
-            first=True,
-            measurement_type_exclude=False
-        )
+        measurement = Measurement(first=True, measurement_type_exclude=False)
         self.assertTrue(measurement.first)
         self.assertFalse(measurement.measurement_type_exclude)
         self.assertIsNone(measurement.gender)
@@ -320,9 +323,9 @@ class TestMeasurement(unittest.TestCase):
             first=True,
             provider_specialty=[Concept(concept_id=8, concept_name="Lab")],
             age=NumericRange(op="gte", value=18, extent=65),
-            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01")
+            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01"),
         )
-        
+
         self.assertEqual(len(measurement.gender), 1)
         self.assertEqual(measurement.measurement_source_concept, 12345)
         self.assertEqual(measurement.value_as_number.value, 100)
@@ -335,10 +338,7 @@ class TestDeviceExposure(unittest.TestCase):
 
     def test_device_exposure_initialization(self):
         """Test basic initialization of DeviceExposure."""
-        device = DeviceExposure(
-            first=True,
-            device_type_exclude=False
-        )
+        device = DeviceExposure(first=True, device_type_exclude=False)
         self.assertTrue(device.first)
         self.assertFalse(device.device_type_exclude)
         self.assertIsNone(device.gender)
@@ -363,9 +363,9 @@ class TestDeviceExposure(unittest.TestCase):
             first=True,
             provider_specialty=[Concept(concept_id=6, concept_name="Cardiology")],
             age=NumericRange(op="gte", value=18, extent=65),
-            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01")
+            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01"),
         )
-        
+
         self.assertEqual(len(device.gender), 1)
         self.assertEqual(device.device_source_concept, 12345)
         self.assertEqual(device.unique_device_id.text, "DEVICE123")
@@ -378,10 +378,7 @@ class TestSpecimen(unittest.TestCase):
 
     def test_specimen_initialization(self):
         """Test basic initialization of Specimen."""
-        specimen = Specimen(
-            first=True,
-            specimen_type_exclude=False
-        )
+        specimen = Specimen(first=True, specimen_type_exclude=False)
         self.assertTrue(specimen.first)
         self.assertFalse(specimen.specimen_type_exclude)
         self.assertIsNone(specimen.gender)
@@ -407,9 +404,9 @@ class TestSpecimen(unittest.TestCase):
             codeset_id=100,
             first=True,
             age=NumericRange(op="gte", value=18, extent=65),
-            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01")
+            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01"),
         )
-        
+
         self.assertEqual(len(specimen.gender), 1)
         self.assertEqual(specimen.specimen_source_concept, 12345)
         self.assertEqual(len(specimen.specimen_type), 1)
@@ -422,9 +419,7 @@ class TestDeath(unittest.TestCase):
 
     def test_death_initialization(self):
         """Test basic initialization of Death."""
-        death = Death(
-            death_type_exclude=False
-        )
+        death = Death(death_type_exclude=False)
         self.assertFalse(death.death_type_exclude)
         self.assertIsNone(death.gender)
         self.assertIsNone(death.codeset_id)
@@ -440,12 +435,14 @@ class TestDeath(unittest.TestCase):
             death_type_cs=ConceptSetSelection(codeset_id=2, is_exclusion=False),
             death_type_exclude=False,
             cause_source_concept=67890,
-            cause_source_concept_cs=ConceptSetSelection(codeset_id=3, is_exclusion=False),
+            cause_source_concept_cs=ConceptSetSelection(
+                codeset_id=3, is_exclusion=False
+            ),
             codeset_id=100,
             age=NumericRange(op="gte", value=18, extent=65),
-            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01")
+            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01"),
         )
-        
+
         self.assertEqual(len(death.gender), 1)
         self.assertEqual(death.death_source_concept, 12345)
         self.assertEqual(death.cause_source_concept, 67890)
@@ -457,27 +454,21 @@ class TestEraCriteria(unittest.TestCase):
 
     def test_condition_era_initialization(self):
         """Test basic initialization of ConditionEra."""
-        era = ConditionEra(
-            first=True
-        )
+        era = ConditionEra(first=True)
         self.assertTrue(era.first)
         self.assertIsNone(era.gender)
         self.assertIsNone(era.codeset_id)
 
     def test_drug_era_initialization(self):
         """Test basic initialization of DrugEra."""
-        era = DrugEra(
-            first=True
-        )
+        era = DrugEra(first=True)
         self.assertTrue(era.first)
         self.assertIsNone(era.gender)
         self.assertIsNone(era.codeset_id)
 
     def test_dose_era_initialization(self):
         """Test basic initialization of DoseEra."""
-        era = DoseEra(
-            first=True
-        )
+        era = DoseEra(first=True)
         self.assertTrue(era.first)
         self.assertIsNone(era.gender)
         self.assertIsNone(era.codeset_id)
@@ -492,9 +483,9 @@ class TestEraCriteria(unittest.TestCase):
             codeset_id=100,
             first=True,
             age=NumericRange(op="gte", value=18, extent=65),
-            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01")
+            occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01"),
         )
-        
+
         self.assertEqual(len(condition_era.gender), 1)
         self.assertEqual(condition_era.era_length.value, 30)
         self.assertEqual(condition_era.codeset_id, 100)
@@ -505,9 +496,7 @@ class TestOtherCriteria(unittest.TestCase):
 
     def test_visit_detail_initialization(self):
         """Test basic initialization of VisitDetail."""
-        visit_detail = VisitDetail(
-            visit_detail_type_exclude=False
-        )
+        visit_detail = VisitDetail(visit_detail_type_exclude=False)
         self.assertFalse(visit_detail.visit_detail_type_exclude)
         self.assertIsNone(visit_detail.gender)
 
@@ -536,5 +525,5 @@ class TestOtherCriteria(unittest.TestCase):
         self.assertIsNone(geo.include)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

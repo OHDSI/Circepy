@@ -6,8 +6,10 @@ from circe.cohort_builder import CohortBuilder
 
 cohort = (
     CohortBuilder("Fournier's Gangrene Cohort")
-    .with_concept_sets({"id":1, "name":"Fournier's Gangrene"})
-    .with_condition(1) # Entry event: Diagnosis of Fournier's Gangrene (Concept Set ID 1)
+    .with_concept_sets({"id": 1, "name": "Fournier's Gangrene"})
+    .with_condition(
+        1
+    )  # Entry event: Diagnosis of Fournier's Gangrene (Concept Set ID 1)
     .build()
 )
 

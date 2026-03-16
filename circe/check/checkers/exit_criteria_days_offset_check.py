@@ -53,7 +53,13 @@ class ExitCriteriaDaysOffsetCheck(BaseCheck):
         match_result = Operations.match(expression.end_strategy)
         match_result.is_a(DateOffsetStrategy)
         match_result.then(
-            lambda s: Operations.match(s)
-            .when(lambda dos: dos.date_field == DateType.START_DATE and dos.offset == 0)
-            .then(lambda dos: reporter(self.DAYS_OFFSET_WARNING))
+            lambda s: (
+                Operations.match(s)
+                .when(
+                    lambda dos: (
+                        dos.date_field == DateType.START_DATE and dos.offset == 0
+                    )
+                )
+                .then(lambda dos: reporter(self.DAYS_OFFSET_WARNING))
+            )
         )

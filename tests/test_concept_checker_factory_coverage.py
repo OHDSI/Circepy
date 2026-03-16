@@ -1,4 +1,3 @@
-
 import unittest
 from unittest.mock import Mock, call
 
@@ -37,7 +36,7 @@ class TestConceptCheckerFactoryCoverage(unittest.TestCase):
             self.factory.WARNING_EMPTY_VALUE,
             self.group_name,
             Constants.Criteria.CONDITION_ERA,
-            Constants.Attributes.GENDER_ATTR
+            Constants.Attributes.GENDER_ATTR,
         )
 
     def test_check_condition_occurrence(self):
@@ -46,28 +45,54 @@ class TestConceptCheckerFactoryCoverage(unittest.TestCase):
             condition_type=[],
             gender=[],
             provider_specialty=[],
-            visit_type=[]
+            visit_type=[],
         )
         self.factory.check(c)
         # Should report all 4
         calls = [
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.CONDITION_OCCURRENCE, Constants.Attributes.CONDITION_TYPE_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.CONDITION_OCCURRENCE, Constants.Attributes.GENDER_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.CONDITION_OCCURRENCE, Constants.Attributes.PROVIDER_SPECIALITY_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.CONDITION_OCCURRENCE, Constants.Attributes.VISIT_TYPE_ATTR),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.CONDITION_OCCURRENCE,
+                Constants.Attributes.CONDITION_TYPE_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.CONDITION_OCCURRENCE,
+                Constants.Attributes.GENDER_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.CONDITION_OCCURRENCE,
+                Constants.Attributes.PROVIDER_SPECIALITY_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.CONDITION_OCCURRENCE,
+                Constants.Attributes.VISIT_TYPE_ATTR,
+            ),
         ]
         self.reporter.assert_has_calls(calls, any_order=True)
 
     def test_check_death(self):
-        c = Death(
-            codeset_id=0,
-            death_type=[],
-            gender=[]
-        )
+        c = Death(codeset_id=0, death_type=[], gender=[])
         self.factory.check(c)
         calls = [
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DEATH, Constants.Attributes.DEATH_TYPE_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DEATH, Constants.Attributes.GENDER_ATTR),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DEATH,
+                Constants.Attributes.DEATH_TYPE_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DEATH,
+                Constants.Attributes.GENDER_ATTR,
+            ),
         ]
         self.reporter.assert_has_calls(calls, any_order=True)
 
@@ -77,41 +102,64 @@ class TestConceptCheckerFactoryCoverage(unittest.TestCase):
             device_type=[],
             gender=[],
             provider_specialty=[],
-            visit_type=[]
+            visit_type=[],
         )
         self.factory.check(c)
         calls = [
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DEVICE_EXPOSURE, Constants.Attributes.DEVICE_TYPE_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DEVICE_EXPOSURE, Constants.Attributes.GENDER_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DEVICE_EXPOSURE, Constants.Attributes.PROVIDER_SPECIALITY_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DEVICE_EXPOSURE, Constants.Attributes.VISIT_TYPE_ATTR),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DEVICE_EXPOSURE,
+                Constants.Attributes.DEVICE_TYPE_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DEVICE_EXPOSURE,
+                Constants.Attributes.GENDER_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DEVICE_EXPOSURE,
+                Constants.Attributes.PROVIDER_SPECIALITY_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DEVICE_EXPOSURE,
+                Constants.Attributes.VISIT_TYPE_ATTR,
+            ),
         ]
         self.reporter.assert_has_calls(calls, any_order=True)
 
     def test_check_dose_era(self):
-        c = DoseEra(
-            codeset_id=0,
-            unit=[],
-            gender=[]
-        )
+        c = DoseEra(codeset_id=0, unit=[], gender=[])
         self.factory.check(c)
         calls = [
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DOSE_ERA, Constants.Attributes.UNIT_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DOSE_ERA, Constants.Attributes.GENDER_ATTR),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DOSE_ERA,
+                Constants.Attributes.UNIT_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DOSE_ERA,
+                Constants.Attributes.GENDER_ATTR,
+            ),
         ]
         self.reporter.assert_has_calls(calls, any_order=True)
 
     def test_check_drug_era(self):
-        c = DrugEra(
-            codeset_id=0,
-            gender=[]
-        )
+        c = DrugEra(codeset_id=0, gender=[])
         self.factory.check(c)
         self.reporter.assert_called_with(
-            self.factory.WARNING_EMPTY_VALUE, 
-            self.group_name, 
-            Constants.Criteria.DRUG_ERA, 
-            Constants.Attributes.GENDER_ATTR
+            self.factory.WARNING_EMPTY_VALUE,
+            self.group_name,
+            Constants.Criteria.DRUG_ERA,
+            Constants.Attributes.GENDER_ATTR,
         )
 
     def test_check_drug_exposure(self):
@@ -122,16 +170,46 @@ class TestConceptCheckerFactoryCoverage(unittest.TestCase):
             dose_unit=[],
             gender=[],
             provider_specialty=[],
-            visit_type=[]
+            visit_type=[],
         )
         self.factory.check(c)
         calls = [
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DRUG_EXPOSURE, Constants.Attributes.DRUG_TYPE_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DRUG_EXPOSURE, Constants.Attributes.ROUTE_CONCEPT_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DRUG_EXPOSURE, Constants.Attributes.DOSE_UNIT_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DRUG_EXPOSURE, Constants.Attributes.GENDER_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DRUG_EXPOSURE, Constants.Attributes.PROVIDER_SPECIALITY_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DRUG_EXPOSURE, Constants.Attributes.VISIT_TYPE_ATTR),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DRUG_EXPOSURE,
+                Constants.Attributes.DRUG_TYPE_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DRUG_EXPOSURE,
+                Constants.Attributes.ROUTE_CONCEPT_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DRUG_EXPOSURE,
+                Constants.Attributes.DOSE_UNIT_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DRUG_EXPOSURE,
+                Constants.Attributes.GENDER_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DRUG_EXPOSURE,
+                Constants.Attributes.PROVIDER_SPECIALITY_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DRUG_EXPOSURE,
+                Constants.Attributes.VISIT_TYPE_ATTR,
+            ),
         ]
         self.reporter.assert_has_calls(calls, any_order=True)
 
@@ -144,17 +222,52 @@ class TestConceptCheckerFactoryCoverage(unittest.TestCase):
             unit=[],
             gender=[],
             provider_specialty=[],
-            visit_type=[]
+            visit_type=[],
         )
         self.factory.check(c)
         calls = [
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.MEASUREMENT, Constants.Attributes.MEASUREMENT_TYPE_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.MEASUREMENT, Constants.Attributes.OPERATOR_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.MEASUREMENT, Constants.Attributes.VALUE_AS_CONCEPT_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.MEASUREMENT, Constants.Attributes.UNIT_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.MEASUREMENT, Constants.Attributes.GENDER_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.MEASUREMENT, Constants.Attributes.PROVIDER_SPECIALITY_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.MEASUREMENT, Constants.Attributes.VISIT_TYPE_ATTR),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.MEASUREMENT,
+                Constants.Attributes.MEASUREMENT_TYPE_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.MEASUREMENT,
+                Constants.Attributes.OPERATOR_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.MEASUREMENT,
+                Constants.Attributes.VALUE_AS_CONCEPT_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.MEASUREMENT,
+                Constants.Attributes.UNIT_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.MEASUREMENT,
+                Constants.Attributes.GENDER_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.MEASUREMENT,
+                Constants.Attributes.PROVIDER_SPECIALITY_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.MEASUREMENT,
+                Constants.Attributes.VISIT_TYPE_ATTR,
+            ),
         ]
         self.reporter.assert_has_calls(calls, any_order=True)
 
@@ -167,30 +280,63 @@ class TestConceptCheckerFactoryCoverage(unittest.TestCase):
             unit=[],
             gender=[],
             provider_specialty=[],
-            visit_type=[]
+            visit_type=[],
         )
         self.factory.check(c)
         calls = [
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.OBSERVATION, Constants.Attributes.OBSERVATION_TYPE_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.OBSERVATION, Constants.Attributes.VALUE_AS_CONCEPT_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.OBSERVATION, Constants.Attributes.QUALIFIER_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.OBSERVATION, Constants.Attributes.UNIT_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.OBSERVATION, Constants.Attributes.GENDER_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.OBSERVATION, Constants.Attributes.PROVIDER_SPECIALITY_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.OBSERVATION, Constants.Attributes.VISIT_TYPE_ATTR),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.OBSERVATION,
+                Constants.Attributes.OBSERVATION_TYPE_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.OBSERVATION,
+                Constants.Attributes.VALUE_AS_CONCEPT_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.OBSERVATION,
+                Constants.Attributes.QUALIFIER_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.OBSERVATION,
+                Constants.Attributes.UNIT_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.OBSERVATION,
+                Constants.Attributes.GENDER_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.OBSERVATION,
+                Constants.Attributes.PROVIDER_SPECIALITY_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.OBSERVATION,
+                Constants.Attributes.VISIT_TYPE_ATTR,
+            ),
         ]
         self.reporter.assert_has_calls(calls, any_order=True)
 
     def test_check_observation_period(self):
-        c = ObservationPeriod(
-            period_type=[]
-        )
+        c = ObservationPeriod(period_type=[])
         self.factory.check(c)
         self.reporter.assert_called_with(
             self.factory.WARNING_EMPTY_VALUE,
             self.group_name,
             Constants.Criteria.OBSERVATION_PERIOD,
-            Constants.Attributes.PERIOD_TYPE_ATTR
+            Constants.Attributes.PERIOD_TYPE_ATTR,
         )
 
     def test_check_procedure_occurrence(self):
@@ -200,15 +346,40 @@ class TestConceptCheckerFactoryCoverage(unittest.TestCase):
             modifier=[],
             gender=[],
             provider_specialty=[],
-            visit_type=[]
+            visit_type=[],
         )
         self.factory.check(c)
         calls = [
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.PROCEDURE_OCCURRENCE, Constants.Attributes.PROCEDURE_TYPE_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.PROCEDURE_OCCURRENCE, Constants.Attributes.MODIFIER_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.PROCEDURE_OCCURRENCE, Constants.Attributes.GENDER_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.PROCEDURE_OCCURRENCE, Constants.Attributes.PROVIDER_SPECIALITY_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.PROCEDURE_OCCURRENCE, Constants.Attributes.VISIT_TYPE_ATTR),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.PROCEDURE_OCCURRENCE,
+                Constants.Attributes.PROCEDURE_TYPE_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.PROCEDURE_OCCURRENCE,
+                Constants.Attributes.MODIFIER_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.PROCEDURE_OCCURRENCE,
+                Constants.Attributes.GENDER_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.PROCEDURE_OCCURRENCE,
+                Constants.Attributes.PROVIDER_SPECIALITY_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.PROCEDURE_OCCURRENCE,
+                Constants.Attributes.VISIT_TYPE_ATTR,
+            ),
         ]
         self.reporter.assert_has_calls(calls, any_order=True)
 
@@ -219,15 +390,40 @@ class TestConceptCheckerFactoryCoverage(unittest.TestCase):
             unit=[],
             anatomic_site=[],
             disease_status=[],
-            gender=[]
+            gender=[],
         )
         self.factory.check(c)
         calls = [
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.SPECIMEN, Constants.Attributes.SPECIMEN_TYPE_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.SPECIMEN, Constants.Attributes.UNIT_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.SPECIMEN, Constants.Attributes.ANATOMIC_SITE_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.SPECIMEN, Constants.Attributes.DISEASE_STATUS_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.SPECIMEN, Constants.Attributes.GENDER_ATTR),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.SPECIMEN,
+                Constants.Attributes.SPECIMEN_TYPE_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.SPECIMEN,
+                Constants.Attributes.UNIT_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.SPECIMEN,
+                Constants.Attributes.ANATOMIC_SITE_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.SPECIMEN,
+                Constants.Attributes.DISEASE_STATUS_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.SPECIMEN,
+                Constants.Attributes.GENDER_ATTR,
+            ),
         ]
         self.reporter.assert_has_calls(calls, any_order=True)
 
@@ -237,48 +433,77 @@ class TestConceptCheckerFactoryCoverage(unittest.TestCase):
             visit_type=[],
             gender=[],
             provider_specialty=[],
-            place_of_service=[]
+            place_of_service=[],
         )
         self.factory.check(c)
         calls = [
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.VISIT_OCCURRENCE, Constants.Attributes.VISIT_TYPE_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.VISIT_OCCURRENCE, Constants.Attributes.GENDER_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.VISIT_OCCURRENCE, Constants.Attributes.PROVIDER_SPECIALITY_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.VISIT_OCCURRENCE, Constants.Attributes.PLACE_OF_SERVICE_ATTR),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.VISIT_OCCURRENCE,
+                Constants.Attributes.VISIT_TYPE_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.VISIT_OCCURRENCE,
+                Constants.Attributes.GENDER_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.VISIT_OCCURRENCE,
+                Constants.Attributes.PROVIDER_SPECIALITY_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.VISIT_OCCURRENCE,
+                Constants.Attributes.PLACE_OF_SERVICE_ATTR,
+            ),
         ]
         self.reporter.assert_has_calls(calls, any_order=True)
 
     def test_check_payer_plan_period(self):
-        c = PayerPlanPeriod(
-            gender=[]
-        )
+        c = PayerPlanPeriod(gender=[])
         self.factory.check(c)
         self.reporter.assert_called_with(
             self.factory.WARNING_EMPTY_VALUE,
             self.group_name,
             Constants.Criteria.PAYER_PLAN_PERIOD,
-            Constants.Attributes.GENDER_ATTR
+            Constants.Attributes.GENDER_ATTR,
         )
 
     def test_check_demographic_criteria(self):
-        c = DemographicCriteria(
-            ethnicity=[],
-            gender=[],
-            race=[]
-        )
+        c = DemographicCriteria(ethnicity=[], gender=[], race=[])
         # DemographicCriteria needs special handling because it's distinct from Criteria in dispatch
         self.factory.check(c)
         calls = [
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DEMOGRAPHIC, Constants.Attributes.ETHNICITY_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DEMOGRAPHIC, Constants.Attributes.GENDER_ATTR),
-            call(self.factory.WARNING_EMPTY_VALUE, self.group_name, Constants.Criteria.DEMOGRAPHIC, Constants.Attributes.RACE_ATTR),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DEMOGRAPHIC,
+                Constants.Attributes.ETHNICITY_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DEMOGRAPHIC,
+                Constants.Attributes.GENDER_ATTR,
+            ),
+            call(
+                self.factory.WARNING_EMPTY_VALUE,
+                self.group_name,
+                Constants.Criteria.DEMOGRAPHIC,
+                Constants.Attributes.RACE_ATTR,
+            ),
         ]
         self.reporter.assert_has_calls(calls, any_order=True)
 
     def test_default_check(self):
         # Use LocationRegion which is not handled by ConceptCheckerFactory
         from circe.cohortdefinition.criteria import LocationRegion
-        
+
         c = LocationRegion()
         self.factory.check(c)
         # Should not call reporter
@@ -287,10 +512,17 @@ class TestConceptCheckerFactoryCoverage(unittest.TestCase):
     def test_check_valid_concepts(self):
         # Test that populated lists do not trigger warnings
         from circe.vocabulary.concept import Concept
+
         c = ConditionEra(
             codeset_id=0,
-            gender=[Concept(concept_id=1, concept_name="Male", domain_id="Gender", vocabulary_id="Gender")]
+            gender=[
+                Concept(
+                    concept_id=1,
+                    concept_name="Male",
+                    domain_id="Gender",
+                    vocabulary_id="Gender",
+                )
+            ],
         )
         self.factory.check(c)
         self.reporter.assert_not_called()
-

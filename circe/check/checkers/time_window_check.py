@@ -78,8 +78,10 @@ class TimeWindowCheck(BaseCorelatedCriteriaCheck):
 
         match_result = Operations.match(criteria)
         match_result.when(
-            lambda c: c.start_window is not None
-            and self._observation_filter is not None
-            and Comparisons.compare_to(self._observation_filter, c.start_window) < 0
+            lambda c: (
+                c.start_window is not None
+                and self._observation_filter is not None
+                and Comparisons.compare_to(self._observation_filter, c.start_window) < 0
+            )
         )
         match_result.then(lambda c: reporter(self.WARNING, name))

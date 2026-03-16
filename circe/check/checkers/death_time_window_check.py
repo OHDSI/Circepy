@@ -130,7 +130,9 @@ class DeathTimeWindowCheck(BaseCorelatedCriteriaCheck):
         match_result = Operations.match(criteria.criteria)
         match_result.is_a(Death)
         match_result.then(
-            lambda death: Operations.match(criteria)
-            .when(lambda c: Comparisons.is_before(c.start_window))
-            .then(lambda c: reporter(self.MESSAGE, name))
+            lambda death: (
+                Operations.match(criteria)
+                .when(lambda c: Comparisons.is_before(c.start_window))
+                .then(lambda c: reporter(self.MESSAGE, name))
+            )
         )

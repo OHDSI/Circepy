@@ -13,6 +13,7 @@ try:
 except ModuleNotFoundError:  # Python <3.11 fallback
     import tomli as tomllib
 
+
 class TestDocumentation:
     """Test suite for documentation validation."""
 
@@ -45,9 +46,9 @@ class TestDocumentation:
         docs_version = release_match.group(1)
 
         # Assert all versions match
-        assert (
-            pyproject_version == init_version == docs_version
-        ), f"Version mismatch: pyproject.toml={pyproject_version}, __init__.py={init_version}, docs/conf.py={docs_version}"
+        assert pyproject_version == init_version == docs_version, (
+            f"Version mismatch: pyproject.toml={pyproject_version}, __init__.py={init_version}, docs/conf.py={docs_version}"
+        )
 
     def test_repository_urls_consistent(self):
         """Verify repository URLs are consistent across documentation."""
@@ -76,15 +77,15 @@ class TestDocumentation:
 
             for pattern in incorrect_patterns:
                 matches = re.findall(pattern, content, re.IGNORECASE)
-                assert (
-                    not matches
-                ), f"Found incorrect repository URL in {file_path.name}: {matches}"
+                assert not matches, (
+                    f"Found incorrect repository URL in {file_path.name}: {matches}"
+                )
 
             # Verify correct URL is present if any github.com link exists
             if "github.com" in content:
-                assert (
-                    expected_repo in content
-                ), f"Expected repository URL '{expected_repo}' not found in {file_path.name}"
+                assert expected_repo in content, (
+                    f"Expected repository URL '{expected_repo}' not found in {file_path.name}"
+                )
 
     def test_installation_instructions_present(self):
         """Verify installation instructions are present in key files."""
@@ -139,7 +140,9 @@ class TestDocumentation:
                                 "future release",
                                 "[!note]",
                             ]
-                        ), f"PyPI installation in {file_path.name} not clearly marked as coming soon (line {i+1})"
+                        ), (
+                            f"PyPI installation in {file_path.name} not clearly marked as coming soon (line {i + 1})"
+                        )
 
     def test_internal_links_valid(self):
         """Verify internal documentation links are valid."""
@@ -156,9 +159,9 @@ class TestDocumentation:
 
             # Check if file exists
             link_path = root / link_url
-            assert (
-                link_path.exists()
-            ), f"Broken link in README.md: [{link_text}]({link_url}) - file not found"
+            assert link_path.exists(), (
+                f"Broken link in README.md: [{link_text}]({link_url}) - file not found"
+            )
 
     def test_changelog_has_current_version(self):
         """Verify CHANGELOG.md includes the current version."""
@@ -172,8 +175,7 @@ class TestDocumentation:
         # Check CHANGELOG
         changelog = (root / "CHANGELOG.md").read_text()
         assert (
-            f"[{current_version}]" in changelog
-            or f"## {current_version}" in changelog
+            f"[{current_version}]" in changelog or f"## {current_version}" in changelog
         ), f"Current version {current_version} not found in CHANGELOG.md"
 
     def test_readme_shields_badges(self):
@@ -238,6 +240,6 @@ class TestDocumentation:
                             f"Warning: Found {placeholder} in {file_path.name} - verify if intentional"
                         )
                 else:
-                    assert (
-                        placeholder not in content
-                    ), f"Found placeholder text '{placeholder}' in {file_path.name}"
+                    assert placeholder not in content, (
+                        f"Found placeholder text '{placeholder}' in {file_path.name}"
+                    )

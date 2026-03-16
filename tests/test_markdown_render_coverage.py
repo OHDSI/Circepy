@@ -24,7 +24,9 @@ class TestMarkdownRenderCoverage(unittest.TestCase):
     def test_render_cohort_expression_with_concept_sets(self):
         # Line 90: cohort expression has concept sets
         cohort_json = '{"title": "With CS", "conceptSets": [{"id": 1, "name": "CS1", "expression": {"items": []}}], "primaryCriteria": {"observationWindow": {"priorDays": 0, "postDays": 0}, "primaryEvents": []}}'
-        output = self.renderer.render_cohort_expression(cohort_json, include_concept_sets=True)
+        output = self.renderer.render_cohort_expression(
+            cohort_json, include_concept_sets=True
+        )
         self.assertIn("Concept Sets", output)
         self.assertIn("CS1", output)
 
@@ -50,7 +52,7 @@ class TestMarkdownRenderCoverage(unittest.TestCase):
         # Line 125: empty concept sets
         output = self.renderer.render_concept_set_list([])
         self.assertIn("No concept sets specified", output)
-        
+
         output_none = self.renderer.render_concept_set_list(None)
         self.assertIn("No concept sets specified", output_none)
 
@@ -65,15 +67,15 @@ class TestMarkdownRenderCoverage(unittest.TestCase):
         # Setup renderer with some concept sets
         cs = ConceptSet(id=1, name="Existing CodeSet", expression={"items": []})
         renderer = MarkdownRender(concept_sets=[cs])
-        
+
         # Test ID that doesn't exist
         name = renderer._codeset_name(999, default_name="Default")
         self.assertEqual(name, "Default")
-        
+
         # Line 175: ID found
         name_found = renderer._codeset_name(1, default_name="Default")
         self.assertEqual(name_found, "'Existing CodeSet'")
-        
+
         # Line 170: ID is None
         name_none = renderer._codeset_name(None, default_name="Default")
         self.assertEqual(name_none, "Default")
@@ -81,11 +83,11 @@ class TestMarkdownRenderCoverage(unittest.TestCase):
     def test_format_date_invalid(self):
         # Lines 195-197: Invalid date handling
         # Case 1: Wrong formatting but length 10 string -> triggers ValueError inside strptime -> returns "_invalid date_"
-        self.assertEqual(self.renderer._format_date("2020/01/01"), "_invalid date_") 
-        
+        self.assertEqual(self.renderer._format_date("2020/01/01"), "_invalid date_")
+
         # Case 2: String that is not length 10 -> returns input as is
         self.assertEqual(self.renderer._format_date("2020/01"), "2020/01")
-        
+
         # Case 3: Non-string -> returns input as is (line 195)
         self.assertEqual(self.renderer._format_date(12345), 12345)
 
@@ -99,12 +101,13 @@ class TestMarkdownRenderCoverage(unittest.TestCase):
     def test_format_number_edge_cases(self):
         # Line 209: None input
         self.assertEqual(self.renderer._format_number(None), "")
-        
+
         # Line 213: Float that is integer
         self.assertEqual(self.renderer._format_number(1000.0), "1,000")
-        
+
         # Normal float
         self.assertEqual(self.renderer._format_number(1000.5), "1,000.5")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

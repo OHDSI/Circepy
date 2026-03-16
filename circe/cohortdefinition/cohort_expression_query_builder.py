@@ -1356,7 +1356,9 @@ DROP TABLE #inclusion_rules;
                     if check_observation_period
                     and start_window.start
                     and start_window.start.coeff == -1
-                    else "P.OP_END_DATE" if check_observation_period else None
+                    else "P.OP_END_DATE"
+                    if check_observation_period
+                    else None
                 )
 
             if start_expression:
@@ -1370,7 +1372,9 @@ DROP TABLE #inclusion_rules;
                     if check_observation_period
                     and start_window.end
                     and start_window.end.coeff == -1
-                    else "P.OP_END_DATE" if check_observation_period else None
+                    else "P.OP_END_DATE"
+                    if check_observation_period
+                    else None
                 )
 
             if end_expression:
@@ -1398,7 +1402,9 @@ DROP TABLE #inclusion_rules;
                 start_expression = (
                     "P.OP_START_DATE"
                     if check_observation_period and end_window.start.coeff == -1
-                    else "P.OP_END_DATE" if check_observation_period else None
+                    else "P.OP_END_DATE"
+                    if check_observation_period
+                    else None
                 )
 
             if start_expression:
@@ -1410,7 +1416,9 @@ DROP TABLE #inclusion_rules;
                 end_expression = (
                     "P.OP_START_DATE"
                     if check_observation_period and end_window.end.coeff == -1
-                    else "P.OP_END_DATE" if check_observation_period else None
+                    else "P.OP_END_DATE"
+                    if check_observation_period
+                    else None
                 )
 
             if end_expression:

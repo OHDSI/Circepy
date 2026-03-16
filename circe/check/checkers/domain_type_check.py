@@ -93,61 +93,65 @@ class DomainTypeCheck(BaseCriteriaCheck):
         )
 
         Operations.match(criteria).is_a(ConditionOccurrence).then(
-            lambda c: Operations.match(c)
-            .when(lambda co: co.condition_type is None)
-            .then(lambda co: add_warning())
+            lambda c: (
+                Operations.match(c)
+                .when(lambda co: co.condition_type is None)
+                .then(lambda co: add_warning())
+            )
         ).is_a(Death).then(
-            lambda c: Operations.match(c)
-            .when(lambda d: d.death_type is None)
-            .then(lambda d: add_warning())
-        ).is_a(
-            DeviceExposure
-        ).then(
-            lambda c: Operations.match(c)
-            .when(lambda de: de.device_type is None)
-            .then(lambda de: add_warning())
-        ).is_a(
-            DrugExposure
-        ).then(
-            lambda c: Operations.match(c)
-            .when(lambda de: de.drug_type is None)
-            .then(lambda de: add_warning())
-        ).is_a(
-            Measurement
-        ).then(
-            lambda c: Operations.match(c)
-            .when(lambda m: m.measurement_type is None)
-            .then(lambda m: add_warning())
-        ).is_a(
-            Observation
-        ).then(
-            lambda c: Operations.match(c)
-            .when(lambda o: o.observation_type is None)
-            .then(lambda o: add_warning())
-        ).is_a(
-            ProcedureOccurrence
-        ).then(
-            lambda c: Operations.match(c)
-            .when(lambda po: po.procedure_type is None)
-            .then(lambda po: add_warning())
-        ).is_a(
-            Specimen
-        ).then(
-            lambda c: Operations.match(c)
-            .when(lambda s: s.specimen_type is None)
-            .then(lambda s: add_warning())
-        ).is_a(
-            VisitOccurrence
-        ).then(
-            lambda c: Operations.match(c)
-            .when(lambda vo: vo.visit_type is None)
-            .then(lambda vo: add_warning())
-        ).is_a(
-            VisitDetail
-        ).then(
-            lambda c: Operations.match(c)
-            .when(lambda vd: vd.visit_detail_type_cs is None)
-            .then(lambda vd: add_warning())
+            lambda c: (
+                Operations.match(c)
+                .when(lambda d: d.death_type is None)
+                .then(lambda d: add_warning())
+            )
+        ).is_a(DeviceExposure).then(
+            lambda c: (
+                Operations.match(c)
+                .when(lambda de: de.device_type is None)
+                .then(lambda de: add_warning())
+            )
+        ).is_a(DrugExposure).then(
+            lambda c: (
+                Operations.match(c)
+                .when(lambda de: de.drug_type is None)
+                .then(lambda de: add_warning())
+            )
+        ).is_a(Measurement).then(
+            lambda c: (
+                Operations.match(c)
+                .when(lambda m: m.measurement_type is None)
+                .then(lambda m: add_warning())
+            )
+        ).is_a(Observation).then(
+            lambda c: (
+                Operations.match(c)
+                .when(lambda o: o.observation_type is None)
+                .then(lambda o: add_warning())
+            )
+        ).is_a(ProcedureOccurrence).then(
+            lambda c: (
+                Operations.match(c)
+                .when(lambda po: po.procedure_type is None)
+                .then(lambda po: add_warning())
+            )
+        ).is_a(Specimen).then(
+            lambda c: (
+                Operations.match(c)
+                .when(lambda s: s.specimen_type is None)
+                .then(lambda s: add_warning())
+            )
+        ).is_a(VisitOccurrence).then(
+            lambda c: (
+                Operations.match(c)
+                .when(lambda vo: vo.visit_type is None)
+                .then(lambda vo: add_warning())
+            )
+        ).is_a(VisitDetail).then(
+            lambda c: (
+                Operations.match(c)
+                .when(lambda vd: vd.visit_detail_type_cs is None)
+                .then(lambda vd: add_warning())
+            )
         )
 
     def _after_check(

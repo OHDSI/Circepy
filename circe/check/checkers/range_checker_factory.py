@@ -632,40 +632,50 @@ class RangeCheckerFactory(BaseCheckerFactory):
                 lambda r: r.value is not None and not Comparisons.is_date_valid(r.value)
             ).then(lambda x: warning(self.WARNING_DATE_IS_INVALID))
             match_result.when(lambda r: r.op is not None and r.op.endswith("bt")).then(
-                lambda r: Operations.match(r)
-                .when(lambda x: x.value is None)
-                .then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
-                .when(lambda x: x.extent is None)
-                .then(lambda x: warning(self.WARNING_EMPTY_END_VALUE))
-                .when(
-                    lambda x: x.extent is not None
-                    and not Comparisons.is_date_valid(x.extent)
+                lambda r: (
+                    Operations.match(r)
+                    .when(lambda x: x.value is None)
+                    .then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
+                    .when(lambda x: x.extent is None)
+                    .then(lambda x: warning(self.WARNING_EMPTY_END_VALUE))
+                    .when(
+                        lambda x: (
+                            x.extent is not None
+                            and not Comparisons.is_date_valid(x.extent)
+                        )
+                    )
+                    .then(lambda x: warning(self.WARNING_DATE_IS_INVALID))
+                    .when(Comparisons.start_is_greater_than_end)
+                    .then(lambda x: warning(self.WARNING_START_GREATER_THAN_END))
                 )
-                .then(lambda x: warning(self.WARNING_DATE_IS_INVALID))
-                .when(Comparisons.start_is_greater_than_end)
-                .then(lambda x: warning(self.WARNING_START_GREATER_THAN_END))
             )
             match_result.or_else(
-                lambda r: Operations.match(r)
-                .when(lambda x: x.value is None)
-                .then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
+                lambda r: (
+                    Operations.match(r)
+                    .when(lambda x: x.value is None)
+                    .then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
+                )
             )
         elif isinstance(range_val, NumericRange):
             # Numeric range checks
             match_result = Operations.match(range_val)
             match_result.when(lambda r: r.op is not None and r.op.endswith("bt")).then(
-                lambda r: Operations.match(r)
-                .when(lambda x: x.value is None)
-                .then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
-                .when(lambda x: x.extent is None)
-                .then(lambda x: warning(self.WARNING_EMPTY_END_VALUE))
-                .when(Comparisons.start_is_greater_than_end)
-                .then(lambda x: warning(self.WARNING_START_GREATER_THAN_END))
+                lambda r: (
+                    Operations.match(r)
+                    .when(lambda x: x.value is None)
+                    .then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
+                    .when(lambda x: x.extent is None)
+                    .then(lambda x: warning(self.WARNING_EMPTY_END_VALUE))
+                    .when(Comparisons.start_is_greater_than_end)
+                    .then(lambda x: warning(self.WARNING_START_GREATER_THAN_END))
+                )
             )
             match_result.or_else(
-                lambda r: Operations.match(r)
-                .when(lambda x: x.value is None)
-                .then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
+                lambda r: (
+                    Operations.match(r)
+                    .when(lambda x: x.value is None)
+                    .then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
+                )
             )
 
     def check_range(
@@ -686,12 +696,14 @@ class RangeCheckerFactory(BaseCheckerFactory):
 
         match_result = Operations.match(period)
         match_result.when(
-            lambda x: x.start_date is not None
-            and not Comparisons.is_date_valid(x.start_date)
+            lambda x: (
+                x.start_date is not None and not Comparisons.is_date_valid(x.start_date)
+            )
         ).then(lambda x: warning(self.WARNING_DATE_IS_INVALID))
         match_result.when(
-            lambda x: x.end_date is not None
-            and not Comparisons.is_date_valid(x.end_date)
+            lambda x: (
+                x.end_date is not None and not Comparisons.is_date_valid(x.end_date)
+            )
         ).then(lambda x: warning(self.WARNING_DATE_IS_INVALID))
         match_result.when(Comparisons.start_is_greater_than_end).then(
             lambda x: warning(self.WARNING_START_GREATER_THAN_END)
@@ -716,5 +728,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
                 Constants.Attributes.CENSOR_WINDOW_ATTR,
             )
         # Handle DemographicCriteria (delegate to base class)
-        elif isinstance(expression_or_criteria, DemographicCriteria) or isinstance(expression_or_criteria, Criteria):
+        elif isinstance(expression_or_criteria, DemographicCriteria) or isinstance(
+            expression_or_criteria, Criteria
+        ):
             super().check(expression_or_criteria)

@@ -48,9 +48,7 @@ def apply_inclusion_rules(
         # Postgres returns NUMERIC for SUM(BIGINT), which breaks bitwise ops.
         # Ibis also infers SUM(int64) -> int64 and may optimize away an int64 cast,
         # so we force an intermediate cast to keep the SQL-level cast.
-        _rule_mask=union_hits._rule_bit.sum()
-        .cast("decimal(38,0)")
-        .cast("int64")
+        _rule_mask=union_hits._rule_bit.sum().cast("decimal(38,0)").cast("int64")
     )
     target_mask = sum(used_bits)
     target_literal = ibis.literal(target_mask, type="int64")
