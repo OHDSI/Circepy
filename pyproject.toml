@@ -32,7 +32,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     "pydantic>=2.0.0",
     "typing-extensions>=4.0.0",
@@ -91,7 +91,7 @@ circe = ["py.typed"]
 
 [tool.black]
 line-length = 88
-target-version = ['py38']
+target-version = ['py39']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -173,7 +173,7 @@ markers = [
 [tool.ruff]
 # Same as Black.
 line-length = 88
-target-version = "py38"
+target-version = "py39"
 
 # Exclude directories
 extend-exclude = [

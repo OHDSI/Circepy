@@ -3,8 +3,7 @@ Installation
 
 Requirements
 ------------
-
-* Python 3.8 or higher
+* Python 3.9 or higher
 * pip (Python package installer)
 
 Basic Installation
@@ -119,13 +118,13 @@ If you get permission errors during installation, use a virtual environment:
 Python Version Issues
 ~~~~~~~~~~~~~~~~~~~~~
 
-CIRCE Python requires Python 3.8 or higher. Check your Python version:
+CIRCE Python requires Python 3.9 or higher. Check your Python version:
 
 .. code-block:: bash
 
    python --version
 
-If you have multiple Python versions installed, you may need to use ``python3`` or ``python3.8``:
+If you have multiple Python versions installed, you may need to use ``python3`` or ``python3.9``:
 
 .. code-block:: bash
 

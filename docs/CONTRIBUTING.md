@@ -10,7 +10,7 @@ This project follows the [OHDSI Code of Conduct](https://www.ohdsi.org/web/wiki/
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.9 or higher
 - Git
 - Basic understanding of the OMOP Common Data Model
 - Familiarity with the Java CIRCE-BE implementation (recommended)

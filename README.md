@@ -1,6 +1,6 @@
 # CIRCE Python Implementation
 
-[![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
 [![Tests](https://img.shields.io/badge/tests-3400%2B%20passed-brightgreen)](tests/)
 [![codecov](https://codecov.io/gh/OHDSI/Circepy/graph/badge.svg?token=CODECOV_TOKEN)](https://codecov.io/gh/OHDSI/Circepy)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
@@ -30,7 +30,7 @@ CIRCE Python provides a comprehensive toolkit for working with OMOP CDM cohort d
 - **Version**: 0.1.0 (Alpha)
 - **Tests**: 3,400+ passing
 - **Coverage**: 34% (Core logic focus)
-- **Python**: 3.8+
+- **Python**: 3.9+
 - **License**: Apache 2.0
 
 ## Installation

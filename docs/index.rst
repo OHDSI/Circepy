@@ -1,9 +1,9 @@
 OHDSI CIRCE Python Documentation
 ==================================
 
-.. image:: https://img.shields.io/badge/python-3.8%2B-blue
+.. image:: https://img.shields.io/badge/python-3.9%2B-blue
    :target: https://www.python.org/downloads/
-   :alt: Python 3.8+
+   :alt: Python 3.9+
 
 .. image:: https://img.shields.io/badge/tests-896%20passed-brightgreen
    :alt: Tests

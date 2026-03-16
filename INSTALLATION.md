@@ -5,7 +5,7 @@
 
 ## Prerequisites
 
-- **Python 3.8 or higher** (Python 3.9+ recommended)
+- **Python 3.9 or higher** (Python 3.9+ recommended)
 - **Git** for cloning the repository
 - **pip** package manager (usually included with Python)
 
@@ -209,7 +209,7 @@ pip uninstall ohdsi-circepy
 ## System Requirements
 
 ### Minimum Requirements
-- Python 3.8+
+- Python 3.9+
 - 100 MB free disk space
 - 512 MB RAM
 
