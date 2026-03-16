@@ -53,11 +53,75 @@ from typing import Dict
 # Embedded interpreter (e.g. R reticulate) bootstrapping for Pydantic
 # ---------------------------------------------------------------------
 import sys
-import pkgutil
-import importlib
-import inspect
+from typing import Dict
+
 from pydantic import BaseModel
+
 import circe as package
+from circe.cohortdefinition import (
+    CohortExpression,
+    CollapseSettings,
+    CollapseType,
+    ConceptSetSelection,
+    ConditionEra,
+    ConditionOccurrence,
+    CorelatedCriteria,
+    Criteria,
+    CriteriaColumn,
+    CriteriaGroup,
+    CustomEraStrategy,
+    DateAdjustment,
+    DateOffsetStrategy,
+    DateRange,
+    DateType,
+    Death,
+    DemographicCriteria,
+    DeviceExposure,
+    DoseEra,
+    DrugEra,
+    DrugExposure,
+    EndStrategy,
+    GeoCriteria,
+    InclusionRule,
+    LocationRegion,
+    Measurement,
+    NumericRange,
+    Observation,
+    ObservationFilter,
+    ObservationPeriod,
+    Occurrence,
+    PayerPlanPeriod,
+    Period,
+    PrimaryCriteria,
+    ProcedureOccurrence,
+    ResultLimit,
+    Specimen,
+    TextFilter,
+    VisitDetail,
+    VisitOccurrence,
+    Window,
+    WindowBound,
+    WindowedCriteria,
+)
+
+from .api import (
+    build_cohort_query,
+    cohort_expression_from_json,
+    cohort_print_friendly,
+)
+
+# Main exports
+from .cohortdefinition import CohortExpression
+from .execution import (
+    ExecutionOptions,
+    IbisExecutor,
+    build_ibis,
+    to_polars,
+    write_cohort,
+)
+from .io import load_expression
+from .vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
+
 
 def safe_model_rebuild(package):
     """
@@ -89,7 +153,6 @@ def safe_model_rebuild(package):
                         pass
     except Exception:
         pass
-
 
 
 def get_json_schema() -> dict:
@@ -143,7 +206,7 @@ def get_json_schema() -> dict:
         "Window": Window,
         "TextFilter": TextFilter,
         "InclusionRule": InclusionRule,
-        "WindowBound": WindowBound
+        "WindowBound": WindowBound,
     }
 
     # Build root-level $defs with each schema
@@ -164,12 +227,9 @@ def get_json_schema() -> dict:
         "version": "1.3.3",
         "type": "object",
         "$defs": defs,
-        "properties": {
-            "CohortExpression": {"$ref": "#/$defs/CohortExpression"}
-        },
-        "required": ["CohortExpression"]
+        "properties": {"CohortExpression": {"$ref": "#/$defs/CohortExpression"}},
+        "required": ["CohortExpression"],
     }
-
 
 
 # ---------------------------------------------------------------------
@@ -182,10 +242,20 @@ __all__ = [
     "CohortExpression",
     "get_json_schema",
     # Vocabulary classes
-    "Concept", "ConceptSet", "ConceptSetExpression", "ConceptSetItem",
+    "Concept",
+    "ConceptSet",
+    "ConceptSetExpression",
+    "ConceptSetItem",
     # API functions
     "cohort_expression_from_json",
     "build_cohort_query",
     "cohort_print_friendly",
-    "safe_model_rebuild"
+    "safe_model_rebuild",
+    # I/O and experimental execution API
+    "load_expression",
+    "ExecutionOptions",
+    "IbisExecutor",
+    "build_ibis",
+    "to_polars",
+    "write_cohort",
 ]

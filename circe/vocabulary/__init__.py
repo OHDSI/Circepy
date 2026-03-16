@@ -22,7 +22,7 @@ from .concept import (
 class ConceptReference:
     """
     Lightweight reference to a concept for use in concept_set() builder.
-    
+
     Attributes:
         concept_id: The OMOP concept ID
         include_descendants: Whether to include descendant concepts
@@ -45,13 +45,13 @@ class ConceptReference:
 def descendants(concept_id: int) -> ConceptReference:
     """
     Create a concept reference that includes all descendants.
-    
+
     Args:
         concept_id: The OMOP concept ID
-        
+
     Returns:
         ConceptReference with include_descendants=True
-        
+
     Example:
         >>> # Type 2 Diabetes and all descendants
         >>> descendants(201826)
@@ -65,10 +65,10 @@ def descendants(concept_id: int) -> ConceptReference:
 def mapped(concept_id: int) -> ConceptReference:
     """
     Create a concept reference that includes mapped concepts.
-    
+
     Args:
         concept_id: The OMOP concept ID
-        
+
     Returns:
         ConceptReference with include_mapped=True
     """
@@ -81,10 +81,10 @@ def mapped(concept_id: int) -> ConceptReference:
 def exclude(concept_ref: Union[int, ConceptReference]) -> ConceptReference:
     """
     Mark a concept or concept reference as excluded.
-    
+
     Args:
         concept_ref: Concept ID or ConceptReference to exclude
-        
+
     Returns:
         ConceptReference with is_excluded=True
     """
@@ -105,29 +105,29 @@ def concept_set(
 ) -> ConceptSet:
     """
     Create a concept set from concept IDs or references.
-    
+
     Args:
         *concepts: Variable number of concept IDs or ConceptReference objects
         id: Optional ID for the concept set (auto-generated if not provided)
         name: Optional name for the concept set
-        
+
     Returns:
         ConceptSet object ready for use in cohort definitions
-        
+
     Example:
         >>> # Simple concept set with descendants
         >>> t2dm = concept_set(
         ...     descendants(201826),
         ...     name="Type 2 Diabetes"
         ... )
-        
+
         >>> # Multiple concepts
         >>> diabetes = concept_set(
         ...     descendants(201826),  # T2DM
         ...     descendants(201254),  # T1DM
         ...     name="All Diabetes"
         ... )
-        
+
         >>> # With exclusions
         >>> t2dm_no_secondary = concept_set(
         ...     descendants(201826),
@@ -153,7 +153,7 @@ def concept_set(
                 include_mapped=concept.include_mapped,
                 is_excluded=concept.is_excluded
             ))
-    
+
     return ConceptSet(
         id=id or 0,  # Will need to be set by user or auto-assigned
         name=name or "Concept Set",
