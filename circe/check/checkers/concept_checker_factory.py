@@ -79,9 +79,7 @@ class ConceptCheckerFactory(BaseCheckerFactory):
         super().__init__(reporter, group_name)
 
     @staticmethod
-    def get_factory(
-        reporter: WarningReporter, group_name: str
-    ) -> "ConceptCheckerFactory":
+    def get_factory(reporter: WarningReporter, group_name: str) -> "ConceptCheckerFactory":
         """Get a factory instance.
 
         Args:
@@ -155,9 +153,7 @@ class ConceptCheckerFactory(BaseCheckerFactory):
                 Constants.Criteria.DEATH,
                 Constants.Attributes.DEATH_TYPE_ATTR,
             )
-            self._check_concept(
-                c.gender, Constants.Criteria.DEATH, Constants.Attributes.GENDER_ATTR
-            )
+            self._check_concept(c.gender, Constants.Criteria.DEATH, Constants.Attributes.GENDER_ATTR)
 
         def check_device_exposure(c: "DeviceExposure") -> None:
             self._check_concept(
@@ -182,17 +178,11 @@ class ConceptCheckerFactory(BaseCheckerFactory):
             )
 
         def check_dose_era(c: "DoseEra") -> None:
-            self._check_concept(
-                c.unit, Constants.Criteria.DOSE_ERA, Constants.Attributes.UNIT_ATTR
-            )
-            self._check_concept(
-                c.gender, Constants.Criteria.DOSE_ERA, Constants.Attributes.GENDER_ATTR
-            )
+            self._check_concept(c.unit, Constants.Criteria.DOSE_ERA, Constants.Attributes.UNIT_ATTR)
+            self._check_concept(c.gender, Constants.Criteria.DOSE_ERA, Constants.Attributes.GENDER_ATTR)
 
         def check_drug_era(c: "DrugEra") -> None:
-            self._check_concept(
-                c.gender, Constants.Criteria.DRUG_ERA, Constants.Attributes.GENDER_ATTR
-            )
+            self._check_concept(c.gender, Constants.Criteria.DRUG_ERA, Constants.Attributes.GENDER_ATTR)
 
         def check_drug_exposure(c: "DrugExposure") -> None:
             self._check_concept(
@@ -242,9 +232,7 @@ class ConceptCheckerFactory(BaseCheckerFactory):
                 Constants.Criteria.MEASUREMENT,
                 Constants.Attributes.VALUE_AS_CONCEPT_ATTR,
             )
-            self._check_concept(
-                c.unit, Constants.Criteria.MEASUREMENT, Constants.Attributes.UNIT_ATTR
-            )
+            self._check_concept(c.unit, Constants.Criteria.MEASUREMENT, Constants.Attributes.UNIT_ATTR)
             self._check_concept(
                 c.gender,
                 Constants.Criteria.MEASUREMENT,
@@ -277,9 +265,7 @@ class ConceptCheckerFactory(BaseCheckerFactory):
                 Constants.Criteria.OBSERVATION,
                 Constants.Attributes.QUALIFIER_ATTR,
             )
-            self._check_concept(
-                c.unit, Constants.Criteria.OBSERVATION, Constants.Attributes.UNIT_ATTR
-            )
+            self._check_concept(c.unit, Constants.Criteria.OBSERVATION, Constants.Attributes.UNIT_ATTR)
             self._check_concept(
                 c.gender,
                 Constants.Criteria.OBSERVATION,
@@ -336,9 +322,7 @@ class ConceptCheckerFactory(BaseCheckerFactory):
                 Constants.Criteria.SPECIMEN,
                 Constants.Attributes.SPECIMEN_TYPE_ATTR,
             )
-            self._check_concept(
-                c.unit, Constants.Criteria.SPECIMEN, Constants.Attributes.UNIT_ATTR
-            )
+            self._check_concept(c.unit, Constants.Criteria.SPECIMEN, Constants.Attributes.UNIT_ATTR)
             self._check_concept(
                 c.anatomic_site,
                 Constants.Criteria.SPECIMEN,
@@ -349,9 +333,7 @@ class ConceptCheckerFactory(BaseCheckerFactory):
                 Constants.Criteria.SPECIMEN,
                 Constants.Attributes.DISEASE_STATUS_ATTR,
             )
-            self._check_concept(
-                c.gender, Constants.Criteria.SPECIMEN, Constants.Attributes.GENDER_ATTR
-            )
+            self._check_concept(c.gender, Constants.Criteria.SPECIMEN, Constants.Attributes.GENDER_ATTR)
 
         def check_visit_occurrence(c: "VisitOccurrence") -> None:
             self._check_concept(
@@ -417,9 +399,7 @@ class ConceptCheckerFactory(BaseCheckerFactory):
         else:
             return default_check
 
-    def _get_check_demographic(
-        self, criteria: "DemographicCriteria"
-    ) -> Callable[["DemographicCriteria"], None]:
+    def _get_check_demographic(self, criteria: "DemographicCriteria") -> Callable[["DemographicCriteria"], None]:
         """Get a checker function for demographic criteria.
 
         Args:
@@ -440,15 +420,11 @@ class ConceptCheckerFactory(BaseCheckerFactory):
                 Constants.Criteria.DEMOGRAPHIC,
                 Constants.Attributes.GENDER_ATTR,
             )
-            self._check_concept(
-                c.race, Constants.Criteria.DEMOGRAPHIC, Constants.Attributes.RACE_ATTR
-            )
+            self._check_concept(c.race, Constants.Criteria.DEMOGRAPHIC, Constants.Attributes.RACE_ATTR)
 
         return check
 
-    def _check_concept(
-        self, concepts: Optional[list["Concept"]], criteria_name: str, attribute: str
-    ) -> None:
+    def _check_concept(self, concepts: Optional[list["Concept"]], criteria_name: str, attribute: str) -> None:
         """Check if a concept array is empty.
 
         Args:
@@ -460,6 +436,4 @@ class ConceptCheckerFactory(BaseCheckerFactory):
         def warning(template: str) -> None:
             self._reporter(template, self._group_name, criteria_name, attribute)
 
-        Operations.match(concepts).when(lambda c: c is not None and len(c) == 0).then(
-            lambda c: warning(self.WARNING_EMPTY_VALUE)
-        )
+        Operations.match(concepts).when(lambda c: c is not None and len(c) == 0).then(lambda c: warning(self.WARNING_EMPTY_VALUE))

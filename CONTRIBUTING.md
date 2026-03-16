@@ -95,6 +95,10 @@ class TestCohortExpression:
         pass
 ```
 
+## Use of AI Tools
+
+Contributors may use AI tools to assist with development. If AI materially influenced a PR, please mention it in the PR description. Do not share secrets or sensitive data. Contributors remain responsible for correctness and license compliance.
+
 ## Pull Request Process
 
 1. Create a feature branch from `main`:

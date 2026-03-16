@@ -38,9 +38,5 @@ class EmptyConceptSetCheck(BaseCheck):
         """
         if expression.concept_sets:
             for concept_set in expression.concept_sets:
-                if (
-                    not concept_set.expression
-                    or not concept_set.expression.items
-                    or len(concept_set.expression.items) == 0
-                ):
+                if not concept_set.expression or not concept_set.expression.items or len(concept_set.expression.items) == 0:
                     reporter(self.EMPTY_ERROR, concept_set.name)

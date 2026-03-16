@@ -36,9 +36,7 @@ class OcurrenceCheck(BaseCorelatedCriteriaCheck):
         """
         return WarningSeverity.WARNING
 
-    def _check_criteria(
-        self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter
-    ) -> None:
+    def _check_criteria(self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter) -> None:
         """Check occurrence for invalid values.
 
         Args:

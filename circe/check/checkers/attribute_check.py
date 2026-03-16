@@ -28,9 +28,7 @@ class AttributeCheck(BaseValueCheck):
         """
         return WarningSeverity.WARNING
 
-    def _get_factory(
-        self, reporter: WarningReporter, name: str
-    ) -> AttributeCheckerFactory:
+    def _get_factory(self, reporter: WarningReporter, name: str) -> AttributeCheckerFactory:
         """Get an attribute checker factory.
 
         Args:

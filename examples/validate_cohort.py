@@ -89,9 +89,7 @@ def create_valid_cohort_json():
                 }
             ],
             "PrimaryCriteria": {
-                "CriteriaList": [
-                    {"ConditionOccurrence": {"CodesetId": 1, "First": True}}
-                ],
+                "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1, "First": True}}],
                 "ObservationWindow": {"PriorDays": 0, "PostDays": 0},
                 "PrimaryLimit": {"Type": "All"},
             },
@@ -188,9 +186,7 @@ def main():
                 print(f"\n✗ {file_path} has validation issues!")
     else:
         print("No example cohort JSON files found.")
-        print(
-            "Run basic_cohort.py or complex_cohort.py first to generate example files."
-        )
+        print("Run basic_cohort.py or complex_cohort.py first to generate example files.")
 
     print("\n" + "=" * 50)
     print("Validation examples completed!")

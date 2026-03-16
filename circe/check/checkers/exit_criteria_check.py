@@ -42,9 +42,5 @@ class ExitCriteriaCheck(BaseCheck):
         match_result = Operations.match(expression.end_strategy)
         match_result.is_a(CustomEraStrategy)
         match_result.then(
-            lambda s: (
-                Operations.match(s)
-                .when(lambda ces: ces.drug_codeset_id is None)
-                .then(lambda ces: reporter(self.DRUG_CONCEPT_EMPTY_ERROR))
-            )
+            lambda s: Operations.match(s).when(lambda ces: ces.drug_codeset_id is None).then(lambda ces: reporter(self.DRUG_CONCEPT_EMPTY_ERROR))
         )

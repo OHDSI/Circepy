@@ -52,11 +52,7 @@ def cohort_expression_from_json(json_str: str) -> CohortExpression:
     # Ensure ConceptSetExpression objects have required fields
     if "conceptSets" in data and data["conceptSets"]:
         for concept_set in data["conceptSets"]:
-            if (
-                isinstance(concept_set, dict)
-                and "expression" in concept_set
-                and concept_set["expression"] is not None
-            ):
+            if isinstance(concept_set, dict) and "expression" in concept_set and concept_set["expression"] is not None:
                 expr = concept_set["expression"]
                 if isinstance(expr, dict):
                     if "isExcluded" not in expr:
@@ -72,9 +68,7 @@ def cohort_expression_from_json(json_str: str) -> CohortExpression:
         raise ValueError(f"Invalid cohort expression JSON: {str(e)}") from e
 
 
-def build_cohort_query(
-    expression: CohortExpression, options: Optional[BuildExpressionQueryOptions] = None
-) -> str:
+def build_cohort_query(expression: CohortExpression, options: Optional[BuildExpressionQueryOptions] = None) -> str:
     """Generate SQL query from a cohort expression.
 
     This is equivalent to R CirceR's `buildCohortQuery()` function.
@@ -128,7 +122,5 @@ def cohort_print_friendly(
     if concept_sets is None:
         concept_sets = expression.concept_sets or []
 
-    renderer = MarkdownRender(
-        concept_sets=concept_sets, include_concept_sets=include_concept_sets
-    )
+    renderer = MarkdownRender(concept_sets=concept_sets, include_concept_sets=include_concept_sets)
     return renderer.render_cohort_expression(expression, title=title)

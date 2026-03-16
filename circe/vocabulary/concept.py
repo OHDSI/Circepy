@@ -23,9 +23,7 @@ class Concept(BaseModel):
 
     concept_id: Optional[int] = Field(
         default=None,
-        validation_alias=AliasChoices(
-            "ConceptId", "CONCEPT_ID", "conceptId", "ConceptID"
-        ),
+        validation_alias=AliasChoices("ConceptId", "CONCEPT_ID", "conceptId", "ConceptID"),
         serialization_alias="CONCEPT_ID",
     )
     concept_name: Optional[str] = Field(
@@ -40,23 +38,17 @@ class Concept(BaseModel):
     )
     concept_class_id: Optional[str] = Field(
         default=None,
-        validation_alias=AliasChoices(
-            "ConceptClassId", "CONCEPT_CLASS_ID", "conceptClassId"
-        ),
+        validation_alias=AliasChoices("ConceptClassId", "CONCEPT_CLASS_ID", "conceptClassId"),
         serialization_alias="CONCEPT_CLASS_ID",
     )
     standard_concept: Optional[str] = Field(
         default=None,
-        validation_alias=AliasChoices(
-            "StandardConcept", "STANDARD_CONCEPT", "standardConcept"
-        ),
+        validation_alias=AliasChoices("StandardConcept", "STANDARD_CONCEPT", "standardConcept"),
         serialization_alias="STANDARD_CONCEPT",
     )
     invalid_reason: Optional[str] = Field(
         default=None,
-        validation_alias=AliasChoices(
-            "InvalidReason", "INVALID_REASON", "invalidReason"
-        ),
+        validation_alias=AliasChoices("InvalidReason", "INVALID_REASON", "invalidReason"),
         serialization_alias="INVALID_REASON",
     )
     domain_id: Optional[str] = Field(

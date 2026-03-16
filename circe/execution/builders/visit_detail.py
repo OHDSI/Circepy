@@ -24,20 +24,12 @@ from .registry import register
 def build_visit_detail(criteria: VisitDetail, ctx: BuildContext):
     table = ctx.table("visit_detail")
 
-    table = apply_codeset_filter(
-        table, "visit_detail_concept_id", criteria.codeset_id, ctx
-    )
+    table = apply_codeset_filter(table, "visit_detail_concept_id", criteria.codeset_id, ctx)
     if criteria.first:
         table = apply_first_event(table, "visit_detail_start_date", "visit_detail_id")
-    table = apply_date_range(
-        table, "visit_detail_start_date", criteria.visit_detail_start_date
-    )
-    table = apply_date_range(
-        table, "visit_detail_end_date", criteria.visit_detail_end_date
-    )
-    table = apply_concept_set_selection(
-        table, "visit_detail_type_concept_id", criteria.visit_detail_type_cs, ctx
-    )
+    table = apply_date_range(table, "visit_detail_start_date", criteria.visit_detail_start_date)
+    table = apply_date_range(table, "visit_detail_end_date", criteria.visit_detail_end_date)
+    table = apply_concept_set_selection(table, "visit_detail_type_concept_id", criteria.visit_detail_type_cs, ctx)
     if criteria.visit_detail_source_concept is not None:
         table = apply_codeset_filter(
             table,

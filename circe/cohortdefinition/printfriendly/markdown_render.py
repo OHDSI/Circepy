@@ -95,11 +95,7 @@ class MarkdownRender:
             self._concept_sets = cohort_expression.concept_sets
 
         # Determine whether to include concept sets
-        should_include = (
-            include_concept_sets
-            if include_concept_sets is not None
-            else self._include_concept_sets
-        )
+        should_include = include_concept_sets if include_concept_sets is not None else self._include_concept_sets
 
         # Load and render the main template
         template = self._env.get_template("cohort_expression.j2")
@@ -111,9 +107,7 @@ class MarkdownRender:
             include_concept_sets=should_include,
         )
 
-    def render_concept_set_list(
-        self, concept_sets: Union[list[ConceptSet], str]
-    ) -> str:
+    def render_concept_set_list(self, concept_sets: Union[list[ConceptSet], str]) -> str:
         """Render a list of concept sets to markdown format.
 
         Java equivalent: renderConceptSetList(ConceptSet[])
@@ -162,9 +156,7 @@ class MarkdownRender:
     # Custom Filters and Functions (matching Java utils.ftl)
     # =========================================================================
 
-    def _codeset_name(
-        self, codeset_id: Optional[int], default_name: str = "any"
-    ) -> str:
+    def _codeset_name(self, codeset_id: Optional[int], default_name: str = "any") -> str:
         """Get concept set name from codeset ID, or return default.
 
         Java equivalent: utils.codesetName()

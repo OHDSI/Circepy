@@ -119,10 +119,7 @@ class EventsProgressionCheck(BaseCheck):
         if initial_weight - cohort_initial_weight < 0:
             reporter(self.WARNING, "Cohort of initial events")
 
-        if (
-            cohort_initial_weight - qualifying_weight < 0
-            or initial_weight - qualifying_weight < 0
-        ):
+        if cohort_initial_weight - qualifying_weight < 0 or initial_weight - qualifying_weight < 0:
             reporter(self.WARNING, "Qualifying cohort")
 
     def _get_weight(self, limit: Optional["ResultLimit"]) -> int:

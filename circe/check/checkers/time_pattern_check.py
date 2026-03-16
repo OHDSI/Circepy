@@ -83,9 +83,7 @@ class TimePatternCheck(BaseCorelatedCriteriaCheck):
         """
         return WarningSeverity.INFO
 
-    def _check_criteria(
-        self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter
-    ) -> None:
+    def _check_criteria(self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter) -> None:
         """Collect time window information.
 
         Args:
@@ -94,13 +92,9 @@ class TimePatternCheck(BaseCorelatedCriteriaCheck):
             reporter: The warning reporter to use
         """
         name = f"{CriteriaNameHelper.get_criteria_name(criteria.criteria)} criteria at {group_name}"
-        self._time_window_info_list.append(
-            TimeWindowInfo(name, criteria.start_window, criteria.end_window)
-        )
+        self._time_window_info_list.append(TimeWindowInfo(name, criteria.start_window, criteria.end_window))
 
-    def _after_check(
-        self, reporter: WarningReporter, expression: "CohortExpression"
-    ) -> None:
+    def _after_check(self, reporter: WarningReporter, expression: "CohortExpression") -> None:
         """Check for inconsistent time window patterns.
 
         Args:
@@ -111,9 +105,7 @@ class TimePatternCheck(BaseCorelatedCriteriaCheck):
             return
 
         # Calculate start days for each time window
-        start_days = [
-            self._start_days(info.start) for info in self._time_window_info_list
-        ]
+        start_days = [self._start_days(info.start) for info in self._time_window_info_list]
 
         # Count frequency of each start day value
         freq = Counter(start_days)
@@ -123,11 +115,7 @@ class TimePatternCheck(BaseCorelatedCriteriaCheck):
             # Find the most common pattern
             most_common_value = max(freq, key=freq.get)
             most_common_info = next(
-                (
-                    info
-                    for info in self._time_window_info_list
-                    if self._start_days(info.start) == most_common_value
-                ),
+                (info for info in self._time_window_info_list if self._start_days(info.start) == most_common_value),
                 None,
             )
 

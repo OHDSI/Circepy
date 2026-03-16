@@ -51,9 +51,7 @@ def create_complex_cohort():
         expression=ConceptSetExpression(
             items=[
                 ConceptSetItem(
-                    concept=Concept(
-                        concept_id=201826, concept_name="Type 2 diabetes mellitus"
-                    ),
+                    concept=Concept(concept_id=201826, concept_name="Type 2 diabetes mellitus"),
                     include_descendants=True,
                 )
             ]
@@ -112,9 +110,7 @@ def create_complex_cohort():
         expression=ConceptSetExpression(
             items=[
                 ConceptSetItem(
-                    concept=Concept(
-                        concept_id=46271022, concept_name="End stage renal disease"
-                    ),
+                    concept=Concept(concept_id=46271022, concept_name="End stage renal disease"),
                     include_descendants=True,
                 )
             ]
@@ -287,9 +283,7 @@ if __name__ == "__main__":
     for cs in cohort.concept_sets:
         print(f"  - {cs.name}")
 
-    print(
-        f"\nAdditional Criteria: {len(cohort.additional_criteria.criteria_list)} conditions"
-    )
+    print(f"\nAdditional Criteria: {len(cohort.additional_criteria.criteria_list)} conditions")
     print(f"Inclusion Rules: {len(cohort.inclusion_rules)} rules")
     for rule in cohort.inclusion_rules:
         print(f"  - {rule.name}")

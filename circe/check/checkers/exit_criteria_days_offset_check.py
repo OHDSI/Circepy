@@ -31,9 +31,7 @@ class ExitCriteriaDaysOffsetCheck(BaseCheck):
     Java equivalent: org.ohdsi.circe.check.checkers.ExitCriteriaDaysOffsetCheck
     """
 
-    DAYS_OFFSET_WARNING = (
-        "Cohort Exit criteria: Days offset from start date should be greater than 0"
-    )
+    DAYS_OFFSET_WARNING = "Cohort Exit criteria: Days offset from start date should be greater than 0"
 
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.
@@ -55,11 +53,7 @@ class ExitCriteriaDaysOffsetCheck(BaseCheck):
         match_result.then(
             lambda s: (
                 Operations.match(s)
-                .when(
-                    lambda dos: (
-                        dos.date_field == DateType.START_DATE and dos.offset == 0
-                    )
-                )
+                .when(lambda dos: dos.date_field == DateType.START_DATE and dos.offset == 0)
                 .then(lambda dos: reporter(self.DAYS_OFFSET_WARNING))
             )
         )

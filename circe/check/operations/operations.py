@@ -70,11 +70,7 @@ class Operations(Generic[T, V], ConditionalOperations[T, V], ExecutiveOperations
         Returns:
             An ExecutiveOperations instance for chaining
         """
-        self._result = (
-            clazz is not None
-            and self._value is not None
-            and isinstance(self._value, clazz)
-        )
+        self._result = clazz is not None and self._value is not None and isinstance(self._value, clazz)
         return self
 
     def then(self, consumer: Any) -> ConditionalOperations[T, V]:
@@ -88,9 +84,7 @@ class Operations(Generic[T, V], ConditionalOperations[T, V], ExecutiveOperations
         """
         if self._result:
             # Check if it's an Execution object (has apply method)
-            if hasattr(consumer, "apply") and callable(
-                getattr(consumer, "apply", None)
-            ):
+            if hasattr(consumer, "apply") and callable(getattr(consumer, "apply", None)):
                 consumer.apply()
             else:
                 # It's a callable function

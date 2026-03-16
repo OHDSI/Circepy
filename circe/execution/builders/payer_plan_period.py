@@ -20,12 +20,8 @@ from .registry import register
 def build_payer_plan_period(criteria: PayerPlanPeriod, ctx: BuildContext):
     table = ctx.table("payer_plan_period")
 
-    table = apply_date_range(
-        table, "payer_plan_period_start_date", criteria.period_start_date
-    )
-    table = apply_date_range(
-        table, "payer_plan_period_end_date", criteria.period_end_date
-    )
+    table = apply_date_range(table, "payer_plan_period_start_date", criteria.period_start_date)
+    table = apply_date_range(table, "payer_plan_period_end_date", criteria.period_end_date)
 
     table = apply_interval_range(
         table,
@@ -35,36 +31,20 @@ def build_payer_plan_period(criteria: PayerPlanPeriod, ctx: BuildContext):
     )
 
     if criteria.age_at_start:
-        table = apply_age_filter(
-            table, criteria.age_at_start, ctx, "payer_plan_period_start_date"
-        )
+        table = apply_age_filter(table, criteria.age_at_start, ctx, "payer_plan_period_start_date")
     if criteria.age_at_end:
-        table = apply_age_filter(
-            table, criteria.age_at_end, ctx, "payer_plan_period_end_date"
-        )
+        table = apply_age_filter(table, criteria.age_at_end, ctx, "payer_plan_period_end_date")
 
     table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
 
     table = apply_codeset_filter(table, "payer_concept_id", criteria.payer_concept, ctx)
     table = apply_codeset_filter(table, "plan_concept_id", criteria.plan_concept, ctx)
-    table = apply_codeset_filter(
-        table, "sponsor_concept_id", criteria.sponsor_concept, ctx
-    )
-    table = apply_codeset_filter(
-        table, "stop_reason_concept_id", criteria.stop_reason_concept, ctx
-    )
-    table = apply_codeset_filter(
-        table, "payer_source_concept_id", criteria.payer_source_concept, ctx
-    )
-    table = apply_codeset_filter(
-        table, "plan_source_concept_id", criteria.plan_source_concept, ctx
-    )
-    table = apply_codeset_filter(
-        table, "sponsor_source_concept_id", criteria.sponsor_source_concept, ctx
-    )
-    table = apply_codeset_filter(
-        table, "stop_reason_source_concept_id", criteria.stop_reason_source_concept, ctx
-    )
+    table = apply_codeset_filter(table, "sponsor_concept_id", criteria.sponsor_concept, ctx)
+    table = apply_codeset_filter(table, "stop_reason_concept_id", criteria.stop_reason_concept, ctx)
+    table = apply_codeset_filter(table, "payer_source_concept_id", criteria.payer_source_concept, ctx)
+    table = apply_codeset_filter(table, "plan_source_concept_id", criteria.plan_source_concept, ctx)
+    table = apply_codeset_filter(table, "sponsor_source_concept_id", criteria.sponsor_source_concept, ctx)
+    table = apply_codeset_filter(table, "stop_reason_source_concept_id", criteria.stop_reason_source_concept, ctx)
 
     table, start_column, end_column = apply_user_defined_period(
         table,

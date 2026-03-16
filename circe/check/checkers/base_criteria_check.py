@@ -32,9 +32,7 @@ class BaseCriteriaCheck(BaseIterableCheck):
     primary criteria and inclusion rules.
     """
 
-    def _internal_check(
-        self, expression: "CohortExpression", reporter: WarningReporter
-    ) -> None:
+    def _internal_check(self, expression: "CohortExpression", reporter: WarningReporter) -> None:
         """Internal check that iterates over criteria.
 
         Args:
@@ -47,25 +45,16 @@ class BaseCriteriaCheck(BaseIterableCheck):
 
         if expression.inclusion_rules:
             for inclusion_rule in expression.inclusion_rules:
-                if (
-                    inclusion_rule.expression
-                    and inclusion_rule.expression.criteria_list
-                ):
+                if inclusion_rule.expression and inclusion_rule.expression.criteria_list:
                     for criteria in inclusion_rule.expression.criteria_list:
                         group_name = f"{self.INCLUSION_RULE}{inclusion_rule.name}"
                         self._check_criteria_group(
-                            (
-                                criteria.criteria
-                                if hasattr(criteria, "criteria")
-                                else criteria
-                            ),
+                            (criteria.criteria if hasattr(criteria, "criteria") else criteria),
                             group_name,
                             reporter,
                         )
 
-    def _check_criteria_group(
-        self, criteria: "Criteria", group_name: str, reporter: WarningReporter
-    ) -> None:
+    def _check_criteria_group(self, criteria: "Criteria", group_name: str, reporter: WarningReporter) -> None:
         """Check a criteria and its correlated criteria.
 
         Args:
@@ -80,20 +69,14 @@ class BaseCriteriaCheck(BaseIterableCheck):
             correlated = criteria.correlated_criteria
             if hasattr(correlated, "criteria_list") and correlated.criteria_list:
                 for corelated_criteria in correlated.criteria_list:
-                    self._check_criteria_group(
-                        corelated_criteria.criteria, group_name, reporter
-                    )
+                    self._check_criteria_group(corelated_criteria.criteria, group_name, reporter)
             if hasattr(correlated, "groups") and correlated.groups:
                 for group in correlated.groups:
                     if hasattr(group, "criteria_list") and group.criteria_list:
                         for corelated_criteria in group.criteria_list:
-                            self._check_criteria_group(
-                                corelated_criteria.criteria, group_name, reporter
-                            )
+                            self._check_criteria_group(corelated_criteria.criteria, group_name, reporter)
 
-    def _check_criteria(
-        self, criteria: "Criteria", group_name: str, reporter: WarningReporter
-    ) -> None:
+    def _check_criteria(self, criteria: "Criteria", group_name: str, reporter: WarningReporter) -> None:
         """Check a single criteria (to be implemented by subclasses).
 
         Args:

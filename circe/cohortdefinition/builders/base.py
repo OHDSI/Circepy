@@ -24,18 +24,14 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
     Java equivalent: org.ohdsi.circe.cohortdefinition.builders.CriteriaSqlBuilder
     """
 
-    def get_criteria_sql(
-        self, criteria: T, options: Optional[BuilderOptions] = None
-    ) -> str:
+    def get_criteria_sql(self, criteria: T, options: Optional[BuilderOptions] = None) -> str:
         """Get SQL query for criteria.
 
         Java equivalent: CriteriaSqlBuilder.getCriteriaSql(T criteria)
         """
         return self.get_criteria_sql_with_options(criteria, options)
 
-    def get_criteria_sql_with_options(
-        self, criteria: T, options: Optional[BuilderOptions]
-    ) -> str:
+    def get_criteria_sql_with_options(self, criteria: T, options: Optional[BuilderOptions]) -> str:
         """Get SQL query for criteria with builder options.
 
         Java equivalent: CriteriaSqlBuilder.getCriteriaSql(T criteria, BuilderOptions options)
@@ -58,11 +54,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         query = self.embed_where_clauses(query, where_clauses)
 
         if options is not None:
-            filtered_columns = [
-                column
-                for column in options.additional_columns
-                if column not in self.get_default_columns()
-            ]
+            filtered_columns = [column for column in options.additional_columns if column not in self.get_default_columns()]
             if filtered_columns:
                 query = query.replace(
                     "@additionalColumns",
@@ -107,9 +99,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return query.replace("@codesetClause", "")
 
-    def resolve_select_clauses(
-        self, criteria: T, options: Optional[BuilderOptions] = None
-    ) -> list[str]:
+    def resolve_select_clauses(self, criteria: T, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve select clauses for criteria.
 
         Java equivalent: CriteriaSqlBuilder.resolveSelectClauses()
@@ -117,9 +107,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return []
 
-    def resolve_join_clauses(
-        self, criteria: T, options: Optional[BuilderOptions] = None
-    ) -> list[str]:
+    def resolve_join_clauses(self, criteria: T, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve join clauses for criteria.
 
         Java equivalent: CriteriaSqlBuilder.resolveJoinClauses()
@@ -127,9 +115,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return []
 
-    def resolve_where_clauses(
-        self, criteria: T, options: Optional[BuilderOptions] = None
-    ) -> list[str]:
+    def resolve_where_clauses(self, criteria: T, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve where clauses for criteria.
 
         Java equivalent: CriteriaSqlBuilder.resolveWhereClauses()
@@ -137,9 +123,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return []
 
-    def embed_ordinal_expression(
-        self, query: str, criteria: T, where_clauses: list[str]
-    ) -> str:
+    def embed_ordinal_expression(self, query: str, criteria: T, where_clauses: list[str]) -> str:
         """Embed ordinal expression in query.
 
         Java equivalent: CriteriaSqlBuilder.embedOrdinalExpression()
@@ -179,9 +163,4 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
 
         Java equivalent: CriteriaSqlBuilder.getAdditionalColumns()
         """
-        return ", ".join(
-            [
-                f"{self.get_table_column_for_criteria_column(col)} as {col.value}"
-                for col in columns
-            ]
-        )
+        return ", ".join([f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns])

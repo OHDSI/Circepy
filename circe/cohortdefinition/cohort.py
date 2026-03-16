@@ -72,9 +72,7 @@ class CohortExpression(CirceBaseModel):
         validation_alias=AliasChoices("AdditionalCriteria", "additionalCriteria"),
         serialization_alias="AdditionalCriteria",
     )
-    end_strategy: Optional[
-        Union[EndStrategy, DateOffsetStrategy, CustomEraStrategy]
-    ] = Field(
+    end_strategy: Optional[Union[EndStrategy, DateOffsetStrategy, CustomEraStrategy]] = Field(
         default=None,
         validation_alias=AliasChoices("EndStrategy", "endStrategy"),
         serialization_alias="EndStrategy",
@@ -112,9 +110,7 @@ class CohortExpression(CirceBaseModel):
     )
     censoring_criteria: list[CriteriaType] = Field(
         default_factory=list,
-        validation_alias=AliasChoices(
-            "CensoringCriteria", "censoring_criteria", "censoringCriteria"
-        ),
+        validation_alias=AliasChoices("CensoringCriteria", "censoring_criteria", "censoringCriteria"),
         serialization_alias="CensoringCriteria",
     )
 
@@ -232,28 +228,14 @@ class CohortExpression(CirceBaseModel):
                 data_copy = dict(criteria_data)
                 if "First" not in data_copy and "first" not in data_copy:
                     data_copy["First"] = False
-                if (
-                    criteria_type == "Measurement"
-                    and "MeasurementTypeExclude" not in data_copy
-                    and "measurementTypeExclude" not in data_copy
-                ):
+                if criteria_type == "Measurement" and "MeasurementTypeExclude" not in data_copy and "measurementTypeExclude" not in data_copy:
                     data_copy["MeasurementTypeExclude"] = False
-                if (
-                    criteria_type == "Observation"
-                    and "ObservationTypeExclude" not in data_copy
-                    and "observationTypeExclude" not in data_copy
-                ):
+                if criteria_type == "Observation" and "ObservationTypeExclude" not in data_copy and "observationTypeExclude" not in data_copy:
                     data_copy["ObservationTypeExclude"] = False
-                if (
-                    criteria_type == "ConditionOccurrence"
-                    and "ConditionTypeExclude" not in data_copy
-                    and "conditionTypeExclude" not in data_copy
-                ):
+                if criteria_type == "ConditionOccurrence" and "ConditionTypeExclude" not in data_copy and "conditionTypeExclude" not in data_copy:
                     data_copy["ConditionTypeExclude"] = False
 
-                criteria_obj = criteria_class_map[criteria_type].model_validate(
-                    data_copy, strict=False
-                )
+                criteria_obj = criteria_class_map[criteria_type].model_validate(data_copy, strict=False)
                 deserialized.append(criteria_obj)
             else:
                 deserialized.append(item)
@@ -301,9 +283,7 @@ class CohortExpression(CirceBaseModel):
         Removes an inclusion rule by its name
         """
         if self.inclusion_rules:
-            self.inclusion_rules = [
-                r for r in self.inclusion_rules if getattr(r, "name", None) != name
-            ]
+            self.inclusion_rules = [r for r in self.inclusion_rules if getattr(r, "name", None) != name]
 
     def add_censoring_criteria(self, criteria: Criteria) -> None:
         """
@@ -318,11 +298,7 @@ class CohortExpression(CirceBaseModel):
         Removes a censoring criteria by its type
         """
         if self.censoring_criteria:
-            self.censoring_criteria = [
-                c
-                for c in self.censoring_criteria
-                if c.__class__.__name__ != criteria_type
-            ]
+            self.censoring_criteria = [c for c in self.censoring_criteria if c.__class__.__name__ != criteria_type]
 
     def validate_expression(self) -> bool:
         """Validate the cohort expression."""
@@ -397,33 +373,33 @@ class CohortExpression(CirceBaseModel):
         """
         if isinstance(data, dict):
             # Handle ConceptSet Expression Items
-            if "items" in data and isinstance(data["items"], list) and (
-                    data["items"]
-                    and isinstance(data["items"][0], dict)
-                    and "concept" in data["items"][0]
-                ):
-                    normalized_items = []
-                    seen_items = set()
+            if (
+                "items" in data
+                and isinstance(data["items"], list)
+                and (data["items"] and isinstance(data["items"][0], dict) and "concept" in data["items"][0])
+            ):
+                normalized_items = []
+                seen_items = set()
 
-                    for item in data["items"]:
-                        # Normalize the item first
-                        norm_item = self._normalize_for_checksum(item)
+                for item in data["items"]:
+                    # Normalize the item first
+                    norm_item = self._normalize_for_checksum(item)
 
-                        # Create a sortable/hashable representation for deduplication
-                        # We need to sort keys to ensure tuple order is consistent
-                        item_json = json.dumps(norm_item, sort_keys=True)
+                    # Create a sortable/hashable representation for deduplication
+                    # We need to sort keys to ensure tuple order is consistent
+                    item_json = json.dumps(norm_item, sort_keys=True)
 
-                        if item_json not in seen_items:
-                            seen_items.add(item_json)
-                            normalized_items.append(norm_item)
+                    if item_json not in seen_items:
+                        seen_items.add(item_json)
+                        normalized_items.append(norm_item)
 
-                    # Sort items to ensure list order doesn't affect hash
-                    # Sort by the JSON string representation
-                    normalized_items.sort(key=lambda x: json.dumps(x, sort_keys=True))
+                # Sort items to ensure list order doesn't affect hash
+                # Sort by the JSON string representation
+                normalized_items.sort(key=lambda x: json.dumps(x, sort_keys=True))
 
-                    new_data = data.copy()
-                    new_data["items"] = normalized_items
-                    return new_data
+                new_data = data.copy()
+                new_data["items"] = normalized_items
+                return new_data
 
             # Handle Concept Objects (heuristically by fields)
             if "CONCEPT_ID" in data:
@@ -560,10 +536,7 @@ class CohortExpression(CirceBaseModel):
         if not self.primary_criteria or not self.primary_criteria.criteria_list:
             return []
 
-        return [
-            criteria.__class__.__name__
-            for criteria in self.primary_criteria.criteria_list
-        ]
+        return [criteria.__class__.__name__ for criteria in self.primary_criteria.criteria_list]
 
     def has_observation_window(self) -> bool:
         """Check if observation window is defined in primary criteria.

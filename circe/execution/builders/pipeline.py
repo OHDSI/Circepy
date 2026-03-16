@@ -44,9 +44,7 @@ def build_primary_events(expression: CohortExpression, ctx: BuildContext):
     if ctx.should_materialize_stages():
         materialized: list[ir.Table] = []
         for idx, table in enumerate(event_tables, start=1):
-            materialized.append(
-                ctx.maybe_materialize(table, label=f"primary_src_{idx}", analyze=True)
-            )
+            materialized.append(ctx.maybe_materialize(table, label=f"primary_src_{idx}", analyze=True))
         event_tables = materialized
     events = event_tables[0]
     for table in event_tables[1:]:
@@ -71,9 +69,7 @@ def build_primary_events(expression: CohortExpression, ctx: BuildContext):
 
     events = apply_criteria_group(events, expression.additional_criteria, ctx)
     if expression.additional_criteria:
-        events = ctx.maybe_materialize(
-            events, label="additional_criteria", analyze=True
-        )
+        events = ctx.maybe_materialize(events, label="additional_criteria", analyze=True)
 
     events = apply_inclusion_rules(events, expression.inclusion_rules, ctx)
     if expression.inclusion_rules:
@@ -97,9 +93,7 @@ def build_primary_events(expression: CohortExpression, ctx: BuildContext):
     return events
 
 
-def build_primary_events_polars(
-    expression: CohortExpression, ctx: BuildContext
-) -> pl.DataFrame:
+def build_primary_events_polars(expression: CohortExpression, ctx: BuildContext) -> pl.DataFrame:
     events = build_primary_events(expression, ctx)
     if events is None:
         return pl.DataFrame(schema=OUTPUT_SCHEMA)
@@ -118,11 +112,7 @@ def _assign_primary_event_ids(events):
         event_id=(person_rank + 1),
         _person_ordinal=(person_rank + 1),
     )
-    supplemental = [
-        events[column]
-        for column in ("observation_period_start_date", "observation_period_end_date")
-        if column in events.columns
-    ]
+    supplemental = [events[column] for column in ("observation_period_start_date", "observation_period_end_date") if column in events.columns]
     return events.select(
         events.person_id,
         events.event_id,

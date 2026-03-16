@@ -65,9 +65,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
         """Get default columns for visit detail criteria."""
         return self.DEFAULT_COLUMNS
 
-    def get_table_column_for_criteria_column(
-        self, criteria_column: CriteriaColumn
-    ) -> str:
+    def get_table_column_for_criteria_column(self, criteria_column: CriteriaColumn) -> str:
         """Get table column for criteria column."""
         column_mapping = {
             CriteriaColumn.DOMAIN_CONCEPT: "C.visit_detail_concept_id",
@@ -88,9 +86,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
         )
         return query.replace("@codesetClause", codeset_clause)
 
-    def embed_ordinal_expression(
-        self, query: str, criteria: VisitDetail, where_clauses: list[str]
-    ) -> str:
+    def embed_ordinal_expression(self, query: str, criteria: VisitDetail, where_clauses: list[str]) -> str:
         """Embed ordinal expression in query."""
         # first
         if criteria.first is not None and criteria.first:
@@ -103,9 +99,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
             query = query.replace("@ordinalExpression", "")
         return query
 
-    def resolve_select_clauses(
-        self, criteria: VisitDetail, options: Optional[BuilderOptions] = None
-    ) -> list[str]:
+    def resolve_select_clauses(self, criteria: VisitDetail, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve select clauses for visit detail criteria."""
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
 
@@ -123,21 +117,9 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
 
         # dateAdjustment or default start/end dates
         if criteria.date_adjustment is not None:
-            start_column = (
-                "vd.visit_detail_start_date"
-                if criteria.date_adjustment.start_with == "start_date"
-                else "vd.visit_detail_end_date"
-            )
-            end_column = (
-                "vd.visit_detail_start_date"
-                if criteria.date_adjustment.end_with == "start_date"
-                else "vd.visit_detail_end_date"
-            )
-            select_cols.append(
-                BuilderUtils.get_date_adjustment_expression(
-                    criteria.date_adjustment, start_column, end_column
-                )
-            )
+            start_column = "vd.visit_detail_start_date" if criteria.date_adjustment.start_with == "start_date" else "vd.visit_detail_end_date"
+            end_column = "vd.visit_detail_start_date" if criteria.date_adjustment.end_with == "start_date" else "vd.visit_detail_end_date"
+            select_cols.append(BuilderUtils.get_date_adjustment_expression(criteria.date_adjustment, start_column, end_column))
         else:
             select_cols.append("vd.visit_detail_start_date as start_date")
             select_cols.append("vd.visit_detail_end_date as end_date")
@@ -150,60 +132,37 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
 
         return select_cols
 
-    def resolve_join_clauses(
-        self, criteria: VisitDetail, options: Optional[BuilderOptions] = None
-    ) -> list[str]:
+    def resolve_join_clauses(self, criteria: VisitDetail, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve join clauses for visit detail criteria."""
         join_clauses = []
 
-        if (
-            criteria.age is not None
-            or criteria.gender_cs is not None
-            or criteria.gender is not None
-        ):  # join to PERSON
-            join_clauses.append(
-                "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id"
-            )
+        if criteria.age is not None or criteria.gender_cs is not None or criteria.gender is not None:  # join to PERSON
+            join_clauses.append("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id")
 
-        if (
-            criteria.place_of_service_cs is not None
-            or criteria.place_of_service_location is not None
-        ):
-            join_clauses.append(
-                "JOIN @cdm_database_schema.CARE_SITE CS on C.care_site_id = CS.care_site_id"
-            )
+        if criteria.place_of_service_cs is not None or criteria.place_of_service_location is not None:
+            join_clauses.append("JOIN @cdm_database_schema.CARE_SITE CS on C.care_site_id = CS.care_site_id")
 
         if criteria.provider_specialty_cs is not None:
-            join_clauses.append(
-                "LEFT JOIN @cdm_database_schema.PROVIDER PR on C.provider_id = PR.provider_id"
-            )
+            join_clauses.append("LEFT JOIN @cdm_database_schema.PROVIDER PR on C.provider_id = PR.provider_id")
 
         if criteria.place_of_service_location is not None:
-            self.add_filtering_by_care_site_location_region(
-                join_clauses, criteria.place_of_service_location
-            )
+            self.add_filtering_by_care_site_location_region(join_clauses, criteria.place_of_service_location)
 
         return join_clauses
 
-    def resolve_where_clauses(
-        self, criteria: VisitDetail, options: Optional[BuilderOptions] = None
-    ) -> list[str]:
+    def resolve_where_clauses(self, criteria: VisitDetail, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve where clauses for visit detail criteria."""
         where_clauses = []
 
         # occurrenceStartDate
         if criteria.visit_detail_start_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(
-                "C.start_date", criteria.visit_detail_start_date
-            )
+            date_clause = BuilderUtils.build_date_range_clause("C.start_date", criteria.visit_detail_start_date)
             if date_clause:
                 where_clauses.append(date_clause)
 
         # occurrenceEndDate
         if criteria.visit_detail_end_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(
-                "C.end_date", criteria.visit_detail_end_date
-            )
+            date_clause = BuilderUtils.build_date_range_clause("C.end_date", criteria.visit_detail_end_date)
             if date_clause:
                 where_clauses.append(date_clause)
 
@@ -218,17 +177,13 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
 
         # visitLength
         if criteria.visit_detail_length is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(
-                "DATEDIFF(d,C.start_date, C.end_date)", criteria.visit_detail_length
-            )
+            numeric_clause = BuilderUtils.build_numeric_range_clause("DATEDIFF(d,C.start_date, C.end_date)", criteria.visit_detail_length)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # age
         if criteria.age is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(
-                "YEAR(C.end_date) - P.year_of_birth", criteria.age
-            )
+            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.end_date) - P.year_of_birth", criteria.age)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
@@ -236,20 +191,14 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
         if criteria.gender is not None and len(criteria.gender) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.gender)
             if concept_ids:
-                where_clauses.append(
-                    f"P.gender_concept_id in ({','.join(map(str, concept_ids))})"
-                )
+                where_clauses.append(f"P.gender_concept_id in ({','.join(map(str, concept_ids))})")
 
         if criteria.gender_cs is not None:
-            self.add_where_clause(
-                where_clauses, criteria.gender_cs, "P.gender_concept_id"
-            )
+            self.add_where_clause(where_clauses, criteria.gender_cs, "P.gender_concept_id")
 
         # providerSpecialty
         if criteria.provider_specialty_cs is not None:
-            self.add_where_clause(
-                where_clauses, criteria.provider_specialty_cs, "PR.specialty_concept_id"
-            )
+            self.add_where_clause(where_clauses, criteria.provider_specialty_cs, "PR.specialty_concept_id")
 
         # placeOfService
         if criteria.place_of_service_cs is not None:
@@ -266,23 +215,12 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
 
         Java equivalent: VisitDetailSqlBuilder.getAdditionalColumns()
         """
-        return ", ".join(
-            [
-                f"{self.get_table_column_for_criteria_column(col)} as {col.value}"
-                for col in columns
-            ]
-        )
+        return ", ".join([f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns])
 
-    def add_filtering_by_care_site_location_region(
-        self, join_clauses: list[str], codeset_id: int
-    ):
+    def add_filtering_by_care_site_location_region(self, join_clauses: list[str], codeset_id: int):
         """Add filtering by care site location region."""
-        join_clauses.append(
-            self.get_location_history_join("LH", "CARE_SITE", "C.care_site_id")
-        )
-        join_clauses.append(
-            "JOIN @cdm_database_schema.LOCATION LOC on LOC.location_id = LH.location_id"
-        )
+        join_clauses.append(self.get_location_history_join("LH", "CARE_SITE", "C.care_site_id"))
+        join_clauses.append("JOIN @cdm_database_schema.LOCATION LOC on LOC.location_id = LH.location_id")
         self.add_filtering(join_clauses, codeset_id, "LOC.region_concept_id")
 
     def add_where_clause(
@@ -293,28 +231,16 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
         exclude: Optional[bool] = None,
     ):
         """Add where clause for concept set selection."""
-        is_exclusion = (
-            exclude if exclude is not None else concept_set_selection.is_exclusion
-        )
-        codeset_clause = BuilderUtils.get_codeset_in_expression(
-            concept_set_selection.codeset_id, concept_column, is_exclusion
-        )
+        is_exclusion = exclude if exclude is not None else concept_set_selection.is_exclusion
+        codeset_clause = BuilderUtils.get_codeset_in_expression(concept_set_selection.codeset_id, concept_column, is_exclusion)
         if codeset_clause:
             where_clauses.append(codeset_clause)
 
-    def add_filtering(
-        self, join_clauses: list[str], codeset_id: int, standard_concept_column: str
-    ):
+    def add_filtering(self, join_clauses: list[str], codeset_id: int, standard_concept_column: str):
         """Add filtering join clause."""
-        join_clauses.append(
-            BuilderUtils.get_codeset_join_expression(
-                codeset_id, standard_concept_column, None, None
-            )
-        )
+        join_clauses.append(BuilderUtils.get_codeset_join_expression(codeset_id, standard_concept_column, None, None))
 
-    def get_location_history_join(
-        self, alias: str, domain: str, entity_id_field: str
-    ) -> str:
+    def get_location_history_join(self, alias: str, domain: str, entity_id_field: str) -> str:
         """Get location history join clause."""
         return f"""JOIN @cdm_database_schema.LOCATION_HISTORY {alias} 
             on {alias}.entity_id = {entity_id_field} 

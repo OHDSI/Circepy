@@ -19,12 +19,8 @@ from .registry import register
 def build_observation_period(criteria: ObservationPeriod, ctx: BuildContext):
     table = ctx.table("observation_period")
 
-    table = apply_date_range(
-        table, "observation_period_start_date", criteria.period_start_date
-    )
-    table = apply_date_range(
-        table, "observation_period_end_date", criteria.period_end_date
-    )
+    table = apply_date_range(table, "observation_period_start_date", criteria.period_start_date)
+    table = apply_date_range(table, "observation_period_end_date", criteria.period_end_date)
 
     table = apply_concept_criteria(
         table,
@@ -42,13 +38,9 @@ def build_observation_period(criteria: ObservationPeriod, ctx: BuildContext):
     )
 
     if criteria.age_at_start:
-        table = apply_age_filter(
-            table, criteria.age_at_start, ctx, "observation_period_start_date"
-        )
+        table = apply_age_filter(table, criteria.age_at_start, ctx, "observation_period_start_date")
     if criteria.age_at_end:
-        table = apply_age_filter(
-            table, criteria.age_at_end, ctx, "observation_period_end_date"
-        )
+        table = apply_age_filter(table, criteria.age_at_end, ctx, "observation_period_end_date")
 
     table, start_column, end_column = apply_user_defined_period(
         table,

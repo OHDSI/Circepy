@@ -348,9 +348,7 @@ def set_age_criteria(
             groups=[],
         )
     else:
-        cohort_expression.additional_criteria.demographic_criteria_list.append(
-            demographic
-        )
+        cohort_expression.additional_criteria.demographic_criteria_list.append(demographic)
 
     return cohort_expression
 
@@ -423,9 +421,7 @@ def set_gender_criteria(
             groups=[],
         )
     else:
-        cohort_expression.additional_criteria.demographic_criteria_list.append(
-            demographic
-        )
+        cohort_expression.additional_criteria.demographic_criteria_list.append(demographic)
 
     return cohort_expression
 
@@ -497,10 +493,7 @@ def set_end_date_strategy(
         )
 
     else:
-        raise ValueError(
-            f"Unknown strategy '{strategy}'. "
-            "Expected 'fixed_duration', 'end_of_observation', or 'custom_era'."
-        )
+        raise ValueError(f"Unknown strategy '{strategy}'. Expected 'fixed_duration', 'end_of_observation', or 'custom_era'.")
 
     return cohort_expression
 
@@ -618,10 +611,7 @@ def set_clean_window(
 
     pc = cohort_expression.primary_criteria
     if pc is None or not pc.criteria_list:
-        raise ValueError(
-            "Cannot set a clean window without primary criteria. "
-            "Add at least one primary criterion first."
-        )
+        raise ValueError("Cannot set a clean window without primary criteria. Add at least one primary criterion first.")
 
     # Remove any existing clean-window rule before adding a new one
     reset_clean_window(cohort_expression)
@@ -661,10 +651,7 @@ def set_clean_window(
 
     rule = InclusionRule(
         name=_CLEAN_WINDOW_RULE_NAME,
-        description=(
-            f"Exclude events within {days} days of a prior qualifying event "
-            f"(criteria_mode={mode})"
-        ),
+        description=(f"Exclude events within {days} days of a prior qualifying event (criteria_mode={mode})"),
         expression=CriteriaGroup(
             type=group_type,
             criteria_list=correlated_list,
@@ -691,11 +678,7 @@ def reset_clean_window(
         The modified *cohort_expression*.
     """
     if cohort_expression.inclusion_rules:
-        cohort_expression.inclusion_rules = [
-            r
-            for r in cohort_expression.inclusion_rules
-            if getattr(r, "name", None) != _CLEAN_WINDOW_RULE_NAME
-        ]
+        cohort_expression.inclusion_rules = [r for r in cohort_expression.inclusion_rules if getattr(r, "name", None) != _CLEAN_WINDOW_RULE_NAME]
     return cohort_expression
 
 
@@ -823,9 +806,7 @@ def reset_age_criteria(
     """
     if cohort_expression.additional_criteria is not None:
         cohort_expression.additional_criteria.demographic_criteria_list = [
-            dc
-            for dc in cohort_expression.additional_criteria.demographic_criteria_list
-            if dc.age is None
+            dc for dc in cohort_expression.additional_criteria.demographic_criteria_list if dc.age is None
         ]
     return cohort_expression
 
@@ -843,9 +824,7 @@ def reset_gender_criteria(
     """
     if cohort_expression.additional_criteria is not None:
         cohort_expression.additional_criteria.demographic_criteria_list = [
-            dc
-            for dc in cohort_expression.additional_criteria.demographic_criteria_list
-            if dc.gender is None
+            dc for dc in cohort_expression.additional_criteria.demographic_criteria_list if dc.gender is None
         ]
     return cohort_expression
 

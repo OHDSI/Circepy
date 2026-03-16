@@ -79,9 +79,7 @@ def start_chat(
                             description=item.get("description"),
                         )
                     )
-            print(
-                f"   Loaded {len(concept_sets_data)} concept sets from {concept_sets_file}"
-            )
+            print(f"   Loaded {len(concept_sets_data)} concept sets from {concept_sets_file}")
         except Exception as e:
             print(f"Error loading concept sets: {e}", file=sys.stderr)
             return 1
@@ -144,15 +142,11 @@ def start_chat(
         # Construct user message
         if len(messages) == 1:
             # First user message - format nicely
-            formatted_content = (
-                f"\n---\n## User Task\n**Clinical Description:**\n{user_input}\n"
-            )
+            formatted_content = f"\n---\n## User Task\n**Clinical Description:**\n{user_input}\n"
             if concept_sets_data:
                 formatted_content += builder.format_concept_sets(concept_sets_data)
             else:
-                formatted_content += (
-                    "\nNo pre-defined concept sets provided. Please infer them."
-                )
+                formatted_content += "\nNo pre-defined concept sets provided. Please infer them."
 
             messages.append({"role": "user", "content": formatted_content})
         else:
@@ -237,11 +231,7 @@ def _process_response_content(content: str, output_base: Optional[str]):
 
             json_output = None
             if hasattr(cohort_obj, "json"):  # Pydantic v1/v2
-                json_output = (
-                    cohort_obj.model_dump_json(indent=2)
-                    if hasattr(cohort_obj, "model_dump_json")
-                    else cohort_obj.json(indent=2)
-                )
+                json_output = cohort_obj.model_dump_json(indent=2) if hasattr(cohort_obj, "model_dump_json") else cohort_obj.json(indent=2)
             elif hasattr(cohort_obj, "to_json"):
                 json_output = cohort_obj.to_json()
             else:
@@ -259,6 +249,4 @@ def _process_response_content(content: str, output_base: Optional[str]):
 
     except Exception as e:
         print(f"   Error executing generated code: {e}")
-        print(
-            "   (Ensure the generated code is valid and all dependencies are installed)"
-        )
+        print("   (Ensure the generated code is valid and all dependencies are installed)")

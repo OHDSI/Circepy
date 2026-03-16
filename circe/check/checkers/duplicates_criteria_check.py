@@ -38,9 +38,7 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
         super().__init__()
         self._criteria_list: list[tuple[str, Criteria]] = []
 
-    def _after_check(
-        self, reporter: WarningReporter, expression: "CohortExpression"
-    ) -> None:
+    def _after_check(self, reporter: WarningReporter, expression: "CohortExpression") -> None:
         """Check for duplicates after all criteria have been collected.
 
         Args:
@@ -50,11 +48,7 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
         if len(self._criteria_list) > 1:
             for i in range(len(self._criteria_list) - 1):
                 criteria, criteria_obj = self._criteria_list[i]
-                duplicates = [
-                    (name, obj)
-                    for name, obj in self._criteria_list[i + 1 :]
-                    if self._compare_criteria(criteria_obj, obj)
-                ]
+                duplicates = [(name, obj) for name, obj in self._criteria_list[i + 1 :] if self._compare_criteria(criteria_obj, obj)]
                 if duplicates:
                     names = ", ".join(name for name, _ in duplicates)
                     reporter(self.DUPLICATE_WARNING, criteria, names)
@@ -102,10 +96,7 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
         if isinstance(c1, ConditionEra):
             return c1.codeset_id == c2.codeset_id
         elif isinstance(c1, ConditionOccurrence):
-            return (
-                c1.codeset_id == c2.codeset_id
-                and c1.condition_source_concept == c2.condition_source_concept
-            )
+            return c1.codeset_id == c2.codeset_id and c1.condition_source_concept == c2.condition_source_concept
         elif isinstance(
             c1,
             (
@@ -126,9 +117,7 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
                 and self._compare_objects(c1.period_end_date, c2.period_end_date)
                 and self._compare_objects(c1.period_length, c2.period_length)
             )
-        elif isinstance(
-            c1, (ProcedureOccurrence, Specimen, VisitOccurrence, VisitDetail)
-        ):
+        elif isinstance(c1, (ProcedureOccurrence, Specimen, VisitOccurrence, VisitDetail)):
             return c1.codeset_id == c2.codeset_id
         elif isinstance(c1, PayerPlanPeriod):
             return (
@@ -169,9 +158,7 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
         """
         return obj1 == obj2
 
-    def _check_criteria(
-        self, criteria: "Criteria", group_name: str, reporter: WarningReporter
-    ) -> None:
+    def _check_criteria(self, criteria: "Criteria", group_name: str, reporter: WarningReporter) -> None:
         """Collect criteria for duplicate checking.
 
         Args:
@@ -179,9 +166,5 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
             group_name: The name of the group containing this criteria
             reporter: The warning reporter to use (not used here, but kept for interface)
         """
-        criteria_name = (
-            CriteriaNameHelper.get_criteria_name(criteria)
-            + " criteria in "
-            + group_name
-        )
+        criteria_name = CriteriaNameHelper.get_criteria_name(criteria) + " criteria in " + group_name
         self._criteria_list.append((criteria_name, criteria))

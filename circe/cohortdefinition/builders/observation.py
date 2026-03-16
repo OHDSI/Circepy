@@ -46,9 +46,7 @@ FROM
             CriteriaColumn.VISIT_ID,
         }
 
-    def get_table_column_for_criteria_column(
-        self, criteria_column: CriteriaColumn
-    ) -> str:
+    def get_table_column_for_criteria_column(self, criteria_column: CriteriaColumn) -> str:
         """Get table column for criteria column."""
         column_mapping = {
             CriteriaColumn.START_DATE: "C.start_date",
@@ -71,9 +69,7 @@ FROM
             ),
         )
 
-    def resolve_select_clauses(
-        self, criteria: Observation, options: Optional[BuilderOptions] = None
-    ) -> list[str]:
+    def resolve_select_clauses(self, criteria: Observation, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve select clauses for observation criteria.
 
         Java equivalent: ObservationSqlBuilder.resolveSelectClauses()
@@ -91,21 +87,15 @@ FROM
         ]
 
         # observationType
-        if (
-            criteria.observation_type and len(criteria.observation_type) > 0
-        ) or criteria.observation_type_cs:
+        if (criteria.observation_type and len(criteria.observation_type) > 0) or criteria.observation_type_cs:
             select_cols.append("o.observation_type_concept_id")
 
         # qualifier
-        if (
-            criteria.qualifier and len(criteria.qualifier) > 0
-        ) or criteria.qualifier_cs:
+        if (criteria.qualifier and len(criteria.qualifier) > 0) or criteria.qualifier_cs:
             select_cols.append("o.qualifier_concept_id")
 
         # providerSpecialty
-        if (
-            criteria.provider_specialty and len(criteria.provider_specialty) > 0
-        ) or criteria.provider_specialty_cs:
+        if (criteria.provider_specialty and len(criteria.provider_specialty) > 0) or criteria.provider_specialty_cs:
             select_cols.append("o.provider_id")
 
         # Add date columns (start_date and end_date)
@@ -114,9 +104,7 @@ FROM
 
         return select_cols
 
-    def resolve_join_clauses(
-        self, criteria: Observation, options: Optional[BuilderOptions] = None
-    ) -> list[str]:
+    def resolve_join_clauses(self, criteria: Observation, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve join clauses for observation criteria.
 
         Java equivalent: ObservationSqlBuilder.resolveJoinClauses()
@@ -124,64 +112,44 @@ FROM
         join_clauses = []
 
         # Join to PERSON if age or gender conditions are present
-        if (
-            criteria.age
-            or (criteria.gender and len(criteria.gender) > 0)
-            or (criteria.gender_cs and criteria.gender_cs.codeset_id)
-        ):
-            join_clauses.append(
-                "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id"
-            )
+        if criteria.age or (criteria.gender and len(criteria.gender) > 0) or (criteria.gender_cs and criteria.gender_cs.codeset_id):
+            join_clauses.append("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id")
 
         # Join to PROVIDER if provider specialty conditions are present
         # Always use PR alias for PROVIDER to match Java implementation
         if (criteria.provider_specialty and len(criteria.provider_specialty) > 0) or (
             criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id
         ):
-            join_clauses.append(
-                "LEFT JOIN @cdm_database_schema.PROVIDER PR on C.provider_id = PR.provider_id"
-            )
+            join_clauses.append("LEFT JOIN @cdm_database_schema.PROVIDER PR on C.provider_id = PR.provider_id")
 
         # Join to VISIT_OCCURRENCE if visit type conditions are present
-        if (criteria.visit_type and len(criteria.visit_type) > 0) or (
-            criteria.visit_type_cs and criteria.visit_type_cs.codeset_id
-        ):
+        if (criteria.visit_type and len(criteria.visit_type) > 0) or (criteria.visit_type_cs and criteria.visit_type_cs.codeset_id):
             join_clauses.append(
                 "JOIN @cdm_database_schema.VISIT_OCCURRENCE V on C.visit_occurrence_id = V.visit_occurrence_id and C.person_id = V.person_id"
             )
 
         return join_clauses
 
-    def resolve_where_clauses(
-        self, criteria: Observation, options: Optional[BuilderOptions] = None
-    ) -> list[str]:
+    def resolve_where_clauses(self, criteria: Observation, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve where clauses for observation criteria."""
         where_clauses = super().resolve_where_clauses(criteria)
 
         # Add date range conditions
         if criteria.occurrence_start_date:
-            date_clause = BuilderUtils.build_date_range_clause(
-                "C.start_date", criteria.occurrence_start_date
-            )
+            date_clause = BuilderUtils.build_date_range_clause("C.start_date", criteria.occurrence_start_date)
             if date_clause:
                 where_clauses.append(date_clause)
 
         if criteria.occurrence_end_date:
-            date_clause = BuilderUtils.build_date_range_clause(
-                "C.end_date", criteria.occurrence_end_date
-            )
+            date_clause = BuilderUtils.build_date_range_clause("C.end_date", criteria.occurrence_end_date)
             if date_clause:
                 where_clauses.append(date_clause)
 
         # observationType
         if criteria.observation_type and len(criteria.observation_type) > 0:
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.observation_type
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.observation_type)
             operator = "not in" if criteria.observation_type_exclude else "in"
-            where_clauses.append(
-                f"C.observation_type_concept_id {operator} ({','.join(map(str, concept_ids))})"
-            )
+            where_clauses.append(f"C.observation_type_concept_id {operator} ({','.join(map(str, concept_ids))})")
 
         # observationTypeCS
         if criteria.observation_type_cs:
@@ -194,89 +162,47 @@ FROM
 
         # valueAsNumber
         if hasattr(criteria, "value_as_number") and criteria.value_as_number:
-            where_clauses.append(
-                BuilderUtils.build_numeric_range_clause(
-                    "C.value_as_number", criteria.value_as_number, ".4f"
-                )
-            )
+            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.value_as_number", criteria.value_as_number, ".4f"))
 
         # valueAsString
         if criteria.value_as_string:
-            where_clauses.append(
-                BuilderUtils.build_text_filter_clause(
-                    criteria.value_as_string, "C.value_as_string"
-                )
-            )
+            where_clauses.append(BuilderUtils.build_text_filter_clause(criteria.value_as_string, "C.value_as_string"))
 
         # valueAsConcept
-        if (
-            hasattr(criteria, "value_as_concept")
-            and criteria.value_as_concept
-            and len(criteria.value_as_concept) > 0
-        ):
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.value_as_concept
-            )
-            where_clauses.append(
-                f"C.value_as_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+        if hasattr(criteria, "value_as_concept") and criteria.value_as_concept and len(criteria.value_as_concept) > 0:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.value_as_concept)
+            where_clauses.append(f"C.value_as_concept_id in ({','.join(map(str, concept_ids))})")
 
         # valueAsConceptCS
         if hasattr(criteria, "value_as_concept_cs") and criteria.value_as_concept_cs:
-            where_clauses.append(
-                BuilderUtils.get_codeset_in_expression(
-                    criteria.value_as_concept_cs.codeset_id, "C.value_as_concept_id"
-                )
-            )
+            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.value_as_concept_cs.codeset_id, "C.value_as_concept_id"))
 
         # unit
         if hasattr(criteria, "unit") and criteria.unit and len(criteria.unit) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.unit)
-            where_clauses.append(
-                f"C.unit_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            where_clauses.append(f"C.unit_concept_id in ({','.join(map(str, concept_ids))})")
 
         # unitCS
         if hasattr(criteria, "unit_cs") and criteria.unit_cs:
-            where_clauses.append(
-                BuilderUtils.get_codeset_in_expression(
-                    criteria.unit_cs.codeset_id, "C.unit_concept_id"
-                )
-            )
+            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.unit_cs.codeset_id, "C.unit_concept_id"))
 
         # qualifier
-        if (
-            hasattr(criteria, "qualifier")
-            and criteria.qualifier
-            and len(criteria.qualifier) > 0
-        ):
+        if hasattr(criteria, "qualifier") and criteria.qualifier and len(criteria.qualifier) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.qualifier)
-            where_clauses.append(
-                f"C.qualifier_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            where_clauses.append(f"C.qualifier_concept_id in ({','.join(map(str, concept_ids))})")
 
         # qualifierCS
         if hasattr(criteria, "qualifier_cs") and criteria.qualifier_cs:
-            where_clauses.append(
-                BuilderUtils.get_codeset_in_expression(
-                    criteria.qualifier_cs.codeset_id, "C.qualifier_concept_id"
-                )
-            )
+            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.qualifier_cs.codeset_id, "C.qualifier_concept_id"))
 
         # age
         if criteria.age:
-            where_clauses.append(
-                BuilderUtils.build_numeric_range_clause(
-                    "YEAR(C.start_date) - P.year_of_birth", criteria.age
-                )
-            )
+            where_clauses.append(BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age))
 
         # gender
         if criteria.gender and len(criteria.gender) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.gender)
-            where_clauses.append(
-                f"P.gender_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            where_clauses.append(f"P.gender_concept_id in ({','.join(map(str, concept_ids))})")
 
         if criteria.gender_cs:
             where_clauses.append(
@@ -289,12 +215,8 @@ FROM
 
         # providerSpecialty
         if criteria.provider_specialty and len(criteria.provider_specialty) > 0:
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.provider_specialty
-            )
-            where_clauses.append(
-                f"PR.specialty_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.provider_specialty)
+            where_clauses.append(f"PR.specialty_concept_id in ({','.join(map(str, concept_ids))})")
 
         # providerSpecialtyCS
         if criteria.provider_specialty_cs:
@@ -308,20 +230,12 @@ FROM
 
         # visitType
         if criteria.visit_type and len(criteria.visit_type) > 0:
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.visit_type
-            )
-            where_clauses.append(
-                f"V.visit_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.visit_type)
+            where_clauses.append(f"V.visit_concept_id in ({','.join(map(str, concept_ids))})")
 
         # visitTypeCS
         if criteria.visit_type_cs:
-            where_clauses.append(
-                BuilderUtils.get_codeset_in_expression(
-                    criteria.visit_type_cs.codeset_id, "V.visit_concept_id"
-                )
-            )
+            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.visit_type_cs.codeset_id, "V.visit_concept_id"))
 
         return where_clauses
 
@@ -330,16 +244,9 @@ FROM
 
         Java equivalent: ObservationSqlBuilder.getAdditionalColumns()
         """
-        return ", ".join(
-            [
-                f"{self.get_table_column_for_criteria_column(col)} as {col.value}"
-                for col in columns
-            ]
-        )
+        return ", ".join([f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns])
 
-    def embed_ordinal_expression(
-        self, query: str, criteria: Observation, where_clauses: list[str]
-    ) -> str:
+    def embed_ordinal_expression(self, query: str, criteria: Observation, where_clauses: list[str]) -> str:
         """Embed ordinal expression in query."""
         # first
         if criteria.first is not None and criteria.first:
@@ -352,9 +259,7 @@ FROM
             query = query.replace("@ordinalExpression", "")
         return query
 
-    def resolve_ordinal_expression(
-        self, criteria: Observation, options: BuilderOptions
-    ) -> str:
+    def resolve_ordinal_expression(self, criteria: Observation, options: BuilderOptions) -> str:
         """Resolve ordinal expression for observation criteria."""
         if criteria.first:
             return ", row_number() over (PARTITION BY o.person_id ORDER BY o.observation_date, o.observation_id) as ordinal"

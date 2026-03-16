@@ -32,9 +32,7 @@ class IncompleteRuleCheck(BaseCheck):
     Java equivalent: org.ohdsi.circe.check.checkers.IncompleteRuleCheck
     """
 
-    def _get_reporter(
-        self, severity: WarningSeverity, warnings: list[Warning]
-    ) -> WarningReporter:
+    def _get_reporter(self, severity: WarningSeverity, warnings: list[Warning]) -> WarningReporter:
         """Get a warning reporter that creates IncompleteRuleWarning instances.
 
         Args:
@@ -61,9 +59,7 @@ class IncompleteRuleCheck(BaseCheck):
             for rule in expression.inclusion_rules:
                 self._check_inclusion_rule(rule, reporter)
 
-    def _check_inclusion_rule(
-        self, rule: "InclusionRule", reporter: WarningReporter
-    ) -> None:
+    def _check_inclusion_rule(self, rule: "InclusionRule", reporter: WarningReporter) -> None:
         """Check if an inclusion rule is incomplete.
 
         Args:
@@ -72,14 +68,8 @@ class IncompleteRuleCheck(BaseCheck):
         """
         # Check if expression is empty
         if not rule.expression or (
-            (
-                not hasattr(rule.expression, "criteria_list")
-                or not rule.expression.criteria_list
-            )
-            and (
-                not hasattr(rule.expression, "demographic_criteria_list")
-                or not rule.expression.demographic_criteria_list
-            )
+            (not hasattr(rule.expression, "criteria_list") or not rule.expression.criteria_list)
+            and (not hasattr(rule.expression, "demographic_criteria_list") or not rule.expression.demographic_criteria_list)
             and (not hasattr(rule.expression, "groups") or not rule.expression.groups)
         ):
             reporter(rule.name)

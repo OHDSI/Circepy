@@ -39,10 +39,6 @@ class InitialEventCheck(BaseCheck):
         """
         match_result = Operations.match(expression)
         match_result.when(
-            lambda e: (
-                e.primary_criteria is None
-                or e.primary_criteria.criteria_list is None
-                or len(e.primary_criteria.criteria_list) == 0
-            )
+            lambda e: e.primary_criteria is None or e.primary_criteria.criteria_list is None or len(e.primary_criteria.criteria_list) == 0
         )
         match_result.then(lambda e: reporter(self.NO_INITIAL_EVENT_ERROR))

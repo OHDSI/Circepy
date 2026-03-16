@@ -45,18 +45,14 @@ class IbisExecutor:
         """Execute cohort expression and collect to Polars."""
         table = self.build(expression)
         if not hasattr(table, "to_polars"):
-            raise RuntimeError(
-                "The returned ibis table does not support to_polars() on this backend."
-            )
+            raise RuntimeError("The returned ibis table does not support to_polars() on this backend.")
         return table.to_polars()
 
     def to_pandas(self, expression: ExpressionInput) -> pd.DataFrame:
         """Execute cohort expression and collect to pandas."""
         table = self.build(expression)
         if not hasattr(table, "to_pandas"):
-            raise RuntimeError(
-                "The returned ibis table does not support to_pandas() on this backend."
-            )
+            raise RuntimeError("The returned ibis table does not support to_pandas() on this backend.")
         return table.to_pandas()
 
     def write(
@@ -71,20 +67,15 @@ class IbisExecutor:
     ) -> Any:
         """Persist cohort rows to a cohort table and return a backend table handle."""
         if append and overwrite:
-            raise ValueError(
-                "`append=True` and `overwrite=True` cannot be used together."
-            )
+            raise ValueError("`append=True` and `overwrite=True` cannot be used together.")
         cohort_expression = load_expression(expression)
         self.close()
-        events, ctx = self._build_with_context_native(
-            cohort_expression, cohort_id_override=cohort_id
-        )
+        events, ctx = self._build_with_context_native(cohort_expression, cohort_id_override=cohort_id)
         self._open_contexts.append(ctx)
         return ctx.write_cohort_table(
             events,
             table_name=table,
-            database=schema_to_str(schema)
-            or schema_to_str(self._options.result_schema),
+            database=schema_to_str(schema) or schema_to_str(self._options.result_schema),
             overwrite=overwrite,
             append=append,
         )
@@ -117,9 +108,7 @@ class IbisExecutor:
         self._open_contexts.append(ctx)
         return events
 
-    def _build_with_context_native(
-        self, cohort_expression: Any, cohort_id_override: int | None = None
-    ) -> Any:
+    def _build_with_context_native(self, cohort_expression: Any, cohort_id_override: int | None = None) -> Any:
         try:
             from .build_context import (
                 BuildContext,
@@ -139,11 +128,7 @@ class IbisExecutor:
             cdm_schema=schema_to_str(self._options.cdm_schema),
             vocabulary_schema=schema_to_str(self._options.vocabulary_schema),
             result_schema=schema_to_str(self._options.result_schema),
-            cohort_id=(
-                cohort_id_override
-                if cohort_id_override is not None
-                else self._options.cohort_id
-            ),
+            cohort_id=(cohort_id_override if cohort_id_override is not None else self._options.cohort_id),
             materialize_stages=self._options.materialize_stages,
             materialize_codesets=self._options.materialize_codesets,
             temp_emulation_schema=schema_to_str(self._options.temp_emulation_schema),
@@ -151,15 +136,11 @@ class IbisExecutor:
             capture_sql=self._options.capture_sql,
             backend=backend,
         )
-        resource = compile_codesets(
-            self._conn, cohort_expression.concept_sets or [], options
-        )
+        resource = compile_codesets(self._conn, cohort_expression.concept_sets or [], options)
         ctx = BuildContext(self._conn, options, resource)
         events = build_primary_events(cohort_expression, ctx)
         if events is None:
-            raise RuntimeError(
-                "No primary events were generated for the supplied cohort expression."
-            )
+            raise RuntimeError("No primary events were generated for the supplied cohort expression.")
         return events, ctx
 
     @staticmethod

@@ -69,12 +69,8 @@ class SkillGenerator:
                 continue
             param_info = {
                 "name": param_name,
-                "type": str(param.annotation)
-                if param.annotation != inspect.Parameter.empty
-                else "Any",
-                "default": param.default
-                if param.default != inspect.Parameter.empty
-                else None,
+                "type": str(param.annotation) if param.annotation != inspect.Parameter.empty else "Any",
+                "default": param.default if param.default != inspect.Parameter.empty else None,
                 "required": param.default == inspect.Parameter.empty,
             }
             params.append(param_info)
@@ -92,9 +88,7 @@ class SkillGenerator:
         docstring = inspect.getdoc(method) or ""
 
         # Determine if method finalizes (returns parent) or chains (returns self)
-        finalizes = (
-            "CohortWithCriteria" in return_type or "CohortWithEntry" in return_type
-        )
+        finalizes = "CohortWithCriteria" in return_type or "CohortWithEntry" in return_type
         is_chainable = return_type != "None" and not finalizes
 
         return MethodInfo(
@@ -111,20 +105,14 @@ class SkillGenerator:
         """Discover all public methods from the builder classes."""
 
         # CohortBuilder entry methods
-        for name, _method in inspect.getmembers(
-            CohortBuilder, predicate=inspect.isfunction
-        ):
+        for name, _method in inspect.getmembers(CohortBuilder, predicate=inspect.isfunction):
             if name.startswith("_") or name == "with_concept_sets":
                 continue
             if name.startswith("with_"):
-                self.builder_methods.append(
-                    self.extract_method_info(CohortBuilder, name)
-                )
+                self.builder_methods.append(self.extract_method_info(CohortBuilder, name))
 
         # CohortWithEntry methods
-        for name, _method in inspect.getmembers(
-            CohortWithEntry, predicate=inspect.isfunction
-        ):
+        for name, _method in inspect.getmembers(CohortWithEntry, predicate=inspect.isfunction):
             if name.startswith("_"):
                 continue
             if name in [
@@ -141,14 +129,10 @@ class SkillGenerator:
                 "all_of",
                 "at_least_of",
             ]:
-                self.entry_methods.append(
-                    self.extract_method_info(CohortWithEntry, name)
-                )
+                self.entry_methods.append(self.extract_method_info(CohortWithEntry, name))
 
         # CohortWithCriteria methods
-        for name, _method in inspect.getmembers(
-            CohortWithCriteria, predicate=inspect.isfunction
-        ):
+        for name, _method in inspect.getmembers(CohortWithCriteria, predicate=inspect.isfunction):
             if name.startswith("_"):
                 continue
             if (
@@ -167,14 +151,10 @@ class SkillGenerator:
                     "exclude_any_of",
                 ]
             ):
-                self.criteria_methods.append(
-                    self.extract_method_info(CohortWithCriteria, name)
-                )
+                self.criteria_methods.append(self.extract_method_info(CohortWithCriteria, name))
 
         # BaseQuery time windows
-        for name, _method in inspect.getmembers(
-            BaseQuery, predicate=inspect.isfunction
-        ):
+        for name, _method in inspect.getmembers(BaseQuery, predicate=inspect.isfunction):
             if name in [
                 "within_days_before",
                 "within_days_after",
@@ -223,9 +203,7 @@ class SkillGenerator:
                 self.query_modifiers[cls_name] = []
                 for method_name in methods:
                     if hasattr(cls, method_name):
-                        self.query_modifiers[cls_name].append(
-                            self.extract_method_info(cls, method_name)
-                        )
+                        self.query_modifiers[cls_name].append(self.extract_method_info(cls, method_name))
 
     def generate_markdown(self) -> str:
         """Generate the SKILL.md content."""
@@ -233,28 +211,20 @@ class SkillGenerator:
 
         # Header
         md.append("---")
-        md.append(
-            "description: Build OHDSI cohort definitions using the fluent Python API"
-        )
+        md.append("description: Build OHDSI cohort definitions using the fluent Python API")
         md.append("---")
         md.append("")
         md.append("# Cohort Builder Skill")
         md.append("")
-        md.append(
-            "Build OHDSI cohort definitions step-by-step using the fluent `cohort_builder` API."
-        )
+        md.append("Build OHDSI cohort definitions step-by-step using the fluent `cohort_builder` API.")
         md.append("")
-        md.append(
-            "**⚠️ AUTO-GENERATED**: This file is generated from the codebase. Do not edit manually."
-        )
+        md.append("**⚠️ AUTO-GENERATED**: This file is generated from the codebase. Do not edit manually.")
         md.append("")
 
         # Entry Events
         md.append("## Entry Event Methods")
         md.append("")
-        md.append(
-            "Start building a cohort with one of these methods on `CohortBuilder`:"
-        )
+        md.append("Start building a cohort with one of these methods on `CohortBuilder`:")
         md.append("")
         md.append("```python")
         for method in sorted(self.builder_methods, key=lambda m: m.name):
@@ -286,9 +256,7 @@ class SkillGenerator:
         md.append("")
         for method in sorted(self.entry_methods, key=lambda m: m.name):
             if method.name.startswith("require_"):
-                md.append(
-                    f"- `.{method.signature}`: {method.docstring.split('.')[0] if method.docstring else ''}"
-                )
+                md.append(f"- `.{method.signature}`: {method.docstring.split('.')[0] if method.docstring else ''}")
         md.append("")
 
         # CRITICAL CHAINING RULE
@@ -296,9 +264,7 @@ class SkillGenerator:
         md.append("")
         md.append("**Modifiers MUST be called BEFORE time windows!**")
         md.append("")
-        md.append(
-            "Time window methods finalize the criteria and return to the parent builder."
-        )
+        md.append("Time window methods finalize the criteria and return to the parent builder.")
         md.append("Once a time window is called, you cannot chain further modifiers.")
         md.append("")
         md.append("✅ **CORRECT**:")
@@ -318,9 +284,7 @@ class SkillGenerator:
         md.append("These methods finalize the criteria:")
         md.append("")
         for method in sorted(self.time_windows, key=lambda m: m.name):
-            md.append(
-                f"- `.{method.signature}`: {method.docstring.split('.')[0] if method.docstring else ''}"
-            )
+            md.append(f"- `.{method.signature}`: {method.docstring.split('.')[0] if method.docstring else ''}")
         md.append("")
 
         # Modifiers
@@ -410,13 +374,7 @@ class SkillGenerator:
 
         new_skill_section = "\n".join(skill_body).strip()
 
-        new_prompt = (
-            prompt_content[: start_idx + len(start_marker)]
-            + "\n\n"
-            + new_skill_section
-            + "\n\n"
-            + prompt_content[end_idx:]
-        )
+        new_prompt = prompt_content[: start_idx + len(start_marker)] + "\n\n" + new_skill_section + "\n\n" + prompt_content[end_idx:]
 
         # Write updated prompt
         with open(prompt_path, "w") as f:

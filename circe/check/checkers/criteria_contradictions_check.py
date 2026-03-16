@@ -76,9 +76,7 @@ class CriteriaContradictionsCheck(BaseCorelatedCriteriaCheck):
         """
         return WarningSeverity.WARNING
 
-    def _check_criteria(
-        self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter
-    ) -> None:
+    def _check_criteria(self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter) -> None:
         """Collect criteria information.
 
         Args:
@@ -89,9 +87,7 @@ class CriteriaContradictionsCheck(BaseCorelatedCriteriaCheck):
         name = f"{group_name} {CriteriaNameHelper.get_criteria_name(criteria.criteria)}"
         self._criteria_list.append(CriteriaInfo(name, criteria))
 
-    def _after_check(
-        self, reporter: WarningReporter, expression: "CohortExpression"
-    ) -> None:
+    def _after_check(self, reporter: WarningReporter, expression: "CohortExpression") -> None:
         """Check for contradictions after all criteria have been collected.
 
         Args:
@@ -103,16 +99,12 @@ class CriteriaContradictionsCheck(BaseCorelatedCriteriaCheck):
             for i in range(size - 1):
                 info = self._criteria_list[i]
                 for other_info in self._criteria_list[i + 1 :]:
-                    if Comparisons.compare_criteria(
-                        info.criteria.criteria, other_info.criteria.criteria
-                    ) and self._check_contradiction(
+                    if Comparisons.compare_criteria(info.criteria.criteria, other_info.criteria.criteria) and self._check_contradiction(
                         info.criteria.occurrence, other_info.criteria.occurrence
                     ):
                         reporter(self.WARNING, info.name, other_info.name)
 
-    def _check_contradiction(
-        self, o1: Optional["Occurrence"], o2: Optional["Occurrence"]
-    ) -> bool:
+    def _check_contradiction(self, o1: Optional["Occurrence"], o2: Optional["Occurrence"]) -> bool:
         """Check if two occurrences contradict each other.
 
         Args:

@@ -210,9 +210,7 @@ def generate_reference_with_r(json_content: str) -> dict:
     import subprocess
     import tempfile
 
-    r_script_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "circe_sql.R")
-    )
+    r_script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "circe_sql.R"))
 
     if not os.path.exists(r_script_path):
         return {
@@ -273,9 +271,7 @@ def generate_reference_with_r(json_content: str) -> dict:
             }
 
 
-def get_ai_explanation(
-    ref_content: str, gen_content: str, type_label: str = "SQL"
-) -> dict:
+def get_ai_explanation(ref_content: str, gen_content: str, type_label: str = "SQL") -> dict:
     """
     Uses Google GenAI to explain the differences between reference and generated content.
     """
@@ -325,42 +321,32 @@ def get_ai_explanation(
     try:
         from google import genai
     except ImportError:
-        return {
-            "error": "google-genai library not installed. Please pip install google-genai."
-        }
+        return {"error": "google-genai library not installed. Please pip install google-genai."}
 
     try:
         from dotenv import load_dotenv
 
-        env_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", ".env")
-        )
+        env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
         load_dotenv(env_path, override=True)
     except ImportError:
         pass
 
     api_key = os.environ.get("GOOGLE_API_KEY")
     if not api_key:
-        return {
-            "error": "GOOGLE_API_KEY environment variable not set. Please set it in a .env file or in your terminal."
-        }
+        return {"error": "GOOGLE_API_KEY environment variable not set. Please set it in a .env file or in your terminal."}
 
     # 4. Call API
     try:
         client = genai.Client(api_key=api_key)
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-lite", contents=prompt
-        )
+        response = client.models.generate_content(model="gemini-2.5-flash-lite", contents=prompt)
 
         explanation = response.text
 
         # 5. Save to Cache
         try:
             with open(cache_file, "w") as f:
-                json.dump(
-                    {"explanation": explanation, "model": "gemini-2.5-flash-lite"}, f
-                )
+                json.dump({"explanation": explanation, "model": "gemini-2.5-flash-lite"}, f)
         except Exception as e:
             print(f"Failed to save cache: {e}")
 

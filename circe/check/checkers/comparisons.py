@@ -145,9 +145,7 @@ class Comparisons:
         """
         if window is None:
             return False
-        return Comparisons.is_before_endpoint(
-            window.start
-        ) and not Comparisons.is_after_endpoint(window.end)
+        return Comparisons.is_before_endpoint(window.start) and not Comparisons.is_after_endpoint(window.end)
 
     @staticmethod
     def is_before_endpoint(endpoint: Optional["Window.Endpoint"]) -> bool:
@@ -194,13 +192,8 @@ class Comparisons:
             if concept_set.expression and source.expression and len(concept_set.expression.items) == len(source.expression.items):
                 source_concepts = [item.concept for item in source.expression.items]
                 return all(
-                    any(
-                        Comparisons.compare_concept(concept)(source_concept)
-                        for source_concept in source_concepts
-                    )
-                    for concept in [
-                        item.concept for item in concept_set.expression.items
-                    ]
+                    any(Comparisons.compare_concept(concept)(source_concept) for source_concept in source_concepts)
+                    for concept in [item.concept for item in concept_set.expression.items]
                 )
             return False
 

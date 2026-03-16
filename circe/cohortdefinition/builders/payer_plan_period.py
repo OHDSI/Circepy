@@ -63,9 +63,7 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
         """Get default columns for payer plan period criteria."""
         return self.DEFAULT_COLUMNS
 
-    def get_table_column_for_criteria_column(
-        self, criteria_column: CriteriaColumn
-    ) -> str:
+    def get_table_column_for_criteria_column(self, criteria_column: CriteriaColumn) -> str:
         """Get table column for criteria column."""
         column_mapping = {
             CriteriaColumn.DOMAIN_CONCEPT: "C.payer_concept_id",
@@ -76,24 +74,20 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
         }
         return column_mapping.get(criteria_column, "NULL")
 
-    def get_criteria_sql_with_options(
-        self, criteria: PayerPlanPeriod, options: Optional[BuilderOptions]
-    ) -> str:
+    def get_criteria_sql_with_options(self, criteria: PayerPlanPeriod, options: Optional[BuilderOptions]) -> str:
         """Get SQL query for criteria with builder options."""
         query = super().get_criteria_sql_with_options(criteria, options)
 
         start_date_expression = (
             BuilderUtils.date_string_to_sql(criteria.user_defined_period.start_date)
-            if criteria.user_defined_period is not None
-            and criteria.user_defined_period.start_date is not None
+            if criteria.user_defined_period is not None and criteria.user_defined_period.start_date is not None
             else "C.start_date"
         )
         query = query.replace("@startDateExpression", start_date_expression)
 
         end_date_expression = (
             BuilderUtils.date_string_to_sql(criteria.user_defined_period.end_date)
-            if criteria.user_defined_period is not None
-            and criteria.user_defined_period.end_date is not None
+            if criteria.user_defined_period is not None and criteria.user_defined_period.end_date is not None
             else "C.end_date"
         )
         query = query.replace("@endDateExpression", end_date_expression)
@@ -104,15 +98,11 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
         """Embed codeset clause in query."""
         return query.replace("@codesetClause", "")
 
-    def embed_ordinal_expression(
-        self, query: str, criteria: PayerPlanPeriod, where_clauses: list[str]
-    ) -> str:
+    def embed_ordinal_expression(self, query: str, criteria: PayerPlanPeriod, where_clauses: list[str]) -> str:
         """Embed ordinal expression in query."""
         return query.replace("@ordinalExpression", "")
 
-    def resolve_select_clauses(
-        self, criteria: PayerPlanPeriod, options: Optional[BuilderOptions] = None
-    ) -> list[str]:
+    def resolve_select_clauses(self, criteria: PayerPlanPeriod, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve select clauses for payer plan period criteria."""
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
 
@@ -151,20 +141,10 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
         # dateAdjustment or default start/end dates
         if criteria.date_adjustment is not None:
             start_column = (
-                "ppp.payer_plan_period_start_date"
-                if criteria.date_adjustment.start_with == "start_date"
-                else "ppp.payer_plan_period_end_date"
+                "ppp.payer_plan_period_start_date" if criteria.date_adjustment.start_with == "start_date" else "ppp.payer_plan_period_end_date"
             )
-            end_column = (
-                "ppp.payer_plan_period_start_date"
-                if criteria.date_adjustment.end_with == "start_date"
-                else "ppp.payer_plan_period_end_date"
-            )
-            select_cols.append(
-                BuilderUtils.get_date_adjustment_expression(
-                    criteria.date_adjustment, start_column, end_column
-                )
-            )
+            end_column = "ppp.payer_plan_period_start_date" if criteria.date_adjustment.end_with == "start_date" else "ppp.payer_plan_period_end_date"
+            select_cols.append(BuilderUtils.get_date_adjustment_expression(criteria.date_adjustment, start_column, end_column))
         else:
             select_cols.append("ppp.payer_plan_period_start_date as start_date")
             select_cols.append("ppp.payer_plan_period_end_date as end_date")
@@ -177,9 +157,7 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
 
         return select_cols
 
-    def resolve_join_clauses(
-        self, criteria: PayerPlanPeriod, options: Optional[BuilderOptions] = None
-    ) -> list[str]:
+    def resolve_join_clauses(self, criteria: PayerPlanPeriod, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve join clauses for payer plan period criteria."""
         join_clauses = []
 
@@ -189,15 +167,11 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
             or (criteria.gender is not None and len(criteria.gender) > 0)
             or criteria.gender_cs is not None
         ):
-            join_clauses.append(
-                "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id"
-            )
+            join_clauses.append("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id")
 
         return join_clauses
 
-    def resolve_where_clauses(
-        self, criteria: PayerPlanPeriod, options: Optional[BuilderOptions] = None
-    ) -> list[str]:
+    def resolve_where_clauses(self, criteria: PayerPlanPeriod, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve where clauses for payer plan period criteria."""
         where_clauses = []
 
@@ -210,72 +184,48 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
             user_defined_period = criteria.user_defined_period
 
             if user_defined_period.start_date is not None:
-                start_date_expression = BuilderUtils.date_string_to_sql(
-                    user_defined_period.start_date
-                )
-                where_clauses.append(
-                    f"C.start_date <= {start_date_expression} and C.end_date >= {start_date_expression}"
-                )
+                start_date_expression = BuilderUtils.date_string_to_sql(user_defined_period.start_date)
+                where_clauses.append(f"C.start_date <= {start_date_expression} and C.end_date >= {start_date_expression}")
 
             if user_defined_period.end_date is not None:
-                end_date_expression = BuilderUtils.date_string_to_sql(
-                    user_defined_period.end_date
-                )
-                where_clauses.append(
-                    f"C.start_date <= {end_date_expression} and C.end_date >= {end_date_expression}"
-                )
+                end_date_expression = BuilderUtils.date_string_to_sql(user_defined_period.end_date)
+                where_clauses.append(f"C.start_date <= {end_date_expression} and C.end_date >= {end_date_expression}")
 
         # periodStartDate
         if criteria.period_start_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(
-                "C.start_date", criteria.period_start_date
-            )
+            date_clause = BuilderUtils.build_date_range_clause("C.start_date", criteria.period_start_date)
             if date_clause:
                 where_clauses.append(date_clause)
 
         # periodEndDate
         if criteria.period_end_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(
-                "C.end_date", criteria.period_end_date
-            )
+            date_clause = BuilderUtils.build_date_range_clause("C.end_date", criteria.period_end_date)
             if date_clause:
                 where_clauses.append(date_clause)
 
         # periodLength
         if criteria.period_length is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(
-                "DATEDIFF(d,C.start_date, C.end_date)", criteria.period_length
-            )
+            numeric_clause = BuilderUtils.build_numeric_range_clause("DATEDIFF(d,C.start_date, C.end_date)", criteria.period_length)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # ageAtStart
         if criteria.age_at_start is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(
-                "YEAR(C.start_date) - P.year_of_birth", criteria.age_at_start
-            )
+            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age_at_start)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # ageAtEnd
         if criteria.age_at_end is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(
-                "YEAR(C.end_date) - P.year_of_birth", criteria.age_at_end
-            )
+            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.end_date) - P.year_of_birth", criteria.age_at_end)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # gender
-        if (
-            criteria.gender is not None
-            and hasattr(criteria.gender, "__len__")
-            and len(criteria.gender) > 0
-        ):
+        if criteria.gender is not None and hasattr(criteria.gender, "__len__") and len(criteria.gender) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.gender)
             if concept_ids:
-                where_clauses.append(
-                    f"P.gender_concept_id in ({','.join(map(str, concept_ids))})"
-                )
+                where_clauses.append(f"P.gender_concept_id in ({','.join(map(str, concept_ids))})")
 
         # genderCS
         if criteria.gender_cs is not None:
@@ -289,27 +239,19 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
 
         # payer concept
         if criteria.payer_concept is not None:
-            where_clauses.append(
-                f"C.payer_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.payer_concept})"
-            )
+            where_clauses.append(f"C.payer_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.payer_concept})")
 
         # plan concept
         if criteria.plan_concept is not None:
-            where_clauses.append(
-                f"C.plan_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.plan_concept})"
-            )
+            where_clauses.append(f"C.plan_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.plan_concept})")
 
         # sponsor concept
         if criteria.sponsor_concept is not None:
-            where_clauses.append(
-                f"C.sponsor_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.sponsor_concept})"
-            )
+            where_clauses.append(f"C.sponsor_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.sponsor_concept})")
 
         # stop reason concept
         if criteria.stop_reason_concept is not None:
-            where_clauses.append(
-                f"C.stop_reason_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.stop_reason_concept})"
-            )
+            where_clauses.append(f"C.stop_reason_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.stop_reason_concept})")
 
         # payer SourceConcept
         if criteria.payer_source_concept is not None:
@@ -319,9 +261,7 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
 
         # plan SourceConcept
         if criteria.plan_source_concept is not None:
-            where_clauses.append(
-                f"C.plan_source_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.plan_source_concept})"
-            )
+            where_clauses.append(f"C.plan_source_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.plan_source_concept})")
 
         # sponsor SourceConcept
         if criteria.sponsor_source_concept is not None:
@@ -342,9 +282,4 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
 
         Java equivalent: PayerPlanPeriodSqlBuilder.getAdditionalColumns()
         """
-        return ", ".join(
-            [
-                f"{self.get_table_column_for_criteria_column(col)} as {col.value}"
-                for col in columns
-            ]
-        )
+        return ", ".join([f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns])

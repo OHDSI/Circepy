@@ -59,9 +59,7 @@ class BaseValueCheck(BaseCheck):
         self._check_inclusion_rules(expression, reporter)
         self._check_censoring_criteria(expression, reporter)
 
-    def _check_primary_criteria(
-        self, primary_criteria: Optional["PrimaryCriteria"], reporter: WarningReporter
-    ) -> None:
+    def _check_primary_criteria(self, primary_criteria: Optional["PrimaryCriteria"], reporter: WarningReporter) -> None:
         """Check primary criteria.
 
         Args:
@@ -72,9 +70,7 @@ class BaseValueCheck(BaseCheck):
             for criteria in primary_criteria.criteria_list:
                 self._check_criteria(criteria, reporter, self.PRIMARY_CRITERIA)
 
-    def _check_additional_criteria(
-        self, criteria_group: Optional["CriteriaGroup"], reporter: WarningReporter
-    ) -> None:
+    def _check_additional_criteria(self, criteria_group: Optional["CriteriaGroup"], reporter: WarningReporter) -> None:
         """Check additional criteria.
 
         Args:
@@ -82,25 +78,17 @@ class BaseValueCheck(BaseCheck):
             reporter: The warning reporter to use
         """
         if criteria_group:
-            if (
-                hasattr(criteria_group, "criteria_list")
-                and criteria_group.criteria_list
-            ):
+            if hasattr(criteria_group, "criteria_list") and criteria_group.criteria_list:
                 for criteria in criteria_group.criteria_list:
                     self._check_criteria(criteria, reporter, self.ADDITIONAL_CRITERIA)
-            if (
-                hasattr(criteria_group, "demographic_criteria_list")
-                and criteria_group.demographic_criteria_list
-            ):
+            if hasattr(criteria_group, "demographic_criteria_list") and criteria_group.demographic_criteria_list:
                 for criteria in criteria_group.demographic_criteria_list:
                     self._check_criteria(criteria, reporter, self.ADDITIONAL_CRITERIA)
             if hasattr(criteria_group, "groups") and criteria_group.groups:
                 for group in criteria_group.groups:
                     self._check_additional_criteria(group, reporter)
 
-    def _check_censoring_criteria(
-        self, expression: "CohortExpression", reporter: WarningReporter
-    ) -> None:
+    def _check_censoring_criteria(self, expression: "CohortExpression", reporter: WarningReporter) -> None:
         """Check censoring criteria.
 
         Args:
@@ -111,9 +99,7 @@ class BaseValueCheck(BaseCheck):
             for criteria in expression.censoring_criteria:
                 self._check_criteria(criteria, reporter, self.CENSORING_CRITERIA)
 
-    def _check_inclusion_rules(
-        self, expression: "CohortExpression", reporter: WarningReporter
-    ) -> None:
+    def _check_inclusion_rules(self, expression: "CohortExpression", reporter: WarningReporter) -> None:
         """Check inclusion rules.
 
         Args:
@@ -124,16 +110,10 @@ class BaseValueCheck(BaseCheck):
             for rule in expression.inclusion_rules:
                 if rule.expression:
                     rule_name = f'{self.INCLUSION_CRITERIA}"{rule.name}"'
-                    if (
-                        hasattr(rule.expression, "criteria_list")
-                        and rule.expression.criteria_list
-                    ):
+                    if hasattr(rule.expression, "criteria_list") and rule.expression.criteria_list:
                         for criteria in rule.expression.criteria_list:
                             self._check_criteria(criteria, reporter, rule_name)
-                    if (
-                        hasattr(rule.expression, "demographic_criteria_list")
-                        and rule.expression.demographic_criteria_list
-                    ):
+                    if hasattr(rule.expression, "demographic_criteria_list") and rule.expression.demographic_criteria_list:
                         for criteria in rule.expression.demographic_criteria_list:
                             self._check_criteria(criteria, reporter, rule_name)
 
@@ -155,10 +135,7 @@ class BaseValueCheck(BaseCheck):
 
         # Check CriteriaGroup
         if isinstance(criteria, CriteriaGroup):
-            if (
-                hasattr(criteria, "demographic_criteria_list")
-                and criteria.demographic_criteria_list
-            ):
+            if hasattr(criteria, "demographic_criteria_list") and criteria.demographic_criteria_list:
                 for dem_criteria in criteria.demographic_criteria_list:
                     self._check_criteria(dem_criteria, reporter, name)
             if hasattr(criteria, "criteria_list") and criteria.criteria_list:
@@ -177,10 +154,7 @@ class BaseValueCheck(BaseCheck):
             factory.check(criteria)
         # Check Criteria (must be last as it's the base type)
         elif isinstance(criteria, Criteria):
-            if (
-                hasattr(criteria, "correlated_criteria")
-                and criteria.correlated_criteria
-            ):
+            if hasattr(criteria, "correlated_criteria") and criteria.correlated_criteria:
                 self._check_criteria(criteria.correlated_criteria, reporter, name)
             # Don't call factory.check for base Criteria - only specific criteria types have ranges to check
             # The factory's check method is for CohortExpression, not Criteria

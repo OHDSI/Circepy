@@ -61,9 +61,7 @@ from
         """Get default columns for drug era criteria."""
         return self.DEFAULT_COLUMNS
 
-    def get_table_column_for_criteria_column(
-        self, criteria_column: CriteriaColumn
-    ) -> str:
+    def get_table_column_for_criteria_column(self, criteria_column: CriteriaColumn) -> str:
         """Get table column for criteria column."""
         column_mapping = {
             CriteriaColumn.DOMAIN_CONCEPT: "C.drug_concept_id",
@@ -87,9 +85,7 @@ from
             codeset_clause = f"where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = {criteria.codeset_id})"
         return query.replace("@codesetClause", codeset_clause)
 
-    def embed_ordinal_expression(
-        self, query: str, criteria: DrugEra, where_clauses: list[str]
-    ) -> str:
+    def embed_ordinal_expression(self, query: str, criteria: DrugEra, where_clauses: list[str]) -> str:
         """Embed ordinal expression in query."""
         # first
         if criteria.first is not None and criteria.first:
@@ -102,9 +98,7 @@ from
             query = query.replace("@ordinalExpression", "")
         return query
 
-    def resolve_select_clauses(
-        self, criteria: DrugEra, options: Optional[BuilderOptions] = None
-    ) -> list[str]:
+    def resolve_select_clauses(self, criteria: DrugEra, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve select clauses for drug era criteria."""
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
 
@@ -112,31 +106,15 @@ from
 
         # dateAdjustment or default start/end dates
         if criteria.date_adjustment is not None:
-            start_column = (
-                "de.drug_era_start_date"
-                if criteria.date_adjustment.start_with == "start_date"
-                else "de.drug_era_end_date"
-            )
-            end_column = (
-                "de.drug_era_start_date"
-                if criteria.date_adjustment.end_with == "start_date"
-                else "de.drug_era_end_date"
-            )
-            select_cols.append(
-                BuilderUtils.get_date_adjustment_expression(
-                    criteria.date_adjustment, start_column, end_column
-                )
-            )
+            start_column = "de.drug_era_start_date" if criteria.date_adjustment.start_with == "start_date" else "de.drug_era_end_date"
+            end_column = "de.drug_era_start_date" if criteria.date_adjustment.end_with == "start_date" else "de.drug_era_end_date"
+            select_cols.append(BuilderUtils.get_date_adjustment_expression(criteria.date_adjustment, start_column, end_column))
         else:
-            select_cols.append(
-                "de.drug_era_start_date as start_date, de.drug_era_end_date as end_date"
-            )
+            select_cols.append("de.drug_era_start_date as start_date, de.drug_era_end_date as end_date")
 
         return select_cols
 
-    def resolve_join_clauses(
-        self, criteria: DrugEra, options: Optional[BuilderOptions] = None
-    ) -> list[str]:
+    def resolve_join_clauses(self, criteria: DrugEra, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve join clauses for drug era criteria."""
         join_clauses = []
 
@@ -147,71 +125,53 @@ from
             or (criteria.gender is not None and len(criteria.gender) > 0)
             or criteria.gender_cs is not None
         ):
-            join_clauses.append(
-                "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id"
-            )
+            join_clauses.append("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id")
 
         return join_clauses
 
-    def resolve_where_clauses(
-        self, criteria: DrugEra, options: Optional[BuilderOptions] = None
-    ) -> list[str]:
+    def resolve_where_clauses(self, criteria: DrugEra, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve where clauses for drug era criteria."""
         where_clauses = []
 
         # eraStartDate
         if criteria.era_start_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(
-                "C.start_date", criteria.era_start_date
-            )
+            date_clause = BuilderUtils.build_date_range_clause("C.start_date", criteria.era_start_date)
             if date_clause:
                 where_clauses.append(date_clause)
 
         # eraEndDate
         if criteria.era_end_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(
-                "C.end_date", criteria.era_end_date
-            )
+            date_clause = BuilderUtils.build_date_range_clause("C.end_date", criteria.era_end_date)
             if date_clause:
                 where_clauses.append(date_clause)
 
         # occurrenceCount
         if criteria.occurrence_count is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(
-                "C.drug_exposure_count", criteria.occurrence_count
-            )
+            numeric_clause = BuilderUtils.build_numeric_range_clause("C.drug_exposure_count", criteria.occurrence_count)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # eraLength
         if criteria.era_length is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(
-                "DATEDIFF(d,C.start_date, C.end_date)", criteria.era_length
-            )
+            numeric_clause = BuilderUtils.build_numeric_range_clause("DATEDIFF(d,C.start_date, C.end_date)", criteria.era_length)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # gapDays - Replicating Java bug: uses era_length instead of gap_days
         if criteria.gap_days is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(
-                "C.gap_days", criteria.era_length
-            )
+            numeric_clause = BuilderUtils.build_numeric_range_clause("C.gap_days", criteria.era_length)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # ageAtStart
         if criteria.age_at_start is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(
-                "YEAR(C.start_date) - P.year_of_birth", criteria.age_at_start
-            )
+            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age_at_start)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # ageAtEnd
         if criteria.age_at_end is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause(
-                "YEAR(C.end_date) - P.year_of_birth", criteria.age_at_end
-            )
+            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.end_date) - P.year_of_birth", criteria.age_at_end)
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
@@ -219,9 +179,7 @@ from
         if criteria.gender is not None and len(criteria.gender) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.gender)
             if concept_ids:
-                where_clauses.append(
-                    f"P.gender_concept_id in ({','.join(map(str, concept_ids))})"
-                )
+                where_clauses.append(f"P.gender_concept_id in ({','.join(map(str, concept_ids))})")
 
         # genderCS
         if criteria.gender_cs is not None:

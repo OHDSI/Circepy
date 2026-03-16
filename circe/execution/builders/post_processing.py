@@ -13,9 +13,7 @@ def apply_additional_criteria(events: ir.Table, group, ctx: BuildContext) -> ir.
     return apply_criteria_group(events, group, ctx)
 
 
-def apply_inclusion_rules(
-    events: ir.Table, rules: list[InclusionRule], ctx: BuildContext
-) -> ir.Table:
+def apply_inclusion_rules(events: ir.Table, rules: list[InclusionRule], ctx: BuildContext) -> ir.Table:
     if not rules:
         return events
 
@@ -55,19 +53,13 @@ def apply_inclusion_rules(
     mask = mask.filter((mask._rule_mask & target_literal) == target_literal)
 
     filtered_ids = base_events.inner_join(mask, ["person_id", "event_id"])
-    return events.inner_join(filtered_ids, ["person_id", "event_id"]).select(
-        events.columns
-    )
+    return events.inner_join(filtered_ids, ["person_id", "event_id"]).select(events.columns)
 
 
-def apply_censoring(
-    events: ir.Table, criteria_list: list[Criteria], ctx: BuildContext
-) -> ir.Table:
+def apply_censoring(events: ir.Table, criteria_list: list[Criteria], ctx: BuildContext) -> ir.Table:
     if not criteria_list:
         return events
-    censor_tables = [
-        build_events(criteria, ctx) for criteria in criteria_list if criteria
-    ]
+    censor_tables = [build_events(criteria, ctx) for criteria in criteria_list if criteria]
     if not censor_tables:
         return events
     censor_events = censor_tables[0]
@@ -80,18 +72,14 @@ def apply_censoring(
     )
     joined = events.join(
         censor_events,
-        (events.person_id == censor_events.person_id)
-        & (censor_events.censor_start >= events.start_date),
+        (events.person_id == censor_events.person_id) & (censor_events.censor_start >= events.start_date),
         how="left",
     )
-    min_censor = joined.group_by(joined.person_id, joined.event_id).aggregate(
-        censor_date=joined.censor_start.min()
-    )
+    min_censor = joined.group_by(joined.person_id, joined.event_id).aggregate(censor_date=joined.censor_start.min())
     event_columns = events.columns
     events = events.left_join(
         min_censor,
-        (events.person_id == min_censor.person_id)
-        & (events.event_id == min_censor.event_id),
+        (events.person_id == min_censor.person_id) & (events.event_id == min_censor.event_id),
     )
     events = events.select(*event_columns, min_censor.censor_date)
     events = events.mutate(

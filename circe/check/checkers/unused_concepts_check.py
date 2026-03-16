@@ -50,9 +50,7 @@ class UnusedConceptsCheck(BaseCheck):
         """
         return WarningSeverity.WARNING
 
-    def _get_reporter(
-        self, severity: WarningSeverity, warnings: list
-    ) -> WarningReporter:
+    def _get_reporter(self, severity: WarningSeverity, warnings: list) -> WarningReporter:
         """Get a warning reporter that creates ConceptSetWarning instances.
 
         Args:
@@ -83,9 +81,7 @@ class UnusedConceptsCheck(BaseCheck):
                 if not self._is_used(expression, additional_criteria, concept_set):
                     reporter('Concept Set "%s" is not used', concept_set)
 
-    def _get_additional_criteria(
-        self, expression: "CohortExpression"
-    ) -> list["Criteria"]:
+    def _get_additional_criteria(self, expression: "CohortExpression") -> list["Criteria"]:
         """Get all criteria from additional criteria.
 
         Args:
@@ -96,15 +92,9 @@ class UnusedConceptsCheck(BaseCheck):
         """
         additional_criteria: list[Criteria] = []
         if expression.additional_criteria:
-            additional_criteria.extend(
-                self._to_criteria_list(expression.additional_criteria.criteria_list)
-            )
+            additional_criteria.extend(self._to_criteria_list(expression.additional_criteria.criteria_list))
             if expression.additional_criteria.groups:
-                additional_criteria.extend(
-                    self._to_criteria_list_from_groups(
-                        expression.additional_criteria.groups
-                    )
-                )
+                additional_criteria.extend(self._to_criteria_list_from_groups(expression.additional_criteria.groups))
         return additional_criteria
 
     def _is_used(
@@ -124,8 +114,10 @@ class UnusedConceptsCheck(BaseCheck):
             True if the concept set is used, False otherwise
         """
         # Check primary criteria
-        if expression.primary_criteria and expression.primary_criteria.criteria_list and self._is_concept_set_used(
-            concept_set, expression.primary_criteria.criteria_list
+        if (
+            expression.primary_criteria
+            and expression.primary_criteria.criteria_list
+            and self._is_concept_set_used(concept_set, expression.primary_criteria.criteria_list)
         ):
             return True
 
@@ -139,20 +131,9 @@ class UnusedConceptsCheck(BaseCheck):
                 if rule.expression:
                     # Convert rule expression to criteria list
                     rule_criteria_list = []
-                    if (
-                        hasattr(rule.expression, "criteria_list")
-                        and rule.expression.criteria_list
-                    ):
-                        rule_criteria_list.extend(
-                            [
-                                c.criteria
-                                for c in rule.expression.criteria_list
-                                if hasattr(c, "criteria") and c.criteria
-                            ]
-                        )
-                    if rule_criteria_list and self._is_concept_set_used_in_list(
-                        concept_set, rule_criteria_list
-                    ):
+                    if hasattr(rule.expression, "criteria_list") and rule.expression.criteria_list:
+                        rule_criteria_list.extend([c.criteria for c in rule.expression.criteria_list if hasattr(c, "criteria") and c.criteria])
+                    if rule_criteria_list and self._is_concept_set_used_in_list(concept_set, rule_criteria_list):
                         return True
 
         # Check end strategy (CustomEraStrategy)
@@ -181,10 +162,7 @@ class UnusedConceptsCheck(BaseCheck):
                 return True
 
             if target.groups:
-                return any(
-                    self._is_concept_set_used(concept_set, group)
-                    for group in target.groups
-                )
+                return any(self._is_concept_set_used(concept_set, group) for group in target.groups)
 
             return False
         elif isinstance(target, list):
@@ -193,9 +171,7 @@ class UnusedConceptsCheck(BaseCheck):
         else:
             return False
 
-    def _is_concept_set_used_in_list(
-        self, concept_set: "ConceptSet", criteria_list: list["Criteria"]
-    ) -> bool:
+    def _is_concept_set_used_in_list(self, concept_set: "ConceptSet", criteria_list: list["Criteria"]) -> bool:
         """Check if a concept set is used in a criteria list.
 
         Args:
@@ -206,24 +182,16 @@ class UnusedConceptsCheck(BaseCheck):
             True if the concept set is used, False otherwise
         """
         factory = CriteriaCheckerFactory.get_factory(concept_set)
-        main_check = any(
-            factory.get_criteria_checker(criteria)(criteria)
-            for criteria in criteria_list
-        )
+        main_check = any(factory.get_criteria_checker(criteria)(criteria) for criteria in criteria_list)
 
         if main_check:
             return True
 
         # Check correlated criteria
         for criteria in criteria_list:
-            if (
-                hasattr(criteria, "correlated_criteria")
-                and criteria.correlated_criteria
-            ):
+            if hasattr(criteria, "correlated_criteria") and criteria.correlated_criteria:
                 # Convert correlated criteria to list and check
-                correlated_list = self._correlated_criteria_to_list(
-                    criteria.correlated_criteria
-                )
+                correlated_list = self._correlated_criteria_to_list(criteria.correlated_criteria)
                 if self._is_concept_set_used_in_list(concept_set, correlated_list):
                     return True
 
@@ -239,32 +207,15 @@ class UnusedConceptsCheck(BaseCheck):
             A list of Criteria
         """
         criteria_list: list[Criteria] = []
-        if (
-            hasattr(correlated_criteria, "criteria_list")
-            and correlated_criteria.criteria_list
-        ):
-            criteria_list.extend(
-                [
-                    c.criteria
-                    for c in correlated_criteria.criteria_list
-                    if hasattr(c, "criteria") and c.criteria
-                ]
-            )
+        if hasattr(correlated_criteria, "criteria_list") and correlated_criteria.criteria_list:
+            criteria_list.extend([c.criteria for c in correlated_criteria.criteria_list if hasattr(c, "criteria") and c.criteria])
         if hasattr(correlated_criteria, "groups") and correlated_criteria.groups:
             for group in correlated_criteria.groups:
                 if hasattr(group, "criteria_list") and group.criteria_list:
-                    criteria_list.extend(
-                        [
-                            c.criteria
-                            for c in group.criteria_list
-                            if hasattr(c, "criteria") and c.criteria
-                        ]
-                    )
+                    criteria_list.extend([c.criteria for c in group.criteria_list if hasattr(c, "criteria") and c.criteria])
         return criteria_list
 
-    def _to_criteria_list(
-        self, criteria_list: Optional[list["CorelatedCriteria"]]
-    ) -> list["Criteria"]:
+    def _to_criteria_list(self, criteria_list: Optional[list["CorelatedCriteria"]]) -> list["Criteria"]:
         """Convert a list of CorelatedCriteria to a list of Criteria.
 
         Args:
@@ -275,13 +226,9 @@ class UnusedConceptsCheck(BaseCheck):
         """
         if not criteria_list:
             return []
-        return [
-            c.criteria for c in criteria_list if hasattr(c, "criteria") and c.criteria
-        ]
+        return [c.criteria for c in criteria_list if hasattr(c, "criteria") and c.criteria]
 
-    def _to_criteria_list_from_groups(
-        self, groups: Optional[list["CriteriaGroup"]]
-    ) -> list["Criteria"]:
+    def _to_criteria_list_from_groups(self, groups: Optional[list["CriteriaGroup"]]) -> list["Criteria"]:
         """Convert groups to a list of criteria.
 
         Args:

@@ -61,9 +61,7 @@ class IGetCriteriaSqlDispatcher(ABC):
     """
 
     @abstractmethod
-    def get_criteria_sql(
-        self, criteria: Criteria, options: Optional[BuilderOptions] = None
-    ) -> str:
+    def get_criteria_sql(self, criteria: Criteria, options: Optional[BuilderOptions] = None) -> str:
         """Generate SQL for various criteria types.
 
         Args:

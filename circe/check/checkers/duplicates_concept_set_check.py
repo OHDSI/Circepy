@@ -23,6 +23,7 @@ else:
     with contextlib.suppress(ImportError):
         from ...cohortdefinition.cohort import CohortExpression
 
+
 class DuplicatesConceptSetCheck(BaseCheck):
     """Check for duplicate concept sets.
 
@@ -52,9 +53,7 @@ class DuplicatesConceptSetCheck(BaseCheck):
                 concept_set = expression.concept_sets[i]
                 # Create comparison function for this concept set
                 compare_func = Comparisons.compare_concept_set(concept_set)
-                duplicates = [
-                    cs for cs in expression.concept_sets[i + 1 :] if compare_func(cs)
-                ]
+                duplicates = [cs for cs in expression.concept_sets[i + 1 :] if compare_func(cs)]
                 if duplicates:
                     names = ", ".join(cs.name for cs in duplicates)
                     reporter(self.DUPLICATES_WARNING, concept_set.name, names)

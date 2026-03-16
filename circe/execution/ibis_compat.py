@@ -22,9 +22,7 @@ def table_from_literal_list(
     """
     values_list = list(values)
     if not values_list:
-        dummy = ops.DummyTable(
-            values=FrozenOrderedDict({column_name: ibis.null().cast(element_type).op()})
-        ).to_expr()
+        dummy = ops.DummyTable(values=FrozenOrderedDict({column_name: ibis.null().cast(element_type).op()})).to_expr()
         return dummy.select(dummy[column_name]).filter(ibis.literal(False))
 
     array_type = f"array<{element_type}>"

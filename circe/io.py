@@ -52,11 +52,7 @@ def load_expression(value: ExpressionInput) -> CohortExpression:
         try:
             parsed = json.loads(stripped)
         except json.JSONDecodeError as exc:
-            raise ValueError(
-                "Expected JSON string or path to a JSON file for cohort expression input."
-            ) from exc
+            raise ValueError("Expected JSON string or path to a JSON file for cohort expression input.") from exc
         return CohortExpression.model_validate(parsed)
 
-    raise TypeError(
-        "Unsupported expression input type. Expected CohortExpression, mapping, JSON string, or Path."
-    )
+    raise TypeError("Unsupported expression input type. Expected CohortExpression, mapping, JSON string, or Path.")

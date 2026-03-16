@@ -101,9 +101,7 @@ def cohort_view(filename):
     # Handle R errors
     if ref_result.get("error"):
         # If R fails, append to existing error or set it
-        combined_error = (
-            f"{result['error'] or ''}\n\nR Error: {ref_result['error']}".strip()
-        )
+        combined_error = f"{result['error'] or ''}\n\nR Error: {ref_result['error']}".strip()
         result["error"] = combined_error
 
     ref_result["sql"]

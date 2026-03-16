@@ -121,9 +121,7 @@ def execute_cohort_code(code: str) -> dict[str, Any]:
         python_code = to_python_code(cohort_expression)
 
         # Serialize to JSON
-        json_output = json.dumps(
-            cohort_expression.model_dump(exclude_none=True, by_alias=True), indent=2
-        )
+        json_output = json.dumps(cohort_expression.model_dump(exclude_none=True, by_alias=True), indent=2)
 
         return {
             "cohort_expression": cohort_expression,
@@ -135,20 +133,11 @@ def execute_cohort_code(code: str) -> dict[str, Any]:
         }
 
     except SyntaxError as e:
-        return {
-            "error": f"Syntax Error: {e.msg} at line {e.lineno}\n\n"
-            f"Check your Python syntax and try again."
-        }
+        return {"error": f"Syntax Error: {e.msg} at line {e.lineno}\n\nCheck your Python syntax and try again."}
     except ImportError as e:
-        return {
-            "error": f"Import Error: {str(e)}\n\n"
-            f"Only imports from 'circe.cohort_builder' and 'circe.vocabulary' are allowed."
-        }
+        return {"error": f"Import Error: {str(e)}\n\nOnly imports from 'circe.cohort_builder' and 'circe.vocabulary' are allowed."}
     except AttributeError as e:
-        return {
-            "error": f"Attribute Error: {str(e)}\n\n"
-            f"Check the fluent API documentation for correct method names."
-        }
+        return {"error": f"Attribute Error: {str(e)}\n\nCheck the fluent API documentation for correct method names."}
     except Exception as e:
         import traceback
 

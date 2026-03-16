@@ -62,10 +62,7 @@ class CollapseType(str, Enum):
     def _missing_(cls, value):
         if isinstance(value, str):
             for member in cls:
-                if (
-                    member.name.upper() == value.upper()
-                    or member.value.upper() == value.upper()
-                ):
+                if member.name.upper() == value.upper() or member.value.upper() == value.upper():
                     return member
         return super()._missing_(value)
 
@@ -83,10 +80,7 @@ class DateType(str, Enum):
     def _missing_(cls, value):
         if isinstance(value, str):
             for member in cls:
-                if (
-                    member.name.upper() == value.upper()
-                    or member.value.upper() == value.upper()
-                ):
+                if member.name.upper() == value.upper() or member.value.upper() == value.upper():
                     return member
         return super()._missing_(value)
 
@@ -214,9 +208,7 @@ class CollapseSettings(CirceBaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.CollapseSettings
     """
 
-    era_pad: int = Field(
-        validation_alias=AliasChoices("EraPad", "eraPad"), serialization_alias="EraPad"
-    )
+    era_pad: int = Field(validation_alias=AliasChoices("EraPad", "eraPad"), serialization_alias="EraPad")
     collapse_type: Optional[CollapseType] = Field(
         default=CollapseType.ERA,
         validation_alias=AliasChoices("CollapseType", "collapseType"),
@@ -289,9 +281,7 @@ class WindowBound(CirceBaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.WindowBound
     """
 
-    coeff: int = Field(
-        validation_alias=AliasChoices("Coeff", "coeff"), serialization_alias="Coeff"
-    )
+    coeff: int = Field(validation_alias=AliasChoices("Coeff", "coeff"), serialization_alias="Coeff")
     days: Optional[int] = Field(
         default=None,
         validation_alias=AliasChoices("Days", "days"),
@@ -337,9 +327,7 @@ class DateOffsetStrategy(EndStrategy):
     Java equivalent: org.ohdsi.circe.cohortdefinition.DateOffsetStrategy
     """
 
-    offset: int = Field(
-        validation_alias=AliasChoices("Offset", "offset"), serialization_alias="Offset"
-    )
+    offset: int = Field(validation_alias=AliasChoices("Offset", "offset"), serialization_alias="Offset")
     date_field: str = Field(
         validation_alias=AliasChoices("DateField", "dateField"),
         serialization_alias="DateField",

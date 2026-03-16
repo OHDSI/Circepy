@@ -100,9 +100,7 @@ def safe_model_rebuild(package):
     'ValueError: call stack is not deep enough' during instantiation.
     """
     with suppress(Exception):
-        for _loader, module_name, _is_pkg in pkgutil.walk_packages(
-            package.__path__, package.__name__ + "."
-        ):
+        for _loader, module_name, _is_pkg in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
             with suppress(ImportError):
                 mod = importlib.import_module(module_name)
 

@@ -74,9 +74,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
 
     WARNING_EMPTY_START_VALUE = "%s in the %s has empty %s start value"
     WARNING_EMPTY_END_VALUE = "%s in the %s has empty %s end value"
-    WARNING_START_GREATER_THAN_END = (
-        "%s in the %s has start value greater than end in %s"
-    )
+    WARNING_START_GREATER_THAN_END = "%s in the %s has start value greater than end in %s"
     WARNING_START_IS_NEGATIVE = "%s in the %s start value is negative at %s"
     WARNING_DATE_IS_INVALID = "%s in the %s has invalid date value at %s"
     ROOT_OBJECT = "root object"
@@ -91,9 +89,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
         super().__init__(reporter, group_name)
 
     @staticmethod
-    def get_factory(
-        reporter: WarningReporter, group_name: str
-    ) -> "RangeCheckerFactory":
+    def get_factory(reporter: WarningReporter, group_name: str) -> "RangeCheckerFactory":
         """Get a factory instance.
 
         Args:
@@ -192,9 +188,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
         elif isinstance(criteria, Death):
 
             def check(c: "Death") -> None:
-                self._check_range(
-                    c.age, Constants.Criteria.DEATH, Constants.Attributes.AGE_ATTR
-                )
+                self._check_range(c.age, Constants.Criteria.DEATH, Constants.Attributes.AGE_ATTR)
                 self._check_range(
                     c.occurrence_start_date,
                     Constants.Criteria.DEATH,
@@ -375,9 +369,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
                     Constants.Criteria.MEASUREMENT,
                     Constants.Attributes.RANGE_HIGH_RATIO_ATTR,
                 )
-                self._check_range(
-                    c.age, Constants.Criteria.MEASUREMENT, Constants.Attributes.AGE_ATTR
-                )
+                self._check_range(c.age, Constants.Criteria.MEASUREMENT, Constants.Attributes.AGE_ATTR)
 
             return check
         elif isinstance(criteria, Observation):
@@ -393,9 +385,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
                     Constants.Criteria.OBSERVATION,
                     Constants.Attributes.VALUE_AS_NUMBER_ATTR,
                 )
-                self._check_range(
-                    c.age, Constants.Criteria.OBSERVATION, Constants.Attributes.AGE_ATTR
-                )
+                self._check_range(c.age, Constants.Criteria.OBSERVATION, Constants.Attributes.AGE_ATTR)
 
             return check
         elif isinstance(criteria, ObservationPeriod):
@@ -466,9 +456,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
                     Constants.Criteria.SPECIMEN,
                     Constants.Attributes.QUANTITY_ATTR,
                 )
-                self._check_range(
-                    c.age, Constants.Criteria.SPECIMEN, Constants.Attributes.AGE_ATTR
-                )
+                self._check_range(c.age, Constants.Criteria.SPECIMEN, Constants.Attributes.AGE_ATTR)
 
             return check
         elif isinstance(criteria, VisitOccurrence):
@@ -578,9 +566,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
 
             return default_check
 
-    def _get_check_demographic(
-        self, criteria: "DemographicCriteria"
-    ) -> Callable[["DemographicCriteria"], None]:
+    def _get_check_demographic(self, criteria: "DemographicCriteria") -> Callable[["DemographicCriteria"], None]:
         """Get a checker function for demographic criteria.
 
         Args:
@@ -601,9 +587,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
                 Constants.Criteria.DEMOGRAPHIC,
                 Constants.Attributes.OCCURRENCE_START_DATE_ATTR,
             )
-            self._check_range(
-                c.age, Constants.Criteria.DEMOGRAPHIC, Constants.Attributes.AGE_ATTR
-            )
+            self._check_range(c.age, Constants.Criteria.DEMOGRAPHIC, Constants.Attributes.AGE_ATTR)
 
         return check
 
@@ -627,9 +611,9 @@ class RangeCheckerFactory(BaseCheckerFactory):
         if isinstance(range_val, DateRange):
             # Date range checks
             match_result = Operations.match(range_val)
-            match_result.when(
-                lambda r: r.value is not None and not Comparisons.is_date_valid(r.value)
-            ).then(lambda x: warning(self.WARNING_DATE_IS_INVALID))
+            match_result.when(lambda r: r.value is not None and not Comparisons.is_date_valid(r.value)).then(
+                lambda x: warning(self.WARNING_DATE_IS_INVALID)
+            )
             match_result.when(lambda r: r.op is not None and r.op.endswith("bt")).then(
                 lambda r: (
                     Operations.match(r)
@@ -637,23 +621,14 @@ class RangeCheckerFactory(BaseCheckerFactory):
                     .then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
                     .when(lambda x: x.extent is None)
                     .then(lambda x: warning(self.WARNING_EMPTY_END_VALUE))
-                    .when(
-                        lambda x: (
-                            x.extent is not None
-                            and not Comparisons.is_date_valid(x.extent)
-                        )
-                    )
+                    .when(lambda x: x.extent is not None and not Comparisons.is_date_valid(x.extent))
                     .then(lambda x: warning(self.WARNING_DATE_IS_INVALID))
                     .when(Comparisons.start_is_greater_than_end)
                     .then(lambda x: warning(self.WARNING_START_GREATER_THAN_END))
                 )
             )
             match_result.or_else(
-                lambda r: (
-                    Operations.match(r)
-                    .when(lambda x: x.value is None)
-                    .then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
-                )
+                lambda r: Operations.match(r).when(lambda x: x.value is None).then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
             )
         elif isinstance(range_val, NumericRange):
             # Numeric range checks
@@ -670,16 +645,10 @@ class RangeCheckerFactory(BaseCheckerFactory):
                 )
             )
             match_result.or_else(
-                lambda r: (
-                    Operations.match(r)
-                    .when(lambda x: x.value is None)
-                    .then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
-                )
+                lambda r: Operations.match(r).when(lambda x: x.value is None).then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
             )
 
-    def check_range(
-        self, period: Optional["Period"], criteria_name: str, attribute: str
-    ) -> None:
+    def check_range(self, period: Optional["Period"], criteria_name: str, attribute: str) -> None:
         """Check a period.
 
         Args:
@@ -694,19 +663,13 @@ class RangeCheckerFactory(BaseCheckerFactory):
             self._reporter(template, self._group_name, criteria_name, attribute)
 
         match_result = Operations.match(period)
-        match_result.when(
-            lambda x: (
-                x.start_date is not None and not Comparisons.is_date_valid(x.start_date)
-            )
-        ).then(lambda x: warning(self.WARNING_DATE_IS_INVALID))
-        match_result.when(
-            lambda x: (
-                x.end_date is not None and not Comparisons.is_date_valid(x.end_date)
-            )
-        ).then(lambda x: warning(self.WARNING_DATE_IS_INVALID))
-        match_result.when(Comparisons.start_is_greater_than_end).then(
-            lambda x: warning(self.WARNING_START_GREATER_THAN_END)
+        match_result.when(lambda x: x.start_date is not None and not Comparisons.is_date_valid(x.start_date)).then(
+            lambda x: warning(self.WARNING_DATE_IS_INVALID)
         )
+        match_result.when(lambda x: x.end_date is not None and not Comparisons.is_date_valid(x.end_date)).then(
+            lambda x: warning(self.WARNING_DATE_IS_INVALID)
+        )
+        match_result.when(Comparisons.start_is_greater_than_end).then(lambda x: warning(self.WARNING_START_GREATER_THAN_END))
 
     def check(self, expression_or_criteria) -> None:
         """Check the cohort expression's censor window or individual criteria.

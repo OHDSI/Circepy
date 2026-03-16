@@ -100,9 +100,7 @@ def main():
         {
             "ConceptSets": [],
             "PrimaryCriteria": {
-                "CriteriaList": [
-                    {"ConditionOccurrence": {"CodesetId": 1, "First": True}}
-                ],
+                "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1, "First": True}}],
                 "ObservationWindow": {"PriorDays": 0, "PostDays": 0},
                 "PrimaryLimit": {"Type": "All"},
             },

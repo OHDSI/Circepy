@@ -95,9 +95,7 @@ class BuildExpressionQueryOptions:
             raise RuntimeError("Error parsing expression query options") from e
 
 
-class CohortExpressionQueryBuilder(
-    IGetCriteriaSqlDispatcher, IGetEndStrategySqlDispatcher
-):
+class CohortExpressionQueryBuilder(IGetCriteriaSqlDispatcher, IGetEndStrategySqlDispatcher):
     """Main SQL query builder for cohort expressions.
 
     Java equivalent: org.ohdsi.circe.cohortdefinition.CohortExpressionQueryBuilder
@@ -463,8 +461,7 @@ DROP TABLE #drugTarget;
 """
 
     DEFAULT_DRUG_EXPOSURE_END_DATE_EXPRESSION = (
-        "COALESCE(DRUG_EXPOSURE_END_DATE, DATEADD(day,DAYS_SUPPLY,DRUG_EXPOSURE_START_DATE), "
-        "DATEADD(day,1,DRUG_EXPOSURE_START_DATE))"
+        "COALESCE(DRUG_EXPOSURE_END_DATE, DATEADD(day,DAYS_SUPPLY,DRUG_EXPOSURE_START_DATE), DATEADD(day,1,DRUG_EXPOSURE_START_DATE))"
     )
     DEFAULT_COHORT_ID_FIELD_NAME = "cohort_definition_id"
 
@@ -505,9 +502,7 @@ DROP TABLE #drugTarget;
         elif occurrence_type == 2:
             return ">="
         else:
-            raise RuntimeError(
-                f"Invalid occurrence operator received: type={occurrence_type}"
-            )
+            raise RuntimeError(f"Invalid occurrence operator received: type={occurrence_type}")
 
     def get_additional_columns(self, columns: list[CriteriaColumn], prefix: str) -> str:
         """Get additional columns string.
@@ -571,16 +566,12 @@ JOIN (
         union_selects = []
         for cs in concept_sets:
             if hasattr(cs, "id") and hasattr(cs, "expression"):
-                expression_query = (
-                    self.concept_set_query_builder.build_expression_query(cs.expression)
-                )
+                expression_query = self.concept_set_query_builder.build_expression_query(cs.expression)
                 union_select = f"SELECT {cs.id} as codeset_id, c.concept_id FROM ({expression_query}\n) C"
                 union_selects.append(union_select)
 
         union_query = " UNION ALL \n".join(union_selects)
-        codeset_inserts = (
-            f"INSERT INTO #Codesets (codeset_id, concept_id)\n{union_query};"
-        )
+        codeset_inserts = f"INSERT INTO #Codesets (codeset_id, concept_id)\n{union_query};"
 
         return self.CODESET_QUERY_TEMPLATE.replace("@codesetInserts", codeset_inserts)
 
@@ -592,16 +583,12 @@ JOIN (
         criteria_queries = []
         for criteria in censoring_criteria:
             criteria_query = self.get_criteria_sql(criteria)
-            censoring_query = self.CENSORING_QUERY_TEMPLATE.replace(
-                "@criteriaQuery", criteria_query
-            )
+            censoring_query = self.CENSORING_QUERY_TEMPLATE.replace("@criteriaQuery", criteria_query)
             criteria_queries.append(censoring_query)
 
         return " UNION ALL ".join(criteria_queries)
 
-    def get_primary_events_query(
-        self, primary_criteria: PrimaryCriteria, subquery: Optional[str] = None
-    ) -> str:
+    def get_primary_events_query(self, primary_criteria: PrimaryCriteria, subquery: Optional[str] = None) -> str:
         """Get primary events query.
 
         Java equivalent: getPrimaryEventsQuery()
@@ -621,29 +608,23 @@ JOIN (
         for criteria in primary_criteria.criteria_list:
             criteria_queries.append(self.get_criteria_sql(criteria))
 
-        query = query.replace(
-            "@criteriaQueries", "\nUNION ALL\n".join(criteria_queries)
-        )
+        query = query.replace("@criteriaQueries", "\nUNION ALL\n".join(criteria_queries))
 
         # Primary events filters
         primary_events_filters = [
-            (f"DATEADD(day,{primary_criteria.observation_window.prior_days},OP.OBSERVATION_PERIOD_START_DATE) "
-             f"<= E.START_DATE AND DATEADD(day,{primary_criteria.observation_window.post_days},E.START_DATE) "
-             f"<= OP.OBSERVATION_PERIOD_END_DATE")
+            (
+                f"DATEADD(day,{primary_criteria.observation_window.prior_days},OP.OBSERVATION_PERIOD_START_DATE) "
+                f"<= E.START_DATE AND DATEADD(day,{primary_criteria.observation_window.post_days},E.START_DATE) "
+                f"<= OP.OBSERVATION_PERIOD_END_DATE"
+            )
         ]
 
-        query = query.replace(
-            "@primaryEventsFilter", " AND ".join(primary_events_filters)
-        )
+        query = query.replace("@primaryEventsFilter", " AND ".join(primary_events_filters))
 
         # Event sort
         event_sort = (
             "DESC"
-            if (
-                primary_criteria.primary_limit
-                and primary_criteria.primary_limit.type
-                and str(primary_criteria.primary_limit.type).upper() == "LAST"
-            )
+            if (primary_criteria.primary_limit and primary_criteria.primary_limit.type and str(primary_criteria.primary_limit.type).upper() == "LAST")
             else "ASC"
         )
         query = query.replace("@EventSort", event_sort)
@@ -651,11 +632,7 @@ JOIN (
         # Primary event limit - this filters P.ordinal
         primary_event_limit = (
             ""
-            if (
-                primary_criteria.primary_limit
-                and primary_criteria.primary_limit.type
-                and str(primary_criteria.primary_limit.type).upper() == "ALL"
-            )
+            if (primary_criteria.primary_limit and primary_criteria.primary_limit.type and str(primary_criteria.primary_limit.type).upper() == "ALL")
             else "WHERE P.ordinal = 1"
         )
         query = query.replace("@primaryEventLimit", primary_event_limit)
@@ -674,14 +651,10 @@ JOIN (
 
         if censor_window and (censor_window.start_date or censor_window.end_date):
             if censor_window.start_date:
-                censor_start_date = BuilderUtils.date_string_to_sql(
-                    censor_window.start_date
-                )
+                censor_start_date = BuilderUtils.date_string_to_sql(censor_window.start_date)
                 start_date = f"CASE WHEN start_date > {censor_start_date} THEN start_date ELSE {censor_start_date} END"
             if censor_window.end_date:
-                censor_end_date = BuilderUtils.date_string_to_sql(
-                    censor_window.end_date
-                )
+                censor_end_date = BuilderUtils.date_string_to_sql(censor_window.end_date)
                 end_date = f"CASE WHEN end_date < {censor_end_date} THEN end_date ELSE {censor_end_date} END"
             query += "\nWHERE @start_date <= @end_date"
 
@@ -703,16 +676,12 @@ JOIN (
             return empty_table
 
         union_template = "SELECT CAST({} as int) as rule_sequence"
-        union_list = [
-            union_template.format(i) for i in range(len(expression.inclusion_rules))
-        ]
+        union_list = [union_template.format(i) for i in range(len(expression.inclusion_rules))]
 
         # Join with UNION ALL - match Java behavior (no UNION ALL for single rule)
         union_query = union_list[0] if len(union_list) == 1 else " UNION ALL ".join(union_list)
 
-        return self.INCLUSION_RULE_TEMP_TABLE_TEMPLATE.replace(
-            "@inclusionRuleUnions", union_query
-        )
+        return self.INCLUSION_RULE_TEMP_TABLE_TEMPLATE.replace("@inclusionRuleUnions", union_query)
 
     def get_inclusion_analysis_query(self, event_table: str, mode_id: int) -> str:
         """Get inclusion analysis query.
@@ -735,9 +704,7 @@ JOIN (
 
         Java equivalent: Part of generateCohort.sql template with @generateStats != 0 & @ruleTotal != 0
         """
-        rule_total = (
-            len(expression.inclusion_rules) if expression.inclusion_rules else 0
-        )
+        rule_total = len(expression.inclusion_rules) if expression.inclusion_rules else 0
 
         inclusion_rule_table = self.get_inclusion_rule_table_sql(expression)
 
@@ -765,9 +732,7 @@ WHERE ranked.rank_value = 1
 ;
 """
 
-        inclusion_impact_event = self.get_inclusion_analysis_query(
-            "#qualified_events", 0
-        )
+        inclusion_impact_event = self.get_inclusion_analysis_query("#qualified_events", 0)
         inclusion_impact_person = self.get_inclusion_analysis_query("#best_events", 1)
 
         cleanup = """
@@ -798,9 +763,7 @@ DROP TABLE #inclusion_rules;
 {cleanup}}}
 """
 
-    def build_expression_query(
-        self, expression: Union[str, CohortExpression], options: BuildExpressionQueryOptions
-    ) -> str:
+    def build_expression_query(self, expression: Union[str, CohortExpression], options: BuildExpressionQueryOptions) -> str:
         """Build expression query from CohortExpression object or JSON string.
 
         Java equivalent: buildExpressionQuery(String, BuildExpressionQueryOptions)
@@ -816,14 +779,10 @@ DROP TABLE #inclusion_rules;
         result_sql = result_sql.replace("@codesetQuery", codeset_query)
 
         # Get inner primary events subquery (logic only)
-        primary_events_subquery = self._get_primary_events_subquery(
-            expression.primary_criteria
-        )
+        primary_events_subquery = self._get_primary_events_subquery(expression.primary_criteria)
 
         # Primary events query (full wrapper)
-        primary_events_query = self.get_primary_events_query(
-            expression.primary_criteria, primary_events_subquery
-        )
+        primary_events_query = self.get_primary_events_query(expression.primary_criteria, primary_events_subquery)
         result_sql = result_sql.replace("@primaryEventsQuery", primary_events_query)
 
         # Additional criteria query - this filters primary events based on additional conditions
@@ -831,28 +790,20 @@ DROP TABLE #inclusion_rules;
             # Generate criteria group query that joins with the pe (primary events) subquery
             # The pe subquery is defined in PRIMARY_EVENTS_TEMPLATE and has columns:
             # event_id, person_id, start_date, end_date, op_start_date, op_end_date, visit_occurrence_id
-            additional_criteria_group_query = self.get_criteria_group_query(
-                expression.additional_criteria, f"({primary_events_subquery})"
-            )
+            additional_criteria_group_query = self.get_criteria_group_query(expression.additional_criteria, f"({primary_events_subquery})")
 
             # Create a JOIN clause that filters pe events based on the additional criteria
             additional_criteria_sql = f"\nJOIN (\n{additional_criteria_group_query}) AC ON AC.person_id = pe.person_id AND AC.event_id = pe.event_id"
             additional_criteria_sql = additional_criteria_sql.replace("@indexId", "0")
 
-            result_sql = result_sql.replace(
-                "@additionalCriteriaQuery", additional_criteria_sql
-            )
+            result_sql = result_sql.replace("@additionalCriteriaQuery", additional_criteria_sql)
         else:
             result_sql = result_sql.replace("@additionalCriteriaQuery", "")
 
         # Qualified event sort
         qualified_event_sort = (
             "DESC"
-            if (
-                expression.qualified_limit
-                and expression.qualified_limit.type
-                and str(expression.qualified_limit.type).upper() == "LAST"
-            )
+            if (expression.qualified_limit and expression.qualified_limit.type and str(expression.qualified_limit.type).upper() == "LAST")
             else "ASC"
         )
         result_sql = result_sql.replace("@QualifiedEventSort", qualified_event_sort)
@@ -864,9 +815,7 @@ DROP TABLE #inclusion_rules;
             and expression.qualified_limit.type
             and str(expression.qualified_limit.type).upper() != "ALL"
         ):
-            result_sql = result_sql.replace(
-                "@QualifiedLimitFilter", "WHERE QE.ordinal = 1"
-            )
+            result_sql = result_sql.replace("@QualifiedLimitFilter", "WHERE QE.ordinal = 1")
         else:
             result_sql = result_sql.replace("@QualifiedLimitFilter", "")
 
@@ -878,33 +827,19 @@ DROP TABLE #inclusion_rules;
             for i, inclusion_rule in enumerate(expression.inclusion_rules):
                 cg = inclusion_rule.expression
                 inclusion_rule_insert = self.get_inclusion_rule_query(cg)
-                inclusion_rule_insert = inclusion_rule_insert.replace(
-                    "@inclusion_rule_id", str(i)
-                )
+                inclusion_rule_insert = inclusion_rule_insert.replace("@inclusion_rule_id", str(i))
                 inclusion_rule_inserts.append(inclusion_rule_insert)
                 inclusion_rule_temp_tables.append(f"#Inclusion_{i}")
 
             ir_temp_union = "\nUNION ALL\n".join(
-                [
-                    f"select inclusion_rule_id, person_id, event_id from {table}"
-                    for table in inclusion_rule_temp_tables
-                ]
+                [f"select inclusion_rule_id, person_id, event_id from {table}" for table in inclusion_rule_temp_tables]
             )
 
-            inclusion_rule_inserts.append(
-                f"SELECT inclusion_rule_id, person_id, event_id\nINTO #inclusion_events\nFROM ({ir_temp_union}) I;"
-            )
+            inclusion_rule_inserts.append(f"SELECT inclusion_rule_id, person_id, event_id\nINTO #inclusion_events\nFROM ({ir_temp_union}) I;")
 
-            inclusion_rule_inserts.extend(
-                [
-                    f"TRUNCATE TABLE {table};\nDROP TABLE {table};\n"
-                    for table in inclusion_rule_temp_tables
-                ]
-            )
+            inclusion_rule_inserts.extend([f"TRUNCATE TABLE {table};\nDROP TABLE {table};\n" for table in inclusion_rule_temp_tables])
 
-            result_sql = result_sql.replace(
-                "@inclusionCohortInserts", "\n".join(inclusion_rule_inserts)
-            )
+            result_sql = result_sql.replace("@inclusionCohortInserts", "\n".join(inclusion_rule_inserts))
         else:
             result_sql = result_sql.replace(
                 "@inclusionCohortInserts",
@@ -922,29 +857,17 @@ DROP TABLE #inclusion_rules;
         # Included event sort - determine sort order based on expression limit
         included_event_sort = (
             "DESC"
-            if (
-                expression.expression_limit
-                and expression.expression_limit.type
-                and str(expression.expression_limit.type).upper() == "LAST"
-            )
+            if (expression.expression_limit and expression.expression_limit.type and str(expression.expression_limit.type).upper() == "LAST")
             else "ASC"
         )
-        included_events_query = included_events_query.replace(
-            "@IncludedEventSort", included_event_sort
-        )
+        included_events_query = included_events_query.replace("@IncludedEventSort", included_event_sort)
 
         # Result limit filter
-        if (
-            expression.expression_limit
-            and expression.expression_limit.type
-            and str(expression.expression_limit.type).upper() != "ALL"
-        ):
+        if expression.expression_limit and expression.expression_limit.type and str(expression.expression_limit.type).upper() != "ALL":
             result_limit_filter = "WHERE Results.ordinal = 1"
         else:
             result_limit_filter = ""
-        included_events_query = included_events_query.replace(
-            "@ResultLimitFilter", result_limit_filter
-        )
+        included_events_query = included_events_query.replace("@ResultLimitFilter", result_limit_filter)
 
         # Inclusion rule mask filter - only apply if there are inclusion rules
         if expression.inclusion_rules and len(expression.inclusion_rules) > 0:
@@ -956,9 +879,7 @@ DROP TABLE #inclusion_rules;
             )
         else:
             inclusion_rule_mask_filter = ""
-        included_events_query = included_events_query.replace(
-            "@InclusionRuleMaskFilter", inclusion_rule_mask_filter
-        )
+        included_events_query = included_events_query.replace("@InclusionRuleMaskFilter", inclusion_rule_mask_filter)
 
         result_sql = result_sql.replace("@includedEventsQuery", included_events_query)
 
@@ -974,9 +895,7 @@ DROP TABLE #inclusion_rules;
 
         if expression.end_strategy:
             # Only DateOffsetStrategy and CustomEraStrategy have accept method
-            if isinstance(
-                expression.end_strategy, (DateOffsetStrategy, CustomEraStrategy)
-            ):
+            if isinstance(expression.end_strategy, (DateOffsetStrategy, CustomEraStrategy)):
                 result_sql = result_sql.replace(
                     "@strategy_ends_temp_tables",
                     expression.end_strategy.accept(self, "#included_events"),
@@ -986,9 +905,7 @@ DROP TABLE #inclusion_rules;
                     "TRUNCATE TABLE #strategy_ends;\nDROP TABLE #strategy_ends;\n",
                 )
 
-                strategy_select = (
-                    "SELECT event_id, person_id, end_date FROM #strategy_ends"
-                )
+                strategy_select = "SELECT event_id, person_id, end_date FROM #strategy_ends"
                 end_date_selects.append(f"-- End Date Strategy\n{strategy_select}")
             else:
                 result_sql = result_sql.replace("@strategy_ends_temp_tables", "")
@@ -998,23 +915,16 @@ DROP TABLE #inclusion_rules;
             result_sql = result_sql.replace("@strategy_ends_cleanup", "")
 
         if expression.censoring_criteria:
-            end_date_selects.append(
-                f"-- Censor Events\n{self.get_censoring_events_query(expression.censoring_criteria)}"
-            )
+            end_date_selects.append(f"-- Censor Events\n{self.get_censoring_events_query(expression.censoring_criteria)}")
 
         final_cohort_query = self.get_final_cohort_query(expression.censor_window)
         result_sql = result_sql.replace("@finalCohortQuery", final_cohort_query)
 
-        result_sql = result_sql.replace(
-            "@cohort_end_unions", "\nUNION ALL\n".join(end_date_selects)
-        )
+        result_sql = result_sql.replace("@cohort_end_unions", "\nUNION ALL\n".join(end_date_selects))
 
         # Handle optional collapse_settings
         era_pad = "0"
-        if (
-            expression.collapse_settings
-            and expression.collapse_settings.era_pad is not None
-        ):
+        if expression.collapse_settings and expression.collapse_settings.era_pad is not None:
             era_pad = str(expression.collapse_settings.era_pad)
         result_sql = result_sql.replace("@eraconstructorpad", era_pad)
         # Build inclusion analysis query (for stats generation)
@@ -1027,52 +937,30 @@ DROP TABLE #inclusion_rules;
                 "where @cohort_id_field_name = @target_cohort_id;\n\n-- END: Censored Stats\n}\n"
             )
             # Always generate inclusion analysis if stats are requested, even if no rules
-            inclusion_analysis_query += self._build_inclusion_analysis_section(
-                expression
-            )
-        result_sql = result_sql.replace(
-            "@inclusionAnalysisQuery", inclusion_analysis_query
-        )
+            inclusion_analysis_query += self._build_inclusion_analysis_section(expression)
+        result_sql = result_sql.replace("@inclusionAnalysisQuery", inclusion_analysis_query)
 
         # Replace query parameters with tokens
         if options:
             if options.cdm_schema:
-                result_sql = result_sql.replace(
-                    "@cdm_database_schema", options.cdm_schema
-                )
+                result_sql = result_sql.replace("@cdm_database_schema", options.cdm_schema)
             if options.target_table:
-                result_sql = result_sql.replace(
-                    "@target_database_schema.@target_cohort_table", options.target_table
-                )
+                result_sql = result_sql.replace("@target_database_schema.@target_cohort_table", options.target_table)
             if options.result_schema:
-                result_sql = result_sql.replace(
-                    "@results_database_schema", options.result_schema
-                )
+                result_sql = result_sql.replace("@results_database_schema", options.result_schema)
             if options.vocabulary_schema:
-                result_sql = result_sql.replace(
-                    "@vocabulary_database_schema", options.vocabulary_schema
-                )
+                result_sql = result_sql.replace("@vocabulary_database_schema", options.vocabulary_schema)
             if options.cohort_id is not None:
-                result_sql = result_sql.replace(
-                    "@target_cohort_id", str(options.cohort_id)
-                )
+                result_sql = result_sql.replace("@target_cohort_id", str(options.cohort_id))
 
-            result_sql = result_sql.replace(
-                "@generateStats", "1" if options.generate_stats else "0"
-            )
+            result_sql = result_sql.replace("@generateStats", "1" if options.generate_stats else "0")
 
             if options.cohort_id_field_name:
-                result_sql = result_sql.replace(
-                    "@cohort_id_field_name", options.cohort_id_field_name
-                )
+                result_sql = result_sql.replace("@cohort_id_field_name", options.cohort_id_field_name)
             else:
-                result_sql = result_sql.replace(
-                    "@cohort_id_field_name", self.DEFAULT_COHORT_ID_FIELD_NAME
-                )
+                result_sql = result_sql.replace("@cohort_id_field_name", self.DEFAULT_COHORT_ID_FIELD_NAME)
         else:
-            result_sql = result_sql.replace(
-                "@cohort_id_field_name", self.DEFAULT_COHORT_ID_FIELD_NAME
-            )
+            result_sql = result_sql.replace("@cohort_id_field_name", self.DEFAULT_COHORT_ID_FIELD_NAME)
 
         return result_sql
 
@@ -1108,9 +996,7 @@ DROP TABLE #inclusion_rules;
                 index_id += 1
 
         if not group.is_empty():
-            query = query.replace(
-                "@criteriaQueries", "\nUNION ALL\n".join(additional_criteria_queries)
-            )
+            query = query.replace("@criteriaQueries", "\nUNION ALL\n".join(additional_criteria_queries))
 
             occurrence_count_clause = "HAVING COUNT(index_id) "
             if group.type and str(group.type).upper() == "ALL":
@@ -1141,20 +1027,14 @@ DROP TABLE #inclusion_rules;
         Java equivalent: getInclusionRuleQuery()
         """
         result_sql = self.INCLUSION_RULE_QUERY_TEMPLATE
-        criteria_group_sql = self.get_criteria_group_query(
-            inclusion_rule, "#qualified_events"
-        )
+        criteria_group_sql = self.get_criteria_group_query(inclusion_rule, "#qualified_events")
         criteria_group_sql = criteria_group_sql.replace("@indexId", "0")
         additional_criteria_query = f"\nJOIN (\n{criteria_group_sql}) AC on AC.person_id = pe.person_id AND AC.event_id = pe.event_id"
-        result_sql = result_sql.replace(
-            "@additionalCriteriaQuery", additional_criteria_query
-        )
+        result_sql = result_sql.replace("@additionalCriteriaQuery", additional_criteria_query)
         result_sql = result_sql.replace("@eventTable", "#qualified_events")
         return result_sql
 
-    def get_demographic_criteria_query(
-        self, criteria: DemographicCriteria, event_table: str
-    ) -> str:
+    def get_demographic_criteria_query(self, criteria: DemographicCriteria, event_table: str) -> str:
         """Get demographic criteria query.
 
         Java equivalent: getDemographicCriteriaQuery()
@@ -1166,18 +1046,12 @@ DROP TABLE #inclusion_rules;
 
         # Age
         if criteria.age:
-            where_clauses.append(
-                BuilderUtils.build_numeric_range_clause(
-                    "YEAR(E.start_date) - P.year_of_birth", criteria.age
-                )
-            )
+            where_clauses.append(BuilderUtils.build_numeric_range_clause("YEAR(E.start_date) - P.year_of_birth", criteria.age))
 
         # Gender
         if criteria.gender:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.gender)
-            where_clauses.append(
-                f"P.gender_concept_id IN ({','.join(map(str, concept_ids))})"
-            )
+            where_clauses.append(f"P.gender_concept_id IN ({','.join(map(str, concept_ids))})")
 
         # GenderCS
         if criteria.gender_cs:
@@ -1192,9 +1066,7 @@ DROP TABLE #inclusion_rules;
         # Race
         if criteria.race:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.race)
-            where_clauses.append(
-                f"P.race_concept_id IN ({','.join(map(str, concept_ids))})"
-            )
+            where_clauses.append(f"P.race_concept_id IN ({','.join(map(str, concept_ids))})")
 
         # RaceCS
         if criteria.race_cs:
@@ -1209,9 +1081,7 @@ DROP TABLE #inclusion_rules;
         # Ethnicity
         if criteria.ethnicity:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.ethnicity)
-            where_clauses.append(
-                f"P.ethnicity_concept_id IN ({','.join(map(str, concept_ids))})"
-            )
+            where_clauses.append(f"P.ethnicity_concept_id IN ({','.join(map(str, concept_ids))})")
 
         # EthnicityCS
         if criteria.ethnicity_cs:
@@ -1225,19 +1095,11 @@ DROP TABLE #inclusion_rules;
 
         # OccurrenceStartDate
         if criteria.occurrence_start_date:
-            where_clauses.append(
-                BuilderUtils.build_date_range_clause(
-                    "E.start_date", criteria.occurrence_start_date
-                )
-            )
+            where_clauses.append(BuilderUtils.build_date_range_clause("E.start_date", criteria.occurrence_start_date))
 
         # OccurrenceEndDate
         if criteria.occurrence_end_date:
-            where_clauses.append(
-                BuilderUtils.build_date_range_clause(
-                    "E.end_date", criteria.occurrence_end_date
-                )
-            )
+            where_clauses.append(BuilderUtils.build_date_range_clause("E.end_date", criteria.occurrence_end_date))
 
         query = query.replace("@whereClause", "WHERE " + " AND ".join(where_clauses)) if where_clauses else query.replace("@whereClause", "")
 
@@ -1296,41 +1158,22 @@ DROP TABLE #inclusion_rules;
                         # Make a mutable copy to add defaults
                         criteria_data = dict(criteria_data) if criteria_data else {}
                         # Set default values for required fields that might be missing
-                        if (
-                            criteria_type == "Measurement"
-                            and "measurementTypeExclude" not in criteria_data
-                        ):
+                        if criteria_type == "Measurement" and "measurementTypeExclude" not in criteria_data:
                             criteria_data["measurementTypeExclude"] = False
-                        if (
-                            criteria_type == "Observation"
-                            and "observationTypeExclude" not in criteria_data
-                        ):
+                        if criteria_type == "Observation" and "observationTypeExclude" not in criteria_data:
                             criteria_data["observationTypeExclude"] = False
-                        if (
-                            criteria_type == "ProcedureOccurrence"
-                            and "procedureTypeExclude" not in criteria_data
-                        ):
+                        if criteria_type == "ProcedureOccurrence" and "procedureTypeExclude" not in criteria_data:
                             criteria_data["procedureTypeExclude"] = False
-                        if (
-                            criteria_type == "DrugExposure"
-                            and "drugTypeExclude" not in criteria_data
-                        ):
+                        if criteria_type == "DrugExposure" and "drugTypeExclude" not in criteria_data:
                             criteria_data["drugTypeExclude"] = False
                         # Most criteria types require 'first' field
-                        if (
-                            "first" not in criteria_data
-                            or criteria_data.get("first") is None
-                        ):
+                        if "first" not in criteria_data or criteria_data.get("first") is None:
                             criteria_data["first"] = False
-                        inner_criteria = criteria_class_map[
-                            criteria_type
-                        ].model_validate(criteria_data, strict=False)
+                        inner_criteria = criteria_class_map[criteria_type].model_validate(criteria_data, strict=False)
                         # Update the criteria object
                         criteria.criteria = inner_criteria
                     except Exception as e:
-                        raise ValueError(
-                            f"Failed to deserialize criteria from dict: {criteria_type} - {e}"
-                        ) from e
+                        raise ValueError(f"Failed to deserialize criteria from dict: {criteria_type} - {e}") from e
                 else:
                     raise ValueError(f"Unknown criteria type in dict: {criteria_type}")
             else:
@@ -1351,40 +1194,22 @@ DROP TABLE #inclusion_rules;
         # Build index date window expression
         clauses = []
         if check_observation_period:
-            clauses.append(
-                "A.START_DATE >= P.OP_START_DATE AND A.START_DATE <= P.OP_END_DATE"
-            )
+            clauses.append("A.START_DATE >= P.OP_START_DATE AND A.START_DATE <= P.OP_END_DATE")
 
         # StartWindow
         start_window = criteria.start_window
         if start_window:
             # Java: (useIndexEnd != null && useIndexEnd) - true only if not null AND true
-            start_index_date_expression = (
-                "P.END_DATE"
-                if (
-                    start_window.use_index_end is not None
-                    and start_window.use_index_end
-                )
-                else "P.START_DATE"
-            )
+            start_index_date_expression = "P.END_DATE" if (start_window.use_index_end is not None and start_window.use_index_end) else "P.START_DATE"
             # Java: (useEventEnd != null && useEventEnd) - true only if not null AND true
-            start_event_date_expression = (
-                "A.END_DATE"
-                if (
-                    start_window.use_event_end is not None
-                    and start_window.use_event_end
-                )
-                else "A.START_DATE"
-            )
+            start_event_date_expression = "A.END_DATE" if (start_window.use_event_end is not None and start_window.use_event_end) else "A.START_DATE"
 
             if start_window.start and start_window.start.days is not None:
                 start_expression = f"DATEADD(day,{start_window.start.coeff * start_window.start.days},{start_index_date_expression})"
             else:
                 start_expression = (
                     "P.OP_START_DATE"
-                    if check_observation_period
-                    and start_window.start
-                    and start_window.start.coeff == -1
+                    if check_observation_period and start_window.start and start_window.start.coeff == -1
                     else "P.OP_END_DATE"
                     if check_observation_period
                     else None
@@ -1398,9 +1223,7 @@ DROP TABLE #inclusion_rules;
             else:
                 end_expression = (
                     "P.OP_START_DATE"
-                    if check_observation_period
-                    and start_window.end
-                    and start_window.end.coeff == -1
+                    if check_observation_period and start_window.end and start_window.end.coeff == -1
                     else "P.OP_END_DATE"
                     if check_observation_period
                     else None
@@ -1413,17 +1236,9 @@ DROP TABLE #inclusion_rules;
         end_window = criteria.end_window
         if end_window:
             # Java: (useIndexEnd != null && useIndexEnd) - true only if not null AND true
-            end_index_date_expression = (
-                "P.END_DATE"
-                if (end_window.use_index_end is not None and end_window.use_index_end)
-                else "P.START_DATE"
-            )
+            end_index_date_expression = "P.END_DATE" if (end_window.use_index_end is not None and end_window.use_index_end) else "P.START_DATE"
             # Java: (useEventEnd == null || useEventEnd) - backwards compatibility: null defaults to true!
-            end_event_date_expression = (
-                "A.END_DATE"
-                if (end_window.use_event_end is None or end_window.use_event_end)
-                else "A.START_DATE"
-            )
+            end_event_date_expression = "A.END_DATE" if (end_window.use_event_end is None or end_window.use_event_end) else "A.START_DATE"
 
             if end_window.start.days is not None:
                 start_expression = f"DATEADD(day,{end_window.start.coeff * end_window.start.days},{end_index_date_expression})"
@@ -1457,26 +1272,18 @@ DROP TABLE #inclusion_rules;
         if criteria.restrict_visit:
             clauses.append("A.visit_occurrence_id = P.visit_occurrence_id")
 
-        query = query.replace(
-            "@windowCriteria", " AND " + " AND ".join(clauses) if clauses else ""
-        )
+        query = query.replace("@windowCriteria", " AND " + " AND ".join(clauses) if clauses else "")
 
         return query
 
-    def get_windowed_criteria_query(
-        self, criteria: Any, event_table: str, options: Optional[BuilderOptions] = None
-    ) -> str:
+    def get_windowed_criteria_query(self, criteria: Any, event_table: str, options: Optional[BuilderOptions] = None) -> str:
         """Get windowed criteria query.
 
         Java equivalent: getWindowedCriteriaQuery(WindowedCriteria, String) and getWindowedCriteriaQuery(WindowedCriteria, String, BuilderOptions)
         """
-        return self._get_windowed_criteria_query_internal(
-            self.WINDOWED_CRITERIA_TEMPLATE, criteria, event_table, options
-        )
+        return self._get_windowed_criteria_query_internal(self.WINDOWED_CRITERIA_TEMPLATE, criteria, event_table, options)
 
-    def get_corelated_criteria_query(
-        self, corelated_criteria: CorelatedCriteria, event_table: str
-    ) -> str:
+    def get_corelated_criteria_query(self, corelated_criteria: CorelatedCriteria, event_table: str) -> str:
         """Get corelated criteria query.
 
         Java equivalent: getCorelatedlCriteriaQuery()
@@ -1486,16 +1293,13 @@ DROP TABLE #inclusion_rules;
         if corelated_criteria.occurrence is None:
             from .criteria import Occurrence as Occ
 
-            corelated_criteria.occurrence = Occ(
-                type=Occ._AT_LEAST, count=1, is_distinct=False
-            )
+            corelated_criteria.occurrence = Occ(type=Occ._AT_LEAST, count=1, is_distinct=False)
 
         from .criteria import Occurrence as Occ
 
         query = (
             self.ADDITIONAL_CRITERIA_LEFT_TEMPLATE
-            if corelated_criteria.occurrence.type == Occ._AT_MOST
-            or corelated_criteria.occurrence.count == 0
+            if corelated_criteria.occurrence.type == Occ._AT_MOST or corelated_criteria.occurrence.count == 0
             else self.ADDITIONAL_CRITERIA_INNER_TEMPLATE
         )
 
@@ -1507,12 +1311,8 @@ DROP TABLE #inclusion_rules;
                 builder_options.additional_columns.append(CriteriaColumn.DOMAIN_CONCEPT)
                 count_column_expression = f"cc.{CriteriaColumn.DOMAIN_CONCEPT.value}"
             else:
-                builder_options.additional_columns.append(
-                    corelated_criteria.occurrence.count_column
-                )
-                count_column_expression = (
-                    f"cc.{corelated_criteria.occurrence.count_column.value}"
-                )
+                builder_options.additional_columns.append(corelated_criteria.occurrence.count_column)
+                count_column_expression = f"cc.{corelated_criteria.occurrence.count_column.value}"
 
         # If event_table is a query (not a temp table name like #qualified_events),
         # wrap it with observation period join to match reference SQL structure
@@ -1520,11 +1320,7 @@ DROP TABLE #inclusion_rules;
         # Check if event_table is a query (contains SELECT or FROM) vs a temp table name
         # Temp tables start with #, queries contain SELECT/FROM or are wrapped in parentheses
         is_temp_table = event_table.strip().startswith("#")
-        is_query = not is_temp_table and (
-            "SELECT" in event_table.upper()
-            or "FROM" in event_table.upper()
-            or "(" in event_table
-        )
+        is_query = not is_temp_table and ("SELECT" in event_table.upper() or "FROM" in event_table.upper() or "(" in event_table)
 
         # Add observation period join to event table when it's a query (matches reference SQL)
         # BUT only if it doesn't already have op_start_date (to avoid double-wrapping)
@@ -1560,9 +1356,7 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
   and OP.observation_period_start_date <= Q.start_date and OP.observation_period_end_date >= Q.start_date
 )"""
 
-        query = self._get_windowed_criteria_query_internal(
-            query, corelated_criteria, event_table, builder_options
-        )
+        query = self._get_windowed_criteria_query_internal(query, corelated_criteria, event_table, builder_options)
 
         # Occurrence criteria
         occurrence_criteria = (
@@ -1575,9 +1369,7 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
 
         return query
 
-    def get_criteria_sql(
-        self, criteria: Criteria, options: Optional[BuilderOptions] = None
-    ) -> str:
+    def get_criteria_sql(self, criteria: Criteria, options: Optional[BuilderOptions] = None) -> str:
         """Get criteria SQL for any criteria type.
 
         Java equivalent: Various getCriteriaSql methods
@@ -1636,39 +1428,20 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
                         # Make a mutable copy to add defaults
                         criteria_data = dict(criteria_data) if criteria_data else {}
                         # Set default values for required fields that might be missing
-                        if (
-                            criteria_type == "Measurement"
-                            and "measurementTypeExclude" not in criteria_data
-                        ):
+                        if criteria_type == "Measurement" and "measurementTypeExclude" not in criteria_data:
                             criteria_data["measurementTypeExclude"] = False
-                        if (
-                            criteria_type == "Observation"
-                            and "observationTypeExclude" not in criteria_data
-                        ):
+                        if criteria_type == "Observation" and "observationTypeExclude" not in criteria_data:
                             criteria_data["observationTypeExclude"] = False
-                        if (
-                            criteria_type == "ProcedureOccurrence"
-                            and "procedureTypeExclude" not in criteria_data
-                        ):
+                        if criteria_type == "ProcedureOccurrence" and "procedureTypeExclude" not in criteria_data:
                             criteria_data["procedureTypeExclude"] = False
-                        if (
-                            criteria_type == "DrugExposure"
-                            and "drugTypeExclude" not in criteria_data
-                        ):
+                        if criteria_type == "DrugExposure" and "drugTypeExclude" not in criteria_data:
                             criteria_data["drugTypeExclude"] = False
                         # Most criteria types require 'first' field
-                        if (
-                            "first" not in criteria_data
-                            or criteria_data.get("first") is None
-                        ):
+                        if "first" not in criteria_data or criteria_data.get("first") is None:
                             criteria_data["first"] = False
-                        criteria = criteria_class_map[criteria_type].model_validate(
-                            criteria_data, strict=False
-                        )
+                        criteria = criteria_class_map[criteria_type].model_validate(criteria_data, strict=False)
                     except Exception as e:
-                        raise ValueError(
-                            f"Failed to deserialize criteria from dict: {criteria_type} - {e}"
-                        ) from e
+                        raise ValueError(f"Failed to deserialize criteria from dict: {criteria_type} - {e}") from e
                 else:
                     raise ValueError(f"Unknown criteria type in dict: {criteria_type}")
             else:
@@ -1676,75 +1449,41 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
 
         # Import here to avoid circular dependency - use the already imported names
         if isinstance(criteria, ConditionOccurrence):
-            return self._get_criteria_sql_from_builder(
-                self.condition_occurrence_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.condition_occurrence_sql_builder, criteria, options)
         elif isinstance(criteria, Death):
-            return self._get_criteria_sql_from_builder(
-                self.death_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.death_sql_builder, criteria, options)
         elif isinstance(criteria, DeviceExposure):
-            return self._get_criteria_sql_from_builder(
-                self.device_exposure_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.device_exposure_sql_builder, criteria, options)
         elif isinstance(criteria, Measurement):
-            return self._get_criteria_sql_from_builder(
-                self.measurement_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.measurement_sql_builder, criteria, options)
         elif isinstance(criteria, Observation):
-            return self._get_criteria_sql_from_builder(
-                self.observation_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.observation_sql_builder, criteria, options)
         elif isinstance(criteria, Specimen):
-            return self._get_criteria_sql_from_builder(
-                self.specimen_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.specimen_sql_builder, criteria, options)
         elif isinstance(criteria, VisitOccurrence):
-            return self._get_criteria_sql_from_builder(
-                self.visit_occurrence_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.visit_occurrence_sql_builder, criteria, options)
         elif isinstance(criteria, DrugExposure):
-            return self._get_criteria_sql_from_builder(
-                self.drug_exposure_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.drug_exposure_sql_builder, criteria, options)
         elif isinstance(criteria, ProcedureOccurrence):
-            return self._get_criteria_sql_from_builder(
-                self.procedure_occurrence_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.procedure_occurrence_sql_builder, criteria, options)
         elif isinstance(criteria, DrugEra):
-            return self._get_criteria_sql_from_builder(
-                self.drug_era_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.drug_era_sql_builder, criteria, options)
         elif isinstance(criteria, ConditionEra):
-            return self._get_criteria_sql_from_builder(
-                self.condition_era_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.condition_era_sql_builder, criteria, options)
         elif isinstance(criteria, DoseEra):
-            return self._get_criteria_sql_from_builder(
-                self.dose_era_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.dose_era_sql_builder, criteria, options)
         elif isinstance(criteria, ObservationPeriod):
-            return self._get_criteria_sql_from_builder(
-                self.observation_period_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.observation_period_sql_builder, criteria, options)
         elif isinstance(criteria, PayerPlanPeriod):
-            return self._get_criteria_sql_from_builder(
-                self.payer_plan_period_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.payer_plan_period_sql_builder, criteria, options)
         elif isinstance(criteria, VisitDetail):
-            return self._get_criteria_sql_from_builder(
-                self.visit_detail_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.visit_detail_sql_builder, criteria, options)
         elif isinstance(criteria, LocationRegion):
-            return self._get_criteria_sql_from_builder(
-                self.location_region_sql_builder, criteria, options
-            )
+            return self._get_criteria_sql_from_builder(self.location_region_sql_builder, criteria, options)
         else:
             raise ValueError(f"Unsupported criteria type: {type(criteria)}")
 
-    def _get_criteria_sql_from_builder(
-        self, builder: Any, criteria: Criteria, options: Optional[BuilderOptions]
-    ) -> str:
+    def _get_criteria_sql_from_builder(self, builder: Any, criteria: Criteria, options: Optional[BuilderOptions]) -> str:
         """Generic method to get criteria SQL from builder."""
         query = builder.get_criteria_sql_with_options(criteria, options)
         return self.process_correlated_criteria(query, criteria)
@@ -1764,9 +1503,7 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
             return "end_date"
         return "start_date"
 
-    def get_strategy_sql(
-        self, strategy: Union[DateOffsetStrategy, CustomEraStrategy], event_table: str
-    ) -> str:
+    def get_strategy_sql(self, strategy: Union[DateOffsetStrategy, CustomEraStrategy], event_table: str) -> str:
         """Get strategy SQL for date offset or custom era strategy."""
         if isinstance(strategy, DateOffsetStrategy):
             return self._get_date_offset_strategy_sql(strategy, event_table)
@@ -1775,47 +1512,29 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
         else:
             raise ValueError(f"Unsupported strategy type: {type(strategy)}")
 
-    def _get_date_offset_strategy_sql(
-        self, strategy: DateOffsetStrategy, event_table: str
-    ) -> str:
+    def _get_date_offset_strategy_sql(self, strategy: DateOffsetStrategy, event_table: str) -> str:
         """Get strategy SQL for date offset strategy."""
-        strategy_sql = self.DATE_OFFSET_STRATEGY_TEMPLATE.replace(
-            "@eventTable", event_table
-        )
+        strategy_sql = self.DATE_OFFSET_STRATEGY_TEMPLATE.replace("@eventTable", event_table)
         strategy_sql = strategy_sql.replace("@offset", str(strategy.offset))
-        strategy_sql = strategy_sql.replace(
-            "@dateField", self.get_date_field_for_offset_strategy(strategy.date_field)
-        )
+        strategy_sql = strategy_sql.replace("@dateField", self.get_date_field_for_offset_strategy(strategy.date_field))
         return strategy_sql
 
-    def _get_custom_era_strategy_sql(
-        self, strategy: CustomEraStrategy, event_table: str
-    ) -> str:
+    def _get_custom_era_strategy_sql(self, strategy: CustomEraStrategy, event_table: str) -> str:
         """Get strategy SQL for custom era strategy."""
         if strategy.drug_codeset_id is None:
             raise RuntimeError("Drug Codeset ID cannot be NULL.")
 
-        drug_exposure_end_date_expression = (
-            self.DEFAULT_DRUG_EXPOSURE_END_DATE_EXPRESSION
-        )
+        drug_exposure_end_date_expression = self.DEFAULT_DRUG_EXPOSURE_END_DATE_EXPRESSION
 
-        strategy_sql = self.CUSTOM_ERA_STRATEGY_TEMPLATE.replace(
-            "@eventTable", event_table
-        )
-        strategy_sql = strategy_sql.replace(
-            "@drugCodesetId", str(strategy.drug_codeset_id)
-        )
+        strategy_sql = self.CUSTOM_ERA_STRATEGY_TEMPLATE.replace("@eventTable", event_table)
+        strategy_sql = strategy_sql.replace("@drugCodesetId", str(strategy.drug_codeset_id))
         strategy_sql = strategy_sql.replace("@gapDays", str(strategy.gap_days))
         strategy_sql = strategy_sql.replace("@offset", str(strategy.offset))
-        strategy_sql = strategy_sql.replace(
-            "@drugExposureEndDateExpression", drug_exposure_end_date_expression
-        )
+        strategy_sql = strategy_sql.replace("@drugExposureEndDateExpression", drug_exposure_end_date_expression)
 
         return strategy_sql
 
-    def _get_additional_columns(
-        self, columns: list[CriteriaColumn], table_alias: str
-    ) -> str:
+    def _get_additional_columns(self, columns: list[CriteriaColumn], table_alias: str) -> str:
         """Get additional columns for SQL query."""
         if not columns:
             return ""

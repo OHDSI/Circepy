@@ -83,9 +83,7 @@ class BaseCheck(Check):
         """
         return self._get_reporter(self._define_severity(), warnings)
 
-    def _get_reporter(
-        self, severity: WarningSeverity, warnings: list[Warning]
-    ) -> WarningReporter:
+    def _get_reporter(self, severity: WarningSeverity, warnings: list[Warning]) -> WarningReporter:
         """Get a warning reporter for the given severity level.
 
         Args:
