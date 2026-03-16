@@ -17,13 +17,12 @@ from circe.cohortdefinition.printfriendly.markdown_render import MarkdownRender
 from circe.vocabulary.concept import Concept
 from circe.cohortdefinition.core import NumericRange, DateRange
 
-# Register the extension
-import waveform_extension
-waveform_extension.register()
+# Import the extension — registration is automatic via decorators
+import circe.extensions.waveform
 
 # Import criteria classes
-from waveform_extension.criteria import (
-    WaveformOccurrence, WaveformRegistry, 
+from circe.extensions.waveform.criteria import (
+    WaveformOccurrence, WaveformRegistry,
     WaveformChannelMetadata, WaveformFeature
 )
 

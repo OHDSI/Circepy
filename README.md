@@ -174,7 +174,7 @@ This package provides a complete Python implementation of CIRCE-BE with:
 
 Included Extensions:
 
-- **OHDSI Waveform Extension**: Support for the OHDSI Waveform Extension specification (waveform_occurrence, waveform_registry, waveform_channel_metadata, waveform_feature). See [waveform_extension/README.md](waveform_extension/README.md).
+- **OHDSI Waveform Extension**: Support for the OHDSI Waveform Extension specification (waveform_occurrence, waveform_registry, waveform_channel_metadata, waveform_feature). Install with `pip install "ohdsi-circe-python-alpha[waveform]"`. See [docs/waveform_extension.md](docs/waveform_extension.md).
 
 For information on how to implement your own extension, see the [Developer Guide for Extensions](docs/developer/extensions.rst).
 

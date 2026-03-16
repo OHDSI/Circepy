@@ -13,19 +13,25 @@ The extension provides criteria classes and SQL builders for all 4 waveform tabl
 
 ## Installation
 
-The waveform extension is included with circe_py in the `waveform_extension/` directory. To use it:
+Install the waveform extension as an optional extra:
+
+```bash
+pip install "ohdsi-circe-python-alpha[waveform]"
+```
+
+Then import the package — registration is automatic:
 
 ```python
-import waveform_extension
-waveform_extension.register()
+import circe.extensions.waveform
 ```
+
 
 ## Usage Examples
 
 ### Example 1: ICU Monitoring Sessions with Multiple Files
 
 ```python
-from waveform_extension.criteria import WaveformOccurrence
+from circe.extensions.waveform.criteria import WaveformOccurrence
 from circe.cohortdefinition.core import NumericRange, DateRange
 
 criteria = WaveformOccurrence(
@@ -40,7 +46,7 @@ criteria = WaveformOccurrence(
 ### Example 2: High-Quality ECG Channels
 
 ```python
-from waveform_extension.criteria import WaveformChannelMetadata
+from circe.extensions.waveform.criteria import WaveformChannelMetadata
 
 criteria = WaveformChannelMetadata(
     channel_concept_id=[create_concept(2000000020, "ECG Lead II")],
@@ -55,7 +61,7 @@ criteria = WaveformChannelMetadata(
 ### Example 3: Derived Heart Rate (Most Clinically Valuable)
 
 ```python
-from waveform_extension.criteria import WaveformFeature
+from circe.extensions.waveform.criteria import WaveformFeature
 
 criteria = WaveformFeature(
     feature_concept_id=[create_concept(3027018, "Heart Rate")],
@@ -70,7 +76,7 @@ criteria = WaveformFeature(
 ### Example 4: EDF File Format Filter
 
 ```python
-from waveform_extension.criteria import WaveformRegistry
+from circe.extensions.waveform.criteria import WaveformRegistry
 
 criteria = WaveformRegistry(
     file_extension_concept_id=[create_concept(2000000010, "EDF")]
@@ -83,46 +89,16 @@ criteria = WaveformRegistry(
 
 The extension demonstrates the full circe_py extension capabilities:
 
-- **Criteria Classes** (`criteria.py`): 4 Pydantic models matching OHDSI spec
-- **SQL Builders** (`builders/*.py`): 4 builders generating OHDSI-compliant SQL
+- **Criteria Classes** (`criteria.py`): 4 Pydantic models matching OHDSI spec — decorated with `@criteria_class`
+- **SQL Builders** (`builders/*.py`): 4 builders decorated with `@sql_builder` and `@markdown_template`
 - **Markdown Templates** (`templates/*.j2`): 4 Jinja2 templates for human-readable output
-- **Registration** (`__init__.py`): Single function to register all components
+- **Registration** (`__init__.py`): Fully automatic via decorators on import
 
 ## Running the Examples
 
 ```bash
 cd /path/to/circe_py
 export PYTHONPATH=.
-python3 waveform_extension/example_usage.py
+python3 examples/waveform_extension.py
 ```
 
-This will verify all 4 tables are correctly implemented with proper SQL generation and markdown rendering.
-
-## Clinical Use Cases
-
-### Waveform Occurrence
-- ICU telemetry sessions
-- Operating room monitoring
-- Ambulatory ECG studies
-- Sleep studies
-
-### Waveform Registry
-- Filter by file format (EDF, WFDB, etc.)
-- Temporal file-level queries
-- Storage location audits
-
-### Waveform Channel Metadata
-- Signal quality assurance
-- Sampling rate requirements
-- Device/procedure linkage
-- Calibration verification
-
-### Waveform Feature
-- Continuous vital signs (HR, RR, SpO2, BP)
-- Arrhythmia detection
-- AI-derived embeddings
-- Physiological event detection
-
-## Reference
-
-Full specification: https://ohdsi.github.io/WaveformWG/waveform-tables.html

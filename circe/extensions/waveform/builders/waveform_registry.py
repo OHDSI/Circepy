@@ -2,8 +2,12 @@ from typing import Set
 
 from circe.cohortdefinition.builders.base import CriteriaSqlBuilder
 from circe.cohortdefinition.builders.utils import CriteriaColumn, BuilderUtils, BuilderOptions
+from circe.extensions import sql_builder, markdown_template
 from ..criteria import WaveformRegistry
 
+
+@sql_builder(WaveformRegistry)
+@markdown_template(WaveformRegistry, "waveform_registry.j2")
 class WaveformRegistrySqlBuilder(CriteriaSqlBuilder[WaveformRegistry]):
     """
     SQL Builder for Waveform Registry criteria.

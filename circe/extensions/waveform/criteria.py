@@ -3,8 +3,11 @@ from pydantic import Field, AliasChoices
 
 from circe.cohortdefinition.criteria import Criteria, CriteriaGroup
 from circe.cohortdefinition.core import NumericRange, DateRange, TextFilter
+from circe.extensions import criteria_class
 from circe.vocabulary.concept import Concept
 
+
+@criteria_class("WaveformOccurrence")
 class WaveformOccurrence(Criteria):
     """
     Criteria for Waveform Occurrence.
@@ -66,6 +69,7 @@ class WaveformOccurrence(Criteria):
         serialization_alias="PrecedingWaveformOccurrenceId"
     )
 
+@criteria_class("WaveformRegistry")
 class WaveformRegistry(Criteria):
     """
     Criteria for Waveform Registry.
@@ -119,6 +123,7 @@ class WaveformRegistry(Criteria):
     )
 
 
+@criteria_class("WaveformChannelMetadata")
 class WaveformChannelMetadata(Criteria):
     """
     Criteria for Waveform Channel Metadata.
@@ -192,6 +197,7 @@ class WaveformChannelMetadata(Criteria):
     )
 
 
+@criteria_class("WaveformFeature")
 class WaveformFeature(Criteria):
     """
     Criteria for Waveform Feature.

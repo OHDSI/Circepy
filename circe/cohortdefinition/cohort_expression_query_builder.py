@@ -1625,50 +1625,48 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
                 except Exception as e:
                     raise ValueError(f"Failed to deserialize extension criteria: {criteria_type} - {e}")
             elif criteria_type in criteria_class_map:
-                    try:
-                        # Make a mutable copy to add defaults
-                        criteria_data = dict(criteria_data) if criteria_data else {}
-                        # Set default values for required fields that might be missing
-                        if (
-                            criteria_type == "Measurement"
-                            and "measurementTypeExclude" not in criteria_data
-                        ):
-                            criteria_data["measurementTypeExclude"] = False
-                        if (
-                            criteria_type == "Observation"
-                            and "observationTypeExclude" not in criteria_data
-                        ):
-                            criteria_data["observationTypeExclude"] = False
-                        if (
-                            criteria_type == "ProcedureOccurrence"
-                            and "procedureTypeExclude" not in criteria_data
-                        ):
-                            criteria_data["procedureTypeExclude"] = False
-                        if (
-                            criteria_type == "DrugExposure"
-                            and "drugTypeExclude" not in criteria_data
-                        ):
-                            criteria_data["drugTypeExclude"] = False
-                        # Most criteria types require 'first' field
-                        if (
-                            "first" not in criteria_data
-                            or criteria_data.get("first") is None
-                        ):
-                            criteria_data["first"] = False
-                        criteria = criteria_class_map[criteria_type].model_validate(
-                            criteria_data, strict=False
-                        )
-                    except Exception as e:
-                        raise ValueError(
-                            f"Failed to deserialize criteria from dict: {criteria_type} - {e}"
-                        )
-                else:
-                    raise ValueError(f"Unknown criteria type in dict: {criteria_type}")
+                try:
+                    # Make a mutable copy to add defaults
+                    criteria_data = dict(criteria_data) if criteria_data else {}
+                    # Set default values for required fields that might be missing
+                    if (
+                        criteria_type == "Measurement"
+                        and "measurementTypeExclude" not in criteria_data
+                    ):
+                        criteria_data["measurementTypeExclude"] = False
+                    if (
+                        criteria_type == "Observation"
+                        and "observationTypeExclude" not in criteria_data
+                    ):
+                        criteria_data["observationTypeExclude"] = False
+                    if (
+                        criteria_type == "ProcedureOccurrence"
+                        and "procedureTypeExclude" not in criteria_data
+                    ):
+                        criteria_data["procedureTypeExclude"] = False
+                    if (
+                        criteria_type == "DrugExposure"
+                        and "drugTypeExclude" not in criteria_data
+                    ):
+                        criteria_data["drugTypeExclude"] = False
+                    # Most criteria types require 'first' field
+                    if (
+                        "first" not in criteria_data
+                        or criteria_data.get("first") is None
+                    ):
+                        criteria_data["first"] = False
+                    criteria = criteria_class_map[criteria_type].model_validate(
+                        criteria_data, strict=False
+                    )
+                except Exception as e:
+                    raise ValueError(
+                        f"Failed to deserialize criteria from dict: {criteria_type} - {e}"
+                    )
             else:
                 raise ValueError(f"Unknown criteria type in dict: {criteria_type}")
         else:
-             if isinstance(criteria, dict):
-                 raise ValueError(f"Invalid criteria dict structure: {criteria}")
+            if isinstance(criteria, dict):
+                raise ValueError(f"Invalid criteria dict structure: {criteria}")
 
         # Check for extension builder first
         extension_builder = get_builder_for_criteria(criteria)

@@ -2,8 +2,12 @@ from typing import Set
 
 from circe.cohortdefinition.builders.base import CriteriaSqlBuilder
 from circe.cohortdefinition.builders.utils import CriteriaColumn, BuilderUtils, BuilderOptions
+from circe.extensions import sql_builder, markdown_template
 from ..criteria import WaveformFeature
 
+
+@sql_builder(WaveformFeature)
+@markdown_template(WaveformFeature, "waveform_feature.j2")
 class WaveformFeatureSqlBuilder(CriteriaSqlBuilder[WaveformFeature]):
     """
     SQL Builder for Waveform Feature criteria.

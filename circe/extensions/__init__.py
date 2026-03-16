@@ -4,8 +4,27 @@ Extension Registry for OMOP CDM.
 This module provides the central registry for managing extensions to circe-py,
 allowing external projects to register custom criteria classes, SQL builders,
 and markdown renderers.
+
+Decorator Usage
+---------------
+Extension authors can use the provided decorator functions to register their
+classes automatically, rather than calling the registry methods directly::
+
+    from circe.extensions import criteria_class, sql_builder, markdown_template
+
+    @criteria_class("WaveformOccurrence")
+    class WaveformOccurrence(Criteria):
+        ...
+
+    @sql_builder(WaveformOccurrence)
+    class WaveformOccurrenceSqlBuilder(CriteriaSqlBuilder):
+        ...
+
+    @markdown_template(WaveformOccurrence, "waveform_occurrence.j2")
+    class WaveformOccurrenceMarkdownRenderer:
+        ...
 """
-from typing import Dict, List, Optional, Type, Set, Union
+from typing import Callable, Dict, List, Optional, Type, Union
 from pathlib import Path
 
 # Forward references to avoid circular imports
@@ -110,6 +129,86 @@ class ExtensionRegistry:
 # Global registry instance
 _registry = ExtensionRegistry()
 
+
 def get_registry() -> ExtensionRegistry:
     """Get the global extension registry instance."""
     return _registry
+
+
+# ---------------------------------------------------------------------------
+# Decorator helpers
+# ---------------------------------------------------------------------------
+
+def criteria_class(name: str) -> "Callable[[Type['Criteria']], Type['Criteria']]":
+    """Class decorator that registers a Criteria subclass for JSON deserialization.
+
+    Args:
+        name: The criteria type name used as the JSON key
+              (e.g. ``"WaveformOccurrence"``).
+
+    Example::
+
+        @criteria_class("WaveformOccurrence")
+        class WaveformOccurrence(Criteria):
+            ...
+    """
+    def decorator(cls: "Type['Criteria']") -> "Type['Criteria']":
+        _registry.register_criteria_class(name, cls)  # type: ignore[arg-type]
+        return cls
+    return decorator  # type: ignore[return-value]
+
+
+def sql_builder(criteria_cls: "Type['Criteria']") -> "Callable[[Type['CriteriaSqlBuilder']], Type['CriteriaSqlBuilder']]":
+    """Class decorator that registers a SQL builder for a given Criteria type.
+
+    Args:
+        criteria_cls: The Criteria subclass this builder handles.
+
+    Example::
+
+        @sql_builder(WaveformOccurrence)
+        class WaveformOccurrenceSqlBuilder(CriteriaSqlBuilder):
+            ...
+    """
+    def decorator(builder_cls: "Type['CriteriaSqlBuilder']") -> "Type['CriteriaSqlBuilder']":
+        _registry.register_sql_builder(criteria_cls, builder_cls)  # type: ignore[arg-type]
+        return builder_cls
+    return decorator  # type: ignore[return-value]
+
+
+def markdown_template(criteria_cls: "Type['Criteria']", template_name: str) -> "Callable[[Type], Type]":
+    """Class decorator that registers a Jinja2 markdown template for a Criteria type.
+
+    Args:
+        criteria_cls: The Criteria subclass this template renders.
+        template_name: Filename of the Jinja2 template
+                       (e.g. ``"waveform_occurrence.j2"``).
+
+    Example::
+
+        @markdown_template(WaveformOccurrence, "waveform_occurrence.j2")
+        class WaveformOccurrenceMarkdownRenderer:
+            ...
+    """
+    def decorator(cls: Type) -> Type:
+        _registry.register_markdown_template(criteria_cls, template_name)  # type: ignore[arg-type]
+        return cls
+    return decorator
+
+
+def template_path(path: Union[str, Path]) -> None:
+    """Register a directory as a template search path.
+
+    This is a convenience function (not a decorator) that adds *path* to the
+    global registry so that Jinja2 can locate extension templates.
+
+    Args:
+        path: Path to a directory containing Jinja2 templates.
+
+    Example::
+
+        template_path(Path(__file__).parent / "templates")
+    """
+    _registry.add_template_path(Path(path))
+
+

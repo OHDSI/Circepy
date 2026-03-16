@@ -10,7 +10,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 
 from pydantic import BaseModel, Field, ConfigDict, model_serializer, AliasChoices, field_validator, BeforeValidator
 from enum import Enum
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Union, Optional, ClassVar
+from typing import Annotated, TYPE_CHECKING, Any, ClassVar, List, Optional, Union
 
 from pydantic import (
     AliasChoices,
@@ -1556,8 +1556,10 @@ class CriteriaGroup(BaseModel):
         return deserialized
 
 
-# Define CriteriaType Union for strict typing
-CriteriaType = Union[
+# Define CriteriaType Union for strict typing.
+# Criteria is last so known subtypes are tried first; it also acts as
+# a catch-all that accepts any registered extension subclass.
+_CriteriaTypeUnion = Union[
     ConditionOccurrence,
     DrugExposure,
     ProcedureOccurrence,
@@ -1574,21 +1576,21 @@ CriteriaType = Union[
     ConditionEra,
     DrugEra,
     DoseEra,
+    Criteria,  # catch-all for extension subclasses
 ]
 
 def _validate_criteria_extension(v: Any) -> Any:
-    """Validate criteria checking extensions registry for custom types."""
+    """Deserialize extension criteria from a single-key dict via the extensions registry."""
     if isinstance(v, dict) and len(v) == 1:
         key = next(iter(v))
         try:
-             from circe.extensions import get_registry
-             registry = get_registry()
-             cls = registry.get_criteria_class(key)
-             if cls:
-                 # Found registered criteria class, deserialize it
-                 return cls.model_validate(v[key])
+            from circe.extensions import get_registry
+            registry = get_registry()
+            cls = registry.get_criteria_class(key)
+            if cls:
+                return cls.model_validate(v[key])
         except ImportError:
-             pass
+            pass
     return v
 
 CriteriaType = Annotated[_CriteriaTypeUnion, BeforeValidator(_validate_criteria_extension)]

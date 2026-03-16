@@ -2,8 +2,12 @@ from typing import Set
 
 from circe.cohortdefinition.builders.base import CriteriaSqlBuilder
 from circe.cohortdefinition.builders.utils import CriteriaColumn, BuilderUtils, BuilderOptions
+from circe.extensions import sql_builder, markdown_template
 from ..criteria import WaveformOccurrence
 
+
+@sql_builder(WaveformOccurrence)
+@markdown_template(WaveformOccurrence, "waveform_occurrence.j2")
 class WaveformOccurrenceSqlBuilder(CriteriaSqlBuilder[WaveformOccurrence]):
     """
     SQL Builder for Waveform Occurrence criteria.
