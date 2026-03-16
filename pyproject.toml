@@ -199,7 +199,9 @@ select = [
     "C4",  # flake8-comprehensions
     "SIM", # flake8-simplify
 ]
-ignore = []
+ignore = [
+    "E501",  # Line too long (handled by formatter)
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["circe"]
