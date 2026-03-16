@@ -31,7 +31,7 @@ jobs:
         run: tox
 
       - name: Upload coverage to Codecov
-        if: ${{ secrets.CODECOV_TOKEN != '' }}
+        if: ${{ secrets.CODECOV_TOKEN }}
         continue-on-error: true
         uses: codecov/codecov-action@v4
         with:
