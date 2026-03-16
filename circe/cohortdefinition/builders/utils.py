@@ -230,21 +230,18 @@ class BuilderUtils:
         # Escape single quotes in text
         text = text.replace("'", "''")
 
-        if op == "eq":
-            return f"{column_name} = '{text}'"
-        elif op == "!eq":
-            return f"{column_name} <> '{text}'"
-        elif op == "startsWith":
-            return f"{column_name} LIKE '{text}%'"
-        elif op == "endsWith":
-            return f"{column_name} LIKE '%{text}'"
-        elif op == "contains":
-            return f"{column_name} LIKE '%{text}%'"
-        elif op == "!contains":
-            return f"{column_name} NOT LIKE '%{text}%'"
-        else:
-            # Default to exact match
-            return f"{column_name} = '{text}'"
+        # Map operators to SQL templates
+        operator_templates = {
+            "eq": f"{column_name} = '{text}'",
+            "!eq": f"{column_name} <> '{text}'",
+            "startsWith": f"{column_name} LIKE '{text}%'",
+            "endsWith": f"{column_name} LIKE '%{text}'",
+            "contains": f"{column_name} LIKE '%{text}%'",
+            "!contains": f"{column_name} NOT LIKE '%{text}%'",
+        }
+
+        # Return template for operator, default to exact match
+        return operator_templates.get(op, f"{column_name} = '{text}'")
 
     @staticmethod
     def split_in_clause(

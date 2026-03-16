@@ -18,8 +18,7 @@ from .warning_reporter import WarningReporter
 
 # Import at runtime to avoid circular dependencies
 try:
-    from ...cohortdefinition.cohort import CohortExpression
-    from ...cohortdefinition.core import DateRange, NumericRange, Period
+    from ...cohortdefinition.core import Period
     from ...cohortdefinition.criteria import (
         ConditionEra,
         ConditionOccurrence,

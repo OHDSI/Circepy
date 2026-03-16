@@ -56,9 +56,7 @@ def to_python_code(obj: Any) -> str:
                 # Pydantic V2 doesn't have a simple "is_set" for fields without model_dump(exclude_unset)
                 # But we want to preserve structure even if it matches default maybe?
                 # Let's stick to non-None for now as per plan
-                if val is not None:
-                    # Check if it equals default
-                    if val != field_info.get_default():
+                if val is not None and val != field_info.get_default():
                         fields[name] = val
 
             if not fields:

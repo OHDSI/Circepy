@@ -267,11 +267,9 @@ class CohortExpression(CirceBaseModel):
 
         Handles empty objects and other normalization needs.
         """
-        if isinstance(data, dict):
-            # No longer dropping cdmVersionRange string since we now expect Optional[str]
-            if "censorWindow" in data and data["censorWindow"] == {}:
-                data = dict(data)
-                data.pop("censorWindow")
+        if isinstance(data, dict) and "censorWindow" in data and data["censorWindow"] == {}:
+            data = dict(data)
+            data.pop("censorWindow")
 
         return data
 
@@ -399,9 +397,7 @@ class CohortExpression(CirceBaseModel):
         """
         if isinstance(data, dict):
             # Handle ConceptSet Expression Items
-            if "items" in data and isinstance(data["items"], list):
-                # Check if these look like ConceptSetItems (have 'concept')
-                if (
+            if "items" in data and isinstance(data["items"], list) and (
                     data["items"]
                     and isinstance(data["items"][0], dict)
                     and "concept" in data["items"][0]

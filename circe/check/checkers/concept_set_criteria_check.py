@@ -17,29 +17,12 @@ from .warning_reporter_helper import WarningReporterHelper
 
 # Import at runtime to avoid circular dependencies
 try:
-    from ...cohortdefinition.criteria import (
-        ConditionEra,
-        ConditionOccurrence,
-        Criteria,
-        Death,
-        DeviceExposure,
-        DoseEra,
-        DrugEra,
-        DrugExposure,
-        Measurement,
-        Observation,
-        ProcedureOccurrence,
-        Specimen,
-        VisitDetail,
-        VisitOccurrence,
-    )
+    from ...cohortdefinition.criteria import Criteria
 except ImportError:
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
-        from ...cohortdefinition.criteria import (
-            Criteria,
-        )
+        from ...cohortdefinition.criteria import Criteria
 
 
 class ConceptSetCriteriaCheck(BaseCriteriaCheck):

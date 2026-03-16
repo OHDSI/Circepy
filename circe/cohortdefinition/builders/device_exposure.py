@@ -103,7 +103,8 @@ FROM
             )
         else:
             select_cols.append(
-                "de.device_exposure_start_date as start_date, COALESCE(de.device_exposure_end_date, DATEADD(day,1,de.device_exposure_start_date)) as end_date"
+                "de.device_exposure_start_date as start_date, COALESCE(de.device_exposure_end_date, DATEADD(day,1," + \
+                "de.device_exposure_start_date)) as end_date"
             )
 
         return select_cols

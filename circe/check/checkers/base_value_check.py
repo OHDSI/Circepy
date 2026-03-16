@@ -18,10 +18,7 @@ from .warning_reporter import WarningReporter
 try:
     from ...cohortdefinition.cohort import CohortExpression
     from ...cohortdefinition.criteria import (
-        CorelatedCriteria,
-        Criteria,
         CriteriaGroup,
-        DemographicCriteria,
         PrimaryCriteria,
     )
 except ImportError:

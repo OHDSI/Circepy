@@ -16,24 +16,7 @@ from ..operations.operations import Operations
 
 # Import at runtime to avoid circular dependencies
 with suppress(ImportError):
-    from ...cohortdefinition.criteria import (
-        ConditionEra,
-        ConditionOccurrence,
-        Death,
-        DeviceExposure,
-        DoseEra,
-        DrugEra,
-        DrugExposure,
-        LocationRegion,
-        Measurement,
-        Observation,
-        ObservationPeriod,
-        PayerPlanPeriod,
-        ProcedureOccurrence,
-        Specimen,
-        VisitDetail,
-        VisitOccurrence,
-    )
+    pass
 
 
 class CriteriaNameHelper:

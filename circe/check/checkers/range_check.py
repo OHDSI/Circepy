@@ -17,8 +17,7 @@ from .warning_reporter import WarningReporter
 # Import at runtime to avoid circular dependencies
 try:
     from ...cohortdefinition.cohort import CohortExpression
-    from ...cohortdefinition.core import ObservationFilter, Window
-    from ...cohortdefinition.criteria import CorelatedCriteria
+    from ...cohortdefinition.core import ObservationFilter
 except ImportError:
     from typing import TYPE_CHECKING
 

@@ -200,17 +200,22 @@ FROM
 ;
 """
 
-    PRIMARY_EVENTS_SUBQUERY_TEMPLATE = """select P.ordinal as event_id, P.person_id, P.start_date, P.end_date, op_start_date, op_end_date, cast(P.visit_occurrence_id as bigint) as visit_occurrence_id
+    PRIMARY_EVENTS_SUBQUERY_TEMPLATE = """select P.ordinal as event_id, P.person_id, P.start_date, P.end_date,
+       op_start_date, op_end_date, cast(P.visit_occurrence_id as bigint) as visit_occurrence_id
 FROM
 (
   select E.person_id, E.start_date, E.end_date,
          row_number() OVER (PARTITION BY E.person_id ORDER BY E.sort_date @EventSort, E.event_id) ordinal,
-         OP.observation_period_start_date as op_start_date, OP.observation_period_end_date as op_end_date, cast(E.visit_occurrence_id as bigint) as visit_occurrence_id
+         OP.observation_period_start_date as op_start_date,
+         OP.observation_period_end_date as op_end_date,
+         cast(E.visit_occurrence_id as bigint) as visit_occurrence_id
   FROM 
   (
   @criteriaQueries
   ) E
-	JOIN @cdm_database_schema.observation_period OP on E.person_id = OP.person_id and E.start_date >=  OP.observation_period_start_date and E.start_date <= op.observation_period_end_date
+	JOIN @cdm_database_schema.observation_period OP on E.person_id = OP.person_id
+         and E.start_date >=  OP.observation_period_start_date
+         and E.start_date <= op.observation_period_end_date
   WHERE @primaryEventsFilter
 ) P
 @primaryEventLimit"""
@@ -326,9 +331,14 @@ group by inclusion_rule_mask
 ;
 
 -- calculate gain counts 
-delete from @results_database_schema.cohort_inclusion_stats where @cohort_id_field_name = @target_cohort_id and mode_id = @inclusionImpactMode;
-insert into @results_database_schema.cohort_inclusion_stats (@cohort_id_field_name, rule_sequence, person_count, gain_count, person_total, mode_id)
-select @target_cohort_id as @cohort_id_field_name, ir.rule_sequence, coalesce(T.person_count, 0) as person_count, coalesce(SR.person_count, 0) gain_count, EventTotal.total, @inclusionImpactMode as mode_id
+delete from @results_database_schema.cohort_inclusion_stats
+where @cohort_id_field_name = @target_cohort_id and mode_id = @inclusionImpactMode;
+insert into @results_database_schema.cohort_inclusion_stats
+    (@cohort_id_field_name, rule_sequence, person_count, gain_count, person_total, mode_id)
+select @target_cohort_id as @cohort_id_field_name, ir.rule_sequence,
+       coalesce(T.person_count, 0) as person_count,
+       coalesce(SR.person_count, 0) gain_count, EventTotal.total,
+       @inclusionImpactMode as mode_id
 from #inclusion_rules ir
 left join
 (
@@ -339,19 +349,27 @@ left join
 ) T on ir.rule_sequence = T.inclusion_rule_id
 CROSS JOIN (select count(*) as total_rules from #inclusion_rules) RuleTotal
 CROSS JOIN (select count_big(event_id) as total from @eventTable) EventTotal
-LEFT JOIN @results_database_schema.cohort_inclusion_result SR on SR.mode_id = @inclusionImpactMode AND SR.@cohort_id_field_name = @target_cohort_id AND (POWER(cast(2 as bigint),RuleTotal.total_rules) - POWER(cast(2 as bigint),ir.rule_sequence) - 1) = SR.inclusion_rule_mask -- POWER(2,rule count) - POWER(2,rule sequence) - 1 is the mask for 'all except this rule'
+LEFT JOIN @results_database_schema.cohort_inclusion_result SR
+    on SR.mode_id = @inclusionImpactMode
+   AND SR.@cohort_id_field_name = @target_cohort_id
+   AND (POWER(cast(2 as bigint),RuleTotal.total_rules) - POWER(cast(2 as bigint),ir.rule_sequence) - 1) = SR.inclusion_rule_mask
+   -- POWER(2,rule count) - POWER(2,rule sequence) - 1 is the mask for 'all except this rule'
 ;
 
 -- calculate totals
-delete from @results_database_schema.cohort_summary_stats where @cohort_id_field_name = @target_cohort_id and mode_id = @inclusionImpactMode;
-insert into @results_database_schema.cohort_summary_stats (@cohort_id_field_name, base_count, final_count, mode_id)
-select @target_cohort_id as @cohort_id_field_name, PC.total as person_count, coalesce(FC.total, 0) as final_count, @inclusionImpactMode as mode_id
+delete from @results_database_schema.cohort_summary_stats
+where @cohort_id_field_name = @target_cohort_id and mode_id = @inclusionImpactMode;
+insert into @results_database_schema.cohort_summary_stats
+    (@cohort_id_field_name, base_count, final_count, mode_id)
+select @target_cohort_id as @cohort_id_field_name, PC.total as person_count,
+       coalesce(FC.total, 0) as final_count, @inclusionImpactMode as mode_id
 FROM
 (select count_big(event_id) as total from @eventTable) PC,
 (select sum(sr.person_count) as total
   from @results_database_schema.cohort_inclusion_result sr
   CROSS JOIN (select count(*) as total_rules from #inclusion_rules) RuleTotal
-  where sr.mode_id = @inclusionImpactMode and sr.@cohort_id_field_name = @target_cohort_id and sr.inclusion_rule_mask = POWER(cast(2 as bigint),RuleTotal.total_rules)-1
+  where sr.mode_id = @inclusionImpactMode and sr.@cohort_id_field_name = @target_cohort_id
+    and sr.inclusion_rule_mask = POWER(cast(2 as bigint),RuleTotal.total_rules)-1
 ) FC
 ;
 """
@@ -364,10 +382,12 @@ FROM #final_cohort
     INCLUDED_EVENTS_TEMPLATE = """select event_id, person_id, start_date, end_date, op_start_date, op_end_date
 into #included_events
 FROM (
-  SELECT event_id, person_id, start_date, end_date, op_start_date, op_end_date, row_number() over (partition by person_id order by start_date @IncludedEventSort) as ordinal
+  SELECT event_id, person_id, start_date, end_date, op_start_date, op_end_date,
+         row_number() over (partition by person_id order by start_date @IncludedEventSort) as ordinal
   from
   (
-    select Q.event_id, Q.person_id, Q.start_date, Q.end_date, Q.op_start_date, Q.op_end_date, SUM(coalesce(POWER(cast(2 as bigint), I.inclusion_rule_id), 0)) as inclusion_rule_mask
+    select Q.event_id, Q.person_id, Q.start_date, Q.end_date, Q.op_start_date, Q.op_end_date,
+           SUM(coalesce(POWER(cast(2 as bigint), I.inclusion_rule_id), 0)) as inclusion_rule_mask
     from #qualified_events Q
     LEFT JOIN #inclusion_events I on I.person_id = Q.person_id and I.event_id = Q.event_id
     GROUP BY Q.event_id, Q.person_id, Q.start_date, Q.end_date, Q.op_start_date, Q.op_end_date
@@ -417,12 +437,17 @@ from @eventTable et
 JOIN 
 (
 
-  select person_id, min(start_date) as era_start_date, DATEADD(day,-1 * @gapDays, max(end_date)) as era_end_date
+  select person_id, min(start_date) as era_start_date,
+         DATEADD(day,-1 * @gapDays, max(end_date)) as era_end_date
   from (
-    select person_id, start_date, end_date, sum(is_start) over (partition by person_id order by start_date, is_start desc rows unbounded preceding) group_idx
+    select person_id, start_date, end_date,
+           sum(is_start) over (partition by person_id order by start_date, is_start desc
+                               rows unbounded preceding) group_idx
     from (
       select person_id, start_date, end_date, 
-        case when max(end_date) over (partition by person_id order by start_date rows between unbounded preceding and 1 preceding) >= start_date then 0 else 1 end is_start
+        case when max(end_date) over (partition by person_id order by start_date
+                                      rows between unbounded preceding and 1 preceding) >= start_date
+             then 0 else 1 end is_start
       from (
         select person_id, drug_exposure_start_date as start_date, DATEADD(day,(@gapDays + @offset),DRUG_EXPOSURE_END_DATE) as end_date
         FROM #drugTarget
@@ -437,7 +462,10 @@ TRUNCATE TABLE #drugTarget;
 DROP TABLE #drugTarget;
 """
 
-    DEFAULT_DRUG_EXPOSURE_END_DATE_EXPRESSION = "COALESCE(DRUG_EXPOSURE_END_DATE, DATEADD(day,DAYS_SUPPLY,DRUG_EXPOSURE_START_DATE), DATEADD(day,1,DRUG_EXPOSURE_START_DATE))"
+    DEFAULT_DRUG_EXPOSURE_END_DATE_EXPRESSION = (
+        "COALESCE(DRUG_EXPOSURE_END_DATE, DATEADD(day,DAYS_SUPPLY,DRUG_EXPOSURE_START_DATE), "
+        "DATEADD(day,1,DRUG_EXPOSURE_START_DATE))"
+    )
     DEFAULT_COHORT_ID_FIELD_NAME = "cohort_definition_id"
 
     def __init__(self):
@@ -501,7 +529,9 @@ DROP TABLE #drugTarget;
         """
         # Step 1: Wrap base query with Q+OP join
         # This will be used as the event_table (becomes E in the GROUP_QUERY_TEMPLATE)
-        q_op_query = f"""SELECT Q.person_id, Q.event_id, Q.start_date, Q.end_date, Q.visit_occurrence_id, OP.observation_period_start_date as op_start_date, OP.observation_period_end_date as op_end_date
+        q_op_query = f"""SELECT Q.person_id, Q.event_id, Q.start_date, Q.end_date, Q.visit_occurrence_id,
+       OP.observation_period_start_date as op_start_date,
+       OP.observation_period_end_date as op_end_date
 FROM (
 {query}
 ) Q
@@ -597,7 +627,9 @@ JOIN (
 
         # Primary events filters
         primary_events_filters = [
-            f"DATEADD(day,{primary_criteria.observation_window.prior_days},OP.OBSERVATION_PERIOD_START_DATE) <= E.START_DATE AND DATEADD(day,{primary_criteria.observation_window.post_days},E.START_DATE) <= OP.OBSERVATION_PERIOD_END_DATE"
+            (f"DATEADD(day,{primary_criteria.observation_window.prior_days},OP.OBSERVATION_PERIOD_START_DATE) "
+             f"<= E.START_DATE AND DATEADD(day,{primary_criteria.observation_window.post_days},E.START_DATE) "
+             f"<= OP.OBSERVATION_PERIOD_END_DATE")
         ]
 
         query = query.replace(
@@ -718,9 +750,12 @@ select q.person_id, q.event_id
 into #best_events
 from #qualified_events Q
 join (
-	SELECT R.person_id, R.event_id, ROW_NUMBER() OVER (PARTITION BY R.person_id ORDER BY R.rule_count DESC,R.min_rule_id ASC, R.start_date ASC) AS rank_value
+	SELECT R.person_id, R.event_id,
+            ROW_NUMBER() OVER (PARTITION BY R.person_id ORDER BY R.rule_count DESC,
+                               R.min_rule_id ASC, R.start_date ASC) AS rank_value
 	FROM (
-		SELECT Q.person_id, Q.event_id, COALESCE(COUNT(DISTINCT I.inclusion_rule_id), 0) AS rule_count, COALESCE(MIN(I.inclusion_rule_id), 0) AS min_rule_id, Q.start_date
+		SELECT Q.person_id, Q.event_id, COALESCE(COUNT(DISTINCT I.inclusion_rule_id), 0) AS rule_count,
+               COALESCE(MIN(I.inclusion_rule_id), 0) AS min_rule_id, Q.start_date
 		FROM #qualified_events Q
 		LEFT JOIN #inclusion_events I ON q.person_id = i.person_id AND q.event_id = i.event_id
 		GROUP BY Q.person_id, Q.event_id, Q.start_date
@@ -764,22 +799,16 @@ DROP TABLE #inclusion_rules;
 """
 
     def build_expression_query(
-        self, expression: str, options: BuildExpressionQueryOptions
+        self, expression: Union[str, CohortExpression], options: BuildExpressionQueryOptions
     ) -> str:
-        """Build expression query from JSON string.
+        """Build expression query from CohortExpression object or JSON string.
 
         Java equivalent: buildExpressionQuery(String, BuildExpressionQueryOptions)
+                        buildExpressionQuery(CohortExpression, BuildExpressionQueryOptions)
         """
-        cohort_expression = CohortExpression.model_validate_json(expression)
-        return self.build_expression_query(cohort_expression, options)
+        if isinstance(expression, str):
+            expression = CohortExpression.model_validate_json(expression)
 
-    def build_expression_query(
-        self, expression: CohortExpression, options: BuildExpressionQueryOptions
-    ) -> str:
-        """Build expression query from CohortExpression object.
-
-        Java equivalent: buildExpressionQuery(CohortExpression, BuildExpressionQueryOptions)
-        """
         result_sql = self.COHORT_QUERY_TEMPLATE
 
         # Codeset query
@@ -920,7 +949,11 @@ DROP TABLE #inclusion_rules;
         # Inclusion rule mask filter - only apply if there are inclusion rules
         if expression.inclusion_rules and len(expression.inclusion_rules) > 0:
             rule_count = len(expression.inclusion_rules)
-            inclusion_rule_mask_filter = f"{{{rule_count} != 0}}?{{\n  -- the matching group with all bits set ( POWER(2,# of inclusion rules) - 1 = inclusion_rule_mask\n  WHERE (MG.inclusion_rule_mask = POWER(cast(2 as bigint),{rule_count})-1)\n}}"
+            inclusion_rule_mask_filter = (
+                f"{{{rule_count} != 0}}?{{\n  -- the matching group with all bits set "
+                f"( POWER(2,# of inclusion rules) - 1 = inclusion_rule_mask\n  "
+                f"WHERE (MG.inclusion_rule_mask = POWER(cast(2 as bigint),{rule_count})-1)\n}}"
+            )
         else:
             inclusion_rule_mask_filter = ""
         included_events_query = included_events_query.replace(
@@ -988,7 +1021,11 @@ DROP TABLE #inclusion_rules;
         inclusion_analysis_query = ""
         if options and options.generate_stats:
             # Add censored stats wrapper (even if empty)
-            inclusion_analysis_query = "{1 != 0}?{\n-- BEGIN: Censored Stats\n\ndelete from @results_database_schema.cohort_censor_stats where @cohort_id_field_name = @target_cohort_id;\n\n-- END: Censored Stats\n}\n"
+            inclusion_analysis_query = (
+                "{1 != 0}?{\n-- BEGIN: Censored Stats\n\n"
+                "delete from @results_database_schema.cohort_censor_stats "
+                "where @cohort_id_field_name = @target_cohort_id;\n\n-- END: Censored Stats\n}\n"
+            )
             # Always generate inclusion analysis if stats are requested, even if no rules
             inclusion_analysis_query += self._build_inclusion_analysis_section(
                 expression
@@ -1513,7 +1550,9 @@ DROP TABLE #inclusion_rules;
                 if remove_outer and paren_count == 0:
                     clean_event_table = clean_event_table[1:-1].strip()
 
-            event_table = f"""(SELECT Q.person_id, Q.event_id, Q.start_date, Q.end_date, Q.visit_occurrence_id, OP.observation_period_start_date as op_start_date, OP.observation_period_end_date as op_end_date
+            event_table = f"""(SELECT Q.person_id, Q.event_id, Q.start_date, Q.end_date, Q.visit_occurrence_id,
+       OP.observation_period_start_date as op_start_date,
+       OP.observation_period_end_date as op_end_date
 FROM (
 {clean_event_table}
 ) Q
@@ -1526,7 +1565,11 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
         )
 
         # Occurrence criteria
-        occurrence_criteria = f"HAVING COUNT({'DISTINCT ' if corelated_criteria.occurrence.is_distinct else ''}{count_column_expression}) {self.get_occurrence_operator(corelated_criteria.occurrence.type)} {corelated_criteria.occurrence.count}"
+        occurrence_criteria = (
+            f"HAVING COUNT({'DISTINCT ' if corelated_criteria.occurrence.is_distinct else ''}"
+            f"{count_column_expression}) {self.get_occurrence_operator(corelated_criteria.occurrence.type)} "
+            f"{corelated_criteria.occurrence.count}"
+        )
 
         query = query.replace("@occurrenceCriteria", occurrence_criteria)
 

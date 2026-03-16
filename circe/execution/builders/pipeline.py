@@ -7,23 +7,6 @@ import polars as pl
 
 from ...cohortdefinition import CohortExpression
 from ..build_context import BuildContext
-from . import (
-    condition_era,
-    condition_occurrence,
-    death,
-    device_exposure,
-    dose_era,
-    drug_era,
-    drug_exposure,
-    measurement,
-    observation,
-    observation_period,
-    payer_plan_period,
-    procedure_occurrence,
-    specimen,
-    visit_detail,
-    visit_occurrence,
-)
 from .common import (
     apply_end_strategy,
     apply_observation_window,

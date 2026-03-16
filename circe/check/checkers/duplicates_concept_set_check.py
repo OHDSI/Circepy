@@ -8,6 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+import contextlib
 from typing import TYPE_CHECKING
 
 from ..warning_severity import WarningSeverity
@@ -17,15 +18,10 @@ from .warning_reporter import WarningReporter
 
 if TYPE_CHECKING:
     from ...cohortdefinition.cohort import CohortExpression
-    from ...vocabulary.concept import ConceptSet
 else:
     # Import at runtime to avoid circular dependencies
-    try:
+    with contextlib.suppress(ImportError):
         from ...cohortdefinition.cohort import CohortExpression
-        from ...vocabulary.concept import ConceptSet
-    except ImportError:
-        pass
-
 
 class DuplicatesConceptSetCheck(BaseCheck):
     """Check for duplicate concept sets.
