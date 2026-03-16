@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, Sequence, cast
+from collections.abc import Sequence
+from typing import Any, Callable, cast
 
 import ibis
 import ibis.expr.types as ir
@@ -97,7 +98,7 @@ def project_event_columns(
 def apply_codeset_filter(
     table: ir.Table,
     concept_column: str,
-    codeset_id: Optional[int],
+    codeset_id: int | None,
     ctx: BuildContext,
 ) -> ir.Table:
     if codeset_id is None:
@@ -114,7 +115,7 @@ def apply_codeset_filter(
 def apply_concept_set_selection(
     table: ir.Table,
     column: str,
-    selection: Optional[ConceptSetSelection],
+    selection: ConceptSetSelection | None,
     ctx: BuildContext,
 ) -> ir.Table:
     if selection is None or selection.codeset_id is None:
@@ -132,7 +133,7 @@ def apply_concept_set_selection(
 
 def coerce_concept_set_selection(
     value: object | None,
-) -> Optional[ConceptSetSelection]:
+) -> ConceptSetSelection | None:
     if value is None:
         return None
     if isinstance(value, ConceptSetSelection):
@@ -150,7 +151,7 @@ def apply_concept_criteria(
     *,
     column: str,
     concepts: Sequence[Concept] | None,
-    selection: Optional[ConceptSetSelection],
+    selection: ConceptSetSelection | None,
     ctx: BuildContext,
     exclude: bool = False,
 ) -> ir.Table:
@@ -159,7 +160,7 @@ def apply_concept_criteria(
 
 
 def apply_date_range(
-    table: ir.Table, column: str, date_range: Optional[DateRange]
+    table: ir.Table, column: str, date_range: DateRange | None
 ) -> ir.Table:
     if not date_range:
         return table
@@ -178,7 +179,7 @@ def apply_date_range(
 
 
 def apply_numeric_range(
-    table: ir.Table, column, numeric_range: Optional[NumericRange]
+    table: ir.Table, column, numeric_range: NumericRange | None
 ) -> ir.Table:
     if not numeric_range or numeric_range.value is None:
         return table
@@ -199,7 +200,7 @@ def apply_numeric_range(
 
 
 def apply_text_filter(
-    table: ir.Table, column: str, text_filter: Optional[TextFilter]
+    table: ir.Table, column: str, text_filter: TextFilter | None
 ) -> ir.Table:
     if not text_filter or not text_filter.text:
         return table
@@ -221,7 +222,7 @@ def apply_interval_range(
     table: ir.Table,
     start_column: str,
     end_column: str,
-    interval_range: Optional[NumericRange],
+    interval_range: NumericRange | None,
 ) -> ir.Table:
     if not interval_range or interval_range.value is None:
         return table
@@ -296,7 +297,7 @@ def apply_concept_filters(
 
 def apply_age_filter(
     table: ir.Table,
-    age_range: Optional[NumericRange],
+    age_range: NumericRange | None,
     ctx: BuildContext,
     start_column: str,
 ) -> ir.Table:
@@ -316,7 +317,7 @@ def apply_age_filter(
 def apply_gender_filter(
     table: ir.Table,
     genders: list[Concept] | None,
-    gender_selection: Optional[ConceptSetSelection],
+    gender_selection: ConceptSetSelection | None,
     ctx: BuildContext,
 ) -> ir.Table:
     return _apply_person_concept_filter(
@@ -331,7 +332,7 @@ def apply_gender_filter(
 def apply_race_filter(
     table: ir.Table,
     races: list[Concept] | None,
-    race_selection: Optional[ConceptSetSelection],
+    race_selection: ConceptSetSelection | None,
     ctx: BuildContext,
 ) -> ir.Table:
     return _apply_person_concept_filter(
@@ -346,7 +347,7 @@ def apply_race_filter(
 def apply_ethnicity_filter(
     table: ir.Table,
     ethnicities: list[Concept] | None,
-    ethnicity_selection: Optional[ConceptSetSelection],
+    ethnicity_selection: ConceptSetSelection | None,
     ctx: BuildContext,
 ) -> ir.Table:
     return _apply_person_concept_filter(
@@ -363,7 +364,7 @@ def _apply_person_concept_filter(
     *,
     person_column: str,
     concepts: Sequence[Concept] | None,
-    selection: Optional[ConceptSetSelection],
+    selection: ConceptSetSelection | None,
     ctx: BuildContext,
 ) -> ir.Table:
     if not concepts and not selection:
@@ -429,7 +430,7 @@ def apply_first_event(table: ir.Table, start_column: str, primary_key: str) -> i
 def apply_visit_concept_filters(
     table: ir.Table,
     visit_types: list[Concept] | None,
-    visit_selection: Optional[ConceptSetSelection],
+    visit_selection: ConceptSetSelection | None,
     ctx: BuildContext,
 ) -> ir.Table:
     return apply_concept_criteria(
@@ -444,7 +445,7 @@ def apply_visit_concept_filters(
 def apply_provider_specialty_filter(
     table: ir.Table,
     provider_specialties: list[Concept] | None,
-    provider_specialty_selection: Optional[ConceptSetSelection],
+    provider_specialty_selection: ConceptSetSelection | None,
     ctx: BuildContext,
     provider_column: str = "provider_id",
 ) -> ir.Table:
@@ -464,7 +465,7 @@ def apply_provider_specialty_filter(
 
 def apply_care_site_filter(
     table: ir.Table,
-    place_of_service_selection: Optional[ConceptSetSelection],
+    place_of_service_selection: ConceptSetSelection | None,
     ctx: BuildContext,
     care_site_column: str = "care_site_id",
 ) -> ir.Table:
@@ -482,7 +483,7 @@ def apply_location_region_filter(
     table: ir.Table,
     *,
     care_site_column: str,
-    location_codeset_id: Optional[int],
+    location_codeset_id: int | None,
     start_column: str,
     end_column: str,
     ctx: BuildContext,
@@ -585,7 +586,7 @@ def _project_columns(table: ir.Table, column_names: Sequence[str]) -> ir.Table:
 
 def apply_end_strategy(
     events: ir.Table,
-    strategy: Optional[EndStrategy | DateOffsetStrategy | CustomEraStrategy],
+    strategy: EndStrategy | DateOffsetStrategy | CustomEraStrategy | None,
     ctx: BuildContext,
 ) -> ir.Table:
     date_offset, custom_era = _resolve_end_strategy_parts(strategy)
@@ -618,15 +619,15 @@ def apply_end_strategy(
 
 
 def has_end_strategy(
-    strategy: Optional[EndStrategy | DateOffsetStrategy | CustomEraStrategy],
+    strategy: EndStrategy | DateOffsetStrategy | CustomEraStrategy | None,
 ) -> bool:
     date_offset, custom_era = _resolve_end_strategy_parts(strategy)
     return bool(date_offset or custom_era)
 
 
 def _resolve_end_strategy_parts(
-    strategy: Optional[EndStrategy | DateOffsetStrategy | CustomEraStrategy],
-) -> tuple[Optional[DateOffsetStrategy], Optional[CustomEraStrategy]]:
+    strategy: EndStrategy | DateOffsetStrategy | CustomEraStrategy | None,
+) -> tuple[DateOffsetStrategy | None, CustomEraStrategy | None]:
     if strategy is None:
         return None, None
 

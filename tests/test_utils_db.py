@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any
 
 import duckdb
 import pytest
@@ -60,7 +60,7 @@ class DuckDBTestHelper:
         # Simple translation pipeline
         try:
             # Parse as T-SQL
-            expression = sqlglot.parse(sql, read="tsql")
+            sqlglot.parse(sql, read="tsql")
 
             # Additional transformations if needed for DuckDB specific quirks
             # (e.g. date math, string formatting)
@@ -91,7 +91,7 @@ class DuckDBTestHelper:
 
         return self.con.execute(translated)
 
-    def query(self, sql: str) -> List[Any]:
+    def query(self, sql: str) -> list[Any]:
         """Execute and return results."""
         return self.execute_query(sql).fetchall()
 

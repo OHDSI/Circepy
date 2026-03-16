@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Set
+from typing import Optional
 
 from ..criteria import Death
 from .base import CriteriaSqlBuilder
@@ -42,7 +42,7 @@ FROM
 -- End Death Criteria
 """
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for death criteria."""
         return {
             CriteriaColumn.START_DATE,
@@ -75,7 +75,7 @@ FROM
         )
 
     def embed_ordinal_expression(
-        self, query: str, criteria: Death, where_clauses: List[str]
+        self, query: str, criteria: Death, where_clauses: list[str]
     ) -> str:
         """Embed ordinal expression in query.
 
@@ -87,7 +87,7 @@ FROM
 
     def resolve_select_clauses(
         self, criteria: Death, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve select clauses for death criteria."""
         select_cols = ["d.person_id", "d.cause_concept_id"]
 
@@ -116,7 +116,7 @@ FROM
 
     def resolve_join_clauses(
         self, criteria: Death, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve join clauses for death criteria."""
         joins = []
 
@@ -134,7 +134,7 @@ FROM
 
     def resolve_where_clauses(
         self, criteria: Death, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve where clauses for death criteria."""
         where_clauses = super().resolve_where_clauses(criteria)
 

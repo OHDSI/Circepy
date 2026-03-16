@@ -106,8 +106,8 @@ def cohort_view(filename):
         )
         result["error"] = combined_error
 
-    ref_sql = ref_result["sql"]
-    ref_md = ref_result["markdown"]
+    ref_result["sql"]
+    ref_result["markdown"]
 
     # Check overrides
     is_user_ok = False

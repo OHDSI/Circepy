@@ -9,7 +9,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from ...vocabulary.concept import Concept
 from ..core import DateAdjustment, DateRange, NumericRange
@@ -23,7 +23,7 @@ class BuilderOptions:
     """
 
     def __init__(self):
-        self.additional_columns: List[CriteriaColumn] = []
+        self.additional_columns: list[CriteriaColumn] = []
 
 
 class BuilderUtils:
@@ -115,7 +115,7 @@ class BuilderUtils:
         )
 
     @staticmethod
-    def get_concept_ids_from_concepts(concepts: List[Concept]) -> List[int]:
+    def get_concept_ids_from_concepts(concepts: list[Concept]) -> list[int]:
         """Get concept IDs from concept list.
 
         Java equivalent: BuilderUtils.getConceptIdsFromConcepts()
@@ -248,7 +248,7 @@ class BuilderUtils:
 
     @staticmethod
     def split_in_clause(
-        column_name: str, values: List[int], max_length: int = 1000
+        column_name: str, values: list[int], max_length: int = 1000
     ) -> str:
         """Split IN clause for large value lists.
 

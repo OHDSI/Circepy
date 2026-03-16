@@ -8,8 +8,9 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+import contextlib
 import json
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pydantic import (
     AliasChoices,
@@ -36,10 +37,8 @@ if TYPE_CHECKING:
     from .criteria import InclusionRule
 else:
     # Import at runtime to avoid circular dependencies
-    try:
+    with contextlib.suppress(ImportError):
         from ..check.warning import Warning
-    except ImportError:
-        pass
     # Import ConceptSet at runtime to avoid circular dependencies
     try:
         from ..vocabulary.concept import ConceptSet
@@ -58,7 +57,7 @@ class CohortExpression(CirceBaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.CohortExpression
     """
 
-    concept_sets: List[ConceptSet] = Field(
+    concept_sets: list[ConceptSet] = Field(
         default_factory=list,
         validation_alias=AliasChoices("ConceptSets", "conceptSets"),
         serialization_alias="ConceptSets",
@@ -101,7 +100,7 @@ class CohortExpression(CirceBaseModel):
         validation_alias=AliasChoices("Title", "title"),
         serialization_alias="Title",
     )
-    inclusion_rules: List[InclusionRule] = Field(
+    inclusion_rules: list[InclusionRule] = Field(
         default_factory=list,
         validation_alias=AliasChoices("InclusionRules", "inclusionRules"),
         serialization_alias="InclusionRules",
@@ -111,7 +110,7 @@ class CohortExpression(CirceBaseModel):
         validation_alias=AliasChoices("CensorWindow", "censorWindow"),
         serialization_alias="CensorWindow",
     )
-    censoring_criteria: List[CriteriaType] = Field(
+    censoring_criteria: list[CriteriaType] = Field(
         default_factory=list,
         validation_alias=AliasChoices(
             "CensoringCriteria", "censoring_criteria", "censoringCriteria"
@@ -223,7 +222,7 @@ class CohortExpression(CirceBaseModel):
             # JSON format: {"ConditionOccurrence": {...}} - unwrap and deserialize
             criteria_type = None
             criteria_data = None
-            for key in item.keys():
+            for key in item:
                 if key in criteria_class_map:
                     criteria_type = key
                     criteria_data = item[key]
@@ -340,13 +339,13 @@ class CohortExpression(CirceBaseModel):
 
         return True
 
-    def get_concept_set_ids(self) -> List[int]:
+    def get_concept_set_ids(self) -> list[int]:
         """Get all concept set IDs used in this expression."""
         if not self.concept_sets:
             return []
         return [cs.id for cs in self.concept_sets if cs.id is not None]
 
-    def check(self) -> List["Warning"]:
+    def check(self) -> list["Warning"]:
         """Run validation checks on this cohort expression.
 
         This method runs all validation checks defined in the check module
@@ -498,11 +497,7 @@ class CohortExpression(CirceBaseModel):
         if not self.inclusion_rules:
             return False
 
-        for rule in self.inclusion_rules:
-            if getattr(rule, "name", None) == name:
-                return True
-
-        return False
+        return any(getattr(rule, "name", None) == name for rule in self.inclusion_rules)
 
     def has_censoring_criteria(self) -> bool:
         """Check if cohort has censoring criteria.
@@ -512,7 +507,7 @@ class CohortExpression(CirceBaseModel):
         """
         return bool(self.censoring_criteria and len(self.censoring_criteria) > 0)
 
-    def get_censoring_criteria_types(self) -> List[str]:
+    def get_censoring_criteria_types(self) -> list[str]:
         """Get list of censoring criteria class names.
 
         Returns:
@@ -560,7 +555,7 @@ class CohortExpression(CirceBaseModel):
         else:
             return class_name
 
-    def get_primary_criteria_types(self) -> List[str]:
+    def get_primary_criteria_types(self) -> list[str]:
         """Get list of primary criteria class names.
 
         Returns:

@@ -14,7 +14,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import jinja2
 
@@ -34,7 +34,7 @@ class MarkdownRender:
 
     def __init__(
         self,
-        concept_sets: Optional[List[ConceptSet]] = None,
+        concept_sets: Optional[list[ConceptSet]] = None,
         include_concept_sets: bool = False,
     ):
         """Initialize the markdown renderer.
@@ -112,7 +112,7 @@ class MarkdownRender:
         )
 
     def render_concept_set_list(
-        self, concept_sets: Union[List[ConceptSet], str]
+        self, concept_sets: Union[list[ConceptSet], str]
     ) -> str:
         """Render a list of concept sets to markdown format.
 

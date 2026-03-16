@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from ..operations.operations import Operations
 from ..warning_severity import WarningSeverity
@@ -60,7 +60,7 @@ class DrugDomainCheck(BaseCheck):
         ):
             return
 
-        concept_sets: List[ConceptSet] = []
+        concept_sets: list[ConceptSet] = []
 
         # Map criteria to codeset IDs
         codeset_ids = [

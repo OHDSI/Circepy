@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Set
+from typing import Optional
 
 from ..criteria import VisitDetail
 from .base import CriteriaSqlBuilder
@@ -61,7 +61,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
         @additionalColumns
         """
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for visit detail criteria."""
         return self.DEFAULT_COLUMNS
 
@@ -89,7 +89,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
         return query.replace("@codesetClause", codeset_clause)
 
     def embed_ordinal_expression(
-        self, query: str, criteria: VisitDetail, where_clauses: List[str]
+        self, query: str, criteria: VisitDetail, where_clauses: list[str]
     ) -> str:
         """Embed ordinal expression in query."""
         # first
@@ -105,7 +105,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
 
     def resolve_select_clauses(
         self, criteria: VisitDetail, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve select clauses for visit detail criteria."""
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
 
@@ -152,7 +152,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
 
     def resolve_join_clauses(
         self, criteria: VisitDetail, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve join clauses for visit detail criteria."""
         join_clauses = []
 
@@ -187,7 +187,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
 
     def resolve_where_clauses(
         self, criteria: VisitDetail, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve where clauses for visit detail criteria."""
         where_clauses = []
 
@@ -261,7 +261,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
 
         return where_clauses
 
-    def get_additional_columns(self, columns: List[CriteriaColumn]) -> str:
+    def get_additional_columns(self, columns: list[CriteriaColumn]) -> str:
         """Get additional columns string with proper aliases.
 
         Java equivalent: VisitDetailSqlBuilder.getAdditionalColumns()
@@ -274,7 +274,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
         )
 
     def add_filtering_by_care_site_location_region(
-        self, join_clauses: List[str], codeset_id: int
+        self, join_clauses: list[str], codeset_id: int
     ):
         """Add filtering by care site location region."""
         join_clauses.append(
@@ -287,7 +287,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
 
     def add_where_clause(
         self,
-        where_clauses: List[str],
+        where_clauses: list[str],
         concept_set_selection,
         concept_column: str,
         exclude: Optional[bool] = None,
@@ -303,7 +303,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
             where_clauses.append(codeset_clause)
 
     def add_filtering(
-        self, join_clauses: List[str], codeset_id: int, standard_concept_column: str
+        self, join_clauses: list[str], codeset_id: int, standard_concept_column: str
     ):
         """Add filtering join clause."""
         join_clauses.append(

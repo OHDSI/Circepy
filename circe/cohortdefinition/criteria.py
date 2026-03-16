@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from enum import Enum
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 from pydantic import (
     AliasChoices,
@@ -185,7 +185,7 @@ class DemographicCriteria(CirceBaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.DemographicCriteria
     """
 
-    gender: Optional[List[Concept]] = Field(
+    gender: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("Gender", "gender"),
         serialization_alias="Gender",
@@ -200,7 +200,7 @@ class DemographicCriteria(CirceBaseModel):
         validation_alias=AliasChoices("GenderCS", "genderCS"),
         serialization_alias="GenderCS",
     )
-    race: Optional[List[Concept]] = Field(
+    race: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("Race", "race"),
         serialization_alias="Race",
@@ -220,7 +220,7 @@ class DemographicCriteria(CirceBaseModel):
         validation_alias=AliasChoices("RaceCS", "raceCS"),
         serialization_alias="RaceCS",
     )
-    ethnicity: Optional[List[Concept]] = Field(
+    ethnicity: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("Ethnicity", "ethnicity"),
         serialization_alias="Ethnicity",
@@ -322,7 +322,7 @@ class ConditionOccurrence(Criteria):
         validation_alias=AliasChoices("OccurrenceEndDate", "occurrenceEndDate"),
         serialization_alias="OccurrenceEndDate",
     )
-    condition_type: Optional[List[Concept]] = Field(
+    condition_type: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("ConditionType", "conditionType"),
         serialization_alias="ConditionType",
@@ -354,13 +354,13 @@ class ConditionOccurrence(Criteria):
         validation_alias=AliasChoices("Age", "age"),
         serialization_alias="Age",
     )
-    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
+    gender: Optional[list[Concept]] = Field(default=None, serialization_alias="gender")
     gender_cs: Optional[ConceptSetSelection] = Field(
         default=None,
         validation_alias=AliasChoices("GenderCS", "genderCS"),
         serialization_alias="GenderCS",
     )
-    provider_specialty: Optional[List[Concept]] = Field(
+    provider_specialty: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("ProviderSpecialty", "providerSpecialty"),
         serialization_alias="ProviderSpecialty",
@@ -370,7 +370,7 @@ class ConditionOccurrence(Criteria):
         validation_alias=AliasChoices("ProviderSpecialtyCS", "providerSpecialtyCS"),
         serialization_alias="ProviderSpecialtyCS",
     )
-    visit_type: Optional[List[Concept]] = Field(
+    visit_type: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("VisitType", "visitType"),
         serialization_alias="VisitType",
@@ -380,7 +380,7 @@ class ConditionOccurrence(Criteria):
         validation_alias=AliasChoices("VisitTypeCS", "visitTypeCS"),
         serialization_alias="VisitTypeCS",
     )
-    condition_status: Optional[List[Concept]] = Field(
+    condition_status: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("ConditionStatus", "conditionStatus"),
         serialization_alias="ConditionStatus",
@@ -405,7 +405,7 @@ class DrugExposure(Criteria):
     Java equivalent: org.ohdsi.circe.cohortdefinition.DrugExposure
     """
 
-    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
+    gender: Optional[list[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(
         default=None,
         validation_alias=AliasChoices("OccurrenceEndDate", "occurrenceEndDate"),
@@ -426,7 +426,7 @@ class DrugExposure(Criteria):
         validation_alias=AliasChoices("GenderCS", "genderCS"),
         serialization_alias="GenderCS",
     )
-    drug_type: Optional[List[Concept]] = Field(
+    drug_type: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("DrugType", "drugType"),
         serialization_alias="DrugType",
@@ -451,12 +451,12 @@ class DrugExposure(Criteria):
         validation_alias=AliasChoices("VisitTypeCS", "visitTypeCS"),
         serialization_alias="VisitTypeCS",
     )
-    visit_type: Optional[List[Concept]] = Field(
+    visit_type: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("VisitType", "visitType"),
         serialization_alias="VisitType",
     )
-    route_concept: Optional[List[Concept]] = Field(
+    route_concept: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("RouteConcept", "routeConcept"),
         serialization_alias="RouteConcept",
@@ -476,7 +476,7 @@ class DrugExposure(Criteria):
         validation_alias=AliasChoices("First", "first"),
         serialization_alias="First",
     )
-    provider_specialty: Optional[List[Concept]] = Field(
+    provider_specialty: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("ProviderSpecialty", "providerSpecialty"),
         serialization_alias="ProviderSpecialty",
@@ -487,7 +487,7 @@ class DrugExposure(Criteria):
         validation_alias=AliasChoices("OccurrenceStartDate", "occurrenceStartDate"),
         serialization_alias="OccurrenceStartDate",
     )
-    dose_unit: Optional[List[Concept]] = Field(
+    dose_unit: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("DoseUnit", "doseUnit"),
         serialization_alias="DoseUnit",
@@ -532,7 +532,7 @@ class ProcedureOccurrence(Criteria):
     Java equivalent: org.ohdsi.circe.cohortdefinition.ProcedureOccurrence
     """
 
-    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
+    gender: Optional[list[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(
         default=None, alias="OccurrenceEndDate"
     )
@@ -540,7 +540,7 @@ class ProcedureOccurrence(Criteria):
         default=None, alias="ProcedureSourceConcept"
     )
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
-    procedure_type: Optional[List[Concept]] = Field(default=None, alias="ProcedureType")
+    procedure_type: Optional[list[Concept]] = Field(default=None, alias="ProcedureType")
     procedure_type_cs: Optional[ConceptSetSelection] = Field(
         default=None, alias="ProcedureTypeCS"
     )
@@ -551,8 +551,8 @@ class ProcedureOccurrence(Criteria):
     visit_type_cs: Optional[ConceptSetSelection] = Field(
         default=None, alias="VisitTypeCS"
     )
-    visit_type: Optional[List[Concept]] = Field(default=None, alias="VisitType")
-    modifier: Optional[List[Concept]] = Field(default=None, alias="Modifier")
+    visit_type: Optional[list[Concept]] = Field(default=None, alias="VisitType")
+    modifier: Optional[list[Concept]] = Field(default=None, alias="Modifier")
     modifier_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ModifierCS")
     codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
     first: Optional[bool] = Field(
@@ -560,7 +560,7 @@ class ProcedureOccurrence(Criteria):
         validation_alias=AliasChoices("First", "first"),
         serialization_alias="First",
     )
-    provider_specialty: Optional[List[Concept]] = Field(
+    provider_specialty: Optional[list[Concept]] = Field(
         default=None, alias="ProviderSpecialty"
     )
     age: Optional[NumericRange] = None
@@ -580,12 +580,12 @@ class VisitOccurrence(Criteria):
 
     codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
     first: Optional[bool] = Field(default=None, alias="First")
-    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
+    gender: Optional[list[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(
         default=None, alias="OccurrenceEndDate"
     )
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
-    visit_type: Optional[List[Concept]] = Field(default=None, alias="VisitType")
+    visit_type: Optional[list[Concept]] = Field(default=None, alias="VisitType")
     visit_type_cs: Optional[ConceptSetSelection] = Field(
         default=None, alias="VisitTypeCS"
     )
@@ -597,10 +597,10 @@ class VisitOccurrence(Criteria):
     provider_specialty_cs: Optional[ConceptSetSelection] = Field(
         default=None, alias="ProviderSpecialtyCS"
     )
-    provider_specialty: Optional[List[Concept]] = Field(
+    provider_specialty: Optional[list[Concept]] = Field(
         default=None, alias="ProviderSpecialty"
     )
-    place_of_service: Optional[List[Concept]] = Field(
+    place_of_service: Optional[list[Concept]] = Field(
         default=None, alias="PlaceOfService"
     )
     place_of_service_cs: Optional[ConceptSetSelection] = Field(
@@ -623,7 +623,7 @@ class Observation(Criteria):
     Java equivalent: org.ohdsi.circe.cohortdefinition.Observation
     """
 
-    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
+    gender: Optional[list[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(
         default=None,
         validation_alias=AliasChoices("OccurrenceEndDate", "occurrenceEndDate"),
@@ -641,7 +641,7 @@ class Observation(Criteria):
         validation_alias=AliasChoices("GenderCS", "genderCS"),
         serialization_alias="GenderCS",
     )
-    observation_type: Optional[List[Concept]] = Field(
+    observation_type: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("ObservationType", "observationType"),
         serialization_alias="ObservationType",
@@ -668,7 +668,7 @@ class Observation(Criteria):
         validation_alias=AliasChoices("VisitTypeCS", "visitTypeCS"),
         serialization_alias="VisitTypeCS",
     )
-    visit_type: Optional[List[Concept]] = Field(
+    visit_type: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("VisitType", "visitType"),
         serialization_alias="VisitType",
@@ -678,7 +678,7 @@ class Observation(Criteria):
         validation_alias=AliasChoices("ValueAsNumber", "valueAsNumber"),
         serialization_alias="ValueAsNumber",
     )
-    unit: Optional[List[Concept]] = Field(
+    unit: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("Unit", "unit"),
         serialization_alias="Unit",
@@ -688,7 +688,7 @@ class Observation(Criteria):
         validation_alias=AliasChoices("UnitCS", "unitCS"),
         serialization_alias="UnitCS",
     )
-    value_as_concept: Optional[List[Concept]] = Field(
+    value_as_concept: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("ValueAsConcept", "valueAsConcept"),
         serialization_alias="ValueAsConcept",
@@ -698,7 +698,7 @@ class Observation(Criteria):
         validation_alias=AliasChoices("ValueAsConceptCS", "valueAsConceptCS"),
         serialization_alias="ValueAsConceptCS",
     )
-    qualifier: Optional[List[Concept]] = Field(
+    qualifier: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("Qualifier", "qualifier"),
         serialization_alias="Qualifier",
@@ -723,7 +723,7 @@ class Observation(Criteria):
         validation_alias=AliasChoices("First", "first"),
         serialization_alias="First",
     )
-    provider_specialty: Optional[List[Concept]] = Field(
+    provider_specialty: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("ProviderSpecialty", "providerSpecialty"),
         serialization_alias="ProviderSpecialty",
@@ -744,7 +744,7 @@ class Measurement(Criteria):
     Java equivalent: org.ohdsi.circe.cohortdefinition.Measurement
     """
 
-    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
+    gender: Optional[list[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(
         default=None, alias="OccurrenceEndDate"
     )
@@ -752,7 +752,7 @@ class Measurement(Criteria):
         default=None, alias="MeasurementSourceConcept"
     )
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
-    measurement_type: Optional[List[Concept]] = Field(
+    measurement_type: Optional[list[Concept]] = Field(
         default=None, alias="MeasurementType"
     )
     measurement_type_cs: Optional[ConceptSetSelection] = Field(
@@ -765,11 +765,11 @@ class Measurement(Criteria):
         ),
         serialization_alias="MeasurementTypeExclude",
     )
-    operator: Optional[List[Concept]] = None
+    operator: Optional[list[Concept]] = None
     operator_cs: Optional[ConceptSetSelection] = Field(default=None, alias="OperatorCS")
     value_as_number: Optional[NumericRange] = Field(default=None, alias="ValueAsNumber")
     value_as_string: Optional[TextFilter] = Field(default=None, alias="ValueAsString")
-    unit: Optional[List[Concept]] = Field(default=None, alias="Unit")
+    unit: Optional[list[Concept]] = Field(default=None, alias="Unit")
     unit_cs: Optional[ConceptSetSelection] = Field(default=None, alias="UnitCS")
     range_low: Optional[NumericRange] = Field(default=None, alias="RangeLow")
     range_high: Optional[NumericRange] = Field(default=None, alias="RangeHigh")
@@ -779,13 +779,13 @@ class Measurement(Criteria):
     visit_type_cs: Optional[ConceptSetSelection] = Field(
         default=None, alias="VisitTypeCS"
     )
-    visit_type: Optional[List[Concept]] = Field(default=None, alias="VisitType")
+    visit_type: Optional[list[Concept]] = Field(default=None, alias="VisitType")
     codeset_id: Optional[int] = Field(
         default=None,
         validation_alias=AliasChoices("CodesetId", "codesetId"),
         serialization_alias="CodesetId",
     )
-    value_as_concept: Optional[List[Concept]] = Field(
+    value_as_concept: Optional[list[Concept]] = Field(
         default=None,
         validation_alias=AliasChoices("ValueAsConcept", "valueAsConcept"),
         serialization_alias="ValueAsConcept",
@@ -810,22 +810,22 @@ class Measurement(Criteria):
         validation_alias=AliasChoices("RangeHighRatio", "rangeHighRatio"),
         serialization_alias="RangeHighRatio",
     )
-    provider_specialty: Optional[List[Concept]] = Field(
+    provider_specialty: Optional[list[Concept]] = Field(
         default=None, alias="ProviderSpecialty"
     )
     age: Optional[NumericRange] = None
     occurrence_start_date: Optional[DateRange] = Field(
         default=None, alias="OccurrenceStartDate"
     )
-    visits: Optional[List[Concept]] = None  # Placeholder if needed, but not in list
-    visit_type: Optional[List[Concept]] = Field(default=None, alias="VisitType")
+    visits: Optional[list[Concept]] = None  # Placeholder if needed, but not in list
+    visit_type: Optional[list[Concept]] = Field(default=None, alias="VisitType")
 
     first: Optional[bool] = Field(
         default=None,
         validation_alias=AliasChoices("First", "first"),
         serialization_alias="First",
     )
-    provider_specialty: Optional[List[Concept]] = Field(
+    provider_specialty: Optional[list[Concept]] = Field(
         default=None, alias="ProviderSpecialty"
     )
     age: Optional[NumericRange] = None
@@ -842,7 +842,7 @@ class DeviceExposure(Criteria):
     Java equivalent: org.ohdsi.circe.cohortdefinition.DeviceExposure
     """
 
-    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
+    gender: Optional[list[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(
         default=None, alias="OccurrenceEndDate"
     )
@@ -850,7 +850,7 @@ class DeviceExposure(Criteria):
         default=None, alias="DeviceSourceConcept"
     )
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
-    device_type: Optional[List[Concept]] = Field(default=None, alias="DeviceType")
+    device_type: Optional[list[Concept]] = Field(default=None, alias="DeviceType")
     device_type_cs: Optional[ConceptSetSelection] = Field(
         default=None, alias="DeviceTypeCS"
     )
@@ -863,14 +863,14 @@ class DeviceExposure(Criteria):
     visit_type_cs: Optional[ConceptSetSelection] = Field(
         default=None, alias="VisitTypeCS"
     )
-    visit_type: Optional[List[Concept]] = Field(default=None, alias="VisitType")
+    visit_type: Optional[list[Concept]] = Field(default=None, alias="VisitType")
     codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
     first: Optional[bool] = Field(
         default=None,
         validation_alias=AliasChoices("First", "first"),
         serialization_alias="First",
     )
-    provider_specialty: Optional[List[Concept]] = Field(
+    provider_specialty: Optional[list[Concept]] = Field(
         default=None, alias="ProviderSpecialty"
     )
     age: Optional[NumericRange] = Field(default=None, alias="Age")
@@ -887,7 +887,7 @@ class Specimen(Criteria):
     Java equivalent: org.ohdsi.circe.cohortdefinition.Specimen
     """
 
-    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
+    gender: Optional[list[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(
         default=None, alias="OccurrenceEndDate"
     )
@@ -896,18 +896,18 @@ class Specimen(Criteria):
     )
     source_id: Optional[TextFilter] = Field(default=None, alias="SourceId")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
-    specimen_type: Optional[List[Concept]] = Field(default=None, alias="SpecimenType")
+    specimen_type: Optional[list[Concept]] = Field(default=None, alias="SpecimenType")
     specimen_type_cs: Optional[ConceptSetSelection] = Field(
         default=None, alias="SpecimenTypeCS"
     )
     specimen_type_exclude: bool = Field(default=False, alias="SpecimenTypeExclude")
-    unit: Optional[List[Concept]] = None
+    unit: Optional[list[Concept]] = None
     unit_cs: Optional[ConceptSetSelection] = Field(default=None, alias="UnitCS")
-    anatomic_site: Optional[List[Concept]] = Field(default=None, alias="AnatomicSite")
+    anatomic_site: Optional[list[Concept]] = Field(default=None, alias="AnatomicSite")
     anatomic_site_cs: Optional[ConceptSetSelection] = Field(
         default=None, alias="AnatomicSiteCS"
     )
-    disease_status: Optional[List[Concept]] = Field(default=None, alias="DiseaseStatus")
+    disease_status: Optional[list[Concept]] = Field(default=None, alias="DiseaseStatus")
     disease_status_cs: Optional[ConceptSetSelection] = Field(
         default=None, alias="DiseaseStatusCS"
     )
@@ -932,7 +932,7 @@ class Death(Criteria):
     Java equivalent: org.ohdsi.circe.cohortdefinition.Death
     """
 
-    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
+    gender: Optional[list[Concept]] = Field(default=None, serialization_alias="gender")
     occurrence_end_date: Optional[DateRange] = Field(
         default=None, alias="OccurrenceEndDate"
     )
@@ -940,7 +940,7 @@ class Death(Criteria):
         default=None, alias="DeathSourceConcept"
     )
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
-    death_type: Optional[List[Concept]] = Field(default=None, alias="DeathType")
+    death_type: Optional[list[Concept]] = Field(default=None, alias="DeathType")
     death_type_cs: Optional[ConceptSetSelection] = Field(
         default=None, alias="DeathTypeCS"
     )
@@ -979,7 +979,7 @@ class VisitDetail(Criteria):
     visit_detail_end_date: Optional[DateRange] = Field(
         default=None, alias="VisitDetailEndDate"
     )
-    visit_detail_type: Optional[List[Concept]] = Field(
+    visit_detail_type: Optional[list[Concept]] = Field(
         default=None, alias="VisitDetailType"
     )
     visit_detail_type_cs: Optional[ConceptSetSelection] = Field(
@@ -995,15 +995,15 @@ class VisitDetail(Criteria):
         default=None, alias="VisitDetailLength"
     )
     age: Optional[NumericRange] = Field(default=None, alias="Age")
-    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
+    gender: Optional[list[Concept]] = Field(default=None, serialization_alias="gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
-    provider_specialty: Optional[List[Concept]] = Field(
+    provider_specialty: Optional[list[Concept]] = Field(
         default=None, alias="ProviderSpecialty"
     )
     provider_specialty_cs: Optional[ConceptSetSelection] = Field(
         default=None, alias="ProviderSpecialtyCS"
     )
-    place_of_service: Optional[List[Concept]] = Field(
+    place_of_service: Optional[list[Concept]] = Field(
         default=None, alias="PlaceOfService"
     )
     place_of_service_cs: Optional[ConceptSetSelection] = Field(
@@ -1012,7 +1012,7 @@ class VisitDetail(Criteria):
     place_of_service_location: Optional[int] = Field(
         default=None, alias="PlaceOfServiceLocation"
     )
-    discharge_to: Optional[List[Concept]] = Field(default=None, alias="DischargeTo")
+    discharge_to: Optional[list[Concept]] = Field(default=None, alias="DischargeTo")
     discharge_to_cs: Optional[ConceptSetSelection] = Field(
         default=None, alias="DischargeToCS"
     )
@@ -1034,7 +1034,7 @@ class ObservationPeriod(Criteria):
     user_defined_period: Optional[Period] = Field(
         default=None, alias="UserDefinedPeriod"
     )
-    period_type: Optional[List[Concept]] = Field(default=None, alias="PeriodType")
+    period_type: Optional[list[Concept]] = Field(default=None, alias="PeriodType")
     period_type_cs: Optional[ConceptSetSelection] = Field(
         default=None, alias="PeriodTypeCS"
     )
@@ -1062,7 +1062,7 @@ class PayerPlanPeriod(Criteria):
     period_length: Optional[NumericRange] = Field(default=None, alias="PeriodLength")
     age_at_start: Optional[NumericRange] = Field(default=None, alias="AgeAtStart")
     age_at_end: Optional[NumericRange] = Field(default=None, alias="AgeAtEnd")
-    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
+    gender: Optional[list[Concept]] = Field(default=None, serialization_alias="gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     payer_concept: Optional[int] = Field(default=None, alias="PayerConcept")
     plan_concept: Optional[int] = Field(default=None, alias="PlanConcept")
@@ -1118,7 +1118,7 @@ class ConditionEra(Criteria):
     era_length: Optional[NumericRange] = Field(default=None, alias="EraLength")
     age_at_start: Optional[NumericRange] = Field(default=None, alias="AgeAtStart")
     age_at_end: Optional[NumericRange] = Field(default=None, alias="AgeAtEnd")
-    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
+    gender: Optional[list[Concept]] = Field(default=None, serialization_alias="gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     date_adjustment: Optional[DateAdjustment] = Field(
         default=None, alias="DateAdjustment"
@@ -1148,7 +1148,7 @@ class DrugEra(Criteria):
     era_length: Optional[NumericRange] = Field(default=None, alias="EraLength")
     age_at_start: Optional[NumericRange] = Field(default=None, alias="AgeAtStart")
     age_at_end: Optional[NumericRange] = Field(default=None, alias="AgeAtEnd")
-    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
+    gender: Optional[list[Concept]] = Field(default=None, serialization_alias="gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     date_adjustment: Optional[DateAdjustment] = Field(
         default=None, alias="DateAdjustment"
@@ -1167,13 +1167,13 @@ class DoseEra(Criteria):
     first: Optional[bool] = Field(default=None, alias="First")
     era_start_date: Optional[DateRange] = Field(default=None, alias="EraStartDate")
     era_end_date: Optional[DateRange] = Field(default=None, alias="EraEndDate")
-    unit: Optional[List[Concept]] = Field(default=None, alias="Unit")
+    unit: Optional[list[Concept]] = Field(default=None, alias="Unit")
     unit_cs: Optional[ConceptSetSelection] = Field(default=None, alias="UnitCS")
     dose_value: Optional[NumericRange] = Field(default=None, alias="DoseValue")
     era_length: Optional[NumericRange] = Field(default=None, alias="EraLength")
     age_at_start: Optional[NumericRange] = Field(default=None, alias="AgeAtStart")
     age_at_end: Optional[NumericRange] = Field(default=None, alias="AgeAtEnd")
-    gender: Optional[List[Concept]] = Field(default=None, serialization_alias="gender")
+    gender: Optional[list[Concept]] = Field(default=None, serialization_alias="gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
 
     model_config = ConfigDict(populate_by_name=True)
@@ -1204,7 +1204,7 @@ class CriteriaGroup(BaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.CriteriaGroup
     """
 
-    criteria_list: List["CorelatedCriteria"] = Field(
+    criteria_list: list["CorelatedCriteria"] = Field(
         default_factory=list,
         validation_alias=AliasChoices("CriteriaList", "criteriaList"),
         serialization_alias="CriteriaList",
@@ -1214,12 +1214,12 @@ class CriteriaGroup(BaseModel):
         validation_alias=AliasChoices("Count", "count"),
         serialization_alias="Count",
     )
-    groups: List["CriteriaGroup"] = Field(
+    groups: list["CriteriaGroup"] = Field(
         default_factory=list,
         validation_alias=AliasChoices("Groups", "groups"),
         serialization_alias="Groups",
     )
-    demographic_criteria_list: List[DemographicCriteria] = Field(
+    demographic_criteria_list: list[DemographicCriteria] = Field(
         default_factory=list,
         validation_alias=AliasChoices(
             "DemographicCriteriaList", "demographicCriteriaList"
@@ -1579,7 +1579,7 @@ class PrimaryCriteria(BaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.PrimaryCriteria
     """
 
-    criteria_list: List[CriteriaType] = Field(
+    criteria_list: list[CriteriaType] = Field(
         default_factory=list,
         validation_alias=AliasChoices("CriteriaList", "criteriaList"),
         serialization_alias="CriteriaList",

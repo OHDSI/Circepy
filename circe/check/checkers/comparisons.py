@@ -259,19 +259,7 @@ class Comparisons:
         )
 
         if (
-            isinstance(c1, ConditionEra)
-            or isinstance(c1, ConditionOccurrence)
-            or isinstance(c1, Death)
-            or isinstance(c1, DeviceExposure)
-            or isinstance(c1, DoseEra)
-            or isinstance(c1, DrugEra)
-            or isinstance(c1, DrugExposure)
-            or isinstance(c1, Measurement)
-            or isinstance(c1, Observation)
-            or isinstance(c1, ProcedureOccurrence)
-            or isinstance(c1, Specimen)
-            or isinstance(c1, VisitOccurrence)
-            or isinstance(c1, VisitDetail)
+            isinstance(c1, (ConditionEra, ConditionOccurrence, Death, DeviceExposure, DoseEra, DrugEra, DrugExposure, Measurement, Observation, ProcedureOccurrence, Specimen, VisitOccurrence, VisitDetail))
         ):
             return c1.codeset_id == c2.codeset_id
 

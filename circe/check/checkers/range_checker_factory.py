@@ -728,7 +728,5 @@ class RangeCheckerFactory(BaseCheckerFactory):
                 Constants.Attributes.CENSOR_WINDOW_ATTR,
             )
         # Handle DemographicCriteria (delegate to base class)
-        elif isinstance(expression_or_criteria, DemographicCriteria) or isinstance(
-            expression_or_criteria, Criteria
-        ):
+        elif isinstance(expression_or_criteria, (DemographicCriteria, Criteria)):
             super().check(expression_or_criteria)

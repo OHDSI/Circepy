@@ -11,7 +11,6 @@ import os
 import sys
 import unittest
 from enum import Enum
-from typing import Set
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
@@ -284,7 +283,7 @@ class TestCriteriaSqlBuilder(unittest.TestCase):
             def get_query_template(self) -> str:
                 return "SELECT * FROM test"
 
-            def get_default_columns(self) -> Set[CriteriaColumn]:
+            def get_default_columns(self) -> set[CriteriaColumn]:
                 return {CriteriaColumn.START_DATE}
 
         builder = TestBuilder()
@@ -648,7 +647,7 @@ class TestBuilderIntegration(unittest.TestCase):
             ProcedureOccurrenceSqlBuilder(),
         ]
 
-        criteria = Criteria()
+        Criteria()
 
         for builder in builders:
             # Test that all builders can handle all criteria columns

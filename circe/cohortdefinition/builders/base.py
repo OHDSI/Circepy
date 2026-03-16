@@ -10,7 +10,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, List, Optional, Set, TypeVar
+from typing import Generic, Optional, TypeVar
 
 from ..criteria import Criteria
 from .utils import BuilderOptions, CriteriaColumn
@@ -92,7 +92,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for this builder.
 
         Java equivalent: CriteriaSqlBuilder.getDefaultColumns()
@@ -109,7 +109,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
 
     def resolve_select_clauses(
         self, criteria: T, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve select clauses for criteria.
 
         Java equivalent: CriteriaSqlBuilder.resolveSelectClauses()
@@ -119,7 +119,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
 
     def resolve_join_clauses(
         self, criteria: T, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve join clauses for criteria.
 
         Java equivalent: CriteriaSqlBuilder.resolveJoinClauses()
@@ -129,7 +129,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
 
     def resolve_where_clauses(
         self, criteria: T, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve where clauses for criteria.
 
         Java equivalent: CriteriaSqlBuilder.resolveWhereClauses()
@@ -138,7 +138,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         return []
 
     def embed_ordinal_expression(
-        self, query: str, criteria: T, where_clauses: List[str]
+        self, query: str, criteria: T, where_clauses: list[str]
     ) -> str:
         """Embed ordinal expression in query.
 
@@ -147,7 +147,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return query.replace("@ordinalExpression", "")
 
-    def embed_select_clauses(self, query: str, select_clauses: List[str]) -> str:
+    def embed_select_clauses(self, query: str, select_clauses: list[str]) -> str:
         """Embed select clauses in query.
 
         Java equivalent: CriteriaSqlBuilder.embedSelectClauses()
@@ -156,7 +156,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         select_clause = ",".join(select_clauses) if select_clauses else ""
         return query.replace("@selectClause", select_clause)
 
-    def embed_join_clauses(self, query: str, join_clauses: List[str]) -> str:
+    def embed_join_clauses(self, query: str, join_clauses: list[str]) -> str:
         """Embed join clauses in query.
 
         Java equivalent: CriteriaSqlBuilder.embedJoinClauses()
@@ -164,7 +164,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         join_clause = " ".join(join_clauses) if join_clauses else ""
         return query.replace("@joinClause", join_clause)
 
-    def embed_where_clauses(self, query: str, where_clauses: List[str]) -> str:
+    def embed_where_clauses(self, query: str, where_clauses: list[str]) -> str:
         """Embed where clauses in query.
 
         Java equivalent: CriteriaSqlBuilder.embedWhereClauses()
@@ -174,7 +174,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
             where_clause = "WHERE " + " AND ".join(where_clauses)
         return query.replace("@whereClause", where_clause)
 
-    def get_additional_columns(self, columns: List[CriteriaColumn]) -> str:
+    def get_additional_columns(self, columns: list[CriteriaColumn]) -> str:
         """Get additional columns string.
 
         Java equivalent: CriteriaSqlBuilder.getAdditionalColumns()

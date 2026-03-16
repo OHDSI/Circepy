@@ -6,7 +6,7 @@ circe.cohort_builder imports and requires a 'cohort' variable output.
 """
 
 import re
-from typing import Any, Dict
+from typing import Any
 
 
 def validate_imports(code: str) -> tuple[bool, str]:
@@ -38,7 +38,7 @@ def validate_imports(code: str) -> tuple[bool, str]:
     return True, ""
 
 
-def execute_cohort_code(code: str) -> Dict[str, Any]:
+def execute_cohort_code(code: str) -> dict[str, Any]:
     """
     Execute Python code with strict cohort builder restrictions.
 

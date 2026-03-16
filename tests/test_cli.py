@@ -25,7 +25,7 @@ TEST_COHORTS = [
 ]
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def run_r_script_cached(cohort_file: Path) -> tuple[str, str]:
     """Run R CirceR script and return SQL and Markdown. Cached to avoid redundant slow R calls."""
     import subprocess

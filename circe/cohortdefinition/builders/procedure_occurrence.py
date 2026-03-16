@@ -9,7 +9,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Set
+from typing import Optional
 
 from ..criteria import Criteria
 from .base import CriteriaSqlBuilder
@@ -56,7 +56,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         "po.quantity",
     ]
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for this builder.
 
         Java equivalent: ProcedureOccurrenceSqlBuilder.getDefaultColumns()
@@ -91,7 +91,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
             return f"C.{column.value}"
 
     def embed_ordinal_expression(
-        self, query: str, criteria: Criteria, where_clauses: List[str]
+        self, query: str, criteria: Criteria, where_clauses: list[str]
     ) -> str:
         """Embed ordinal expression in query.
 
@@ -130,7 +130,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
 
     def resolve_select_clauses(
         self, criteria: Criteria, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve select clauses for criteria.
 
         Java equivalent: ProcedureOccurrenceSqlBuilder.resolveSelectClauses()
@@ -193,7 +193,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
 
     def resolve_join_clauses(
         self, criteria: Criteria, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve join clauses for criteria.
 
         Java equivalent: ProcedureOccurrenceSqlBuilder.resolveJoinClauses()
@@ -243,7 +243,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
 
     def resolve_where_clauses(
         self, criteria: Criteria, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve where clauses for criteria.
 
         Java equivalent: ProcedureOccurrenceSqlBuilder.resolveWhereClauses()

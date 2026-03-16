@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Set
+from typing import Any
 
 
 def to_python_code(obj: Any) -> str:
@@ -7,7 +7,7 @@ def to_python_code(obj: Any) -> str:
     Converts a CohortExpression (or any circe model) into a human-readable Python code string
     that instantiates the object.
     """
-    imports: Set[str] = set()
+    imports: set[str] = set()
 
     def _collect_imports(o: Any):
         if (
@@ -20,7 +20,7 @@ def to_python_code(obj: Any) -> str:
 
         if hasattr(o, "model_dump"):
             # Access model_fields from the class, not the instance
-            for name, field in o.__class__.model_fields.items():
+            for name, _field in o.__class__.model_fields.items():
                 val = getattr(o, name)
                 if val is not None:
                     if isinstance(val, list):
@@ -34,7 +34,6 @@ def to_python_code(obj: Any) -> str:
     # and maybe return imports separately?
     # Let's do the string generation directly.
 
-    lines = []
 
     # We will build a set of required imports as we traverse
     required_classes = set()

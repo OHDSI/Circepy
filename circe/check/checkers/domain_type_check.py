@@ -8,7 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List
 
 from ..operations.operations import Operations
 from ..utils.criteria_name_helper import CriteriaNameHelper
@@ -53,7 +52,7 @@ class DomainTypeCheck(BaseCriteriaCheck):
     def __init__(self):
         """Initialize the domain type check."""
         super().__init__()
-        self._warn_names: List[str] = []
+        self._warn_names: list[str] = []
 
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.

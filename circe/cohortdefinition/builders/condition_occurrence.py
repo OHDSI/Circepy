@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Set
+from typing import Optional
 
 from ..criteria import ConditionOccurrence
 from .base import CriteriaSqlBuilder
@@ -53,7 +53,7 @@ FROM
 -- End Condition Occurrence Criteria
 """
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for condition occurrence criteria."""
         return self.DEFAULT_COLUMNS
 
@@ -86,7 +86,7 @@ FROM
         )
 
     def embed_ordinal_expression(
-        self, query: str, criteria: ConditionOccurrence, where_clauses: List[str]
+        self, query: str, criteria: ConditionOccurrence, where_clauses: list[str]
     ) -> str:
         """Embed ordinal expression in query."""
         # first
@@ -102,7 +102,7 @@ FROM
 
     def resolve_select_clauses(
         self, criteria: ConditionOccurrence, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve select clauses for condition occurrence criteria."""
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
 
@@ -155,7 +155,7 @@ FROM
 
     def resolve_join_clauses(
         self, criteria: ConditionOccurrence, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve join clauses for condition occurrence criteria."""
         join_clauses = []
 
@@ -190,7 +190,7 @@ FROM
 
     def resolve_where_clauses(
         self, criteria: ConditionOccurrence, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve where clauses for condition occurrence criteria."""
         where_clauses = []
 

@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
@@ -100,7 +100,7 @@ class ConceptSetExpression(BaseModel):
     is_excluded: bool = Field(default=False, alias="isExcluded")
     include_mapped: bool = Field(default=False, alias="includeMapped")
     include_descendants: bool = Field(default=False, alias="includeDescendants")
-    items: Optional[List[ConceptSetItem]] = None
+    items: Optional[list[ConceptSetItem]] = None
 
     model_config = ConfigDict(populate_by_name=True)
 

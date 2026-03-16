@@ -222,7 +222,7 @@ def _process_response_content(content: str, output_base: Optional[str]):
         cohort_obj = local_scope.get("cohort")
         if not cohort_obj:
             # Try to find any variable that is a tuple (builder) or CohortExpression
-            for k, v in local_scope.items():
+            for _k, v in local_scope.items():
                 if hasattr(v, "to_json"):  # CohortExpression has to_json? Check API.
                     cohort_obj = v
                     break

@@ -23,8 +23,8 @@ Example:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import date
-from typing import List, Optional, Sequence, Union
 
 from ..cohortdefinition.cohort import CohortExpression
 from ..cohortdefinition.core import (
@@ -283,8 +283,8 @@ def set_cohort_era(
 
 def set_age_criteria(
     cohort_expression: CohortExpression,
-    min_age: Optional[int] = None,
-    max_age: Optional[int] = None,
+    min_age: int | None = None,
+    max_age: int | None = None,
     replace: bool = False,
 ) -> CohortExpression:
     """Restrict cohort entry to subjects within an age range at index date.
@@ -362,7 +362,7 @@ def set_age_criteria(
 
 def set_gender_criteria(
     cohort_expression: CohortExpression,
-    gender_concept_ids: Union[int, Sequence[int]],
+    gender_concept_ids: int | Sequence[int],
     replace: bool = False,
 ) -> CohortExpression:
     """Restrict cohort entry to subjects of a specific gender.
@@ -400,7 +400,7 @@ def set_gender_criteria(
     if replace:
         reset_gender_criteria(cohort_expression)
 
-    gender_concepts: List[Concept] = []
+    gender_concepts: list[Concept] = []
     for cid in gender_concept_ids:
         # Try to resolve well-known concepts by ID
         matched = False
@@ -438,9 +438,9 @@ def set_gender_criteria(
 def set_end_date_strategy(
     cohort_expression: CohortExpression,
     strategy: str,
-    days: Optional[int] = None,
+    days: int | None = None,
     date_field: str = "StartDate",
-    drug_codeset_id: Optional[int] = None,
+    drug_codeset_id: int | None = None,
     gap_days: int = 0,
     offset: int = 0,
 ) -> CohortExpression:
@@ -629,7 +629,7 @@ def set_clean_window(
     # Build one correlated criteria per primary criterion.
     # Each one says: "exactly 0 occurrences of this criterion in the
     # [-days, -1] day window before the index event."
-    correlated_list: List[CorelatedCriteria] = []
+    correlated_list: list[CorelatedCriteria] = []
     for criterion in pc.criteria_list:
         correlated = CorelatedCriteria(
             criteria=criterion,
@@ -706,8 +706,8 @@ def reset_clean_window(
 
 def set_date_range(
     cohort_expression: CohortExpression,
-    start_date: Optional[Union[str, date]] = None,
-    end_date: Optional[Union[str, date]] = None,
+    start_date: str | date | None = None,
+    end_date: str | date | None = None,
 ) -> CohortExpression:
     """Limit cohort entries to a specific calendar date range.
 
@@ -751,7 +751,7 @@ def set_date_range(
 
 def set_censor_event(
     cohort_expression: CohortExpression,
-    censor_criteria: Union[Criteria, CriteriaType],
+    censor_criteria: Criteria | CriteriaType,
 ) -> CohortExpression:
     """Add a censoring event that ends cohort membership when it occurs.
 
@@ -906,11 +906,11 @@ def apply_standard_rules(
     post_observation_days: int = 0,
     first_event_only: bool = True,
     era_gap_days: int = 0,
-    min_age: Optional[int] = None,
-    max_age: Optional[int] = None,
-    gender_concept_ids: Optional[Union[int, Sequence[int]]] = None,
-    end_strategy: Optional[str] = None,
-    end_strategy_days: Optional[int] = None,
+    min_age: int | None = None,
+    max_age: int | None = None,
+    gender_concept_ids: int | Sequence[int] | None = None,
+    end_strategy: str | None = None,
+    end_strategy_days: int | None = None,
 ) -> CohortExpression:
     """Apply a common set of cohort rules in a single call.
 

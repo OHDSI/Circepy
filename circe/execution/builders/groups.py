@@ -121,19 +121,18 @@ def _correlated_mask(
     if correlated.restrict_visit is None and isinstance(criteria_model, VisitDetail):
         require_same_visit = True
 
-    if require_same_visit:
-        if (
-            "visit_occurrence_id" in index_events.columns
-            and "_corr_visit_occurrence_id" in criteria_events.columns
-        ):
-            join_condition &= (
-                index_events.visit_occurrence_id.notnull()
-                & criteria_events._corr_visit_occurrence_id.notnull()
-                & (
-                    index_events.visit_occurrence_id
-                    == criteria_events._corr_visit_occurrence_id
-                )
+    if require_same_visit and (
+        "visit_occurrence_id" in index_events.columns
+        and "_corr_visit_occurrence_id" in criteria_events.columns
+    ):
+        join_condition &= (
+            index_events.visit_occurrence_id.notnull()
+            & criteria_events._corr_visit_occurrence_id.notnull()
+            & (
+                index_events.visit_occurrence_id
+                == criteria_events._corr_visit_occurrence_id
             )
+        )
 
     joined = index_events.join(criteria_events, join_condition, how="left")
 

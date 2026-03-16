@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from collections import Counter
-from typing import List, Optional
+from typing import Optional
 
 from ..utils.criteria_name_helper import CriteriaNameHelper
 from ..warning_severity import WarningSeverity
@@ -73,7 +73,7 @@ class TimePatternCheck(BaseCorelatedCriteriaCheck):
     def __init__(self):
         """Initialize the time pattern check."""
         super().__init__()
-        self._time_window_info_list: List[TimeWindowInfo] = []
+        self._time_window_info_list: list[TimeWindowInfo] = []
 
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.

@@ -30,7 +30,7 @@ class TestBasicSqlBuilderFunctionality:
     def test_dose_era_sql_builder_basic(self):
         """Test basic DoseEraSqlBuilder functionality."""
         builder = DoseEraSqlBuilder()
-        criteria = DoseEra(first=False)
+        DoseEra(first=False)
 
         # Test basic methods
         assert isinstance(builder.get_query_template(), str)
@@ -50,7 +50,7 @@ class TestBasicSqlBuilderFunctionality:
     def test_observation_period_sql_builder_basic(self):
         """Test basic ObservationPeriodSqlBuilder functionality."""
         builder = ObservationPeriodSqlBuilder()
-        criteria = ObservationPeriod()
+        ObservationPeriod()
 
         # Test basic methods
         assert isinstance(builder.get_query_template(), str)
@@ -66,7 +66,7 @@ class TestBasicSqlBuilderFunctionality:
     def test_payer_plan_period_sql_builder_basic(self):
         """Test basic PayerPlanPeriodSqlBuilder functionality."""
         builder = PayerPlanPeriodSqlBuilder()
-        criteria = PayerPlanPeriod()
+        PayerPlanPeriod()
 
         # Test basic methods
         assert isinstance(builder.get_query_template(), str)
@@ -82,7 +82,7 @@ class TestBasicSqlBuilderFunctionality:
     def test_visit_detail_sql_builder_basic(self):
         """Test basic VisitDetailSqlBuilder functionality."""
         builder = VisitDetailSqlBuilder()
-        criteria = VisitDetail(visit_detail_type_exclude=False)
+        VisitDetail(visit_detail_type_exclude=False)
 
         # Test basic methods
         assert isinstance(builder.get_query_template(), str)
@@ -102,7 +102,7 @@ class TestBasicSqlBuilderFunctionality:
     def test_location_region_sql_builder_basic(self):
         """Test basic LocationRegionSqlBuilder functionality."""
         builder = LocationRegionSqlBuilder()
-        criteria = LocationRegion()
+        LocationRegion()
 
         # Test basic methods
         assert isinstance(builder.get_query_template(), str)

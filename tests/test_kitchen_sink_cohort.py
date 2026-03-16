@@ -279,7 +279,7 @@ class TestKitchenSinkCohort(unittest.TestCase):
         )
 
         # 3. Primary Criteria
-        primary_criteria = criteria = getattr(
+        getattr(
             # Need to construct PrimaryCriteria manually or via helper
             # But wait, PrimaryCriteria uses CriteriaList, not nested Criteria objects directly
             # The structure in core.py for PrimaryCriteria is:

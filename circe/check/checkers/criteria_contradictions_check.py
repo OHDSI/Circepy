@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from ..utils.criteria_name_helper import CriteriaNameHelper
 from ..warning_severity import WarningSeverity
@@ -66,7 +66,7 @@ class CriteriaContradictionsCheck(BaseCorelatedCriteriaCheck):
     def __init__(self):
         """Initialize the criteria contradictions check."""
         super().__init__()
-        self._criteria_list: List[CriteriaInfo] = []
+        self._criteria_list: list[CriteriaInfo] = []
 
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.
@@ -131,7 +131,7 @@ class CriteriaContradictionsCheck(BaseCorelatedCriteriaCheck):
         # Check if ranges overlap
         return not self._ranges_overlap(range1, range2)
 
-    def _get_occurrence_range(self, occurrence: "Occurrence") -> Tuple[int, int]:
+    def _get_occurrence_range(self, occurrence: "Occurrence") -> tuple[int, int]:
         """Get the range of valid occurrence counts.
 
         Args:
@@ -150,7 +150,7 @@ class CriteriaContradictionsCheck(BaseCorelatedCriteriaCheck):
         else:
             return (float("-inf"), float("inf"))
 
-    def _ranges_overlap(self, range1: Tuple[int, int], range2: Tuple[int, int]) -> bool:
+    def _ranges_overlap(self, range1: tuple[int, int], range2: tuple[int, int]) -> bool:
         """Check if two ranges overlap.
 
         Args:

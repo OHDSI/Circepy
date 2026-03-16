@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Set
+from typing import Optional
 
 from ..criteria import VisitOccurrence
 from .base import CriteriaSqlBuilder
@@ -38,7 +38,7 @@ from
 -- End Visit Occurrence Criteria
 """
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for visit occurrence criteria."""
         return {
             CriteriaColumn.START_DATE,
@@ -77,7 +77,7 @@ from
 
     def resolve_select_clauses(
         self, criteria: VisitOccurrence, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve select clauses for visit occurrence criteria."""
         # Default select columns that are always returned
         select_cols = ["vo.person_id", "vo.visit_occurrence_id", "vo.visit_concept_id"]
@@ -130,7 +130,7 @@ from
 
     def resolve_join_clauses(
         self, criteria: VisitOccurrence, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve join clauses for visit occurrence criteria."""
         join_clauses = []
 
@@ -173,7 +173,7 @@ from
 
     def resolve_where_clauses(
         self, criteria: VisitOccurrence, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve where clauses for visit occurrence criteria."""
         where_clauses = super().resolve_where_clauses(criteria, options)
 
@@ -289,7 +289,7 @@ from
         return where_clauses
 
     def embed_ordinal_expression(
-        self, query: str, criteria: VisitOccurrence, where_clauses: List[str]
+        self, query: str, criteria: VisitOccurrence, where_clauses: list[str]
     ) -> str:
         """Embed ordinal expression for visit occurrence criteria."""
         if criteria.first is not None and criteria.first:
@@ -300,7 +300,7 @@ from
             return query.replace("@ordinalExpression", "")
 
     def _add_filtering_by_care_site_location_region(
-        self, join_clauses: List[str], codeset_id: int
+        self, join_clauses: list[str], codeset_id: int
     ):
         """Add joins for filtering by care site location region."""
         join_clauses.append(

@@ -9,7 +9,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Set
+from typing import Optional
 
 from ..criteria import DrugExposure
 from .base import CriteriaSqlBuilder
@@ -55,7 +55,7 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
         "refills",
     ]
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for this builder.
 
         Java equivalent: DrugExposureSqlBuilder.getDefaultColumns()
@@ -103,7 +103,7 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
         )
 
     def embed_ordinal_expression(
-        self, query: str, criteria: DrugExposure, where_clauses: List[str]
+        self, query: str, criteria: DrugExposure, where_clauses: list[str]
     ) -> str:
         """Embed ordinal expression in query.
 
@@ -123,7 +123,7 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
 
     def resolve_select_clauses(
         self, criteria: DrugExposure, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve select clauses for drug exposure criteria.
 
         Java equivalent: DrugExposureSqlBuilder.resolveSelectClauses()
@@ -197,7 +197,7 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
 
     def resolve_join_clauses(
         self, criteria: DrugExposure, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve join clauses for drug exposure criteria.
 
         Java equivalent: DrugExposureSqlBuilder.resolveJoinClauses()
@@ -234,7 +234,7 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
 
     def resolve_where_clauses(
         self, criteria: DrugExposure, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve where clauses for drug exposure criteria.
 
         Java equivalent: DrugExposureSqlBuilder.resolveWhereClauses()

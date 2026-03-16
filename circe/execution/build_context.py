@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import uuid
 import weakref
+from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import reduce
 from pathlib import Path
-from typing import Callable, Iterable, Optional, Tuple, Union
+from typing import Callable, Union
 
 import ibis
 import ibis.common.exceptions as ibis_exc
@@ -14,7 +15,7 @@ import ibis.expr.types as ir
 from ..vocabulary.concept import ConceptSet
 from .ibis_compat import table_from_literal_list
 
-Database = Union[str, Tuple[str, str]]
+Database = Union[str, tuple[str, str]]
 
 
 def _qualify(database: Database | None, name: str) -> str:
@@ -61,16 +62,16 @@ def _drop_table_safely(
 
 @dataclass(frozen=True)
 class CohortBuildOptions:
-    cdm_schema: Optional[str] = None
-    vocabulary_schema: Optional[str] = None
-    result_schema: Optional[str] = None
-    target_table: Optional[str] = None
-    cohort_id: Optional[int] = None
+    cdm_schema: str | None = None
+    vocabulary_schema: str | None = None
+    result_schema: str | None = None
+    target_table: str | None = None
+    cohort_id: int | None = None
     generate_stats: bool = False
-    temp_emulation_schema: Optional[str] = None
-    profile_dir: Optional[str] = None
+    temp_emulation_schema: str | None = None
+    profile_dir: str | None = None
     capture_sql: bool = False
-    backend: Optional[str] = None
+    backend: str | None = None
     materialize_stages: bool = True
     materialize_codesets: bool = True
 
@@ -78,7 +79,7 @@ class CohortBuildOptions:
 @dataclass
 class CodesetResource:
     table: ir.Table
-    _dropper: Optional[Callable[[], None]] = None
+    _dropper: Callable[[], None] | None = None
 
     def cleanup(self):
         if self._dropper:
@@ -115,7 +116,7 @@ class BuildContext:
         self._slice_cache: dict[str, ir.Table] = {}
         weakref.finalize(self, self.close)
 
-    def _table(self, database: Optional[str], name: str) -> ir.Table:
+    def _table(self, database: str | None, name: str) -> ir.Table:
         try:
             return _table(self._conn, database, name)
         except (
@@ -391,7 +392,7 @@ def _compile_single_codeset(
     concept_ancestor: ir.Table,
     concept_relationship: ir.Table,
     concept_set: ConceptSet,
-) -> Optional[ir.Table]:
+) -> ir.Table | None:
     expression = concept_set.expression
     if expression is None or not expression.items:
         return None
@@ -469,7 +470,7 @@ def _compile_single_codeset(
     return include_expr.mutate(codeset_id=codeset_literal)[["codeset_id", "concept_id"]]
 
 
-def _ids_memtable(ids: list[int]) -> Optional[ir.Table]:
+def _ids_memtable(ids: list[int]) -> ir.Table | None:
     if not ids:
         return None
     return table_from_literal_list(
@@ -479,7 +480,7 @@ def _ids_memtable(ids: list[int]) -> Optional[ir.Table]:
 
 def _descendants(
     concept: ir.Table, concept_ancestor: ir.Table, ancestor_ids: list[int]
-) -> Optional[ir.Table]:
+) -> ir.Table | None:
     if not ancestor_ids:
         return None
     return (
@@ -497,7 +498,7 @@ def _mapped_concepts(
     concept_relationship: ir.Table,
     concepts_to_map: list[int],
     concepts_with_descendants_to_map: list[int],
-) -> Optional[ir.Table]:
+) -> ir.Table | None:
     sources = _union_distinct(
         [
             _ids_memtable(concepts_to_map),
@@ -589,7 +590,7 @@ def _materialize_codesets(
     return resource
 
 
-def _union_distinct(tables: Iterable[Optional[ir.Table]]) -> Optional[ir.Table]:
+def _union_distinct(tables: Iterable[ir.Table | None]) -> ir.Table | None:
     valid_tables = [t for t in tables if t is not None]
     if not valid_tables:
         return None

@@ -8,7 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Set
 
 from ..criteria import DeviceExposure
 from .base import CriteriaSqlBuilder
@@ -36,7 +35,7 @@ FROM
 @whereClause
 -- End Device Exposure Criteria"""
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for device exposure criteria."""
         return {
             CriteriaColumn.START_DATE,
@@ -60,7 +59,7 @@ FROM
 
     def resolve_select_clauses(
         self, criteria: DeviceExposure, options: BuilderOptions
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve select clauses for device exposure criteria."""
         select_cols = [
             "de.person_id",
@@ -112,7 +111,7 @@ FROM
 
     def resolve_join_clauses(
         self, criteria: DeviceExposure, options: BuilderOptions
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve join clauses for device exposure criteria."""
         joins = []
 
@@ -158,7 +157,7 @@ FROM
 
     def resolve_where_clauses(
         self, criteria: DeviceExposure, options: BuilderOptions
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve where clauses for device exposure criteria."""
         conditions = []
 
@@ -280,7 +279,7 @@ FROM
 
     def get_ordinal_expression_where_clause(
         self, criteria: DeviceExposure, options: BuilderOptions
-    ) -> List[str]:
+    ) -> list[str]:
         if criteria.first:
             return ["C.ordinal = 1"]
         return []

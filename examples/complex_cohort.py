@@ -294,7 +294,7 @@ if __name__ == "__main__":
     for rule in cohort.inclusion_rules:
         print(f"  - {rule.name}")
     print(f"Censoring Criteria: {len(cohort.censoring_criteria)} events")
-    for i, criteria in enumerate(cohort.censoring_criteria, 1):
+    for _i, criteria in enumerate(cohort.censoring_criteria, 1):
         # Get the criteria type from the wrapped object
         criteria_dict = criteria.model_dump(by_alias=True)
         criteria_type = list(criteria_dict.keys())[0]

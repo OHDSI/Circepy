@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Set
+from typing import Optional
 
 from ..criteria import DrugEra
 from .base import CriteriaSqlBuilder
@@ -57,7 +57,7 @@ from
 -- End Drug Era Criteria
 """
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for drug era criteria."""
         return self.DEFAULT_COLUMNS
 
@@ -88,7 +88,7 @@ from
         return query.replace("@codesetClause", codeset_clause)
 
     def embed_ordinal_expression(
-        self, query: str, criteria: DrugEra, where_clauses: List[str]
+        self, query: str, criteria: DrugEra, where_clauses: list[str]
     ) -> str:
         """Embed ordinal expression in query."""
         # first
@@ -104,7 +104,7 @@ from
 
     def resolve_select_clauses(
         self, criteria: DrugEra, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve select clauses for drug era criteria."""
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
 
@@ -136,7 +136,7 @@ from
 
     def resolve_join_clauses(
         self, criteria: DrugEra, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve join clauses for drug era criteria."""
         join_clauses = []
 
@@ -155,7 +155,7 @@ from
 
     def resolve_where_clauses(
         self, criteria: DrugEra, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve where clauses for drug era criteria."""
         where_clauses = []
 

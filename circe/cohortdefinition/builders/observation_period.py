@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Set
+from typing import Optional
 
 from ..criteria import ObservationPeriod
 from .base import CriteriaSqlBuilder
@@ -54,7 +54,7 @@ from
 -- End Observation Period Criteria
 """
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for observation period criteria."""
         return self.DEFAULT_COLUMNS
 
@@ -102,14 +102,14 @@ from
         return query.replace("@codesetClause", "")
 
     def embed_ordinal_expression(
-        self, query: str, criteria: ObservationPeriod, where_clauses: List[str]
+        self, query: str, criteria: ObservationPeriod, where_clauses: list[str]
     ) -> str:
         """Embed ordinal expression in query."""
         return query.replace("@ordinalExpression", "")
 
     def resolve_select_clauses(
         self, criteria: ObservationPeriod, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve select clauses for observation period criteria.
 
         Note: The outer SELECT in the template handles event_id, start_date, end_date, visit_occurrence_id, sort_date.
@@ -143,7 +143,7 @@ from
 
     def resolve_join_clauses(
         self, criteria: ObservationPeriod, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve join clauses for observation period criteria."""
         join_clauses = []
 
@@ -157,7 +157,7 @@ from
 
     def resolve_where_clauses(
         self, criteria: ObservationPeriod, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve where clauses for observation period criteria."""
         where_clauses = []
 
@@ -250,7 +250,7 @@ from
 
         return where_clauses
 
-    def get_additional_columns(self, columns: List[CriteriaColumn]) -> str:
+    def get_additional_columns(self, columns: list[CriteriaColumn]) -> str:
         """Get additional columns string with proper aliases.
 
         Java equivalent: ObservationPeriodSqlBuilder.getAdditionalColumns()

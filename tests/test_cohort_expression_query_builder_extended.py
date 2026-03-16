@@ -169,7 +169,7 @@ class TestCohortExpressionQueryBuilderExtended(unittest.TestCase):
         # Mock criteria acceptance
         with patch.object(
             ConditionOccurrence, "accept", return_value="SELECT * FROM Criteria"
-        ) as mock_accept:
+        ):
             sql = self.builder.get_windowed_criteria_query(criteria, "#events")
 
             self.assertIn("SELECT * FROM Criteria", sql)

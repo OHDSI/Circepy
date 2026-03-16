@@ -8,7 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List
 
 from ..vocabulary.concept import Concept, ConceptSetExpression
 from .builders.utils import BuilderUtils
@@ -54,7 +53,7 @@ WHERE E.concept_id is null
 
     MAX_IN_LENGTH = 1000  # Oracle limitation
 
-    def get_concept_ids(self, concepts: List[Concept]) -> List[int]:
+    def get_concept_ids(self, concepts: list[Concept]) -> list[int]:
         """Get concept IDs from concept list.
 
         Java equivalent: getConceptIds()
@@ -64,7 +63,7 @@ WHERE E.concept_id is null
         ]
 
     def build_concept_set_sub_query(
-        self, concepts: List[Concept], descendant_concepts: List[Concept]
+        self, concepts: list[Concept], descendant_concepts: list[Concept]
     ) -> str:
         """Build concept set sub-query.
 
@@ -95,7 +94,7 @@ WHERE E.concept_id is null
         return "\nUNION  ".join(queries)
 
     def build_concept_set_mapped_query(
-        self, mapped_concepts: List[Concept], mapped_descendant_concepts: List[Concept]
+        self, mapped_concepts: list[Concept], mapped_descendant_concepts: list[Concept]
     ) -> str:
         """Build concept set mapped query.
 
@@ -110,10 +109,10 @@ WHERE E.concept_id is null
 
     def build_concept_set_query(
         self,
-        concepts: List[Concept],
-        descendant_concepts: List[Concept],
-        mapped_concepts: List[Concept],
-        mapped_descendant_concepts: List[Concept],
+        concepts: list[Concept],
+        descendant_concepts: list[Concept],
+        mapped_concepts: list[Concept],
+        mapped_descendant_concepts: list[Concept],
     ) -> str:
         """Build concept set query.
 

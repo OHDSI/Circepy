@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 import json
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 from .builders import (
     ConditionEraSqlBuilder,
@@ -481,7 +481,7 @@ DROP TABLE #drugTarget;
                 f"Invalid occurrence operator received: type={occurrence_type}"
             )
 
-    def get_additional_columns(self, columns: List[CriteriaColumn], prefix: str) -> str:
+    def get_additional_columns(self, columns: list[CriteriaColumn], prefix: str) -> str:
         """Get additional columns string.
 
         Java equivalent: getAdditionalColumns()
@@ -530,7 +530,7 @@ JOIN (
         """
         return wrapped_query
 
-    def get_codeset_query(self, concept_sets: List[Any]) -> str:
+    def get_codeset_query(self, concept_sets: list[Any]) -> str:
         """Get codeset query.
 
         Java equivalent: getCodesetQuery()
@@ -554,7 +554,7 @@ JOIN (
 
         return self.CODESET_QUERY_TEMPLATE.replace("@codesetInserts", codeset_inserts)
 
-    def get_censoring_events_query(self, censoring_criteria: List[Criteria]) -> str:
+    def get_censoring_events_query(self, censoring_criteria: list[Criteria]) -> str:
         """Get censoring events query.
 
         Java equivalent: getCensoringEventsQuery()
@@ -1235,7 +1235,7 @@ DROP TABLE #inclusion_rules;
 
             criteria_type = None
             criteria_data = None
-            for key in inner_criteria.keys():
+            for key in inner_criteria:
                 criteria_type = key
                 criteria_data = inner_criteria[key]
                 break
@@ -1569,7 +1569,7 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
 
             criteria_type = None
             criteria_data = None
-            for key in criteria.keys():
+            for key in criteria:
                 criteria_type = key
                 criteria_data = criteria[key]
                 break
@@ -1779,7 +1779,7 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
         return strategy_sql
 
     def _get_additional_columns(
-        self, columns: List[CriteriaColumn], table_alias: str
+        self, columns: list[CriteriaColumn], table_alias: str
     ) -> str:
         """Get additional columns for SQL query."""
         if not columns:

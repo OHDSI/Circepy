@@ -8,7 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List
 
 from ..warning import Warning
 from ..warning_severity import WarningSeverity
@@ -35,7 +34,7 @@ class IncompleteRuleCheck(BaseCheck):
     """
 
     def _get_reporter(
-        self, severity: WarningSeverity, warnings: List[Warning]
+        self, severity: WarningSeverity, warnings: list[Warning]
     ) -> WarningReporter:
         """Get a warning reporter that creates IncompleteRuleWarning instances.
 

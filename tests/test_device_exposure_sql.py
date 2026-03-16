@@ -18,7 +18,7 @@ class TestDeviceExposureSql(unittest.TestCase):
         # We need to minimally test the resolved clauses
         where_clauses = builder.resolve_where_clauses(criteria, options)
         join_clauses = builder.resolve_join_clauses(criteria, options)
-        select_clauses = builder.resolve_select_clauses(criteria, options)
+        builder.resolve_select_clauses(criteria, options)
 
         self.assertTrue(
             any("C.start_date" in c for c in where_clauses),

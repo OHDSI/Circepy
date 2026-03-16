@@ -15,7 +15,7 @@ import inspect
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -38,7 +38,7 @@ class MethodInfo:
     signature: str
     return_type: str
     docstring: str
-    parameters: List[Dict[str, Any]]
+    parameters: list[dict[str, Any]]
     is_chainable: bool
     finalizes: bool  # Returns parent builder (breaks chain)
 
@@ -47,11 +47,11 @@ class SkillGenerator:
     """Generates SKILL.md from the cohort builder codebase."""
 
     def __init__(self):
-        self.builder_methods: List[MethodInfo] = []
-        self.entry_methods: List[MethodInfo] = []
-        self.criteria_methods: List[MethodInfo] = []
-        self.query_modifiers: Dict[str, List[MethodInfo]] = {}
-        self.time_windows: List[MethodInfo] = []
+        self.builder_methods: list[MethodInfo] = []
+        self.entry_methods: list[MethodInfo] = []
+        self.criteria_methods: list[MethodInfo] = []
+        self.query_modifiers: dict[str, list[MethodInfo]] = {}
+        self.time_windows: list[MethodInfo] = []
 
     def extract_method_info(self, cls, method_name: str) -> MethodInfo:
         """Extract information about a method."""
@@ -114,7 +114,7 @@ class SkillGenerator:
         """Discover all public methods from the builder classes."""
 
         # CohortBuilder entry methods
-        for name, method in inspect.getmembers(
+        for name, _method in inspect.getmembers(
             CohortBuilder, predicate=inspect.isfunction
         ):
             if name.startswith("_") or name == "with_concept_sets":
@@ -125,7 +125,7 @@ class SkillGenerator:
                 )
 
         # CohortWithEntry methods
-        for name, method in inspect.getmembers(
+        for name, _method in inspect.getmembers(
             CohortWithEntry, predicate=inspect.isfunction
         ):
             if name.startswith("_"):
@@ -149,7 +149,7 @@ class SkillGenerator:
                 )
 
         # CohortWithCriteria methods
-        for name, method in inspect.getmembers(
+        for name, _method in inspect.getmembers(
             CohortWithCriteria, predicate=inspect.isfunction
         ):
             if name.startswith("_"):
@@ -175,7 +175,7 @@ class SkillGenerator:
                 )
 
         # BaseQuery time windows
-        for name, method in inspect.getmembers(BaseQuery, predicate=inspect.isfunction):
+        for name, _method in inspect.getmembers(BaseQuery, predicate=inspect.isfunction):
             if name in [
                 "within_days_before",
                 "within_days_after",
@@ -404,10 +404,7 @@ class SkillGenerator:
         in_frontmatter = False
         for line in skill_lines:
             if line.strip() == "---":
-                if not in_frontmatter:
-                    in_frontmatter = True
-                else:
-                    in_frontmatter = False
+                in_frontmatter = bool(not in_frontmatter)
                 continue
             if not in_frontmatter:
                 skill_body.append(line)
@@ -443,7 +440,7 @@ if __name__ == "__main__":
         ("prompts/fast_models_prompt.md", "Fast Models"),
     ]
 
-    for prompt_path, model_type in prompts:
+    for prompt_path, _model_type in prompts:
         generator.update_system_prompt(skill_content, prompt_path)
 
     print("\n✅ All documentation updated!")

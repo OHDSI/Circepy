@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Set
+from typing import Optional
 
 from ..criteria import Observation
 from .base import CriteriaSqlBuilder
@@ -37,7 +37,7 @@ FROM
 -- End Observation Criteria
 """
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for observation criteria."""
         return {
             CriteriaColumn.START_DATE,
@@ -73,7 +73,7 @@ FROM
 
     def resolve_select_clauses(
         self, criteria: Observation, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve select clauses for observation criteria.
 
         Java equivalent: ObservationSqlBuilder.resolveSelectClauses()
@@ -116,7 +116,7 @@ FROM
 
     def resolve_join_clauses(
         self, criteria: Observation, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve join clauses for observation criteria.
 
         Java equivalent: ObservationSqlBuilder.resolveJoinClauses()
@@ -154,7 +154,7 @@ FROM
 
     def resolve_where_clauses(
         self, criteria: Observation, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve where clauses for observation criteria."""
         where_clauses = super().resolve_where_clauses(criteria)
 
@@ -325,7 +325,7 @@ FROM
 
         return where_clauses
 
-    def get_additional_columns(self, columns: List[CriteriaColumn]) -> str:
+    def get_additional_columns(self, columns: list[CriteriaColumn]) -> str:
         """Get additional columns string with proper aliases.
 
         Java equivalent: ObservationSqlBuilder.getAdditionalColumns()
@@ -338,7 +338,7 @@ FROM
         )
 
     def embed_ordinal_expression(
-        self, query: str, criteria: Observation, where_clauses: List[str]
+        self, query: str, criteria: Observation, where_clauses: list[str]
     ) -> str:
         """Embed ordinal expression in query."""
         # first

@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Set
+from typing import Optional
 
 from ..criteria import Specimen
 from .base import CriteriaSqlBuilder
@@ -37,7 +37,7 @@ FROM
 -- End Specimen Criteria
 """
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for specimen criteria."""
         return {
             CriteriaColumn.START_DATE,
@@ -73,7 +73,7 @@ FROM
         )
 
     def embed_ordinal_expression(
-        self, query: str, criteria: Specimen, where_clauses: List[str]
+        self, query: str, criteria: Specimen, where_clauses: list[str]
     ) -> str:
         """Embed ordinal expression in query."""
         if criteria.first:
@@ -88,7 +88,7 @@ FROM
 
     def resolve_join_clauses(
         self, criteria: Specimen, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve join clauses for specimen criteria."""
         joins = []
 
@@ -106,7 +106,7 @@ FROM
 
     def resolve_where_clauses(
         self, criteria: Specimen, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve where clauses for specimen criteria."""
         where_clauses = []
 

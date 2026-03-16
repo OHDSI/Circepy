@@ -109,7 +109,7 @@ def safe_model_rebuild(package):
     'ValueError: call stack is not deep enough' during instantiation.
     """
     try:
-        for loader, module_name, is_pkg in pkgutil.walk_packages(
+        for _loader, module_name, _is_pkg in pkgutil.walk_packages(
             package.__path__, package.__name__ + "."
         ):
             try:
@@ -117,7 +117,7 @@ def safe_model_rebuild(package):
             except ImportError:
                 continue
 
-            for name, obj in inspect.getmembers(mod):
+            for _name, obj in inspect.getmembers(mod):
                 if inspect.isclass(obj) and issubclass(obj, BaseModel):
                     try:
                         # Rebuild Pydantic v2 models
@@ -140,7 +140,7 @@ def get_json_schema() -> dict:
     in the same shape as the Java version.
     """
     # Map name → Pydantic model
-    models: Dict[str, type] = {
+    models: dict[str, type] = {
         "CohortExpression": CohortExpression,
         "ConceptSet": ConceptSet,
         "ConceptSetExpression": ConceptSetExpression,
@@ -189,7 +189,7 @@ def get_json_schema() -> dict:
     }
 
     # Build root-level $defs with each schema
-    defs: Dict[str, dict] = {}
+    defs: dict[str, dict] = {}
     for name, model in models.items():
         # Use by_alias=True so JSON keys match Java casing if you set aliases in models
         schema = model.model_json_schema(by_alias=True)

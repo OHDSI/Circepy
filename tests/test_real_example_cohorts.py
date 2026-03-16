@@ -13,7 +13,7 @@ import re
 import textwrap
 from difflib import unified_diff
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 import pytest
 
@@ -71,7 +71,7 @@ def get_reference_sql(cohort_name: str) -> Optional[str]:
     return None
 
 
-def generate_python_outputs(cohort_file: Path) -> Tuple[Optional[str], Optional[str]]:
+def generate_python_outputs(cohort_file: Path) -> tuple[Optional[str], Optional[str]]:
     """
     Run Python reference implementation to generate SQL.
 
@@ -412,10 +412,10 @@ def test_sql_matches_reference(cohort_name):
 # =============================================================================
 
 # Cache for generated markdown to avoid redundant work
-_MARKDOWN_CACHE: Dict[str, Tuple[Optional[str], Optional[str]]] = {}
+_MARKDOWN_CACHE: dict[str, tuple[Optional[str], Optional[str]]] = {}
 
 
-def get_generated_markdown(cohort_name: str) -> Tuple[Optional[str], Optional[str]]:
+def get_generated_markdown(cohort_name: str) -> tuple[Optional[str], Optional[str]]:
     """
     Get generated markdown for a cohort, using cache if available.
     """
@@ -561,7 +561,7 @@ def analyze_markdown_differences(py_md: str, ref_md: str) -> list:
 
     py_normalized = normalize_markdown(py_md)
 
-    for pattern, name in sections:
+    for pattern, _name in sections:
         if pattern not in py_normalized:
             pass
 

@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from ..warning_severity import WarningSeverity
 from ..warnings.concept_set_warning import ConceptSetWarning
@@ -51,7 +51,7 @@ class UnusedConceptsCheck(BaseCheck):
         return WarningSeverity.WARNING
 
     def _get_reporter(
-        self, severity: WarningSeverity, warnings: List
+        self, severity: WarningSeverity, warnings: list
     ) -> WarningReporter:
         """Get a warning reporter that creates ConceptSetWarning instances.
 
@@ -85,7 +85,7 @@ class UnusedConceptsCheck(BaseCheck):
 
     def _get_additional_criteria(
         self, expression: "CohortExpression"
-    ) -> List["Criteria"]:
+    ) -> list["Criteria"]:
         """Get all criteria from additional criteria.
 
         Args:
@@ -94,7 +94,7 @@ class UnusedConceptsCheck(BaseCheck):
         Returns:
             A list of all criteria from additional criteria
         """
-        additional_criteria: List[Criteria] = []
+        additional_criteria: list[Criteria] = []
         if expression.additional_criteria:
             additional_criteria.extend(
                 self._to_criteria_list(expression.additional_criteria.criteria_list)
@@ -110,7 +110,7 @@ class UnusedConceptsCheck(BaseCheck):
     def _is_used(
         self,
         expression: "CohortExpression",
-        additional_criteria: List["Criteria"],
+        additional_criteria: list["Criteria"],
         concept_set: "ConceptSet",
     ) -> bool:
         """Check if a concept set is used.
@@ -200,7 +200,7 @@ class UnusedConceptsCheck(BaseCheck):
             return False
 
     def _is_concept_set_used_in_list(
-        self, concept_set: "ConceptSet", criteria_list: List["Criteria"]
+        self, concept_set: "ConceptSet", criteria_list: list["Criteria"]
     ) -> bool:
         """Check if a concept set is used in a criteria list.
 
@@ -235,7 +235,7 @@ class UnusedConceptsCheck(BaseCheck):
 
         return False
 
-    def _correlated_criteria_to_list(self, correlated_criteria) -> List["Criteria"]:
+    def _correlated_criteria_to_list(self, correlated_criteria) -> list["Criteria"]:
         """Convert correlated criteria to a list of criteria.
 
         Args:
@@ -244,7 +244,7 @@ class UnusedConceptsCheck(BaseCheck):
         Returns:
             A list of Criteria
         """
-        criteria_list: List[Criteria] = []
+        criteria_list: list[Criteria] = []
         if (
             hasattr(correlated_criteria, "criteria_list")
             and correlated_criteria.criteria_list
@@ -269,8 +269,8 @@ class UnusedConceptsCheck(BaseCheck):
         return criteria_list
 
     def _to_criteria_list(
-        self, criteria_list: Optional[List["CorelatedCriteria"]]
-    ) -> List["Criteria"]:
+        self, criteria_list: Optional[list["CorelatedCriteria"]]
+    ) -> list["Criteria"]:
         """Convert a list of CorelatedCriteria to a list of Criteria.
 
         Args:
@@ -286,8 +286,8 @@ class UnusedConceptsCheck(BaseCheck):
         ]
 
     def _to_criteria_list_from_groups(
-        self, groups: Optional[List["CriteriaGroup"]]
-    ) -> List["Criteria"]:
+        self, groups: Optional[list["CriteriaGroup"]]
+    ) -> list["Criteria"]:
         """Convert groups to a list of criteria.
 
         Args:
@@ -296,7 +296,7 @@ class UnusedConceptsCheck(BaseCheck):
         Returns:
             A list of Criteria
         """
-        criteria: List[Criteria] = []
+        criteria: list[Criteria] = []
         if groups:
             for group in groups:
                 if group.criteria_list:
