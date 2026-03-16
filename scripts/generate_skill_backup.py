@@ -60,10 +60,7 @@ class SkillGenerator:
 
         # Get return type
         return_annotation = sig.return_annotation
-        if return_annotation == inspect.Signature.empty:
-            return_type = "Unknown"
-        else:
-            return_type = str(return_annotation).replace("'", "")
+        return_type = "Unknown" if return_annotation == inspect.Signature.empty else str(return_annotation).replace("'", "")
 
         # Build parameter list
         params = []
@@ -175,7 +172,9 @@ class SkillGenerator:
                 )
 
         # BaseQuery time windows
-        for name, _method in inspect.getmembers(BaseQuery, predicate=inspect.isfunction):
+        for name, _method in inspect.getmembers(
+            BaseQuery, predicate=inspect.isfunction
+        ):
             if name in [
                 "within_days_before",
                 "within_days_after",

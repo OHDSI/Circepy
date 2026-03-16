@@ -59,15 +59,14 @@ def run_python_cli_in_process(args: list[str]) -> tuple[int, str, str]:
     stdout = StringIO()
     stderr = StringIO()
 
-    with patch("sys.argv", ["circe"] + args):
-        with redirect_stdout(stdout), redirect_stderr(stderr):
-            try:
-                exit_code = main() or 0
-            except SystemExit as e:
-                exit_code = e.code
-            except Exception as e:
-                print(f"Error: {e}", file=sys.stderr)
-                exit_code = 1
+    with patch("sys.argv", ["circe"] + args), redirect_stdout(stdout), redirect_stderr(stderr):
+        try:
+            exit_code = main() or 0
+        except SystemExit as e:
+            exit_code = e.code
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            exit_code = 1
 
     return exit_code, stdout.getvalue(), stderr.getvalue()
 

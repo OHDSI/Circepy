@@ -376,10 +376,7 @@ def compile_codesets(
         if compiled_expr is not None:
             compiled.append(compiled_expr)
 
-    if not compiled:
-        compiled_expr = _empty_codeset_table()
-    else:
-        compiled_expr = _union_all(compiled).distinct()
+    compiled_expr = _empty_codeset_table() if not compiled else _union_all(compiled).distinct()
 
     if not options.materialize_codesets:
         return CodesetResource(table=compiled_expr)

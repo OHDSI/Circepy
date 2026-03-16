@@ -8,7 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-
 from ..utils.criteria_name_helper import CriteriaNameHelper
 from ..warning_severity import WarningSeverity
 from .base_criteria_check import BaseCriteriaCheck
@@ -78,7 +77,7 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
         Returns:
             True if the criteria are duplicates, False otherwise
         """
-        if type(c1) != type(c2):
+        if type(c1) is not type(c2):
             return False
 
         # Import here to avoid circular dependencies
@@ -107,8 +106,17 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
                 c1.codeset_id == c2.codeset_id
                 and c1.condition_source_concept == c2.condition_source_concept
             )
-        elif (
-            isinstance(c1, (Death, DeviceExposure, DoseEra, DrugEra, DrugExposure, Measurement, Observation))
+        elif isinstance(
+            c1,
+            (
+                Death,
+                DeviceExposure,
+                DoseEra,
+                DrugEra,
+                DrugExposure,
+                Measurement,
+                Observation,
+            ),
         ):
             return c1.codeset_id == c2.codeset_id
         elif isinstance(c1, ObservationPeriod):
@@ -118,8 +126,8 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
                 and self._compare_objects(c1.period_end_date, c2.period_end_date)
                 and self._compare_objects(c1.period_length, c2.period_length)
             )
-        elif (
-            isinstance(c1, (ProcedureOccurrence, Specimen, VisitOccurrence, VisitDetail))
+        elif isinstance(
+            c1, (ProcedureOccurrence, Specimen, VisitOccurrence, VisitDetail)
         ):
             return c1.codeset_id == c2.codeset_id
         elif isinstance(c1, PayerPlanPeriod):

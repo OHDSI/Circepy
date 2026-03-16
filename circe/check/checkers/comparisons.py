@@ -191,18 +191,17 @@ class Comparisons:
         def compare_func(concept_set: "ConceptSet") -> bool:
             if concept_set.expression == source.expression:
                 return True
-            if concept_set.expression and source.expression:
-                if len(concept_set.expression.items) == len(source.expression.items):
-                    source_concepts = [item.concept for item in source.expression.items]
-                    return all(
-                        any(
-                            Comparisons.compare_concept(concept)(source_concept)
-                            for source_concept in source_concepts
-                        )
-                        for concept in [
-                            item.concept for item in concept_set.expression.items
-                        ]
+            if concept_set.expression and source.expression and len(concept_set.expression.items) == len(source.expression.items):
+                source_concepts = [item.concept for item in source.expression.items]
+                return all(
+                    any(
+                        Comparisons.compare_concept(concept)(source_concept)
+                        for source_concept in source_concepts
                     )
+                    for concept in [
+                        item.concept for item in concept_set.expression.items
+                    ]
+                )
             return False
 
         return compare_func
@@ -238,7 +237,7 @@ class Comparisons:
         Returns:
             True if the criteria are the same type and have the same codeset ID
         """
-        if type(c1) != type(c2):
+        if type(c1) is not type(c2):
             return False
 
         # Import here to avoid circular dependencies
@@ -258,8 +257,23 @@ class Comparisons:
             VisitOccurrence,
         )
 
-        if (
-            isinstance(c1, (ConditionEra, ConditionOccurrence, Death, DeviceExposure, DoseEra, DrugEra, DrugExposure, Measurement, Observation, ProcedureOccurrence, Specimen, VisitOccurrence, VisitDetail))
+        if isinstance(
+            c1,
+            (
+                ConditionEra,
+                ConditionOccurrence,
+                Death,
+                DeviceExposure,
+                DoseEra,
+                DrugEra,
+                DrugExposure,
+                Measurement,
+                Observation,
+                ProcedureOccurrence,
+                Specimen,
+                VisitOccurrence,
+                VisitDetail,
+            ),
         ):
             return c1.codeset_id == c2.codeset_id
 

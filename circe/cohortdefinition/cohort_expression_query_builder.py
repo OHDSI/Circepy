@@ -92,7 +92,7 @@ class BuildExpressionQueryOptions:
             options.generate_stats = data.get("generateStats", False)
             return options
         except Exception as e:
-            raise RuntimeError("Error parsing expression query options", e)
+            raise RuntimeError("Error parsing expression query options") from e
 
 
 class CohortExpressionQueryBuilder(
@@ -129,16 +129,16 @@ UPDATE STATISTICS #Codesets;
 select person_id, start_date, end_date
 INTO #cohort_rows
 from ( -- first_ends
-	select F.person_id, F.start_date, F.end_date
-	FROM (
-	  select I.event_id, I.person_id, I.start_date, CE.end_date, row_number() over (partition by I.person_id, I.event_id order by CE.end_date) as ordinal
-	  from #included_events I
-	  join ( -- cohort_ends
+    select F.person_id, F.start_date, F.end_date
+    FROM (
+      select I.event_id, I.person_id, I.start_date, CE.end_date, row_number() over (partition by I.person_id, I.event_id order by CE.end_date) as ordinal
+      from #included_events I
+      join ( -- cohort_ends
 -- cohort exit dates
 @cohort_end_unions
     ) CE on I.event_id = CE.event_id and I.person_id = CE.person_id and CE.end_date >= I.start_date
-	) F
-	WHERE F.ordinal = 1
+    ) F
+    WHERE F.ordinal = 1
 ) FE;
 
 
@@ -676,10 +676,7 @@ JOIN (
         ]
 
         # Join with UNION ALL - match Java behavior (no UNION ALL for single rule)
-        if len(union_list) == 1:
-            union_query = union_list[0]
-        else:
-            union_query = " UNION ALL ".join(union_list)
+        union_query = union_list[0] if len(union_list) == 1 else " UNION ALL ".join(union_list)
 
         return self.INCLUSION_RULE_TEMP_TABLE_TEMPLATE.replace(
             "@inclusionRuleUnions", union_query
@@ -1205,12 +1202,7 @@ DROP TABLE #inclusion_rules;
                 )
             )
 
-        if where_clauses:
-            query = query.replace(
-                "@whereClause", "WHERE " + " AND ".join(where_clauses)
-            )
-        else:
-            query = query.replace("@whereClause", "")
+        query = query.replace("@whereClause", "WHERE " + " AND ".join(where_clauses)) if where_clauses else query.replace("@whereClause", "")
 
         return query
 
@@ -1301,7 +1293,7 @@ DROP TABLE #inclusion_rules;
                     except Exception as e:
                         raise ValueError(
                             f"Failed to deserialize criteria from dict: {criteria_type} - {e}"
-                        )
+                        ) from e
                 else:
                     raise ValueError(f"Unknown criteria type in dict: {criteria_type}")
             else:
@@ -1633,7 +1625,7 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
                     except Exception as e:
                         raise ValueError(
                             f"Failed to deserialize criteria from dict: {criteria_type} - {e}"
-                        )
+                        ) from e
                 else:
                     raise ValueError(f"Unknown criteria type in dict: {criteria_type}")
             else:

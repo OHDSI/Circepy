@@ -1387,7 +1387,7 @@ class CriteriaGroup(BaseModel):
                                 c_data, strict=False
                             )
                             item_copy["criteria"] = c_obj
-                        except:
+                        except Exception:
                             pass
 
                 if "Occurrence" in item_copy:
@@ -1402,7 +1402,7 @@ class CriteriaGroup(BaseModel):
 
                 try:
                     deserialized.append(CorelatedCriteria.model_validate(item_copy))
-                except:
+                except Exception:
                     deserialized.append(item)
 
             elif any(
@@ -1484,7 +1484,7 @@ class CriteriaGroup(BaseModel):
                         deserialized.append(
                             CorelatedCriteria.model_validate(corelated_dict)
                         )
-                    except:
+                    except Exception:
                         deserialized.append(item)
                 else:
                     deserialized.append(item)
@@ -1524,7 +1524,7 @@ class CriteriaGroup(BaseModel):
                         deserialized.append(
                             CorelatedCriteria.model_validate(corelated_dict)
                         )
-                    except:
+                    except Exception:
                         deserialized.append(item)
                 else:
                     deserialized.append(item)
@@ -1656,7 +1656,7 @@ class PrimaryCriteria(BaseModel):
 
                     obj = NAMES_TO_CLASSES[c_type].model_validate(c_data, strict=False)
                     deserialized.append(obj)
-                except:
+                except Exception:
                     deserialized.append(item)
             else:
                 deserialized.append(item)

@@ -127,10 +127,7 @@ class MarkdownRender:
         # Handle JSON string input
         if isinstance(concept_sets, str):
             data = json.loads(concept_sets)
-            if isinstance(data, list):
-                concept_sets = [ConceptSet.model_validate(item) for item in data]
-            else:
-                concept_sets = [ConceptSet.model_validate(data)]
+            concept_sets = [ConceptSet.model_validate(item) for item in data] if isinstance(data, list) else [ConceptSet.model_validate(data)]
 
         if not concept_sets:
             return "No concept sets specified.\n"

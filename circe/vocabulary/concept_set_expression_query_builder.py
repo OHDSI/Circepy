@@ -8,7 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-
 from ..cohortdefinition.builders.utils import BuilderUtils
 from .concept import Concept, ConceptSetExpression
 

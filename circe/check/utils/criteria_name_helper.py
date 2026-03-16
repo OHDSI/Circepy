@@ -9,11 +9,13 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+from contextlib import suppress
+
 from ..constants import Constants
 from ..operations.operations import Operations
 
 # Import at runtime to avoid circular dependencies
-try:
+with suppress(ImportError):
     from ...cohortdefinition.criteria import (
         ConditionEra,
         ConditionOccurrence,
@@ -32,11 +34,6 @@ try:
         VisitDetail,
         VisitOccurrence,
     )
-except ImportError:
-    from typing import TYPE_CHECKING
-
-    if TYPE_CHECKING:
-        pass
 
 
 class CriteriaNameHelper:

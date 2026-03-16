@@ -9,6 +9,7 @@ tests/cohorts/reference_outputs/
 """
 
 import difflib
+import random
 import re
 import textwrap
 from difflib import unified_diff
@@ -29,8 +30,6 @@ from circe.cohortdefinition import BuildExpressionQueryOptions
 COHORTS_DIR = Path(__file__).parent / "cohorts"
 REFERENCE_DIR = COHORTS_DIR / "reference_outputs"
 
-# Dynamic discovery of cohort files
-import random
 
 
 def get_target_cohort_files(config):
@@ -275,14 +274,13 @@ def analyze_sql_differences(py_sql: str, ref_sql: str) -> list:
         )
 
     # Check for source concept handling
-    if "source_concept_id" in ref_sql.lower() or "source_value" in ref_sql.lower():
-        if (
-            "source_concept_id" not in py_sql.lower()
-            and "source_value" not in py_sql.lower()
-        ):
-            issues.append(
-                "Missing source concept handling - ConditionSourceConcept may not be implemented"
-            )
+    if ("source_concept_id" in ref_sql.lower() or "source_value" in ref_sql.lower()) and (
+        "source_concept_id" not in py_sql.lower()
+        and "source_value" not in py_sql.lower()
+    ):
+        issues.append(
+            "Missing source concept handling - ConditionSourceConcept may not be implemented"
+        )
 
     return issues
 

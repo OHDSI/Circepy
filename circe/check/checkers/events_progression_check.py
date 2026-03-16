@@ -114,10 +114,7 @@ class EventsProgressionCheck(BaseCheck):
         cohort_initial_weight = self._get_weight(expression.qualified_limit)
 
         # Qualifying limit is ignored when no additionalCriteria specified
-        if expression.additional_criteria is not None:
-            qualifying_weight = self._get_weight(expression.expression_limit)
-        else:
-            qualifying_weight = LimitType.NONE.weight
+        qualifying_weight = self._get_weight(expression.expression_limit) if expression.additional_criteria is not None else LimitType.NONE.weight
 
         if initial_weight - cohort_initial_weight < 0:
             reporter(self.WARNING, "Cohort of initial events")

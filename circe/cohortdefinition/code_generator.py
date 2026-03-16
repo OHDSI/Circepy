@@ -34,7 +34,6 @@ def to_python_code(obj: Any) -> str:
     # and maybe return imports separately?
     # Let's do the string generation directly.
 
-
     # We will build a set of required imports as we traverse
     required_classes = set()
 

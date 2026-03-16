@@ -73,7 +73,7 @@ def toggle_override():
         try:
             with open(USER_OVERRIDES_FILE) as f:
                 overrides = json.load(f)
-        except:
+        except Exception:
             pass
 
     overrides[filename] = is_ok
@@ -116,7 +116,7 @@ def cohort_view(filename):
             with open(USER_OVERRIDES_FILE) as f:
                 overrides = json.load(f)
                 is_user_ok = overrides.get(filename, False)
-        except:
+        except Exception:
             pass
 
     return render_template(

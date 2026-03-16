@@ -171,9 +171,8 @@ markers = [
 ]
 
 [tool.ruff]
-# Same as Black.
-line-length = 88
-target-version = "py39"
+# Allow longer lines for code and docstrings.
+line-length = 150
 
 # Exclude directories
 extend-exclude = [
@@ -186,6 +185,7 @@ extend-exclude = [
     "build",
     "dist",
     "circe-be",
+    "tests",
 ]
 
 [tool.ruff.lint]

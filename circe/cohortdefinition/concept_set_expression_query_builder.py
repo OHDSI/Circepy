@@ -8,7 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-
 from ..vocabulary.concept import Concept, ConceptSetExpression
 from .builders.utils import BuilderUtils
 

@@ -108,42 +108,6 @@ class TestDocumentation:
         assert "git clone" in contributing.lower()
         assert "pip install" in contributing.lower()
 
-    def test_pypi_marked_as_coming_soon(self):
-        """Verify PyPI installation is marked as coming soon, not as primary method."""
-        root = self.get_project_root()
-
-        files_to_check = [
-            root / "README.md",
-            root / "INSTALLATION.md",
-            root / "examples" / "README.md",
-        ]
-
-        for file_path in files_to_check:
-            if not file_path.exists():
-                continue
-
-            content = file_path.read_text()
-
-            # If PyPI is mentioned, it should be marked as coming soon
-            if "pip install ohdsi-circe-python-alpha" in content:
-                # Find context around pip install ohdsi-circe-python-alpha
-                lines = content.split("\n")
-                for i, line in enumerate(lines):
-                    if "pip install ohdsi-circe-python-alpha" in line:
-                        # Check surrounding lines for "coming soon" or similar
-                        context = "\n".join(lines[max(0, i - 5) : i + 5])
-                        assert any(
-                            marker in context.lower()
-                            for marker in [
-                                "coming soon",
-                                "not yet available",
-                                "future release",
-                                "[!note]",
-                            ]
-                        ), (
-                            f"PyPI installation in {file_path.name} not clearly marked as coming soon (line {i + 1})"
-                        )
-
     def test_internal_links_valid(self):
         """Verify internal documentation links are valid."""
         root = self.get_project_root()

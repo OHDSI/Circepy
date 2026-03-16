@@ -124,11 +124,10 @@ class UnusedConceptsCheck(BaseCheck):
             True if the concept set is used, False otherwise
         """
         # Check primary criteria
-        if expression.primary_criteria and expression.primary_criteria.criteria_list:
-            if self._is_concept_set_used(
-                concept_set, expression.primary_criteria.criteria_list
-            ):
-                return True
+        if expression.primary_criteria and expression.primary_criteria.criteria_list and self._is_concept_set_used(
+            concept_set, expression.primary_criteria.criteria_list
+        ):
+            return True
 
         # Check additional criteria
         if self._is_concept_set_used(concept_set, additional_criteria):
@@ -157,16 +156,11 @@ class UnusedConceptsCheck(BaseCheck):
                         return True
 
         # Check end strategy (CustomEraStrategy)
-        if isinstance(expression.end_strategy, CustomEraStrategy):
-            if expression.end_strategy.drug_codeset_id == concept_set.id:
-                return True
+        if isinstance(expression.end_strategy, CustomEraStrategy) and expression.end_strategy.drug_codeset_id == concept_set.id:
+            return True
 
         # Check censoring criteria
-        if expression.censoring_criteria:
-            if self._is_concept_set_used(concept_set, expression.censoring_criteria):
-                return True
-
-        return False
+        return bool(expression.censoring_criteria and self._is_concept_set_used(concept_set, expression.censoring_criteria))
 
     def _is_concept_set_used(self, concept_set: "ConceptSet", target) -> bool:
         """Check if a concept set is used (supports both List[Criteria] and CriteriaGroup).

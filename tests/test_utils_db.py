@@ -74,7 +74,7 @@ class DuckDBTestHelper:
             return sqlglot.transpile(sql, read="tsql", write="duckdb")[0]
         except Exception as e:
             print(f"FAILED SQL:\n{sql}")
-            raise RuntimeError(f"Translation failed: {e}")
+            raise RuntimeError(f"Translation failed: {e}") from e
 
     def execute_query(self, sql: str):
         """Execute translated query."""
