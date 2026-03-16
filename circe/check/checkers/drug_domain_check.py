@@ -60,7 +60,7 @@ class DrugDomainCheck(BaseCheck):
         ):
             return
 
-        concept_sets: List["ConceptSet"] = []
+        concept_sets: List[ConceptSet] = []
 
         # Map criteria to codeset IDs
         codeset_ids = [

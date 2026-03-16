@@ -30,10 +30,7 @@ except ImportError:
     if TYPE_CHECKING:
         from ...cohortdefinition.cohort import CohortExpression
         from ...cohortdefinition.criteria import (
-            CorelatedCriteria,
-            Criteria,
             CriteriaGroup,
-            DemographicCriteria,
             PrimaryCriteria,
         )
 

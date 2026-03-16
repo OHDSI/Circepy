@@ -38,20 +38,7 @@ except ImportError:
 
     if TYPE_CHECKING:
         from ...cohortdefinition.criteria import (
-            ConditionEra,
-            ConditionOccurrence,
             Criteria,
-            Death,
-            DeviceExposure,
-            DoseEra,
-            DrugEra,
-            DrugExposure,
-            Measurement,
-            Observation,
-            ProcedureOccurrence,
-            Specimen,
-            VisitDetail,
-            VisitOccurrence,
         )
 
 

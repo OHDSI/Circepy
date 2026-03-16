@@ -1,12 +1,13 @@
 
-import pytest
 import json
-from circe.cohortdefinition.cohort import CohortExpression
+
 from circe.cohortdefinition.code_generator import to_python_code
+from circe.cohortdefinition.cohort import CohortExpression
+
 
 def test_code_generation_type2_diabetes():
     """Test that generated code for Type 2 Diabetes cohort recreates the object correctly."""
-    with open('examples/type2_diabetes_cohort.json', 'r') as f:
+    with open('examples/type2_diabetes_cohort.json') as f:
         data = json.load(f)
     
     original_cohort = CohortExpression.model_validate(data)
@@ -20,7 +21,7 @@ def test_code_generation_type2_diabetes():
 
 def test_checksum_stability():
     """Test that checksums are stable for identical objects."""
-    with open('examples/type2_diabetes_cohort.json', 'r') as f:
+    with open('examples/type2_diabetes_cohort.json') as f:
         data = json.load(f)
         
     c1 = CohortExpression.model_validate(data)
@@ -30,7 +31,7 @@ def test_checksum_stability():
 
 def test_checksum_diff():
     """Test that checksums differ for modified objects."""
-    with open('examples/type2_diabetes_cohort.json', 'r') as f:
+    with open('examples/type2_diabetes_cohort.json') as f:
         data = json.load(f)
         
     c1 = CohortExpression.model_validate(data)

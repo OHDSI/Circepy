@@ -9,12 +9,10 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from abc import ABC, abstractmethod
-from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, List, Optional
 
 from ...vocabulary.concept import Concept
-from ..core import ConceptSetSelection, DateAdjustment, DateRange, NumericRange
+from ..core import DateAdjustment, DateRange, NumericRange
 from ..criteria import CriteriaColumn
 
 

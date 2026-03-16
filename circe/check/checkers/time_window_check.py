@@ -42,7 +42,7 @@ class TimeWindowCheck(BaseCorelatedCriteriaCheck):
     def __init__(self):
         """Initialize the time window check."""
         super().__init__()
-        self._observation_filter: Optional["ObservationFilter"] = None
+        self._observation_filter: Optional[ObservationFilter] = None
 
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.

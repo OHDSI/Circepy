@@ -12,21 +12,21 @@ drift from the actual API implementation.
 """
 
 import inspect
-from typing import get_type_hints, List, Dict, Any, Set
-from dataclasses import dataclass
 import sys
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Dict, List
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from circe.cohort_builder.builder import CohortBuilder, CohortWithEntry, CohortWithCriteria
+from circe.cohort_builder.builder import (
+    CohortBuilder,
+    CohortWithCriteria,
+    CohortWithEntry,
+)
 from circe.cohort_builder.query_builder import (
-    BaseQuery, ConditionQuery, DrugQuery, DrugEraQuery, MeasurementQuery,
-    ProcedureQuery, VisitQuery, ObservationQuery, DeathQuery,
-    ConditionEraQuery, DeviceExposureQuery, SpecimenQuery,
-    ObservationPeriodQuery, PayerPlanPeriodQuery, LocationRegionQuery,
-    VisitDetailQuery, DoseEraQuery, CriteriaGroupBuilder
+    BaseQuery,
 )
 
 
@@ -287,7 +287,7 @@ class SkillGenerator:
         
         try:
             # Read existing prompt
-            with open(prompt_path, 'r') as f:
+            with open(prompt_path) as f:
                 prompt_content = f.read()
         except FileNotFoundError:
             print(f"⚠️  Prompt file not found: {prompt_path}")
@@ -353,5 +353,5 @@ if __name__ == "__main__":
         generator.update_system_prompt(skill_content, prompt_path)
     
     print("\n✅ All documentation updated!")
-    print(f"   - SKILL.md")
+    print("   - SKILL.md")
     print(f"   - {len(prompts)} model-specific prompts")

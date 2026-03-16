@@ -1,17 +1,31 @@
 
 import unittest
-from typing import Optional
 from unittest.mock import Mock, call, patch
+
 from circe.check.checkers.range_checker_factory import RangeCheckerFactory
 from circe.check.constants import Constants
-from circe.cohortdefinition.criteria import (
-    ConditionEra, ConditionOccurrence, Death, DeviceExposure, DoseEra,
-    DrugEra, DrugExposure, Measurement, Observation, ObservationPeriod,
-    ProcedureOccurrence, Specimen, VisitOccurrence, VisitDetail, 
-    PayerPlanPeriod, LocationRegion, DemographicCriteria
-)
-from circe.cohortdefinition.core import NumericRange, DateRange, Period
 from circe.cohortdefinition.cohort import CohortExpression
+from circe.cohortdefinition.core import DateRange, NumericRange, Period
+from circe.cohortdefinition.criteria import (
+    ConditionEra,
+    ConditionOccurrence,
+    Death,
+    DemographicCriteria,
+    DeviceExposure,
+    DoseEra,
+    DrugEra,
+    DrugExposure,
+    LocationRegion,
+    Measurement,
+    Observation,
+    ObservationPeriod,
+    PayerPlanPeriod,
+    ProcedureOccurrence,
+    Specimen,
+    VisitDetail,
+    VisitOccurrence,
+)
+
 
 class TestRangeCheckerFactoryCoverage(unittest.TestCase):
     def setUp(self):
@@ -239,8 +253,9 @@ class TestRangeCheckerFactoryCoverage(unittest.TestCase):
     def test_check_default(self):
         # Unhandled criteria should just return (noop)
         # Must inherit from Criteria to bypass BaseCheckerFactory check and reach _get_check_criteria
-        from circe.cohortdefinition.criteria import Criteria
         from pydantic import BaseModel
+
+        from circe.cohortdefinition.criteria import Criteria
         
         # Pydantic requires forward references to be resolved.
         # Since 'Criteria' definition refers to 'CriteriaGroup', we need to mock it

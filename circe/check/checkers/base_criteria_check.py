@@ -8,7 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional
 
 from .base_iterable_check import BaseIterableCheck
 from .warning_reporter import WarningReporter
@@ -22,7 +21,7 @@ except ImportError:
 
     if TYPE_CHECKING:
         from ...cohortdefinition.cohort import CohortExpression
-        from ...cohortdefinition.criteria import CorelatedCriteria, Criteria
+        from ...cohortdefinition.criteria import Criteria
 
 
 class BaseCriteriaCheck(BaseIterableCheck):

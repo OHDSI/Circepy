@@ -9,17 +9,14 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 from pydantic import (
     AliasChoices,
     BaseModel,
     ConfigDict,
-    Discriminator,
     Field,
-    field_validator,
     model_serializer,
-    model_validator,
 )
 
 from .utils import to_pascal_alias

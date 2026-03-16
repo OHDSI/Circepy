@@ -1,8 +1,10 @@
 import unittest
-from unittest.mock import MagicMock
-from circe.vocabulary.concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
-from circe.vocabulary.concept import Concept
-from circe.vocabulary.concept import ConceptSetExpression, ConceptSetItem
+
+from circe.vocabulary.concept import Concept, ConceptSetExpression, ConceptSetItem
+from circe.vocabulary.concept_set_expression_query_builder import (
+    ConceptSetExpressionQueryBuilder,
+)
+
 
 class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
 

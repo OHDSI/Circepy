@@ -20,7 +20,7 @@ except ImportError:
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
-        from ...cohortdefinition.criteria import CorelatedCriteria, Occurrence
+        from ...cohortdefinition.criteria import CorelatedCriteria
 
 
 class OcurrenceCheck(BaseCorelatedCriteriaCheck):

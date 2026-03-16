@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 from pydantic import (
     AliasChoices,
-    BaseModel,
     ConfigDict,
     Field,
     field_validator,
@@ -26,7 +25,6 @@ from .core import (
     CustomEraStrategy,
     DateOffsetStrategy,
     EndStrategy,
-    ObservationFilter,
     Period,
     ResultLimit,
 )

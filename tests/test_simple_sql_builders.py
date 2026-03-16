@@ -6,14 +6,21 @@ Any changes must maintain compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-import pytest
-from unittest.mock import Mock
 from circe.cohortdefinition.builders import (
-    DoseEraSqlBuilder, ObservationPeriodSqlBuilder, PayerPlanPeriodSqlBuilder,
-    VisitDetailSqlBuilder, LocationRegionSqlBuilder, BuilderOptions, CriteriaColumn
+    BuilderOptions,
+    CriteriaColumn,
+    DoseEraSqlBuilder,
+    LocationRegionSqlBuilder,
+    ObservationPeriodSqlBuilder,
+    PayerPlanPeriodSqlBuilder,
+    VisitDetailSqlBuilder,
 )
 from circe.cohortdefinition.criteria import (
-    DoseEra, ObservationPeriod, PayerPlanPeriod, VisitDetail, LocationRegion
+    DoseEra,
+    LocationRegion,
+    ObservationPeriod,
+    PayerPlanPeriod,
+    VisitDetail,
 )
 
 

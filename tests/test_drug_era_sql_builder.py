@@ -5,12 +5,18 @@ This module contains comprehensive tests for the DrugEraSqlBuilder class,
 ensuring 100% test coverage and functionality matching the Java implementation.
 """
 
+
 import pytest
-from typing import List, Optional
+
 from circe.cohortdefinition.builders.drug_era import DrugEraSqlBuilder
-from circe.cohortdefinition.builders.utils import CriteriaColumn, BuilderOptions
+from circe.cohortdefinition.builders.utils import BuilderOptions, CriteriaColumn
+from circe.cohortdefinition.core import (
+    ConceptSetSelection,
+    DateAdjustment,
+    DateRange,
+    NumericRange,
+)
 from circe.cohortdefinition.criteria import DrugEra
-from circe.cohortdefinition.core import DateRange, NumericRange, ConceptSetSelection, DateAdjustment
 from circe.vocabulary.concept import Concept
 
 

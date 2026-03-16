@@ -5,24 +5,37 @@ This module contains comprehensive tests for all the criteria domain classes
 that were recently implemented.
 """
 
-import unittest
-import sys
 import os
-from typing import List, Optional
+import sys
+import unittest
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from circe.cohortdefinition.criteria import (
-    ConditionOccurrence, DrugExposure, ProcedureOccurrence, VisitOccurrence,
-    Observation, Measurement, DeviceExposure, Specimen, Death, VisitDetail,
-    ObservationPeriod, PayerPlanPeriod, LocationRegion, ConditionEra,
-    DrugEra, DoseEra, GeoCriteria, WindowedCriteria
-)
 from circe.cohortdefinition.core import (
-    TextFilter, WindowBound, Window,
-    DateOffsetStrategy, CustomEraStrategy, DateRange, NumericRange,
-    ConceptSetSelection
+    ConceptSetSelection,
+    DateRange,
+    NumericRange,
+    TextFilter,
+)
+from circe.cohortdefinition.criteria import (
+    ConditionEra,
+    ConditionOccurrence,
+    Death,
+    DeviceExposure,
+    DoseEra,
+    DrugEra,
+    DrugExposure,
+    GeoCriteria,
+    LocationRegion,
+    Measurement,
+    Observation,
+    ObservationPeriod,
+    PayerPlanPeriod,
+    ProcedureOccurrence,
+    Specimen,
+    VisitDetail,
+    VisitOccurrence,
 )
 from circe.vocabulary.concept import Concept
 

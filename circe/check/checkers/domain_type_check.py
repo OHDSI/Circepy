@@ -10,13 +10,11 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 
 from typing import List
 
-from ..operations.execution import Execution
 from ..operations.operations import Operations
 from ..utils.criteria_name_helper import CriteriaNameHelper
 from ..warning_severity import WarningSeverity
 from .base_criteria_check import BaseCriteriaCheck
 from .warning_reporter import WarningReporter
-from .warning_reporter_helper import WarningReporterHelper
 
 # Import at runtime to avoid circular dependencies
 try:
@@ -40,17 +38,7 @@ except ImportError:
     if TYPE_CHECKING:
         from ...cohortdefinition.cohort import CohortExpression
         from ...cohortdefinition.criteria import (
-            ConditionOccurrence,
             Criteria,
-            Death,
-            DeviceExposure,
-            DrugExposure,
-            Measurement,
-            Observation,
-            ProcedureOccurrence,
-            Specimen,
-            VisitDetail,
-            VisitOccurrence,
         )
 
 

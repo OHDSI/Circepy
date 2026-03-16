@@ -6,11 +6,13 @@ for patients with Type 2 Diabetes using the CIRCE Python API.
 """
 
 from circe import CohortExpression
-from circe.cohortdefinition import PrimaryCriteria, ConditionOccurrence
-from circe.cohortdefinition.core import ObservationFilter, ResultLimit
-from circe.cohortdefinition.cohort_expression_query_builder import BuildExpressionQueryOptions
-from circe.vocabulary import ConceptSet, ConceptSetExpression, ConceptSetItem, Concept
 from circe.api import build_cohort_query
+from circe.cohortdefinition import ConditionOccurrence, PrimaryCriteria
+from circe.cohortdefinition.cohort_expression_query_builder import (
+    BuildExpressionQueryOptions,
+)
+from circe.cohortdefinition.core import ObservationFilter, ResultLimit
+from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 
 def create_diabetes_cohort():
@@ -96,7 +98,7 @@ if __name__ == "__main__":
     sql = generate_sql_from_cohort(cohort)
     
     # Display first 500 characters of SQL
-    print(f"\nGenerated SQL (first 500 chars):")
+    print("\nGenerated SQL (first 500 chars):")
     print(sql[:500])
     print("...")
     

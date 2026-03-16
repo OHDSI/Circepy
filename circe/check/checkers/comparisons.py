@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from ...cohortdefinition.core import DateRange, NumericRange, Period
 from ...vocabulary.concept import Concept, ConceptSet
@@ -49,7 +49,7 @@ class Comparisons:
             return False
 
         # Import here to avoid circular dependencies
-        from ...cohortdefinition.core import DateRange, NumericRange, Period
+        from ...cohortdefinition.core import NumericRange
 
         if isinstance(range_val, NumericRange):
             if range_val.value is None or range_val.extent is None:
@@ -258,31 +258,7 @@ class Comparisons:
             VisitOccurrence,
         )
 
-        if isinstance(c1, ConditionEra):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, ConditionOccurrence):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, Death):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DeviceExposure):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DoseEra):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DrugEra):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DrugExposure):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, Measurement):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, Observation):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, ProcedureOccurrence):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, Specimen):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, VisitOccurrence):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, VisitDetail):
+        if isinstance(c1, ConditionEra) or isinstance(c1, ConditionOccurrence) or isinstance(c1, Death) or isinstance(c1, DeviceExposure) or isinstance(c1, DoseEra) or isinstance(c1, DrugEra) or isinstance(c1, DrugExposure) or isinstance(c1, Measurement) or isinstance(c1, Observation) or isinstance(c1, ProcedureOccurrence) or isinstance(c1, Specimen) or isinstance(c1, VisitOccurrence) or isinstance(c1, VisitDetail):
             return c1.codeset_id == c2.codeset_id
 
         return False

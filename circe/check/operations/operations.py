@@ -12,7 +12,6 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 from typing import Any, Callable, Generic, Optional, TypeVar
 
 from .conditional_operations import ConditionalOperations
-from .execution import Execution
 from .executive_operations import ExecutiveOperations
 
 T = TypeVar("T")

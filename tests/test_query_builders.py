@@ -5,22 +5,33 @@ This module contains comprehensive tests for the CohortExpressionQueryBuilder
 and ConceptSetExpressionQueryBuilder classes.
 """
 
-import unittest
 import json
-from typing import List, Optional
+import unittest
+
 from circe.cohortdefinition import (
-    CohortExpression, CohortExpressionQueryBuilder, BuildExpressionQueryOptions,
+    BuildExpressionQueryOptions,
+    CohortExpression,
+    CohortExpressionQueryBuilder,
+    CollapseSettings,
+    CollapseType,
     ConceptSetExpressionQueryBuilder,
-    PrimaryCriteria, CriteriaGroup, CorelatedCriteria, DemographicCriteria,
-    ConditionOccurrence, Death, Measurement, Observation,
-    DateRange, NumericRange, TextFilter, ConceptSetSelection,
-    DateOffsetStrategy, CustomEraStrategy, Occurrence, CriteriaColumn,
-    CollapseSettings, CollapseType, ResultLimit, Period, ObservationFilter
+    ConceptSetSelection,
+    ConditionOccurrence,
+    CorelatedCriteria,
+    CriteriaColumn,
+    CriteriaGroup,
+    CustomEraStrategy,
+    DateOffsetStrategy,
+    Death,
+    DemographicCriteria,
+    NumericRange,
+    ObservationFilter,
+    Occurrence,
+    Period,
+    PrimaryCriteria,
+    ResultLimit,
 )
-from circe.cohortdefinition.builders.utils import BuilderOptions
-from circe.vocabulary import (
-    Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
-)
+from circe.vocabulary import Concept, ConceptSetExpression, ConceptSetItem
 
 
 class TestConceptSetExpressionQueryBuilder(unittest.TestCase):

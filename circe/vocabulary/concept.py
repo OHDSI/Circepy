@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 

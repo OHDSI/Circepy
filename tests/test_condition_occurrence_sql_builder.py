@@ -5,25 +5,28 @@ This module tests the ConditionOccurrenceSqlBuilder implementation
 with comprehensive coverage of all methods and edge cases.
 """
 
-import unittest
-from unittest.mock import Mock, patch
-from typing import List, Set, Optional
+import os
 
 # Add project root to path for imports
 import sys
-import os
+import unittest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from circe.cohortdefinition.builders import (
-    BuilderUtils, BuilderOptions, CriteriaColumn,
-    ConditionOccurrenceSqlBuilder
+    BuilderOptions,
+    ConditionOccurrenceSqlBuilder,
+    CriteriaColumn,
+)
+from circe.cohortdefinition.core import (
+    ConceptSetSelection,
+    DateAdjustment,
+    DateRange,
+    NumericRange,
+    TextFilter,
 )
 from circe.cohortdefinition.criteria import ConditionOccurrence
 from circe.vocabulary.concept import Concept
-from circe.cohortdefinition.core import (
-    DateRange, DateAdjustment, NumericRange, TextFilter,
-    ConceptSetSelection, DateType
-)
 
 
 class TestConditionOccurrenceSqlBuilder(unittest.TestCase):

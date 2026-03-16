@@ -6,7 +6,7 @@ circe.cohort_builder imports and requires a 'cohort' variable output.
 """
 
 import re
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 def validate_imports(code: str) -> tuple[bool, str]:
@@ -103,10 +103,11 @@ def execute_cohort_code(code: str) -> Dict[str, Any]:
         cohort_expression = local_scope['cohort']
         
         # Import circe modules for processing (safe to do here)
+        import json
+
         from circe.api import build_cohort_query, cohort_print_friendly
         from circe.cohortdefinition import BuildExpressionQueryOptions
         from circe.cohortdefinition.code_generator import to_python_code
-        import json
         
         # Generate outputs
         options = BuildExpressionQueryOptions()

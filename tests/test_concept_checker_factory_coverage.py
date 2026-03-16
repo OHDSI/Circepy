@@ -1,14 +1,27 @@
 
 import unittest
 from unittest.mock import Mock, call
+
 from circe.check.checkers.concept_checker_factory import ConceptCheckerFactory
 from circe.check.constants import Constants
 from circe.cohortdefinition.criteria import (
-    ConditionEra, ConditionOccurrence, Death, DeviceExposure, DoseEra,
-    DrugEra, DrugExposure, Measurement, Observation, ObservationPeriod,
-    ProcedureOccurrence, Specimen, VisitOccurrence, PayerPlanPeriod,
-    DemographicCriteria
+    ConditionEra,
+    ConditionOccurrence,
+    Death,
+    DemographicCriteria,
+    DeviceExposure,
+    DoseEra,
+    DrugEra,
+    DrugExposure,
+    Measurement,
+    Observation,
+    ObservationPeriod,
+    PayerPlanPeriod,
+    ProcedureOccurrence,
+    Specimen,
+    VisitOccurrence,
 )
+
 
 class TestConceptCheckerFactoryCoverage(unittest.TestCase):
     def setUp(self):

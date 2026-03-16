@@ -1,22 +1,48 @@
 import unittest
-import json
-import logging
-from typing import List
 
 from circe.cohortdefinition.cohort import CohortExpression
 from circe.cohortdefinition.core import (
-    ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy,
-    CustomEraStrategy, ConceptSetSelection, CollapseType, DateType, TextFilter,
-    Window, WindowBound, DateAdjustment, ObservationFilter, NumericRange, DateRange
+    CollapseSettings,
+    CollapseType,
+    CustomEraStrategy,
+    DateRange,
+    NumericRange,
+    ObservationFilter,
+    Period,
+    ResultLimit,
+    TextFilter,
+    Window,
+    WindowBound,
 )
 from circe.cohortdefinition.criteria import (
-    Criteria, CriteriaGroup, DemographicCriteria, InclusionRule,
-    ConditionOccurrence, DrugExposure, ProcedureOccurrence, VisitOccurrence,
-    Observation, Measurement, DeviceExposure, Specimen, Death, VisitDetail,
-    Occurrence, CriteriaColumn, ObservationPeriod, PayerPlanPeriod, LocationRegion,
-    ConditionEra, DrugEra, DoseEra, CorelatedCriteria
+    ConditionEra,
+    ConditionOccurrence,
+    CorelatedCriteria,
+    CriteriaGroup,
+    Death,
+    DemographicCriteria,
+    DeviceExposure,
+    DoseEra,
+    DrugEra,
+    DrugExposure,
+    InclusionRule,
+    Measurement,
+    Observation,
+    ObservationPeriod,
+    Occurrence,
+    PayerPlanPeriod,
+    ProcedureOccurrence,
+    Specimen,
+    VisitDetail,
+    VisitOccurrence,
 )
-from circe.vocabulary.concept import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
+from circe.vocabulary.concept import (
+    Concept,
+    ConceptSet,
+    ConceptSetExpression,
+    ConceptSetItem,
+)
+
 
 class TestKitchenSinkCohort(unittest.TestCase):
     """Test comprehensive 'Kitchen Sink' cohort definition."""

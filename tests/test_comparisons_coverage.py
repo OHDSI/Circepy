@@ -1,13 +1,31 @@
 
 import unittest
-from unittest.mock import Mock, patch
+
 from circe.check.checkers.comparisons import Comparisons
-from circe.cohortdefinition.core import NumericRange, DateRange, Period, ObservationFilter, Window, WindowBound
-from circe.cohortdefinition.criteria import (
-    ConditionEra, ConditionOccurrence, Death, DeviceExposure, DoseEra,
-    DrugEra, DrugExposure, Measurement, Observation, ProcedureOccurrence,
-    Specimen, VisitOccurrence, VisitDetail
+from circe.cohortdefinition.core import (
+    DateRange,
+    NumericRange,
+    ObservationFilter,
+    Period,
+    Window,
+    WindowBound,
 )
+from circe.cohortdefinition.criteria import (
+    ConditionEra,
+    ConditionOccurrence,
+    Death,
+    DeviceExposure,
+    DoseEra,
+    DrugEra,
+    DrugExposure,
+    Measurement,
+    Observation,
+    ProcedureOccurrence,
+    Specimen,
+    VisitDetail,
+    VisitOccurrence,
+)
+
 
 class TestComparisonsCoverage(unittest.TestCase):
     
@@ -142,7 +160,12 @@ class TestComparisonsCoverage(unittest.TestCase):
     # --- compare_concept_set ---
     
     def test_compare_concept_set(self):
-        from circe.vocabulary.concept import ConceptSet, Concept, ConceptSetExpression, ConceptSetItem
+        from circe.vocabulary.concept import (
+            Concept,
+            ConceptSet,
+            ConceptSetExpression,
+            ConceptSetItem,
+        )
         
         c1 = Concept(concept_code="A", domain_id="D", vocabulary_id="V", concept_id=1, concept_name="N", standard_concept="S", invalid_reason="I", concept_class_id="C")
         c2 = Concept(concept_code="A", domain_id="D", vocabulary_id="V", concept_id=1, concept_name="N", standard_concept="S", invalid_reason="I", concept_class_id="C")

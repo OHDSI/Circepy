@@ -78,9 +78,7 @@ def project_event_columns(
     include_visit_occurrence: bool = False,
 ) -> ir.Table:
     keep = ["person_id", primary_key, start_column]
-    if end_column in table.columns:
-        keep.append(end_column)
-    elif include_visit_occurrence and start_column != end_column:
+    if end_column in table.columns or include_visit_occurrence and start_column != end_column:
         keep.append(end_column)
     if include_visit_occurrence and "visit_occurrence_id" in table.columns:
         keep.append("visit_occurrence_id")

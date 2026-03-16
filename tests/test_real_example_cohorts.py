@@ -8,15 +8,21 @@ Reference outputs were generated using R CirceR package and are stored in
 tests/cohorts/reference_outputs/
 """
 
-from circe.api import cohort_expression_from_json, build_cohort_query, cohort_print_friendly
-from circe.cohortdefinition import BuildExpressionQueryOptions
-from pathlib import Path
-from typing import Optional, Tuple, Dict
-import pytest
-import re
-from difflib import unified_diff
-import textwrap
 import difflib
+import re
+import textwrap
+from difflib import unified_diff
+from pathlib import Path
+from typing import Dict, Optional, Tuple
+
+import pytest
+
+from circe.api import (
+    build_cohort_query,
+    cohort_expression_from_json,
+    cohort_print_friendly,
+)
+from circe.cohortdefinition import BuildExpressionQueryOptions
 
 # Test cohort files - these are the cohorts added in the recent commit
 # Directories
@@ -25,6 +31,7 @@ REFERENCE_DIR = COHORTS_DIR / 'reference_outputs'
 
 # Dynamic discovery of cohort files
 import random
+
 
 def get_target_cohort_files(config):
     """Discover cohort files based on configuration."""

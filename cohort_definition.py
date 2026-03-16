@@ -1,5 +1,5 @@
-from circe.cohort_builder import CohortBuilder
 from circe.api import cohort_print_friendly
+from circe.cohort_builder import CohortBuilder
 
 # Define inferred concept sets
 

@@ -10,7 +10,6 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 
 from typing import Optional
 
-from ..warning_severity import WarningSeverity
 from .base_value_check import BaseValueCheck
 from .range_checker_factory import RangeCheckerFactory
 from .warning_reporter import WarningReporter
@@ -25,8 +24,7 @@ except ImportError:
 
     if TYPE_CHECKING:
         from ...cohortdefinition.cohort import CohortExpression
-        from ...cohortdefinition.core import ObservationFilter, Window
-        from ...cohortdefinition.criteria import CorelatedCriteria
+        from ...cohortdefinition.core import ObservationFilter
 
 
 class RangeCheck(BaseValueCheck):

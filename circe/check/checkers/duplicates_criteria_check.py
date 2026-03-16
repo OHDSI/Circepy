@@ -38,7 +38,7 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
     def __init__(self):
         """Initialize the duplicates criteria check."""
         super().__init__()
-        self._criteria_list: List[Tuple[str, "Criteria"]] = []
+        self._criteria_list: List[Tuple[str, Criteria]] = []
 
     def _after_check(
         self, reporter: WarningReporter, expression: "CohortExpression"
@@ -108,19 +108,7 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
                 c1.codeset_id == c2.codeset_id
                 and c1.condition_source_concept == c2.condition_source_concept
             )
-        elif isinstance(c1, Death):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DeviceExposure):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DoseEra):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DrugEra):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DrugExposure):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, Measurement):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, Observation):
+        elif isinstance(c1, Death) or isinstance(c1, DeviceExposure) or isinstance(c1, DoseEra) or isinstance(c1, DrugEra) or isinstance(c1, DrugExposure) or isinstance(c1, Measurement) or isinstance(c1, Observation):
             return c1.codeset_id == c2.codeset_id
         elif isinstance(c1, ObservationPeriod):
             # For ObservationPeriod, compare all fields
@@ -129,13 +117,7 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
                 and self._compare_objects(c1.period_end_date, c2.period_end_date)
                 and self._compare_objects(c1.period_length, c2.period_length)
             )
-        elif isinstance(c1, ProcedureOccurrence):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, Specimen):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, VisitOccurrence):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, VisitDetail):
+        elif isinstance(c1, ProcedureOccurrence) or isinstance(c1, Specimen) or isinstance(c1, VisitOccurrence) or isinstance(c1, VisitDetail):
             return c1.codeset_id == c2.codeset_id
         elif isinstance(c1, PayerPlanPeriod):
             return (

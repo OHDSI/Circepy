@@ -5,21 +5,21 @@ This module contains comprehensive tests for all the supporting classes
 that were recently implemented.
 """
 
-import unittest
-import sys
 import os
-from typing import List, Optional
+import sys
+import unittest
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from circe.cohortdefinition.core import (
-    ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy,
-    CustomEraStrategy, DateRange, NumericRange,
-    ConceptSetSelection, CollapseType, DateType, TextFilter, Window, WindowBound,
-    DateAdjustment
+    CustomEraStrategy,
+    DateOffsetStrategy,
+    TextFilter,
+    Window,
+    WindowBound,
 )
-from circe.cohortdefinition.criteria import WindowedCriteria, ConditionOccurrence
+from circe.cohortdefinition.criteria import ConditionOccurrence, WindowedCriteria
 
 
 class TestTextFilter(unittest.TestCase):
@@ -416,8 +416,11 @@ class TestSupportingClassesIntegration(unittest.TestCase):
     def test_all_supporting_classes_importable(self):
         """Test that all supporting classes can be imported."""
         from circe.cohortdefinition.core import (
-            TextFilter, WindowBound, Window,
-            DateOffsetStrategy, CustomEraStrategy
+            CustomEraStrategy,
+            DateOffsetStrategy,
+            TextFilter,
+            Window,
+            WindowBound,
         )
         from circe.cohortdefinition.criteria import WindowedCriteria
         

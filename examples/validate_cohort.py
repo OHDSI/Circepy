@@ -6,6 +6,7 @@ using the CIRCE validation framework.
 """
 
 import json
+
 from circe import cohort_expression_from_json
 from circe.check import Checker
 from circe.check.warning_severity import WarningSeverity
@@ -131,7 +132,7 @@ def validate_from_file(file_path):
     print(f"Validating cohort from: {file_path}")
     
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path) as f:
             json_string = f.read()
         
         cohort, warnings = validate_cohort_from_json(json_string)

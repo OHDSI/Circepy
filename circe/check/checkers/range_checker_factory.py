@@ -44,8 +44,7 @@ except ImportError:
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
-        from ...cohortdefinition.cohort import CohortExpression
-        from ...cohortdefinition.core import DateRange, NumericRange, Period
+        from ...cohortdefinition.core import Period
         from ...cohortdefinition.criteria import (
             ConditionEra,
             ConditionOccurrence,
@@ -717,8 +716,5 @@ class RangeCheckerFactory(BaseCheckerFactory):
                 Constants.Attributes.CENSOR_WINDOW_ATTR,
             )
         # Handle DemographicCriteria (delegate to base class)
-        elif isinstance(expression_or_criteria, DemographicCriteria):
-            super().check(expression_or_criteria)
-        # Handle Criteria (delegate to base class)
-        elif isinstance(expression_or_criteria, Criteria):
+        elif isinstance(expression_or_criteria, DemographicCriteria) or isinstance(expression_or_criteria, Criteria):
             super().check(expression_or_criteria)

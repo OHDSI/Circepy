@@ -1,28 +1,50 @@
 import unittest
-from circe.cohortdefinition import DrugExposure, TextFilter, ConditionOccurrence, VisitOccurrence, ProcedureOccurrence, NumericRange
-from circe.vocabulary.concept import Concept
+
+from circe.cohortdefinition import (
+    ConceptSetSelection,
+    ConditionEra,
+    ConditionOccurrence,
+    DateRange,
+    Death,
+    DeviceExposure,
+    DoseEra,
+    DrugEra,
+    DrugExposure,
+    LocationRegion,
+    Measurement,
+    NumericRange,
+    Observation,
+    ObservationPeriod,
+    PayerPlanPeriod,
+    Period,
+    ProcedureOccurrence,
+    Specimen,
+    TextFilter,
+    VisitDetail,
+)
+from circe.cohortdefinition.builders.condition_era import ConditionEraSqlBuilder
+from circe.cohortdefinition.builders.condition_occurrence import (
+    ConditionOccurrenceSqlBuilder,
+)
+from circe.cohortdefinition.builders.death import DeathSqlBuilder
+from circe.cohortdefinition.builders.device_exposure import DeviceExposureSqlBuilder
+from circe.cohortdefinition.builders.dose_era import DoseEraSqlBuilder
+from circe.cohortdefinition.builders.drug_era import DrugEraSqlBuilder
 from circe.cohortdefinition.builders.drug_exposure import DrugExposureSqlBuilder
-from circe.cohortdefinition.builders.condition_occurrence import ConditionOccurrenceSqlBuilder
-from circe.cohortdefinition.builders.visit_occurrence import VisitOccurrenceSqlBuilder
-from circe.cohortdefinition.builders.procedure_occurrence import ProcedureOccurrenceSqlBuilder
+from circe.cohortdefinition.builders.location_region import LocationRegionSqlBuilder
 from circe.cohortdefinition.builders.measurement import MeasurementSqlBuilder
 from circe.cohortdefinition.builders.observation import ObservationSqlBuilder
-from circe.cohortdefinition.builders.device_exposure import DeviceExposureSqlBuilder
-from circe.cohortdefinition.builders.death import DeathSqlBuilder
-from circe.cohortdefinition.builders.condition_era import ConditionEraSqlBuilder
-from circe.cohortdefinition.builders.drug_era import DrugEraSqlBuilder
-from circe.cohortdefinition.builders.dose_era import DoseEraSqlBuilder
+from circe.cohortdefinition.builders.observation_period import (
+    ObservationPeriodSqlBuilder,
+)
+from circe.cohortdefinition.builders.payer_plan_period import PayerPlanPeriodSqlBuilder
+from circe.cohortdefinition.builders.procedure_occurrence import (
+    ProcedureOccurrenceSqlBuilder,
+)
 from circe.cohortdefinition.builders.specimen import SpecimenSqlBuilder
 from circe.cohortdefinition.builders.visit_detail import VisitDetailSqlBuilder
-from circe.cohortdefinition.builders.payer_plan_period import PayerPlanPeriodSqlBuilder
-from circe.cohortdefinition.builders.observation_period import ObservationPeriodSqlBuilder
-from circe.cohortdefinition.builders.location_region import LocationRegionSqlBuilder
-from circe.cohortdefinition import (
-    DrugExposure, TextFilter, ConditionOccurrence, VisitOccurrence, ConceptSetSelection,
-    ProcedureOccurrence, NumericRange, Measurement, Observation, DeviceExposure, Death, DateRange,
-    ConditionEra, DrugEra, DoseEra, Specimen, VisitDetail, PayerPlanPeriod, ObservationPeriod, Period,
-    LocationRegion
-)
+from circe.vocabulary.concept import Concept
+
 
 class TestDrugExposureBuilder(unittest.TestCase):
     

@@ -1,9 +1,15 @@
 
 import unittest
-import json
+
 from circe.cohortdefinition.cohort import CohortExpression
-from circe.vocabulary.concept import ConceptSet, ConceptSetExpression, ConceptSetItem, Concept
 from circe.cohortdefinition.criteria import PrimaryCriteria
+from circe.vocabulary.concept import (
+    Concept,
+    ConceptSet,
+    ConceptSetExpression,
+    ConceptSetItem,
+)
+
 
 class TestCohortHashing(unittest.TestCase):
     """Test suite for CohortExpression checksum stability and correctness."""

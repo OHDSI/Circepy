@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Union
+from typing import Any, List, Optional, Union
 
 from pydantic import (
     AliasChoices,
@@ -23,11 +23,9 @@ from pydantic import (
 from ..vocabulary.concept import Concept
 from .core import (
     CirceBaseModel,
-    CollapseSettings,
     ConceptSetSelection,
     DateAdjustment,
     DateRange,
-    EndStrategy,
     NumericRange,
     ObservationFilter,
     Period,
@@ -1420,7 +1418,7 @@ class CriteriaGroup(BaseModel):
                 c_type = next(
                     (
                         k
-                        for k in item_copy.keys()
+                        for k in item_copy
                         if k
                         not in [
                             "StartWindow",

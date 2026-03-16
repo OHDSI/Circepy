@@ -94,7 +94,7 @@ class UnusedConceptsCheck(BaseCheck):
         Returns:
             A list of all criteria from additional criteria
         """
-        additional_criteria: List["Criteria"] = []
+        additional_criteria: List[Criteria] = []
         if expression.additional_criteria:
             additional_criteria.extend(
                 self._to_criteria_list(expression.additional_criteria.criteria_list)
@@ -244,7 +244,7 @@ class UnusedConceptsCheck(BaseCheck):
         Returns:
             A list of Criteria
         """
-        criteria_list: List["Criteria"] = []
+        criteria_list: List[Criteria] = []
         if (
             hasattr(correlated_criteria, "criteria_list")
             and correlated_criteria.criteria_list
@@ -296,7 +296,7 @@ class UnusedConceptsCheck(BaseCheck):
         Returns:
             A list of Criteria
         """
-        criteria: List["Criteria"] = []
+        criteria: List[Criteria] = []
         if groups:
             for group in groups:
                 if group.criteria_list:

@@ -1,8 +1,9 @@
+import json
 import os
 import sys
-import json
 from pathlib import Path
-from flask import Flask, render_template, request, jsonify
+
+from flask import Flask, jsonify, render_template, request
 
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))

@@ -8,11 +8,11 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Any, List, Optional, Set
+from typing import List, Optional, Set
 
 from ..criteria import LocationRegion
 from .base import CriteriaSqlBuilder
-from .utils import BuilderOptions, BuilderUtils, CriteriaColumn
+from .utils import BuilderOptions, CriteriaColumn
 
 
 class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):

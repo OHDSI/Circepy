@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 import json
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, List, Optional, Union
 
 from .builders import (
     ConditionEraSqlBuilder,
@@ -49,7 +49,6 @@ from .criteria import (
     Measurement,
     Observation,
     ObservationPeriod,
-    Occurrence,
     PayerPlanPeriod,
     PrimaryCriteria,
     ProcedureOccurrence,
@@ -936,7 +935,7 @@ DROP TABLE #inclusion_rules;
         # End date selects
         end_date_selects = []
 
-        from .core import CustomEraStrategy, DateOffsetStrategy, EndStrategy
+        from .core import CustomEraStrategy, DateOffsetStrategy
 
         if not isinstance(expression.end_strategy, DateOffsetStrategy):
             end_date_selects.append(
@@ -1233,22 +1232,6 @@ DROP TABLE #inclusion_rules;
         inner_criteria = criteria.criteria
         if isinstance(inner_criteria, dict):
             # Try to deserialize it - import here to avoid circular dependency issues
-            from .criteria import ConditionEra as CE
-            from .criteria import ConditionOccurrence as CO
-            from .criteria import Death as D
-            from .criteria import DeviceExposure as DevE
-            from .criteria import DoseEra as DoE
-            from .criteria import DrugEra as DrE
-            from .criteria import DrugExposure as DE
-            from .criteria import LocationRegion as LR
-            from .criteria import Measurement as M
-            from .criteria import Observation as O
-            from .criteria import ObservationPeriod as OP
-            from .criteria import PayerPlanPeriod as PPP
-            from .criteria import ProcedureOccurrence as PO
-            from .criteria import Specimen as S
-            from .criteria import VisitDetail as VD
-            from .criteria import VisitOccurrence as VO
 
             criteria_type = None
             criteria_data = None

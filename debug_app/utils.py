@@ -1,15 +1,19 @@
-import re
 import os
+import re
 import sys
 from pathlib import Path
-from typing import Optional, Tuple, Any
 
 # Ensure we can import circe
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from circe.api import cohort_expression_from_json, build_cohort_query, cohort_print_friendly
+from circe.api import (
+    build_cohort_query,
+    cohort_expression_from_json,
+    cohort_print_friendly,
+)
 from circe.cohortdefinition import BuildExpressionQueryOptions
 from circe.cohortdefinition.code_generator import to_python_code
+
 
 def normalize_sql(sql: str) -> str:
     """
@@ -49,7 +53,7 @@ def normalize_sql(sql: str) -> str:
     for kw in keywords:
         # Look for keyword preceded by space
         # We replace " keyword" with "\nkeyword"
-        sql = re.sub(f'\\s({kw})\\s', f'\n\\1 ', sql)
+        sql = re.sub(f'\\s({kw})\\s', '\n\\1 ', sql)
     
     # Consistency for SQL tokens
     sql = re.sub(r'\s*([(),=<>!]+)\s*', r'\1', sql)
@@ -201,11 +205,11 @@ def generate_reference_with_r(json_content: str) -> dict:
             ref_md = ""
             
             if os.path.exists(sql_path):
-                with open(sql_path, 'r') as f:
+                with open(sql_path) as f:
                     ref_sql = f.read()
             
             if os.path.exists(md_path):
-                with open(md_path, 'r') as f:
+                with open(md_path) as f:
                     ref_md = f.read()
             
             return {
@@ -236,10 +240,9 @@ def get_ai_explanation(ref_content: str, gen_content: str, type_label: str = "SQ
     """
     Uses Google GenAI to explain the differences between reference and generated content.
     """
-    import os
     import hashlib
     import json
-    from pathlib import Path
+    import os
 
     # 1. Construct Prompt FIRST (so we can hash it)
     prompt = f"""
@@ -273,7 +276,7 @@ def get_ai_explanation(ref_content: str, gen_content: str, type_label: str = "SQ
         
         if cache_file.exists():
             print(f"Cache hit for {prompt_hash}")
-            with open(cache_file, 'r') as f:
+            with open(cache_file) as f:
                 cached_data = json.load(f)
                 return {"explanation": cached_data['explanation'], "error": None}
     except Exception as e:

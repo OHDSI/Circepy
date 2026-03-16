@@ -1,8 +1,10 @@
 
+from typing import Any, List
+
 import duckdb
 import pytest
 import sqlglot
-from typing import List, Dict, Any, Optional
+
 
 class DuckDBTestHelper:
     """Helper class for running OHDSI SQL in DuckDB tests."""

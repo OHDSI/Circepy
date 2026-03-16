@@ -6,16 +6,17 @@ This example demonstrates different ways to generate SQL from cohort definitions
 
 import json
 from pathlib import Path
-from circe import cohort_expression_from_json, build_cohort_query
+
+from circe import build_cohort_query, cohort_expression_from_json
 from circe.cohortdefinition.cohort_expression_query_builder import (
+    BuildExpressionQueryOptions,
     CohortExpressionQueryBuilder,
-    BuildExpressionQueryOptions
 )
 
 
 def load_cohort_from_json_file(file_path):
     """Load a cohort expression from a JSON file."""
-    with open(file_path, 'r') as f:
+    with open(file_path) as f:
         json_data = f.read()
     
     # Use the API function to parse JSON

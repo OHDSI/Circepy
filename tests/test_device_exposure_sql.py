@@ -1,9 +1,11 @@
 import unittest
+
 from circe.cohortdefinition.builders.device_exposure import DeviceExposureSqlBuilder
-from circe.cohortdefinition.criteria import DeviceExposure
-from circe.cohortdefinition.core import DateRange, NumericRange
 from circe.cohortdefinition.builders.utils import BuilderOptions
+from circe.cohortdefinition.core import DateRange, NumericRange
+from circe.cohortdefinition.criteria import DeviceExposure
 from circe.vocabulary.concept import Concept
+
 
 class TestDeviceExposureSql(unittest.TestCase):
     

@@ -1,8 +1,10 @@
 import unittest
+
+from circe.cohortdefinition.builders.utils import CriteriaColumn
 from circe.cohortdefinition.builders.visit_occurrence import VisitOccurrenceSqlBuilder
-from circe.cohortdefinition.builders.utils import BuilderOptions, CriteriaColumn
+from circe.cohortdefinition.core import ConceptSetSelection, DateRange, NumericRange
 from circe.cohortdefinition.criteria import VisitOccurrence
-from circe.cohortdefinition.core import DateRange, NumericRange, ConceptSetSelection
+
 
 class TestVisitOccurrenceSqlBuilderParity(unittest.TestCase):
     def setUp(self):

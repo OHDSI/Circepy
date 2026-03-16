@@ -8,9 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Any, List, Optional, Set
-
-from pydantic import BaseModel, ConfigDict, Field
+from typing import List, Optional, Set
 
 from ..criteria import Death
 from .base import CriteriaSqlBuilder

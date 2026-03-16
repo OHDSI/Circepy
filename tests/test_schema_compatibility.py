@@ -5,7 +5,7 @@ Ensures the Python Pydantic models match the *full nested structure*, types, and
 declared in the Java JSON Schema, serving as a 1:1 replacement for the Java version.
 """
 import json
-import pytest
+
 from deepdiff import DeepDiff  # pip install deepdiff
 
 from circe import get_json_schema
@@ -70,7 +70,7 @@ def normalize_schema(schema):
 
 def test_compare_python_java_schema():
     # Load Java schema
-    with open(JAVA_SCHEMA_PATH, "r") as f:
+    with open(JAVA_SCHEMA_PATH) as f:
         java_schema = json.load(f)
 
     # Generate Python schema from Pydantic

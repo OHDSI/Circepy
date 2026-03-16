@@ -7,6 +7,7 @@ links are valid, and version numbers match.
 
 import re
 from pathlib import Path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # Python <3.11 fallback

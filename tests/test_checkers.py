@@ -6,45 +6,47 @@ that the Python implementation produces equivalent warnings.
 """
 
 import json
-import os
-import pytest
 from pathlib import Path
-from typing import List
 
-from circe.cohortdefinition import CohortExpression
-from circe.cohortdefinition.core import CustomEraStrategy, DateOffsetStrategy, DateType
-from circe.cohortdefinition.criteria import PrimaryCriteria, CriteriaGroup
-from circe.cohortdefinition.criteria import ConditionOccurrence, Occurrence, CorelatedCriteria, InclusionRule
+import pytest
+
 from circe.check import Checker
 from circe.check.checkers import (
-    UnusedConceptsCheck,
+    ConceptSetCriteriaCheck,
+    CriteriaContradictionsCheck,
+    DeathTimeWindowCheck,
+    DomainTypeCheck,
+    DrugEraCheck,
+    DuplicatesConceptSetCheck,
+    DuplicatesCriteriaCheck,
+    EmptyConceptSetCheck,
+    EventsProgressionCheck,
     ExitCriteriaCheck,
     ExitCriteriaDaysOffsetCheck,
-    RangeCheck,
-    ConceptCheck,
-    ConceptSetSelectionCheck,
-    AttributeCheck,
-    TextCheck,
     IncompleteRuleCheck,
     InitialEventCheck,
     NoExitCriteriaCheck,
-    ConceptSetCriteriaCheck,
-    DrugEraCheck,
     OcurrenceCheck,
-    DuplicatesCriteriaCheck,
-    DuplicatesConceptSetCheck,
-    DrugDomainCheck,
-    EmptyConceptSetCheck,
-    EventsProgressionCheck,
-    TimeWindowCheck,
+    RangeCheck,
     TimePatternCheck,
-    DomainTypeCheck,
-    CriteriaContradictionsCheck,
-    DeathTimeWindowCheck,
+    UnusedConceptsCheck,
 )
 from circe.check.warning import Warning
-from circe.check.warnings import ConceptSetWarning, IncompleteRuleWarning, DefaultWarning
 from circe.check.warning_severity import WarningSeverity
+from circe.check.warnings import (
+    ConceptSetWarning,
+    DefaultWarning,
+    IncompleteRuleWarning,
+)
+from circe.cohortdefinition import CohortExpression
+from circe.cohortdefinition.core import CustomEraStrategy, DateOffsetStrategy, DateType
+from circe.cohortdefinition.criteria import (
+    ConditionOccurrence,
+    CorelatedCriteria,
+    CriteriaGroup,
+    InclusionRule,
+    Occurrence,
+)
 
 
 def get_resource_path(relative_path: str) -> Path:
@@ -81,7 +83,7 @@ def load_cohort_expression(resource_path: str) -> CohortExpression:
         A CohortExpression instance
     """
     file_path = get_resource_path(resource_path)
-    with open(file_path, 'r') as f:
+    with open(file_path) as f:
         data = json.load(f)
     
     # Normalize field names - Java JSON sometimes uses different capitalization
@@ -632,8 +634,12 @@ class TestRangeCheck:
     
     def test_check_negative_window_days(self):
         """Test that negative window days trigger warnings."""
-        from circe.cohortdefinition.criteria import CriteriaGroup, CorelatedCriteria, ConditionOccurrence
-        from circe.cohortdefinition.core import Window, WindowBound 
+        from circe.cohortdefinition.core import Window, WindowBound
+        from circe.cohortdefinition.criteria import (
+            ConditionOccurrence,
+            CorelatedCriteria,
+            CriteriaGroup,
+        )
         
         # Windows are valid on CorelatedCriteria (in Inclusion Rules), not PrimaryCriteria events
         expression = CohortExpression(
@@ -992,8 +998,6 @@ class TestDomainTypeCheck:
     
     def test_check_valid_domain_types(self):
         """Test that valid domain types produce no warnings."""
-        from circe.cohortdefinition.criteria import ConditionOccurrence, Death, DeviceExposure
-        from circe.vocabulary import Concept
         
         expression = CohortExpression(
             primary_criteria={
@@ -1069,10 +1073,10 @@ class TestComparisons:
     
     def test_start_is_greater_than_end_date(self):
         """Test date range comparison."""
+        from datetime import date, timedelta
+
         from circe.check.checkers.comparisons import Comparisons
         from circe.cohortdefinition.core import DateRange
-        
-        from datetime import date, timedelta
         today = date.today()
         yesterday = today - timedelta(days=1)
         

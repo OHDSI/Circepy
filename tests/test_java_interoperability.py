@@ -6,32 +6,24 @@ by the Java version and vice versa.
 """
 
 import json
-import unittest
-from typing import Dict, Any
-from pathlib import Path
+import os
 
 # Add project root to path for imports
 import sys
-import os
+import unittest
+from pathlib import Path
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from circe.cohortdefinition.core import (
-    ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy,
-    CustomEraStrategy,
-    ConceptSetSelection, CollapseType, DateType, TextFilter, Window, WindowBound,
-    DateAdjustment, ObservationFilter
-)
-from circe.cohortdefinition.criteria import (
-    Criteria, CriteriaGroup, DemographicCriteria, InclusionRule,
-    ConditionOccurrence, DrugExposure, ProcedureOccurrence, VisitOccurrence,
-    Observation, Measurement, DeviceExposure, Specimen, Death, VisitDetail,
-    ObservationPeriod, PayerPlanPeriod, LocationRegion, ConditionEra,
-    DrugEra, DoseEra, GeoCriteria, Occurrence, CorelatedCriteria,
-    PrimaryCriteria
-)
 from circe.cohortdefinition.cohort import CohortExpression
-from circe.cohortdefinition.core import NumericRange
-from circe.vocabulary.concept import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
+from circe.cohortdefinition.core import NumericRange, ObservationFilter, ResultLimit
+from circe.cohortdefinition.criteria import ConditionOccurrence, PrimaryCriteria
+from circe.vocabulary.concept import (
+    Concept,
+    ConceptSet,
+    ConceptSetExpression,
+    ConceptSetItem,
+)
 
 
 class TestJavaInteroperability(unittest.TestCase):
@@ -239,8 +231,6 @@ class TestJavaExportCompatibility(unittest.TestCase):
     
     def test_primary_criteria_uses_pascal_case(self):
         """Test PrimaryCriteria exports with PascalCase field names."""
-        from circe.cohortdefinition.core import ObservationFilter, ResultLimit
-        from circe.cohortdefinition.criteria import PrimaryCriteria
         
         primary = PrimaryCriteria(
             criteria_list=[
@@ -306,7 +296,7 @@ class TestJavaExportCompatibility(unittest.TestCase):
         if not java_json_path.exists():
             self.skipTest(f"Java JSON file not found: {java_json_path}")
         
-        with open(java_json_path, 'r') as f:
+        with open(java_json_path) as f:
             java_data = json.load(f)
         
         # Parse with Python

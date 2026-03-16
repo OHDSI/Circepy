@@ -2,9 +2,12 @@
 Additional tests to increase coverage for builder utility functions.
 """
 
-import pytest
-from circe.cohortdefinition.builders.utils import BuilderUtils, CriteriaColumn, BuilderOptions
-from circe.cohortdefinition.core import NumericRange, DateRange, DateAdjustment
+from circe.cohortdefinition.builders.utils import (
+    BuilderOptions,
+    BuilderUtils,
+    CriteriaColumn,
+)
+from circe.cohortdefinition.core import DateAdjustment, DateRange, NumericRange
 from circe.vocabulary.concept import Concept
 
 
@@ -73,19 +76,19 @@ class TestBuilderUtilsDateRanges:
         """Test simple date range."""
         range_val = DateRange(op="gt", value="2020-01-01")
         clause = BuilderUtils.build_date_range_clause("start_date", range_val)
-        assert "start_date > DATEFROMPARTS(2020, 1, 1)" == clause
+        assert clause == "start_date > DATEFROMPARTS(2020, 1, 1)"
     
     def test_date_range_between(self):
         """Test between date range."""
         range_val = DateRange(op="bt", value="2020-01-01", extent="2020-12-31")
         clause = BuilderUtils.build_date_range_clause("start_date", range_val)
-        assert "(start_date >= DATEFROMPARTS(2020, 1, 1) and start_date <= DATEFROMPARTS(2020, 12, 31))" == clause
+        assert clause == "(start_date >= DATEFROMPARTS(2020, 1, 1) and start_date <= DATEFROMPARTS(2020, 12, 31))"
 
     def test_date_range_not_between(self):
         """Test not between date range."""
         range_val = DateRange(op="!bt", value="2020-01-01", extent="2020-12-31")
         clause = BuilderUtils.build_date_range_clause("start_date", range_val)
-        assert "not (start_date >= DATEFROMPARTS(2020, 1, 1) and start_date <= DATEFROMPARTS(2020, 12, 31))" == clause
+        assert clause == "not (start_date >= DATEFROMPARTS(2020, 1, 1) and start_date <= DATEFROMPARTS(2020, 12, 31))"
     
     def test_date_range_none(self):
         """Test None date range returns None."""
@@ -193,7 +196,7 @@ class TestBuilderUtilsOther:
         """Test split IN clause with small list."""
         values = [1, 2, 3, 4, 5]
         result = BuilderUtils.split_in_clause("concept_id", values)
-        assert "(concept_id in (1,2,3,4,5))" == result
+        assert result == "(concept_id in (1,2,3,4,5))"
     
     def test_split_in_clause_empty(self):
         """Test split IN clause with empty list."""

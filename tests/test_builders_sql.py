@@ -1,10 +1,8 @@
-import re
-import pytest
-from circe.cohortdefinition import CohortExpression, CriteriaGroup, PrimaryCriteria, DrugExposure, DeviceExposure
-from circe.cohortdefinition.builders.drug_exposure import DrugExposureSqlBuilder
+from circe.cohortdefinition import DeviceExposure, DrugExposure
 from circe.cohortdefinition.builders.device_exposure import DeviceExposureSqlBuilder
-from circe.cohortdefinition.builders.utils import BuilderOptions, CriteriaColumn
-from circe.cohortdefinition.cohort_expression_query_builder import CohortExpressionQueryBuilder
+from circe.cohortdefinition.builders.drug_exposure import DrugExposureSqlBuilder
+from circe.cohortdefinition.builders.utils import BuilderOptions
+
 
 def normalize_sql(sql):
     return " ".join(sql.split()).lower()

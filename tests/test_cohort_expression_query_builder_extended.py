@@ -1,15 +1,32 @@
 
 import unittest
 from unittest.mock import MagicMock, patch
+
 from circe.cohortdefinition import CohortExpressionQueryBuilder
 from circe.cohortdefinition.criteria import (
-    WindowedCriteria, CorelatedCriteria, Occurrence, CriteriaGroup,
-    Window, ConditionOccurrence, Death, VisitOccurrence, VisitDetail,
-    PayerPlanPeriod, ProcedureOccurrence, DrugExposure, DrugEra,
-    ConditionEra, DoseEra, Measurement, Observation, DeviceExposure,
-    Specimen, LocationRegion, ObservationPeriod
+    ConditionEra,
+    ConditionOccurrence,
+    CorelatedCriteria,
+    CriteriaGroup,
+    Death,
+    DeviceExposure,
+    DoseEra,
+    DrugEra,
+    DrugExposure,
+    LocationRegion,
+    Measurement,
+    Observation,
+    ObservationPeriod,
+    Occurrence,
+    PayerPlanPeriod,
+    ProcedureOccurrence,
+    Specimen,
+    VisitDetail,
+    VisitOccurrence,
+    Window,
+    WindowedCriteria,
 )
-from circe.cohortdefinition.builders.utils import BuilderOptions, CriteriaColumn
+
 
 class TestCohortExpressionQueryBuilderExtended(unittest.TestCase):
 

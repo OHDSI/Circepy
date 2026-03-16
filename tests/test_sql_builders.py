@@ -9,28 +9,46 @@ Any changes must maintain compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-import unittest
-import sys
 import os
-from typing import Set, List, Optional
+import sys
+import unittest
 from unittest.mock import Mock
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from circe.cohortdefinition.builders import (
-    DeathSqlBuilder, VisitOccurrenceSqlBuilder, ObservationSqlBuilder,
-    MeasurementSqlBuilder, DeviceExposureSqlBuilder, SpecimenSqlBuilder,
-    DoseEraSqlBuilder, ObservationPeriodSqlBuilder, PayerPlanPeriodSqlBuilder,
-    VisitDetailSqlBuilder, LocationRegionSqlBuilder
+    DeathSqlBuilder,
+    DeviceExposureSqlBuilder,
+    DoseEraSqlBuilder,
+    LocationRegionSqlBuilder,
+    MeasurementSqlBuilder,
+    ObservationPeriodSqlBuilder,
+    ObservationSqlBuilder,
+    PayerPlanPeriodSqlBuilder,
+    SpecimenSqlBuilder,
+    VisitDetailSqlBuilder,
+    VisitOccurrenceSqlBuilder,
 )
 from circe.cohortdefinition.builders.utils import BuilderOptions, CriteriaColumn
-from circe.cohortdefinition.criteria import (
-    Death, VisitOccurrence, Observation, Measurement, DeviceExposure, Specimen,
-    DoseEra, ObservationPeriod, PayerPlanPeriod, VisitDetail, LocationRegion
+from circe.cohortdefinition.core import (
+    ConceptSetSelection,
+    DateRange,
+    NumericRange,
+    TextFilter,
 )
-from circe.cohortdefinition.core import DateRange, NumericRange, TextFilter, ConceptSetSelection
-from circe.vocabulary.concept import Concept
+from circe.cohortdefinition.criteria import (
+    Death,
+    DeviceExposure,
+    DoseEra,
+    LocationRegion,
+    Measurement,
+    Observation,
+    ObservationPeriod,
+    PayerPlanPeriod,
+    Specimen,
+    VisitDetail,
+)
 
 
 class TestDeathSqlBuilder(unittest.TestCase):
@@ -1474,8 +1492,12 @@ class TestNewSqlBuildersIntegration(unittest.TestCase):
     def test_all_new_builders_importable(self):
         """Test that all new builders can be imported."""
         from circe.cohortdefinition.builders import (
-            DeathSqlBuilder, VisitOccurrenceSqlBuilder, ObservationSqlBuilder,
-            MeasurementSqlBuilder, DeviceExposureSqlBuilder, SpecimenSqlBuilder
+            DeathSqlBuilder,
+            DeviceExposureSqlBuilder,
+            MeasurementSqlBuilder,
+            ObservationSqlBuilder,
+            SpecimenSqlBuilder,
+            VisitOccurrenceSqlBuilder,
         )
         
         # Test that all builders are importable

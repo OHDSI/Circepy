@@ -9,18 +9,28 @@ This example demonstrates advanced features including:
 """
 
 from circe import CohortExpression
+from circe.api import build_cohort_query
 from circe.cohortdefinition import (
-    PrimaryCriteria, ConditionOccurrence, DrugExposure,
-    CorelatedCriteria, CriteriaGroup, DemographicCriteria, Occurrence,
-    InclusionRule, Measurement
+    ConditionOccurrence,
+    CorelatedCriteria,
+    CriteriaGroup,
+    DrugExposure,
+    InclusionRule,
+    Measurement,
+    Occurrence,
+    PrimaryCriteria,
+)
+from circe.cohortdefinition.cohort_expression_query_builder import (
+    BuildExpressionQueryOptions,
 )
 from circe.cohortdefinition.core import (
-    ObservationFilter, ResultLimit, Window, WindowBound,
-    Period, DateRange, NumericRange
+    NumericRange,
+    ObservationFilter,
+    ResultLimit,
+    Window,
+    WindowBound,
 )
-from circe.cohortdefinition.cohort_expression_query_builder import BuildExpressionQueryOptions
-from circe.vocabulary import ConceptSet, ConceptSetExpression, ConceptSetItem, Concept
-from circe.api import build_cohort_query
+from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 
 def create_complex_cohort():

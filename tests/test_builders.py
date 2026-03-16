@@ -5,24 +5,33 @@ This module tests all builder functionality including utilities, base classes,
 and specific builder implementations.
 """
 
-import unittest
-from unittest.mock import Mock, patch
-from typing import List, Set, Optional
-from enum import Enum
+import os
 
 # Add project root to path for imports
 import sys
-import os
+import unittest
+from enum import Enum
+from typing import Set
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from circe.cohortdefinition.builders import (
-    BuilderUtils, BuilderOptions, CriteriaColumn,
-    CriteriaSqlBuilder, ConditionOccurrenceSqlBuilder,
-    DrugExposureSqlBuilder, ProcedureOccurrenceSqlBuilder
+    BuilderOptions,
+    BuilderUtils,
+    ConditionOccurrenceSqlBuilder,
+    CriteriaColumn,
+    CriteriaSqlBuilder,
+    DrugExposureSqlBuilder,
+    ProcedureOccurrenceSqlBuilder,
 )
-from circe.cohortdefinition.criteria import Criteria, ConditionOccurrence, DrugExposure, ProcedureOccurrence
+from circe.cohortdefinition.core import DateAdjustment, DateRange, NumericRange
+from circe.cohortdefinition.criteria import (
+    ConditionOccurrence,
+    Criteria,
+    DrugExposure,
+    ProcedureOccurrence,
+)
 from circe.vocabulary.concept import Concept
-from circe.cohortdefinition.core import DateRange, DateAdjustment, NumericRange
 
 
 class TestCriteriaColumn(unittest.TestCase):
@@ -550,9 +559,10 @@ class TestBuilderIntegration(unittest.TestCase):
     def test_all_builders_importable(self):
         """Test that all builders can be imported successfully."""
         from circe.cohortdefinition.builders import (
-            BuilderUtils, BuilderOptions, CriteriaColumn,
-            CriteriaSqlBuilder, ConditionOccurrenceSqlBuilder,
-            DrugExposureSqlBuilder, ProcedureOccurrenceSqlBuilder
+            ConditionOccurrenceSqlBuilder,
+            CriteriaSqlBuilder,
+            DrugExposureSqlBuilder,
+            ProcedureOccurrenceSqlBuilder,
         )
         
         # Test that all classes are importable
@@ -562,7 +572,11 @@ class TestBuilderIntegration(unittest.TestCase):
     
     def test_builder_options_with_all_builders(self):
         """Test that builder options work with all builders."""
-        from circe.cohortdefinition.criteria import ConditionOccurrence, DrugExposure, ProcedureOccurrence
+        from circe.cohortdefinition.criteria import (
+            ConditionOccurrence,
+            DrugExposure,
+            ProcedureOccurrence,
+        )
         
         builders_and_criteria = [
             (ConditionOccurrenceSqlBuilder(), ConditionOccurrence()),
@@ -598,7 +612,11 @@ class TestBuilderIntegration(unittest.TestCase):
     
     def test_sql_template_structure_consistency(self):
         """Test that all builders generate SQL with consistent structure."""
-        from circe.cohortdefinition.criteria import ConditionOccurrence, DrugExposure, ProcedureOccurrence
+        from circe.cohortdefinition.criteria import (
+            ConditionOccurrence,
+            DrugExposure,
+            ProcedureOccurrence,
+        )
         
         builders_and_criteria = [
             (ConditionOccurrenceSqlBuilder(), ConditionOccurrence()),

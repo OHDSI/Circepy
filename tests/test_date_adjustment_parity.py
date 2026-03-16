@@ -1,12 +1,21 @@
 
-import pytest
-from circe.cohortdefinition import ConditionEra, DrugEra, ConditionOccurrence, DrugExposure, DoseEra, DateAdjustment
+from circe.cohortdefinition import (
+    ConditionEra,
+    ConditionOccurrence,
+    DateAdjustment,
+    DoseEra,
+    DrugEra,
+    DrugExposure,
+)
 from circe.cohortdefinition.builders.condition_era import ConditionEraSqlBuilder
-from circe.cohortdefinition.builders.drug_era import DrugEraSqlBuilder
-from circe.cohortdefinition.builders.condition_occurrence import ConditionOccurrenceSqlBuilder
-from circe.cohortdefinition.builders.drug_exposure import DrugExposureSqlBuilder
+from circe.cohortdefinition.builders.condition_occurrence import (
+    ConditionOccurrenceSqlBuilder,
+)
 from circe.cohortdefinition.builders.dose_era import DoseEraSqlBuilder
+from circe.cohortdefinition.builders.drug_era import DrugEraSqlBuilder
+from circe.cohortdefinition.builders.drug_exposure import DrugExposureSqlBuilder
 from tests.test_utils_db import DuckDBTestHelper
+
 
 class TestDateAdjustmentParity:
     

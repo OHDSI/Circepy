@@ -9,7 +9,6 @@ from ..io import ExpressionInput, load_expression
 from .options import ExecutionOptions, SchemaName, schema_to_str
 
 if TYPE_CHECKING:
-    import ibis.expr.types as ir
     import pandas as pd
     import polars as pl
 
@@ -42,7 +41,7 @@ class IbisExecutor:
         self.close()
         return self._build_native(cohort_expression)
 
-    def to_polars(self, expression: ExpressionInput) -> "pl.DataFrame":
+    def to_polars(self, expression: ExpressionInput) -> pl.DataFrame:
         """Execute cohort expression and collect to Polars."""
         table = self.build(expression)
         if not hasattr(table, "to_polars"):
@@ -51,7 +50,7 @@ class IbisExecutor:
             )
         return table.to_polars()
 
-    def to_pandas(self, expression: ExpressionInput) -> "pd.DataFrame":
+    def to_pandas(self, expression: ExpressionInput) -> pd.DataFrame:
         """Execute cohort expression and collect to pandas."""
         table = self.build(expression)
         if not hasattr(table, "to_pandas"):
@@ -107,7 +106,7 @@ class IbisExecutor:
             except Exception as exc:
                 print(f"Warning: failed to close execution context: {exc}")
 
-    def __enter__(self) -> "IbisExecutor":
+    def __enter__(self) -> IbisExecutor:
         return self
 
     def __exit__(self, exc_type, exc, tb) -> None:
@@ -192,7 +191,7 @@ def to_polars(
     expression: ExpressionInput,
     conn: Any,
     options: Optional[ExecutionOptions] = None,
-) -> "pl.DataFrame":
+) -> pl.DataFrame:
     """Convenience wrapper for IbisExecutor.to_polars()."""
     with IbisExecutor(conn, options) as executor:
         return executor.to_polars(expression)

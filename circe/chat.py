@@ -7,7 +7,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from circe.prompt_builder import CohortPromptBuilder, ConceptSet
 
@@ -59,7 +59,7 @@ def start_chat(
         model = os.getenv("LLM_MODEL", "gpt-4o")
         # Handle optional temperature if needed, but litellm handles it or we pass it
 
-    print(f"🚀 Starting Circe Chat")
+    print("🚀 Starting Circe Chat")
     print(f"   Model: {model}")
     print(f"   Prompt: {prompt_type}")
     print("-" * 50)
@@ -68,7 +68,7 @@ def start_chat(
     concept_sets_data = []
     if concept_sets_file:
         try:
-            with open(concept_sets_file, "r") as f:
+            with open(concept_sets_file) as f:
                 raw_data = json.load(f)
                 # Expecting list of dicts with id, name
                 for item in raw_data:
@@ -124,7 +124,7 @@ def start_chat(
         try:
             if first_turn and initial_input:
                 user_input = initial_input
-                print(f"\n> [Processing input from file...]")
+                print("\n> [Processing input from file...]")
             else:
                 user_input = input("\n> ")
         except (EOFError, KeyboardInterrupt):

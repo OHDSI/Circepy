@@ -10,9 +10,6 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 
 from typing import Callable, List, Optional
 
-from .base_checker_factory import BaseCheckerFactory
-from .warning_reporter import WarningReporter
-
 # Import at runtime to avoid circular dependencies
 try:
     from ...cohortdefinition.core import ConceptSetSelection
@@ -100,7 +97,6 @@ class CriteriaCheckerFactory:
             A function that returns True if the criteria uses the concept set
         """
         # Import here to avoid circular dependencies
-        from ...cohortdefinition.core import ConceptSetSelection
         from ...cohortdefinition.criteria import (
             ConditionEra,
             ConditionOccurrence,
@@ -232,7 +228,7 @@ class CriteriaCheckerFactory:
         Returns:
             A list of functions that return ConceptSetSelection objects
         """
-        suppliers: List[Callable[[], Optional["ConceptSetSelection"]]] = []
+        suppliers: List[Callable[[], Optional[ConceptSetSelection]]] = []
         suppliers.append(lambda: criteria.place_of_service_cs)
         suppliers.append(lambda: criteria.gender_cs)
         suppliers.append(lambda: criteria.provider_specialty_cs)

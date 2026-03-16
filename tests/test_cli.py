@@ -5,15 +5,16 @@ These tests run both the Python CLI and R CirceR script on the same cohorts
 and compare the generated SQL and Markdown outputs.
 """
 
-import sys
 import functools
-from pathlib import Path
-import pytest
-import tempfile
 import shutil
-from unittest.mock import patch
+import sys
+import tempfile
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
-from contextlib import redirect_stdout, redirect_stderr
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
 
 from circe.cli import main
 
@@ -76,7 +77,7 @@ def test_sql_generation_matches_r(cohort_name):
     cohort_file = COHORTS_DIR / cohort_name
 
     if shutil.which("Rscript") is None:
-        pytest.skip(f"R not available")
+        pytest.skip("R not available")
 
     if not cohort_file.exists():
         pytest.skip(f"Cohort file not found: {cohort_file}")

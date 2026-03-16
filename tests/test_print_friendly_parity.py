@@ -1,15 +1,16 @@
-import unittest
 import os
-import json
-from circe.cohortdefinition.printfriendly.markdown_render import MarkdownRender
+import unittest
+
 from circe.cohortdefinition.cohort import CohortExpression
+from circe.cohortdefinition.printfriendly.markdown_render import MarkdownRender
+
 
 # Helper to load resources
 def get_resource_as_string(filename):
     # Depending on where pytest is run from, this path might need adjustment.
     # Assuming running from root of repo.
     path = os.path.join(os.path.dirname(__file__), 'markdown_resources', filename)
-    with open(path, 'r') as f:
+    with open(path) as f:
         return f.read()
 
 def normalize_whitespace(text):

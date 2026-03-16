@@ -1,13 +1,21 @@
 
 import unittest
+
 from circe.cohortdefinition import (
-    CohortExpression, CohortExpressionQueryBuilder, BuildExpressionQueryOptions,
-    PrimaryCriteria, CriteriaGroup, CorelatedCriteria,
-    ConditionOccurrence, Death, Observation,
-    ResultLimit, Period, ObservationFilter, InclusionRule,
-    ConceptSetSelection
+    BuildExpressionQueryOptions,
+    CohortExpression,
+    CohortExpressionQueryBuilder,
+    ConditionOccurrence,
+    CorelatedCriteria,
+    CriteriaGroup,
+    Death,
+    InclusionRule,
+    Observation,
+    ObservationFilter,
+    PrimaryCriteria,
+    ResultLimit,
 )
-from circe.vocabulary import Concept
+
 
 class TestCohortExpressionQueryBuilderCoverage(unittest.TestCase):
     """Additional tests for valid coverage of CohortExpressionQueryBuilder."""

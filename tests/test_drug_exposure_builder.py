@@ -1,10 +1,17 @@
 import unittest
-from unittest.mock import MagicMock
+
 from circe.cohortdefinition.builders.drug_exposure import DrugExposureSqlBuilder
-from circe.cohortdefinition.criteria import DrugExposure
 from circe.cohortdefinition.builders.utils import CriteriaColumn
-from circe.cohortdefinition.core import DateAdjustment, TextFilter, NumericRange, ConceptSetSelection, DateRange
+from circe.cohortdefinition.core import (
+    ConceptSetSelection,
+    DateAdjustment,
+    DateRange,
+    NumericRange,
+    TextFilter,
+)
+from circe.cohortdefinition.criteria import DrugExposure
 from circe.vocabulary.concept import Concept
+
 
 class TestDrugExposureSqlBuilder(unittest.TestCase):
     

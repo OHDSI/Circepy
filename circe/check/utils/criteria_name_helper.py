@@ -36,24 +36,7 @@ except ImportError:
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
-        from ...cohortdefinition.criteria import (
-            ConditionEra,
-            ConditionOccurrence,
-            Death,
-            DeviceExposure,
-            DoseEra,
-            DrugEra,
-            DrugExposure,
-            LocationRegion,
-            Measurement,
-            Observation,
-            ObservationPeriod,
-            PayerPlanPeriod,
-            ProcedureOccurrence,
-            Specimen,
-            VisitDetail,
-            VisitOccurrence,
-        )
+        pass
 
 
 class CriteriaNameHelper:
@@ -84,7 +67,6 @@ class CriteriaNameHelper:
             DoseEra,
             DrugEra,
             DrugExposure,
-            LocationRegion,
             Measurement,
             Observation,
             ObservationPeriod,

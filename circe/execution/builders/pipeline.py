@@ -7,21 +7,23 @@ import polars as pl
 
 from ...cohortdefinition import CohortExpression
 from ..build_context import BuildContext
-from . import condition_era  # noqa: F401
-from . import condition_occurrence  # noqa: F401
-from . import death  # noqa: F401
-from . import device_exposure  # noqa: F401
-from . import dose_era  # noqa: F401
-from . import drug_era  # noqa: F401
-from . import drug_exposure  # noqa: F401
-from . import measurement  # noqa: F401
-from . import observation  # noqa: F401
-from . import observation_period  # noqa: F401
-from . import payer_plan_period  # noqa: F401
-from . import procedure_occurrence  # noqa: F401
-from . import specimen  # noqa: F401
-from . import visit_detail  # noqa: F401
-from . import visit_occurrence  # noqa: F401
+from . import (
+    condition_era,  # noqa: F401
+    condition_occurrence,  # noqa: F401
+    death,  # noqa: F401
+    device_exposure,  # noqa: F401
+    dose_era,  # noqa: F401
+    drug_era,  # noqa: F401
+    drug_exposure,  # noqa: F401
+    measurement,  # noqa: F401
+    observation,  # noqa: F401
+    observation_period,  # noqa: F401
+    payer_plan_period,  # noqa: F401
+    procedure_occurrence,  # noqa: F401
+    specimen,  # noqa: F401
+    visit_detail,  # noqa: F401
+    visit_occurrence,  # noqa: F401
+)
 from .common import (
     apply_end_strategy,
     apply_observation_window,

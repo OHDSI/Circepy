@@ -5,20 +5,22 @@ This module tests the CohortExpression class functionality including
 initialization, validation, and utility methods.
 """
 
-import unittest
-from typing import List, Optional, Any
-import sys
 import os
+import sys
+import unittest
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from circe.cohortdefinition.cohort import CohortExpression
 from circe.cohortdefinition.core import (
-    ResultLimit, Period, CollapseSettings, EndStrategy, DateOffsetStrategy, CustomEraStrategy,
-    ObservationFilter, CollapseType, DateType
+    CollapseSettings,
+    CollapseType,
+    EndStrategy,
+    Period,
+    ResultLimit,
 )
-from circe.cohortdefinition.criteria import Criteria, PrimaryCriteria, CriteriaGroup
+from circe.cohortdefinition.criteria import CriteriaGroup, PrimaryCriteria
 from circe.vocabulary.concept import ConceptSet
 
 

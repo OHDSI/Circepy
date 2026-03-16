@@ -1,8 +1,8 @@
 import unittest
-import json
+
 from circe.cohortdefinition.printfriendly.markdown_render import MarkdownRender
-from circe.cohortdefinition.cohort import CohortExpression
 from circe.vocabulary.concept import ConceptSet
+
 
 class TestMarkdownRenderCoverage(unittest.TestCase):
     """
