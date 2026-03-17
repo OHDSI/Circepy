@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from circe.cohortdefinition import CohortExpression, ConditionOccurrence, PrimaryCriteria
-from circe.execution import ExecutionOptions, IbisExecutor, build_ibis, to_polars
+from circe.execution import ExecutionOptions, IbisExecutor, build_ibis
 from circe.execution.compat import write_cohort as legacy_write_cohort
 from circe.execution.errors import ExecutionError
 from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
@@ -62,7 +62,7 @@ def _seed_tables(conn, ibis) -> None:
     )
 
 
-def test_legacy_build_helpers_return_relations_and_polars():
+def test_legacy_build_helpers_return_relations():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -71,11 +71,9 @@ def test_legacy_build_helpers_return_relations_and_polars():
     options = ExecutionOptions(cdm_schema="main")
 
     relation = build_ibis(_expression(), conn, options)
-    frame = to_polars(_expression(), conn, options)
 
     assert hasattr(relation, "execute")
     assert len(relation.execute()) == 2
-    assert frame.height == 2
 
 
 def test_legacy_executor_build_matches_function_wrapper():

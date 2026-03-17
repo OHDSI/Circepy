@@ -5,7 +5,7 @@ not modify cohortdefinition model semantics.
 """
 
 from .api import build_cohort, build_cohort_ibis, write_cohort, write_cohort_ibis
-from .compat import ExecutionOptions, IbisExecutor, build_ibis, to_polars
+from .compat import ExecutionOptions, IbisExecutor, build_ibis
 from .databricks_compat import apply_databricks_post_connect_workaround
 from .errors import (
     CompilationError,
@@ -23,7 +23,6 @@ __all__ = [
     "ExecutionOptions",
     "IbisExecutor",
     "build_ibis",
-    "to_polars",
     "apply_databricks_post_connect_workaround",
     "ExecutionError",
     "ExecutionNormalizationError",

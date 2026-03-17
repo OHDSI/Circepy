@@ -4,7 +4,6 @@ from ..compat import (
     SchemaName,
     build_ibis,
     schema_to_str,
-    to_polars,
     write_cohort,
 )
 from ..plan.schema import STANDARD_EVENT_COLUMNS
@@ -22,6 +21,5 @@ __all__ = [
     "STANDARD_EVENT_COLUMNS",
     "schema_to_str",
     "standardize_event_table",
-    "to_polars",
     "write_cohort",
 ]

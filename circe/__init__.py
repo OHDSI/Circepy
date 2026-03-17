@@ -86,7 +86,7 @@ from .api import (
 )
 
 # Main exports
-from .execution import ExecutionOptions, IbisExecutor, build_ibis, to_polars
+from .execution import ExecutionOptions, IbisExecutor, build_ibis
 from .io import load_expression
 from .vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
@@ -215,5 +215,4 @@ __all__ = [
     "ExecutionOptions",
     "IbisExecutor",
     "build_ibis",
-    "to_polars",
 ]

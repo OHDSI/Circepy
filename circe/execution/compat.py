@@ -10,7 +10,6 @@ from .ibis.operations import table_exists
 
 if TYPE_CHECKING:
     import pandas as pd
-    import polars as pl
 
     from ..cohortdefinition import CohortExpression
 
@@ -73,12 +72,6 @@ class IbisExecutor:
             vocabulary_schema=schema_to_str(self._options.vocabulary_schema),
             results_schema=schema_to_str(self._options.result_schema),
         )
-
-    def to_polars(self, expression: ExpressionInput) -> pl.DataFrame:
-        table = self.build(expression)
-        if not hasattr(table, "to_polars"):
-            raise RuntimeError("The returned ibis table does not support to_polars() on this backend.")
-        return table.to_polars()
 
     def to_pandas(self, expression: ExpressionInput) -> pd.DataFrame:
         table = self.build(expression)
@@ -169,15 +162,6 @@ def build_ibis(
 ) -> Any:
     with IbisExecutor(conn, options) as executor:
         return executor.build(expression)
-
-
-def to_polars(
-    expression: ExpressionInput,
-    conn: Any,
-    options: ExecutionOptions | None = None,
-) -> pl.DataFrame:
-    with IbisExecutor(conn, options) as executor:
-        return executor.to_polars(expression)
 
 
 def write_cohort(
