@@ -295,3 +295,13 @@ class WaveformFeature(Criteria):
 
 
 # Rebuild models to resolve forward references
+# CriteriaGroup is defined after Criteria in criteria.py, so subclasses
+# that inherit the `correlated_criteria: Optional["CriteriaGroup"]` field
+# must call model_rebuild() once CriteriaGroup is importable.
+from circe.cohortdefinition.criteria import CriteriaGroup  # noqa: E402
+
+_ns = {"CriteriaGroup": CriteriaGroup}
+WaveformOccurrence.model_rebuild(_types_namespace=_ns)
+WaveformRegistry.model_rebuild(_types_namespace=_ns)
+WaveformChannelMetadata.model_rebuild(_types_namespace=_ns)
+WaveformFeature.model_rebuild(_types_namespace=_ns)
