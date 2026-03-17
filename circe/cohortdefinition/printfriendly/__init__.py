@@ -11,6 +11,4 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 
 from .markdown_render import MarkdownRender
 
-__all__ = [
-    "MarkdownRender"
-]
+__all__ = ["MarkdownRender"]

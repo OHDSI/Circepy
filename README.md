@@ -164,26 +164,18 @@ cohort = CohortExpression(
 )
 ```
 
-## AI Agent Integration
+### Experimental Ibis Execution API
 
-CIRCE Python provides skill documentation for AI agents that need to generate cohort definitions programmatically.
+An experimental backend-native execution API is available under
+`circe.execution`.
 
 ```python
-from circe import get_cohort_builder_skill, list_skills
+from circe.execution import ExecutionOptions, IbisExecutor
 
-# List available skills
-print(list_skills())  # ['cohort_builder']
-
-# Get skill documentation for an AI agent
-skill_docs = get_cohort_builder_skill()
-# Returns markdown documentation describing the CohortBuilder API
+# Requires optional extras, e.g. `pip install ohdsi-circe-python-alpha[ibis-duckdb]`
+executor = IbisExecutor(conn, ExecutionOptions(cdm_schema="main"))
+events = executor.build(cohort)  # lazy ibis relation
 ```
-
-The skill documentation includes:
-- Context manager API usage patterns
-- Available entry event methods
-- Inclusion/exclusion criteria syntax
-- Named rule contexts for attrition tracking
 
 ## What's Included
 
@@ -197,12 +189,23 @@ This package provides a complete Python implementation of CIRCE-BE with:
   - Measurement, Observation
   - Visit Occurrence/Detail
   - Device Exposure, Specimen
-  - Death, Location Region
-  - Observation Period, Payer Plan Period
-  - And more...
-- **Full cohort expression validation** with comprehensive error checking
-- **Markdown rendering** for human-readable cohort descriptions
-- **Complete CLI interface** with 4 commands (validate, generate-sql, render-markdown, process)
+  - Specimen, Death
+  - Payer Plan Period, Location Region
+- **Full Cohort Expression Validation** with 40+ checker implementations
+- **Markdown Rendering** for human-readable descriptions
+- **Complete CLI Interface** for validation, SQL, and rendering
+- **Extension System** to support custom CDM domains
+
+## Extensions
+
+`circe_py` includes a powerful extension system that allows adding support for custom CDM domains.
+
+Included Extensions:
+
+- **OHDSI Waveform Extension**: Support for the OHDSI Waveform Extension specification (waveform_occurrence, waveform_registry, waveform_channel_metadata, waveform_feature). Install with `pip install "ohdsi-circe-python-alpha[waveform]"`. See [docs/waveform_extension.md](docs/waveform_extension.md).
+
+For information on how to implement your own extension, see the [Developer Guide for Extensions](docs/developer/extensions.rst).
+
 - **Java interoperability** - supports both camelCase and snake_case field names for seamless Java CIRCE-BE compatibility
 
 ## ⚠️ Java Fidelity Requirement
@@ -230,6 +233,7 @@ circe/
 │   ├── operations/            # Check operations
 │   ├── utils/                 # Check utilities
 │   └── warnings/              # Warning classes
+├── execution/                 # Experimental backend-native execution APIs
 ├── helper/                    # Utility helper classes
 ├── api.py                     # High-level API functions
 └── cli.py                     # Command-line interface

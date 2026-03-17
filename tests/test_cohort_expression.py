@@ -377,11 +377,11 @@ class TestCohortExpressionEdgeCases(unittest.TestCase):
         # Test via constructor
         cohort = CohortExpression(inclusion_rules=None)
         self.assertEqual(cohort.inclusion_rules, [])
-        
+
         # Test via JSON validation
         cohort_json = CohortExpression.model_validate({"InclusionRules": None})
         self.assertEqual(cohort_json.inclusion_rules, [])
-    
+
     def test_cohort_expression_list_defaults(self):
         """Test defaults and None handling for list fields."""
         # 1. Default Initialization
@@ -389,17 +389,17 @@ class TestCohortExpressionEdgeCases(unittest.TestCase):
         self.assertEqual(c.concept_sets, [])
         self.assertEqual(c.censoring_criteria, [])
         self.assertEqual(c.inclusion_rules, [])
-        
+
         # 2. None Initialization
         c_none = CohortExpression(
-            concept_sets=None, 
-            censoring_criteria=None, 
+            concept_sets=None,
+            censoring_criteria=None,
             inclusion_rules=None
         )
         self.assertEqual(c_none.concept_sets, [])
         self.assertEqual(c_none.censoring_criteria, [])
         self.assertEqual(c_none.inclusion_rules, [])
-        
+
         # 3. JSON Null
         c_json = CohortExpression.model_validate_json('{"ConceptSets": null, "CensoringCriteria": null, "InclusionRules": null}')
         self.assertEqual(c_json.concept_sets, [])

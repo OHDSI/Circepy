@@ -85,6 +85,7 @@ _GENDER_CONCEPTS = {
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _ensure_primary_criteria(expr: CohortExpression) -> PrimaryCriteria:
     """Return the PrimaryCriteria, creating an empty one if absent."""
     if expr.primary_criteria is None:
@@ -117,6 +118,7 @@ def _ensure_collapse_settings(expr: CohortExpression) -> CollapseSettings:
 # ===========================================================================
 # 1. Prior Observation Window
 # ===========================================================================
+
 
 def set_prior_observation(
     cohort_expression: CohortExpression,
@@ -152,6 +154,7 @@ def set_prior_observation(
 # 2. Post Observation Window
 # ===========================================================================
 
+
 def set_post_observation(
     cohort_expression: CohortExpression,
     days: int,
@@ -186,6 +189,7 @@ def set_post_observation(
 # 3. Limit to First Event
 # ===========================================================================
 
+
 def set_limit_to_first_event(
     cohort_expression: CohortExpression,
 ) -> CohortExpression:
@@ -213,6 +217,7 @@ def set_limit_to_first_event(
 # 4. Allow All Events
 # ===========================================================================
 
+
 def set_allow_all_events(
     cohort_expression: CohortExpression,
 ) -> CohortExpression:
@@ -239,6 +244,7 @@ def set_allow_all_events(
 # ===========================================================================
 # 6. Cohort Era (Collapse / Persistence Window)
 # ===========================================================================
+
 
 def set_cohort_era(
     cohort_expression: CohortExpression,
@@ -274,6 +280,7 @@ def set_cohort_era(
 # ===========================================================================
 # 7. Age Criteria
 # ===========================================================================
+
 
 def set_age_criteria(
     cohort_expression: CohortExpression,
@@ -342,7 +349,9 @@ def set_age_criteria(
             groups=[],
         )
     else:
-        cohort_expression.additional_criteria.demographic_criteria_list.append(demographic)
+        cohort_expression.additional_criteria.demographic_criteria_list.append(
+            demographic
+        )
 
     return cohort_expression
 
@@ -350,6 +359,7 @@ def set_age_criteria(
 # ===========================================================================
 # 8. Gender Criteria
 # ===========================================================================
+
 
 def set_gender_criteria(
     cohort_expression: CohortExpression,
@@ -414,7 +424,9 @@ def set_gender_criteria(
             groups=[],
         )
     else:
-        cohort_expression.additional_criteria.demographic_criteria_list.append(demographic)
+        cohort_expression.additional_criteria.demographic_criteria_list.append(
+            demographic
+        )
 
     return cohort_expression
 
@@ -422,6 +434,7 @@ def set_gender_criteria(
 # ===========================================================================
 # 9. End Date Strategy
 # ===========================================================================
+
 
 def set_end_date_strategy(
     cohort_expression: CohortExpression,
@@ -496,6 +509,7 @@ def set_end_date_strategy(
 # ===========================================================================
 # 10. Washout Period (alias for prior observation)
 # ===========================================================================
+
 
 def set_washout_period(
     cohort_expression: CohortExpression,
@@ -601,9 +615,7 @@ def set_clean_window(
 
     mode = criteria_mode.strip().lower()
     if mode not in ("any", "all"):
-        raise ValueError(
-            f"criteria_mode must be 'any' or 'all', got '{criteria_mode}'"
-        )
+        raise ValueError(f"criteria_mode must be 'any' or 'all', got '{criteria_mode}'")
 
     pc = cohort_expression.primary_criteria
     if pc is None or not pc.criteria_list:
@@ -692,6 +704,7 @@ def reset_clean_window(
 # 11. Restrict to Calendar Date Range
 # ===========================================================================
 
+
 def set_date_range(
     cohort_expression: CohortExpression,
     start_date: Optional[Union[str, date]] = None,
@@ -736,6 +749,7 @@ def set_date_range(
 # 12. Censor at Event
 # ===========================================================================
 
+
 def set_censor_event(
     cohort_expression: CohortExpression,
     censor_criteria: Union[Criteria, CriteriaType],
@@ -779,6 +793,7 @@ def clear_censor_events(
 # ===========================================================================
 # Reset helpers
 # ===========================================================================
+
 
 def reset_observation_window(
     cohort_expression: CohortExpression,
@@ -884,6 +899,7 @@ def reset_date_range(
 # ===========================================================================
 # Convenience: apply multiple modifiers at once
 # ===========================================================================
+
 
 def apply_standard_rules(
     cohort_expression: CohortExpression,
