@@ -131,9 +131,7 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         mapped_concepts = [Concept(concept_id=12345, concept_name="Test Concept")]
         mapped_descendant_concepts = []
 
-        query = self.builder.build_concept_set_mapped_query(
-            mapped_concepts, mapped_descendant_concepts
-        )
+        query = self.builder.build_concept_set_mapped_query(mapped_concepts, mapped_descendant_concepts)
 
         self.assertIn("select distinct cr.concept_id_1 as concept_id", query)
         self.assertIn("@vocabulary_database_schema.concept_relationship", query)
@@ -372,9 +370,7 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
                     "expression": ConceptSetExpression(
                         items=[
                             ConceptSetItem(
-                                concept=Concept(
-                                    concept_id=11111, concept_name="Test Concept"
-                                ),
+                                concept=Concept(concept_id=11111, concept_name="Test Concept"),
                                 is_excluded=False,
                                 include_descendants=False,
                                 include_mapped=False,
@@ -398,11 +394,7 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
     def test_get_primary_events_query(self):
         """Test get_primary_events_query method."""
         primary_criteria = PrimaryCriteria(
-            criteria_list=[
-                ConditionOccurrence(
-                    first=True, condition_type_exclude=False, codeset_id=12345
-                )
-            ],
+            criteria_list=[ConditionOccurrence(first=True, condition_type_exclude=False, codeset_id=12345)],
             observation_window=ObservationFilter(prior_days=0, post_days=0),
             primary_limit=ResultLimit(type="ALL"),
         )
@@ -553,9 +545,7 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
             type="ALL",
             criteria_list=[
                 CorelatedCriteria(
-                    criteria=ConditionOccurrence(
-                        first=True, condition_type_exclude=False, codeset_id=12345
-                    ),
+                    criteria=ConditionOccurrence(first=True, condition_type_exclude=False, codeset_id=12345),
                     occurrence=Occurrence(type=1, count=1, is_distinct=False),
                 )
             ],
@@ -578,9 +568,7 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
 
     def test_get_strategy_sql_custom_era_strategy(self):
         """Test get_strategy_sql for CustomEraStrategy."""
-        strategy = CustomEraStrategy(
-            drug_codeset_id=12345, gap_days=30, offset=0, days_supply_override=None
-        )
+        strategy = CustomEraStrategy(drug_codeset_id=12345, gap_days=30, offset=0, days_supply_override=None)
 
         query = self.builder.get_strategy_sql(strategy, "#test_events")
 
@@ -591,9 +579,7 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
 
     def test_get_strategy_sql_custom_era_strategy_no_codeset_id(self):
         """Test get_strategy_sql for CustomEraStrategy with no codeset ID."""
-        strategy = CustomEraStrategy(
-            drug_codeset_id=None, gap_days=30, offset=0, days_supply_override=None
-        )
+        strategy = CustomEraStrategy(drug_codeset_id=None, gap_days=30, offset=0, days_supply_override=None)
 
         with self.assertRaises(RuntimeError):
             self.builder.get_strategy_sql(strategy, "#test_events")
@@ -613,9 +599,7 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
         expression = CohortExpression(
             primary_criteria=PrimaryCriteria(
                 criteria_list=[
-                    ConditionOccurrence(
-                        first=True, condition_type_exclude=False, codeset_id=12345
-                    )
+                    ConditionOccurrence(first=True, condition_type_exclude=False, codeset_id=12345)
                 ],
                 observation_window=ObservationFilter(prior_days=0, post_days=0),
                 primary_limit=ResultLimit(type="ALL"),
@@ -623,9 +607,7 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
             qualified_limit=ResultLimit(type="ALL"),
             expression_limit=ResultLimit(type="ALL"),
             inclusion_rules=[],
-            collapse_settings=CollapseSettings(
-                collapse_type=CollapseType.COLLAPSE, era_pad=30
-            ),
+            collapse_settings=CollapseSettings(collapse_type=CollapseType.COLLAPSE, era_pad=30),
         )
 
         options = BuildExpressionQueryOptions()
@@ -643,9 +625,7 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
         expression = CohortExpression(
             primary_criteria=PrimaryCriteria(
                 criteria_list=[
-                    ConditionOccurrence(
-                        first=True, condition_type_exclude=False, codeset_id=12345
-                    )
+                    ConditionOccurrence(first=True, condition_type_exclude=False, codeset_id=12345)
                 ],
                 observation_window=ObservationFilter(prior_days=0, post_days=0),
                 primary_limit=ResultLimit(type="ALL"),
@@ -654,16 +634,12 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
                 type="ALL",
                 criteria_list=[
                     CorelatedCriteria(
-                        criteria=Death(
-                            first=True, death_type_exclude=False, codeset_id=67890
-                        ),
+                        criteria=Death(first=True, death_type_exclude=False, codeset_id=67890),
                         occurrence=Occurrence(type=1, count=1, is_distinct=False),
                     )
                 ],
             ),
-            collapse_settings=CollapseSettings(
-                collapse_type=CollapseType.COLLAPSE, era_pad=30
-            ),
+            collapse_settings=CollapseSettings(collapse_type=CollapseType.COLLAPSE, era_pad=30),
         )
 
         options = BuildExpressionQueryOptions()
@@ -680,17 +656,13 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
         expression = CohortExpression(
             primary_criteria=PrimaryCriteria(
                 criteria_list=[
-                    ConditionOccurrence(
-                        first=True, condition_type_exclude=False, codeset_id=12345
-                    )
+                    ConditionOccurrence(first=True, condition_type_exclude=False, codeset_id=12345)
                 ],
                 observation_window=ObservationFilter(prior_days=0, post_days=0),
                 primary_limit=ResultLimit(type="ALL"),
             ),
             end_strategy=DateOffsetStrategy(offset=30, date_field="StartDate"),
-            collapse_settings=CollapseSettings(
-                collapse_type=CollapseType.COLLAPSE, era_pad=30
-            ),
+            collapse_settings=CollapseSettings(collapse_type=CollapseType.COLLAPSE, era_pad=30),
         )
 
         options = BuildExpressionQueryOptions()
@@ -706,17 +678,13 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
         expression = CohortExpression(
             primary_criteria=PrimaryCriteria(
                 criteria_list=[
-                    ConditionOccurrence(
-                        first=True, condition_type_exclude=False, codeset_id=12345
-                    )
+                    ConditionOccurrence(first=True, condition_type_exclude=False, codeset_id=12345)
                 ],
                 observation_window=ObservationFilter(prior_days=0, post_days=0),
                 primary_limit=ResultLimit(type="ALL"),
             ),
             censor_window=Period(start_date="2020-01-01", end_date="2023-01-01"),
-            collapse_settings=CollapseSettings(
-                collapse_type=CollapseType.COLLAPSE, era_pad=30
-            ),
+            collapse_settings=CollapseSettings(collapse_type=CollapseType.COLLAPSE, era_pad=30),
         )
 
         options = BuildExpressionQueryOptions()

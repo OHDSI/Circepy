@@ -149,7 +149,10 @@ class TextCheckerFactory(BaseCheckerFactory):
         else:
             return lambda c: None  # No text checks for other criteria types
 
-    def _get_check_demographic(self, criteria: "DemographicCriteria") -> Callable[["DemographicCriteria"], None]:
+    def _get_check_demographic(
+        self,
+        criteria: "DemographicCriteria",
+    ) -> Callable[["DemographicCriteria"], None]:
         """Get a checker function for demographic criteria.
 
         Args:
@@ -172,4 +175,8 @@ class TextCheckerFactory(BaseCheckerFactory):
         def warning(template: str) -> None:
             self._reporter(template, self._group_name, criteria_name, attribute)
 
-        Operations.match(text_filter).when(lambda tf: tf is not None and tf.text is None).then(lambda tf: warning(self.WARNING_EMPTY_VALUE))
+        (
+            Operations.match(text_filter)
+            .when(lambda tf: tf is not None and tf.text is None)
+            .then(lambda tf: warning(self.WARNING_EMPTY_VALUE))
+        )

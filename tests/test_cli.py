@@ -115,9 +115,7 @@ def test_sql_generation_matches_r(cohort_name):
 
     # Allow Python to be smaller since #cohort_rows and #final_cohort are incomplete
     # But it should be at least 30% of R's size for the implemented parts
-    assert py_lines >= r_lines * 0.3, (
-        f"Python SQL too short: {py_lines} vs R {r_lines} lines"
-    )
+    assert py_lines >= r_lines * 0.3, f"Python SQL too short: {py_lines} vs R {r_lines} lines"
 
 
 @pytest.mark.parametrize("cohort_name", TEST_COHORTS)
@@ -206,8 +204,6 @@ def test_generate_source_command():
         assert "cohort =" in content
 
         # Also check stdout version
-        exit_code, stdout, stderr = run_python_cli_in_process(
-            ["generate-source", str(cohort_file)]
-        )
+        exit_code, stdout, stderr = run_python_cli_in_process(["generate-source", str(cohort_file)])
 
         assert "cohort =" in stdout

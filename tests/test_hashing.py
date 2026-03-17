@@ -25,9 +25,7 @@ class TestCohortHashing(unittest.TestCase):
         c1 = CohortExpression(title="Test", primary_criteria=PrimaryCriteria())
         cs1 = ConceptSet(id=1, name="Set 1")
         item1 = ConceptSetItem(
-            concept=Concept(
-                concept_id=123, concept_name="Name A", standard_concept="S"
-            ),
+            concept=Concept(concept_id=123, concept_name="Name A", standard_concept="S"),
             isExcluded=False,
         )
         cs1.expression = ConceptSetExpression(items=[item1])
@@ -37,9 +35,7 @@ class TestCohortHashing(unittest.TestCase):
         c2 = CohortExpression(title="Test", primary_criteria=PrimaryCriteria())
         cs2 = ConceptSet(id=1, name="Set 1")
         item2 = ConceptSetItem(
-            concept=Concept(
-                concept_id=123, concept_name="Name B", standard_concept="S"
-            ),
+            concept=Concept(concept_id=123, concept_name="Name B", standard_concept="S"),
             isExcluded=False,
         )
         cs2.expression = ConceptSetExpression(items=[item2])
@@ -68,17 +64,13 @@ class TestCohortHashing(unittest.TestCase):
         c2 = CohortExpression(title="Test", primary_criteria=PrimaryCriteria())
         cs2 = ConceptSet(id=1, name="Set 1")
         item2 = ConceptSetItem(
-            concept=Concept(
-                concept_id=123, standard_concept="C", vocabulary_id="RxNorm"
-            ),
+            concept=Concept(concept_id=123, standard_concept="C", vocabulary_id="RxNorm"),
             isExcluded=False,
         )
         cs2.expression = ConceptSetExpression(items=[item2])
         c2.concept_sets = [cs2]
 
-        self.assertEqual(
-            c1.checksum(), c2.checksum(), "Checksum should ignore metadata differences"
-        )
+        self.assertEqual(c1.checksum(), c2.checksum(), "Checksum should ignore metadata differences")
 
     def test_crucial_flags_sensitivity(self):
         """Test that checksums CHANGE when functional flags change."""
@@ -96,9 +88,7 @@ class TestCohortHashing(unittest.TestCase):
         cs2.expression = ConceptSetExpression(items=[item2])
         c2.concept_sets = [cs2]
 
-        self.assertNotEqual(
-            c1.checksum(), c2.checksum(), "Checksum must change if isExcluded changes"
-        )
+        self.assertNotEqual(c1.checksum(), c2.checksum(), "Checksum must change if isExcluded changes")
 
     def test_deduplication(self):
         """Test that duplicate concept items are handled as the same set."""
@@ -127,18 +117,14 @@ class TestCohortHashing(unittest.TestCase):
         """Test sensitivity to Concept ID and Set Name."""
         base = CohortExpression(title="Test", primary_criteria=PrimaryCriteria())
         cs = ConceptSet(id=1, name="Set 1")
-        cs.expression = ConceptSetExpression(
-            items=[ConceptSetItem(concept=Concept(concept_id=123))]
-        )
+        cs.expression = ConceptSetExpression(items=[ConceptSetItem(concept=Concept(concept_id=123))])
         base.concept_sets = [cs]
         base_hash = base.checksum()
 
         # Change ID
         diff_id = base.model_copy(deep=True)
         diff_id.concept_sets[0].expression.items[0].concept.concept_id = 124
-        self.assertNotEqual(
-            base_hash, diff_id.checksum(), "Checksum must change if Concept ID changes"
-        )
+        self.assertNotEqual(base_hash, diff_id.checksum(), "Checksum must change if Concept ID changes")
 
         # Change Set Name (Wait, user said concept names in concept sets don't matter...
         # usually means render, but concept set name might matter if used in render?
@@ -156,18 +142,14 @@ class TestCohortHashing(unittest.TestCase):
         # C1: Explicit False
         c1 = CohortExpression(title="Test", primary_criteria=PrimaryCriteria())
         cs1 = ConceptSet(id=1, name="Set 1")
-        item1 = ConceptSetItem(
-            concept=Concept(concept_id=123), isExcluded=False
-        )  # Explicit default
+        item1 = ConceptSetItem(concept=Concept(concept_id=123), isExcluded=False)  # Explicit default
         cs1.expression = ConceptSetExpression(items=[item1])
         c1.concept_sets = [cs1]
 
         # C2: Implicit Default (None or missing handled by model default)
         c2 = CohortExpression(title="Test", primary_criteria=PrimaryCriteria())
         cs2 = ConceptSet(id=1, name="Set 1")
-        item2 = ConceptSetItem(
-            concept=Concept(concept_id=123)
-        )  # Implicit default isExcluded=False
+        item2 = ConceptSetItem(concept=Concept(concept_id=123))  # Implicit default isExcluded=False
         cs2.expression = ConceptSetExpression(items=[item2])
         c2.concept_sets = [cs2]
 

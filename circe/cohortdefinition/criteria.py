@@ -1219,11 +1219,23 @@ class CriteriaGroup(BaseModel):
                         try:
                             c_data = dict(c_dict[c_type])
                             # PascalCase defaults
-                            if c_type == "Measurement" and "MeasurementTypeExclude" not in c_data and "measurementTypeExclude" not in c_data:
+                            if (
+                                c_type == "Measurement"
+                                and "MeasurementTypeExclude" not in c_data
+                                and "measurementTypeExclude" not in c_data
+                            ):
                                 c_data["MeasurementTypeExclude"] = False
-                            if c_type == "Observation" and "ObservationTypeExclude" not in c_data and "observationTypeExclude" not in c_data:
+                            if (
+                                c_type == "Observation"
+                                and "ObservationTypeExclude" not in c_data
+                                and "observationTypeExclude" not in c_data
+                            ):
                                 c_data["ObservationTypeExclude"] = False
-                            if c_type == "ConditionOccurrence" and "ConditionTypeExclude" not in c_data and "conditionTypeExclude" not in c_data:
+                            if (
+                                c_type == "ConditionOccurrence"
+                                and "ConditionTypeExclude" not in c_data
+                                and "conditionTypeExclude" not in c_data
+                            ):
                                 c_data["ConditionTypeExclude"] = False
                             if "First" not in c_data and "first" not in c_data:
                                 c_data["First"] = False
@@ -1237,7 +1249,9 @@ class CriteriaGroup(BaseModel):
                     occ = item_copy.pop("Occurrence")
                     item_copy["occurrence"] = Occurrence.model_validate(occ) if isinstance(occ, dict) else occ
                 elif "occurrence" not in item_copy:
-                    item_copy["occurrence"] = Occurrence(type=Occurrence._AT_LEAST, count=1, is_distinct=False)
+                    item_copy["occurrence"] = Occurrence(
+                        type=Occurrence._AT_LEAST, count=1, is_distinct=False
+                    )
 
                 try:
                     deserialized.append(CorelatedCriteria.model_validate(item_copy))
@@ -1275,11 +1289,23 @@ class CriteriaGroup(BaseModel):
                     # Explicitly deserialize inner criteria to avoid Pydantic union ambiguity
                     try:
                         # PascalCase defaults for specific types
-                        if c_type == "Measurement" and "MeasurementTypeExclude" not in c_data and "measurementTypeExclude" not in c_data:
+                        if (
+                            c_type == "Measurement"
+                            and "MeasurementTypeExclude" not in c_data
+                            and "measurementTypeExclude" not in c_data
+                        ):
                             c_data["MeasurementTypeExclude"] = False
-                        if c_type == "Observation" and "ObservationTypeExclude" not in c_data and "observationTypeExclude" not in c_data:
+                        if (
+                            c_type == "Observation"
+                            and "ObservationTypeExclude" not in c_data
+                            and "observationTypeExclude" not in c_data
+                        ):
                             c_data["ObservationTypeExclude"] = False
-                        if c_type == "ConditionOccurrence" and "ConditionTypeExclude" not in c_data and "conditionTypeExclude" not in c_data:
+                        if (
+                            c_type == "ConditionOccurrence"
+                            and "ConditionTypeExclude" not in c_data
+                            and "conditionTypeExclude" not in c_data
+                        ):
                             c_data["ConditionTypeExclude"] = False
                         if "First" not in c_data and "first" not in c_data:
                             c_data["First"] = False
@@ -1319,11 +1345,23 @@ class CriteriaGroup(BaseModel):
                     try:
                         c_data = item_copy[c_type]
                         # PascalCase defaults
-                        if c_type == "Measurement" and "MeasurementTypeExclude" not in c_data and "measurementTypeExclude" not in c_data:
+                        if (
+                            c_type == "Measurement"
+                            and "MeasurementTypeExclude" not in c_data
+                            and "measurementTypeExclude" not in c_data
+                        ):
                             c_data["MeasurementTypeExclude"] = False
-                        if c_type == "Observation" and "ObservationTypeExclude" not in c_data and "observationTypeExclude" not in c_data:
+                        if (
+                            c_type == "Observation"
+                            and "ObservationTypeExclude" not in c_data
+                            and "observationTypeExclude" not in c_data
+                        ):
                             c_data["ObservationTypeExclude"] = False
-                        if c_type == "ConditionOccurrence" and "ConditionTypeExclude" not in c_data and "conditionTypeExclude" not in c_data:
+                        if (
+                            c_type == "ConditionOccurrence"
+                            and "ConditionTypeExclude" not in c_data
+                            and "conditionTypeExclude" not in c_data
+                        ):
                             c_data["ConditionTypeExclude"] = False
                         if "First" not in c_data and "first" not in c_data:
                             c_data["First"] = False

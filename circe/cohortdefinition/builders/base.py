@@ -54,7 +54,9 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         query = self.embed_where_clauses(query, where_clauses)
 
         if options is not None:
-            filtered_columns = [column for column in options.additional_columns if column not in self.get_default_columns()]
+            filtered_columns = [
+                column for column in options.additional_columns if column not in self.get_default_columns()
+            ]
             if filtered_columns:
                 query = query.replace(
                     "@additionalColumns",
@@ -163,4 +165,6 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
 
         Java equivalent: CriteriaSqlBuilder.getAdditionalColumns()
         """
-        return ", ".join([f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns])
+        return ", ".join(
+            [f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns]
+        )

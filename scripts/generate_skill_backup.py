@@ -60,7 +60,11 @@ class SkillGenerator:
 
         # Get return type
         return_annotation = sig.return_annotation
-        return_type = "Unknown" if return_annotation == inspect.Signature.empty else str(return_annotation).replace("'", "")
+        return_type = (
+            "Unknown"
+            if return_annotation == inspect.Signature.empty
+            else str(return_annotation).replace("'", "")
+        )
 
         # Build parameter list
         params = []
@@ -256,7 +260,9 @@ class SkillGenerator:
         md.append("")
         for method in sorted(self.entry_methods, key=lambda m: m.name):
             if method.name.startswith("require_"):
-                md.append(f"- `.{method.signature}`: {method.docstring.split('.')[0] if method.docstring else ''}")
+                md.append(
+                    f"- `.{method.signature}`: {method.docstring.split('.')[0] if method.docstring else ''}"
+                )
         md.append("")
 
         # CRITICAL CHAINING RULE
@@ -284,7 +290,9 @@ class SkillGenerator:
         md.append("These methods finalize the criteria:")
         md.append("")
         for method in sorted(self.time_windows, key=lambda m: m.name):
-            md.append(f"- `.{method.signature}`: {method.docstring.split('.')[0] if method.docstring else ''}")
+            md.append(
+                f"- `.{method.signature}`: {method.docstring.split('.')[0] if method.docstring else ''}"
+            )
         md.append("")
 
         # Modifiers
@@ -374,7 +382,13 @@ class SkillGenerator:
 
         new_skill_section = "\n".join(skill_body).strip()
 
-        new_prompt = prompt_content[: start_idx + len(start_marker)] + "\n\n" + new_skill_section + "\n\n" + prompt_content[end_idx:]
+        new_prompt = (
+            prompt_content[: start_idx + len(start_marker)]
+            + "\n\n"
+            + new_skill_section
+            + "\n\n"
+            + prompt_content[end_idx:]
+        )
 
         # Write updated prompt
         with open(prompt_path, "w") as f:

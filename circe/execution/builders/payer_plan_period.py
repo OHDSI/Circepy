@@ -44,7 +44,9 @@ def build_payer_plan_period(criteria: PayerPlanPeriod, ctx: BuildContext):
     table = apply_codeset_filter(table, "payer_source_concept_id", criteria.payer_source_concept, ctx)
     table = apply_codeset_filter(table, "plan_source_concept_id", criteria.plan_source_concept, ctx)
     table = apply_codeset_filter(table, "sponsor_source_concept_id", criteria.sponsor_source_concept, ctx)
-    table = apply_codeset_filter(table, "stop_reason_source_concept_id", criteria.stop_reason_source_concept, ctx)
+    table = apply_codeset_filter(
+        table, "stop_reason_source_concept_id", criteria.stop_reason_source_concept, ctx
+    )
 
     table, start_column, end_column = apply_user_defined_period(
         table,

@@ -227,9 +227,7 @@ class TestProcedureOccurrenceBuilder(unittest.TestCase):
             sql,
             "Should filter procedure_type_concept_id",
         )
-        self.assertIn(
-            "PR.specialty_concept_id in (20)", sql, "Should filter provider specialty"
-        )
+        self.assertIn("PR.specialty_concept_id in (20)", sql, "Should filter provider specialty")
         self.assertIn("V.visit_concept_id in (30)", sql, "Should filter visit type")
         self.assertIn("P.gender_concept_id in (8507)", sql, "Should filter gender")
         self.assertIn("C.quantity > 5", sql, "Should filter quantity")
@@ -326,18 +324,14 @@ class TestMeasurementBuilder(unittest.TestCase):
             "Should filter measurement type",
         )
         self.assertIn("C.operator_concept_id in (20)", sql, "Should filter operator")
-        self.assertIn(
-            "C.value_as_number > 150.5000", sql, "Should filter value_as_number"
-        )
+        self.assertIn("C.value_as_number > 150.5000", sql, "Should filter value_as_number")
         self.assertIn("C.unit_concept_id in (30)", sql, "Should filter unit")
         self.assertIn(
             "(C.value_as_number < C.range_low or C.value_as_number > C.range_high or C.value_as_concept_id in (4155142, 4155143))",
             sql,
             "Should filter abnormal",
         )
-        self.assertIn(
-            "YEAR(C.start_date) - P.year_of_birth > 18", sql, "Should filter age"
-        )
+        self.assertIn("YEAR(C.start_date) - P.year_of_birth > 18", sql, "Should filter age")
         self.assertIn("P.gender_concept_id in (8507)", sql, "Should filter gender")
         self.assertIn("V.visit_concept_id in (40)", sql, "Should filter visit type")
 
@@ -414,9 +408,7 @@ class TestObservationBuilder(unittest.TestCase):
             "Should select observation_type_concept_id",
         )
         self.assertIn("o.value_as_string", sql, "Should select value_as_string")
-        self.assertIn(
-            "o.qualifier_concept_id", sql, "Should select qualifier_concept_id"
-        )
+        self.assertIn("o.qualifier_concept_id", sql, "Should select qualifier_concept_id")
         self.assertIn("o.unit_concept_id", sql, "Should select unit_concept_id")
 
         # 2. Check Join Clauses
@@ -434,20 +426,14 @@ class TestObservationBuilder(unittest.TestCase):
             sql,
             "Should filter observation type",
         )
-        self.assertIn(
-            "C.value_as_string = 'Positive'", sql, "Should filter value_as_string"
-        )
+        self.assertIn("C.value_as_string = 'Positive'", sql, "Should filter value_as_string")
         self.assertIn("C.value_as_number > 100", sql, "Should filter value_as_number")
         self.assertIn("C.unit_concept_id in (30)", sql, "Should filter unit")
         self.assertIn("C.qualifier_concept_id in (50)", sql, "Should filter qualifier")
-        self.assertIn(
-            "YEAR(C.start_date) - P.year_of_birth > 18", sql, "Should filter age"
-        )
+        self.assertIn("YEAR(C.start_date) - P.year_of_birth > 18", sql, "Should filter age")
         self.assertIn("P.gender_concept_id in (8507)", sql, "Should filter gender")
         self.assertIn("P.gender_concept_id in (8507)", sql, "Should filter gender")
-        self.assertIn(
-            "V.visit_concept_id in (40)", sql, "Should filter visit type with alias V"
-        )
+        self.assertIn("V.visit_concept_id in (40)", sql, "Should filter visit type with alias V")
 
 
 class TestDeviceExposureBuilder(unittest.TestCase):
@@ -496,9 +482,7 @@ class TestDeviceExposureBuilder(unittest.TestCase):
         sql = self.builder.get_criteria_sql(de)
 
         # 1. Check Select Clauses
-        self.assertIn(
-            "de.device_type_concept_id", sql, "Should select device_type_concept_id"
-        )
+        self.assertIn("de.device_type_concept_id", sql, "Should select device_type_concept_id")
         self.assertIn("de.unique_device_id", sql, "Should select unique_device_id")
         self.assertIn("de.quantity", sql, "Should select quantity")
 
@@ -513,26 +497,19 @@ class TestDeviceExposureBuilder(unittest.TestCase):
         # 3. Check Where Clauses
         # Note: Testing for case-insensitive match for keywords or exact match if builder is specific
         self.assertTrue(
-            "C.device_type_concept_id IN (10)" in sql
-            or "C.device_type_concept_id in (10)" in sql,
+            "C.device_type_concept_id IN (10)" in sql or "C.device_type_concept_id in (10)" in sql,
             "Should filter device type",
         )
-        self.assertIn(
-            "C.unique_device_id = 'UDI123'", sql, "Should filter unique_device_id"
-        )
+        self.assertIn("C.unique_device_id = 'UDI123'", sql, "Should filter unique_device_id")
         self.assertIn("C.quantity > 5", sql, "Should filter quantity")
-        self.assertIn(
-            "YEAR(C.start_date) - P.year_of_birth > 18", sql, "Should filter age"
-        )
+        self.assertIn("YEAR(C.start_date) - P.year_of_birth > 18", sql, "Should filter age")
         # Check gender filter - builder output might be IN or in
         self.assertTrue(
-            "P.gender_concept_id IN (8507)" in sql
-            or "P.gender_concept_id in (8507)" in sql,
+            "P.gender_concept_id IN (8507)" in sql or "P.gender_concept_id in (8507)" in sql,
             "Should filter gender",
         )
         self.assertTrue(
-            "P.gender_concept_id IN (8507)" in sql
-            or "P.gender_concept_id in (8507)" in sql,
+            "P.gender_concept_id IN (8507)" in sql or "P.gender_concept_id in (8507)" in sql,
             "Should filter gender",
         )
         self.assertTrue(
@@ -586,16 +563,12 @@ class TestDeathBuilder(unittest.TestCase):
 
         # 3. Check Where Clauses
         self.assertTrue(
-            "C.death_type_concept_id IN (10)" in sql
-            or "C.death_type_concept_id in (10)" in sql,
+            "C.death_type_concept_id IN (10)" in sql or "C.death_type_concept_id in (10)" in sql,
             "Should filter death type",
         )
-        self.assertIn(
-            "YEAR(C.start_date) - P.year_of_birth > 60", sql, "Should filter age"
-        )
+        self.assertIn("YEAR(C.start_date) - P.year_of_birth > 60", sql, "Should filter age")
         self.assertTrue(
-            "P.gender_concept_id IN (8507)" in sql
-            or "P.gender_concept_id in (8507)" in sql,
+            "P.gender_concept_id IN (8507)" in sql or "P.gender_concept_id in (8507)" in sql,
             "Should filter gender",
         )
         self.assertIn(
@@ -655,30 +628,21 @@ class TestConditionEraBuilder(unittest.TestCase):
             sql,
             "Should filter era_start_date",
         )
-        self.assertIn(
-            "C.end_date < DATEFROMPARTS(2021, 1, 1)", sql, "Should filter era_end_date"
-        )
-        self.assertIn(
-            "C.condition_occurrence_count > 2", sql, "Should filter occurrence_count"
-        )
+        self.assertIn("C.end_date < DATEFROMPARTS(2021, 1, 1)", sql, "Should filter era_end_date")
+        self.assertIn("C.condition_occurrence_count > 2", sql, "Should filter occurrence_count")
 
         # Note: DATEDIFF vs datediff. Python builder uses DATEDIFF(d,C.start_date, C.end_date)
-        self.assertIn(
-            "DATEDIFF(d,C.start_date, C.end_date) > 10", sql, "Should filter era_length"
-        )
+        self.assertIn("DATEDIFF(d,C.start_date, C.end_date) > 10", sql, "Should filter era_length")
 
         self.assertIn(
             "YEAR(C.start_date) - P.year_of_birth > 40",
             sql,
             "Should filter age_at_start",
         )
-        self.assertIn(
-            "YEAR(C.end_date) - P.year_of_birth < 80", sql, "Should filter age_at_end"
-        )
+        self.assertIn("YEAR(C.end_date) - P.year_of_birth < 80", sql, "Should filter age_at_end")
 
         self.assertTrue(
-            "P.gender_concept_id IN (8507)" in sql
-            or "P.gender_concept_id in (8507)" in sql,
+            "P.gender_concept_id IN (8507)" in sql or "P.gender_concept_id in (8507)" in sql,
             "Should filter gender",
         )
 
@@ -745,29 +709,20 @@ class TestDrugEraBuilder(unittest.TestCase):
             sql,
             "Should filter era_start_date",
         )
-        self.assertIn(
-            "C.end_date < DATEFROMPARTS(2021, 1, 1)", sql, "Should filter era_end_date"
-        )
-        self.assertIn(
-            "C.drug_exposure_count > 2", sql, "Should filter occurrence_count"
-        )
+        self.assertIn("C.end_date < DATEFROMPARTS(2021, 1, 1)", sql, "Should filter era_end_date")
+        self.assertIn("C.drug_exposure_count > 2", sql, "Should filter occurrence_count")
 
-        self.assertIn(
-            "DATEDIFF(d,C.start_date, C.end_date) > 10", sql, "Should filter era_length"
-        )
+        self.assertIn("DATEDIFF(d,C.start_date, C.end_date) > 10", sql, "Should filter era_length")
 
         self.assertIn(
             "YEAR(C.start_date) - P.year_of_birth > 40",
             sql,
             "Should filter age_at_start",
         )
-        self.assertIn(
-            "YEAR(C.end_date) - P.year_of_birth < 80", sql, "Should filter age_at_end"
-        )
+        self.assertIn("YEAR(C.end_date) - P.year_of_birth < 80", sql, "Should filter age_at_end")
 
         self.assertTrue(
-            "P.gender_concept_id IN (8507)" in sql
-            or "P.gender_concept_id in (8507)" in sql,
+            "P.gender_concept_id IN (8507)" in sql or "P.gender_concept_id in (8507)" in sql,
             "Should filter gender",
         )
 
@@ -840,32 +795,24 @@ class TestDoseEraBuilder(unittest.TestCase):
             sql,
             "Should filter era_start_date",
         )
-        self.assertIn(
-            "C.end_date < DATEFROMPARTS(2021, 1, 1)", sql, "Should filter era_end_date"
-        )
+        self.assertIn("C.end_date < DATEFROMPARTS(2021, 1, 1)", sql, "Should filter era_end_date")
         self.assertIn("C.dose_value > 10.0000", sql, "Should filter dose_value")
         self.assertTrue(
-            "C.unit_concept_id IN (8507)" in sql
-            or "C.unit_concept_id in (8507)" in sql,
+            "C.unit_concept_id IN (8507)" in sql or "C.unit_concept_id in (8507)" in sql,
             "Should filter unit",
         )
 
-        self.assertIn(
-            "DATEDIFF(d,C.start_date, C.end_date) > 5", sql, "Should filter era_length"
-        )
+        self.assertIn("DATEDIFF(d,C.start_date, C.end_date) > 5", sql, "Should filter era_length")
 
         self.assertIn(
             "YEAR(C.start_date) - P.year_of_birth > 40",
             sql,
             "Should filter age_at_start",
         )
-        self.assertIn(
-            "YEAR(C.end_date) - P.year_of_birth < 80", sql, "Should filter age_at_end"
-        )
+        self.assertIn("YEAR(C.end_date) - P.year_of_birth < 80", sql, "Should filter age_at_end")
 
         self.assertTrue(
-            "P.gender_concept_id IN (8507)" in sql
-            or "P.gender_concept_id in (8507)" in sql,
+            "P.gender_concept_id IN (8507)" in sql or "P.gender_concept_id in (8507)" in sql,
             "Should filter gender",
         )
 
@@ -967,31 +914,23 @@ class TestSpecimenBuilder(unittest.TestCase):
         )
         self.assertIn("C.quantity > 5", sql, "Should filter quantity")
         self.assertTrue(
-            "C.unit_concept_id IN (8587)" in sql
-            or "C.unit_concept_id in (8587)" in sql,
+            "C.unit_concept_id IN (8587)" in sql or "C.unit_concept_id in (8587)" in sql,
             "Should filter unit",
         )
         self.assertTrue(
-            "C.anatomic_site_concept_id IN (123)" in sql
-            or "C.anatomic_site_concept_id in (123)" in sql,
+            "C.anatomic_site_concept_id IN (123)" in sql or "C.anatomic_site_concept_id in (123)" in sql,
             "Should filter anatomic_site",
         )
         self.assertTrue(
-            "C.disease_status_concept_id IN (456)" in sql
-            or "C.disease_status_concept_id in (456)" in sql,
+            "C.disease_status_concept_id IN (456)" in sql or "C.disease_status_concept_id in (456)" in sql,
             "Should filter disease_status",
         )
 
-        self.assertIn(
-            "C.specimen_source_id LIKE '123%'", sql, "Should filter source_id"
-        )
+        self.assertIn("C.specimen_source_id LIKE '123%'", sql, "Should filter source_id")
 
-        self.assertIn(
-            "YEAR(C.specimen_date) - P.year_of_birth > 40", sql, "Should filter age"
-        )
+        self.assertIn("YEAR(C.specimen_date) - P.year_of_birth > 40", sql, "Should filter age")
         self.assertTrue(
-            "P.gender_concept_id IN (8507)" in sql
-            or "P.gender_concept_id in (8507)" in sql,
+            "P.gender_concept_id IN (8507)" in sql or "P.gender_concept_id in (8507)" in sql,
             "Should filter gender",
         )
 
@@ -1043,20 +982,14 @@ class TestVisitDetailBuilder(unittest.TestCase):
 
         # 2. Check Join Clauses
         self.assertIn("JOIN @cdm_database_schema.PERSON P", sql, "Should join PERSON")
-        self.assertIn(
-            "JOIN @cdm_database_schema.CARE_SITE CS", sql, "Should join CARE_SITE"
-        )
-        self.assertIn(
-            "LEFT JOIN @cdm_database_schema.PROVIDER PR", sql, "Should join PROVIDER"
-        )
+        self.assertIn("JOIN @cdm_database_schema.CARE_SITE CS", sql, "Should join CARE_SITE")
+        self.assertIn("LEFT JOIN @cdm_database_schema.PROVIDER PR", sql, "Should join PROVIDER")
         self.assertIn(
             "JOIN @cdm_database_schema.LOCATION_HISTORY LH",
             sql,
             "Should join LOCATION_HISTORY",
         )
-        self.assertIn(
-            "JOIN @cdm_database_schema.LOCATION LOC", sql, "Should join LOCATION"
-        )
+        self.assertIn("JOIN @cdm_database_schema.LOCATION LOC", sql, "Should join LOCATION")
 
         # 3. Check Where Clauses
         # Codeset join logic
@@ -1065,16 +998,11 @@ class TestVisitDetailBuilder(unittest.TestCase):
             sql,
         )
 
-        self.assertIn(
-            "C.start_date > DATEFROMPARTS(2020, 1, 1)", sql, "Should filter start_date"
-        )
-        self.assertIn(
-            "C.end_date < DATEFROMPARTS(2021, 1, 1)", sql, "Should filter end_date"
-        )
+        self.assertIn("C.start_date > DATEFROMPARTS(2020, 1, 1)", sql, "Should filter start_date")
+        self.assertIn("C.end_date < DATEFROMPARTS(2021, 1, 1)", sql, "Should filter end_date")
 
         self.assertTrue(
-            "C.visit_detail_type_concept_id IN (SELECT concept_id from #Codesets where codeset_id = 2)"
-            in sql
+            "C.visit_detail_type_concept_id IN (SELECT concept_id from #Codesets where codeset_id = 2)" in sql
             or "C.visit_detail_type_concept_id in (select concept_id from #Codesets where codeset_id = 2)"
             in sql,
             "Should filter visit_detail_type_concept_id",
@@ -1086,21 +1014,16 @@ class TestVisitDetailBuilder(unittest.TestCase):
             "Should filter visit_length",
         )
 
-        self.assertIn(
-            "YEAR(C.end_date) - P.year_of_birth > 40", sql, "Should filter age"
-        )
+        self.assertIn("YEAR(C.end_date) - P.year_of_birth > 40", sql, "Should filter age")
         self.assertIn("P.gender_concept_id in (8507)", sql, "Should filter gender")
 
         self.assertTrue(
-            "PR.specialty_concept_id IN (SELECT concept_id from #Codesets where codeset_id = 3)"
-            in sql
-            or "PR.specialty_concept_id in (select concept_id from #Codesets where codeset_id = 3)"
-            in sql,
+            "PR.specialty_concept_id IN (SELECT concept_id from #Codesets where codeset_id = 3)" in sql
+            or "PR.specialty_concept_id in (select concept_id from #Codesets where codeset_id = 3)" in sql,
             "Should filter provider",
         )
         self.assertTrue(
-            "CS.place_of_service_concept_id IN (SELECT concept_id from #Codesets where codeset_id = 4)"
-            in sql
+            "CS.place_of_service_concept_id IN (SELECT concept_id from #Codesets where codeset_id = 4)" in sql
             or "CS.place_of_service_concept_id in (select concept_id from #Codesets where codeset_id = 4)"
             in sql,
             "Should filter place of service",
@@ -1155,15 +1078,11 @@ class TestPayerPlanPeriodBuilder(unittest.TestCase):
 
         # 1. Check Select Clauses
         self.assertIn("ppp.person_id", sql, "Should select person_id")
-        self.assertIn(
-            "ppp.payer_plan_period_id", sql, "Should select payer_plan_period_id"
-        )
+        self.assertIn("ppp.payer_plan_period_id", sql, "Should select payer_plan_period_id")
         self.assertIn("ppp.payer_concept_id", sql, "Should select payer_concept_id")
         self.assertIn("ppp.plan_concept_id", sql, "Should select plan_concept_id")
         self.assertIn("ppp.sponsor_concept_id", sql, "Should select sponsor_concept_id")
-        self.assertIn(
-            "ppp.stop_reason_concept_id", sql, "Should select stop_reason_concept_id"
-        )
+        self.assertIn("ppp.stop_reason_concept_id", sql, "Should select stop_reason_concept_id")
 
         # 2. Check Join Clauses
         self.assertIn("JOIN @cdm_database_schema.PERSON P", sql, "Should join PERSON")
@@ -1190,12 +1109,8 @@ class TestPayerPlanPeriodBuilder(unittest.TestCase):
             "Should filter stop_reason_concept",
         )
 
-        self.assertIn(
-            "C.start_date > DATEFROMPARTS(2020, 1, 1)", sql, "Should filter start_date"
-        )
-        self.assertIn(
-            "C.end_date < DATEFROMPARTS(2021, 1, 1)", sql, "Should filter end_date"
-        )
+        self.assertIn("C.start_date > DATEFROMPARTS(2020, 1, 1)", sql, "Should filter start_date")
+        self.assertIn("C.end_date < DATEFROMPARTS(2021, 1, 1)", sql, "Should filter end_date")
 
         self.assertIn(
             "DATEDIFF(d,C.start_date, C.end_date) > 10",
@@ -1208,9 +1123,7 @@ class TestPayerPlanPeriodBuilder(unittest.TestCase):
             sql,
             "Should filter age_at_start",
         )
-        self.assertIn(
-            "YEAR(C.end_date) - P.year_of_birth < 80", sql, "Should filter age_at_end"
-        )
+        self.assertIn("YEAR(C.end_date) - P.year_of_birth < 80", sql, "Should filter age_at_end")
 
         self.assertIn("P.gender_concept_id in (8507)", sql, "Should filter gender")
 
@@ -1249,32 +1162,20 @@ class TestObservationPeriodBuilder(unittest.TestCase):
 
         # 1. Check Select Clauses
         self.assertIn("op.person_id", sql, "Should select person_id")
-        self.assertIn(
-            "op.observation_period_id", sql, "Should select observation_period_id"
-        )
-        self.assertIn(
-            "op.period_type_concept_id", sql, "Should select period_type_concept_id"
-        )
+        self.assertIn("op.observation_period_id", sql, "Should select observation_period_id")
+        self.assertIn("op.period_type_concept_id", sql, "Should select period_type_concept_id")
 
         # 2. Check Join Clauses
         self.assertIn("JOIN @cdm_database_schema.PERSON P", sql, "Should join PERSON")
 
         # 3. Check Where Clauses
-        self.assertIn(
-            "C.start_date > DATEFROMPARTS(2020, 1, 1)", sql, "Should filter start_date"
-        )
-        self.assertIn(
-            "C.end_date < DATEFROMPARTS(2021, 1, 1)", sql, "Should filter end_date"
-        )
+        self.assertIn("C.start_date > DATEFROMPARTS(2020, 1, 1)", sql, "Should filter start_date")
+        self.assertIn("C.end_date < DATEFROMPARTS(2021, 1, 1)", sql, "Should filter end_date")
 
-        self.assertIn(
-            "C.period_type_concept_id in (1)", sql, "Should filter period_type"
-        )
+        self.assertIn("C.period_type_concept_id in (1)", sql, "Should filter period_type")
         self.assertTrue(
-            "C.period_type_concept_id in (select concept_id from #Codesets where codeset_id = 2)"
-            in sql
-            or "C.period_type_concept_id IN (SELECT concept_id from #Codesets where codeset_id = 2)"
-            in sql,
+            "C.period_type_concept_id in (select concept_id from #Codesets where codeset_id = 2)" in sql
+            or "C.period_type_concept_id IN (SELECT concept_id from #Codesets where codeset_id = 2)" in sql,
             "Should filter period_type_cs",
         )
 
@@ -1289,9 +1190,7 @@ class TestObservationPeriodBuilder(unittest.TestCase):
             sql,
             "Should filter age_at_start",
         )
-        self.assertIn(
-            "YEAR(C.end_date) - P.year_of_birth < 100", sql, "Should filter age_at_end"
-        )
+        self.assertIn("YEAR(C.end_date) - P.year_of_birth < 100", sql, "Should filter age_at_end")
 
         # User defined period bounds
         self.assertIn(
@@ -1327,10 +1226,8 @@ class TestLocationRegionBuilder(unittest.TestCase):
         # 2. Check Codeset Clause
         # The python builder now uses AND l.region_concept_id ...
         self.assertTrue(
-            "AND l.region_concept_id in (SELECT concept_id from #Codesets where codeset_id = 1)"
-            in sql
-            or "AND l.region_concept_id in (select concept_id from #Codesets where codeset_id = 1)"
-            in sql,
+            "AND l.region_concept_id in (SELECT concept_id from #Codesets where codeset_id = 1)" in sql
+            or "AND l.region_concept_id in (select concept_id from #Codesets where codeset_id = 1)" in sql,
             "Should have codeset logic",
         )
 
@@ -1345,9 +1242,7 @@ class TestLocationRegionBuilder(unittest.TestCase):
             sql,
             "Should join LOCATION",
         )
-        self.assertIn(
-            "WHERE lh.domain_id = 'PERSON'", sql, "Should filter PERSON domain"
-        )
+        self.assertIn("WHERE lh.domain_id = 'PERSON'", sql, "Should filter PERSON domain")
 
         # Verify that start_date and end_date are selected
         self.assertIn("C.start_date", sql, "Should select C.start_date")

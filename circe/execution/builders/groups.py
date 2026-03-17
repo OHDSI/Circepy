@@ -64,7 +64,8 @@ def _correlated_mask(events: ir.Table, correlated: CorrelatedCriteria, ctx: Buil
     index_events = events
     if not correlated.ignore_observation_period:
         missing_observation_bounds = (
-            "observation_period_start_date" not in index_events.columns or "observation_period_end_date" not in index_events.columns
+            "observation_period_start_date" not in index_events.columns
+            or "observation_period_end_date" not in index_events.columns
         )
         if missing_observation_bounds:
             zero_window = zero_window or ObservationFilter(prior_days=0, post_days=0)
@@ -103,7 +104,10 @@ def _correlated_mask(events: ir.Table, correlated: CorrelatedCriteria, ctx: Buil
     if correlated.restrict_visit is None and isinstance(criteria_model, VisitDetail):
         require_same_visit = True
 
-    if require_same_visit and ("visit_occurrence_id" in index_events.columns and "_corr_visit_occurrence_id" in criteria_events.columns):
+    if require_same_visit and (
+        "visit_occurrence_id" in index_events.columns
+        and "_corr_visit_occurrence_id" in criteria_events.columns
+    ):
         join_condition &= (
             index_events.visit_occurrence_id.notnull()
             & criteria_events._corr_visit_occurrence_id.notnull()
@@ -190,7 +194,11 @@ def _combine_threshold(masks: list[ir.Value], threshold: int, *, at_least: bool)
     return total >= threshold if at_least else total <= threshold
 
 
-def _demographic_mask(events: ir.Table, demographic: DemoGraphicCriteria, ctx: BuildContext) -> ir.Value | None:
+def _demographic_mask(
+    events: ir.Table,
+    demographic: DemoGraphicCriteria,
+    ctx: BuildContext,
+) -> ir.Value | None:
     if demographic is None:
         return None
 
@@ -248,7 +256,11 @@ def _occurrence_predicate(count_expr: ir.Value, occurrence) -> ir.Value:
     return count_expr > 0
 
 
-def _build_window_condition(index_events: ir.Table, correlated_events: ir.Table, correlated: CorrelatedCriteria) -> ir.Value:
+def _build_window_condition(
+    index_events: ir.Table,
+    correlated_events: ir.Table,
+    correlated: CorrelatedCriteria,
+) -> ir.Value:
     cond = ibis.literal(True)
 
     if correlated.start_window:
@@ -305,7 +317,11 @@ def _apply_endpoint_anchor(
     *,
     default_to_index_end: bool = False,
 ):
-    anchor = events.end_date if (use_index_end or (use_index_end is None and default_to_index_end)) else events.start_date
+    anchor = (
+        events.end_date
+        if (use_index_end or (use_index_end is None and default_to_index_end))
+        else events.start_date
+    )
     if not endpoint or endpoint.days is None:
         return None
     days = ibis.interval(days=int(endpoint.days))

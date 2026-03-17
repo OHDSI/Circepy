@@ -119,7 +119,11 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
 
         return query
 
-    def resolve_select_clauses(self, criteria: DrugExposure, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_select_clauses(
+        self,
+        criteria: DrugExposure,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve select clauses for drug exposure criteria.
 
         Java equivalent: DrugExposureSqlBuilder.resolveSelectClauses()
@@ -148,7 +152,9 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
             select_cols.append("de.route_concept_id")
 
         # providerSpecialty
-        if (criteria.provider_specialty and len(criteria.provider_specialty) > 0) or criteria.provider_specialty_cs:
+        if (
+            criteria.provider_specialty and len(criteria.provider_specialty) > 0
+        ) or criteria.provider_specialty_cs:
             select_cols.append("de.provider_id")
 
         # doseUnit
@@ -164,8 +170,16 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
             select_cols.append(
                 BuilderUtils.get_date_adjustment_expression(
                     criteria.date_adjustment,
-                    ("de.drug_exposure_start_date" if criteria.date_adjustment.start_with == "start_date" else "de.drug_exposure_end_date"),
-                    ("de.drug_exposure_start_date" if criteria.date_adjustment.end_with == "start_date" else "de.drug_exposure_end_date"),
+                    (
+                        "de.drug_exposure_start_date"
+                        if criteria.date_adjustment.start_with == "start_date"
+                        else "de.drug_exposure_end_date"
+                    ),
+                    (
+                        "de.drug_exposure_start_date"
+                        if criteria.date_adjustment.end_with == "start_date"
+                        else "de.drug_exposure_end_date"
+                    ),
                 )
             )
         else:
@@ -175,7 +189,11 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
 
         return select_cols
 
-    def resolve_join_clauses(self, criteria: DrugExposure, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_join_clauses(
+        self,
+        criteria: DrugExposure,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve join clauses for drug exposure criteria.
 
         Java equivalent: DrugExposureSqlBuilder.resolveJoinClauses()
@@ -193,12 +211,20 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
             )
 
         # Join to PROVIDER if provider specialty conditions are present
-        if (criteria.provider_specialty and len(criteria.provider_specialty) > 0) or criteria.provider_specialty_cs:
-            join_clauses.append("LEFT JOIN @cdm_database_schema.PROVIDER PR on C.provider_id = PR.provider_id")
+        if (
+            criteria.provider_specialty and len(criteria.provider_specialty) > 0
+        ) or criteria.provider_specialty_cs:
+            join_clauses.append(
+                "LEFT JOIN @cdm_database_schema.PROVIDER PR on C.provider_id = PR.provider_id"
+            )
 
         return join_clauses
 
-    def resolve_where_clauses(self, criteria: DrugExposure, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_where_clauses(
+        self,
+        criteria: DrugExposure,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve where clauses for drug exposure criteria.
 
         Java equivalent: DrugExposureSqlBuilder.resolveWhereClauses()
@@ -226,7 +252,11 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
 
         # drugTypeCS
         if criteria.drug_type_cs:
-            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.drug_type_cs.codeset_id, "C.drug_type_concept_id"))
+            where_clauses.append(
+                BuilderUtils.get_codeset_in_expression(
+                    criteria.drug_type_cs.codeset_id, "C.drug_type_concept_id"
+                )
+            )
 
         # stopReason
         if criteria.stop_reason:
@@ -239,7 +269,11 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
 
         # routeConceptCS
         if criteria.route_concept_cs:
-            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.route_concept_cs.codeset_id, "C.route_concept_id"))
+            where_clauses.append(
+                BuilderUtils.get_codeset_in_expression(
+                    criteria.route_concept_cs.codeset_id, "C.route_concept_id"
+                )
+            )
 
         # doseUnit
         if criteria.dose_unit and len(criteria.dose_unit) > 0:
@@ -248,7 +282,11 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
 
         # doseUnitCS
         if criteria.dose_unit_cs:
-            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.dose_unit_cs.codeset_id, "C.dose_unit_concept_id"))
+            where_clauses.append(
+                BuilderUtils.get_codeset_in_expression(
+                    criteria.dose_unit_cs.codeset_id, "C.dose_unit_concept_id"
+                )
+            )
 
         # LotNumber
         if criteria.lot_number:
@@ -264,11 +302,15 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
 
         # daysSupply
         if criteria.days_supply:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.days_supply", criteria.days_supply))
+            where_clauses.append(
+                BuilderUtils.build_numeric_range_clause("C.days_supply", criteria.days_supply)
+            )
 
         # age
         if criteria.age:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age))
+            where_clauses.append(
+                BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age)
+            )
 
         # gender
         if criteria.gender and len(criteria.gender) > 0:
@@ -277,7 +319,9 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
 
         # genderCS
         if criteria.gender_cs:
-            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.gender_cs.codeset_id, "P.gender_concept_id"))
+            where_clauses.append(
+                BuilderUtils.get_codeset_in_expression(criteria.gender_cs.codeset_id, "P.gender_concept_id")
+            )
 
         # providerSpecialty
         if criteria.provider_specialty and len(criteria.provider_specialty) > 0:
@@ -286,7 +330,11 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
 
         # providerSpecialtyCS
         if criteria.provider_specialty_cs:
-            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.provider_specialty_cs.codeset_id, "PR.specialty_concept_id"))
+            where_clauses.append(
+                BuilderUtils.get_codeset_in_expression(
+                    criteria.provider_specialty_cs.codeset_id, "PR.specialty_concept_id"
+                )
+            )
 
         # visitType
         if criteria.visit_type and len(criteria.visit_type) > 0:
@@ -295,6 +343,10 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
 
         # visitTypeCS
         if criteria.visit_type_cs:
-            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.visit_type_cs.codeset_id, "V.visit_concept_id"))
+            where_clauses.append(
+                BuilderUtils.get_codeset_in_expression(
+                    criteria.visit_type_cs.codeset_id, "V.visit_concept_id"
+                )
+            )
 
         return [c for c in where_clauses if c]  # Filter out None values

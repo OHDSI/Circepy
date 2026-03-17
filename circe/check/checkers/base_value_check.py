@@ -59,7 +59,11 @@ class BaseValueCheck(BaseCheck):
         self._check_inclusion_rules(expression, reporter)
         self._check_censoring_criteria(expression, reporter)
 
-    def _check_primary_criteria(self, primary_criteria: Optional["PrimaryCriteria"], reporter: WarningReporter) -> None:
+    def _check_primary_criteria(
+        self,
+        primary_criteria: Optional["PrimaryCriteria"],
+        reporter: WarningReporter,
+    ) -> None:
         """Check primary criteria.
 
         Args:
@@ -70,7 +74,11 @@ class BaseValueCheck(BaseCheck):
             for criteria in primary_criteria.criteria_list:
                 self._check_criteria(criteria, reporter, self.PRIMARY_CRITERIA)
 
-    def _check_additional_criteria(self, criteria_group: Optional["CriteriaGroup"], reporter: WarningReporter) -> None:
+    def _check_additional_criteria(
+        self,
+        criteria_group: Optional["CriteriaGroup"],
+        reporter: WarningReporter,
+    ) -> None:
         """Check additional criteria.
 
         Args:
@@ -81,7 +89,10 @@ class BaseValueCheck(BaseCheck):
             if hasattr(criteria_group, "criteria_list") and criteria_group.criteria_list:
                 for criteria in criteria_group.criteria_list:
                     self._check_criteria(criteria, reporter, self.ADDITIONAL_CRITERIA)
-            if hasattr(criteria_group, "demographic_criteria_list") and criteria_group.demographic_criteria_list:
+            if (
+                hasattr(criteria_group, "demographic_criteria_list")
+                and criteria_group.demographic_criteria_list
+            ):
                 for criteria in criteria_group.demographic_criteria_list:
                     self._check_criteria(criteria, reporter, self.ADDITIONAL_CRITERIA)
             if hasattr(criteria_group, "groups") and criteria_group.groups:
@@ -113,7 +124,10 @@ class BaseValueCheck(BaseCheck):
                     if hasattr(rule.expression, "criteria_list") and rule.expression.criteria_list:
                         for criteria in rule.expression.criteria_list:
                             self._check_criteria(criteria, reporter, rule_name)
-                    if hasattr(rule.expression, "demographic_criteria_list") and rule.expression.demographic_criteria_list:
+                    if (
+                        hasattr(rule.expression, "demographic_criteria_list")
+                        and rule.expression.demographic_criteria_list
+                    ):
                         for criteria in rule.expression.demographic_criteria_list:
                             self._check_criteria(criteria, reporter, rule_name)
 

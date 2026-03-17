@@ -20,7 +20,9 @@ class ConceptSetExpressionQueryBuilder:
 
     # SQL templates - equivalent to Java ResourceHelper.GetResourceAsString
     # IMPORTANT: Must use @vocabulary_database_schema (not @cdm_database_schema) for concept lookups
-    CONCEPT_SET_QUERY_TEMPLATE = "select concept_id from @vocabulary_database_schema.CONCEPT where @conceptIdIn\n"
+    CONCEPT_SET_QUERY_TEMPLATE = (
+        "select concept_id from @vocabulary_database_schema.CONCEPT where @conceptIdIn\n"
+    )
 
     CONCEPT_SET_DESCENDANTS_TEMPLATE = """  select c.concept_id
   from @vocabulary_database_schema.CONCEPT c
@@ -74,13 +76,19 @@ WHERE E.concept_id is null
 
         if descendant_concepts:
             descendant_ids = self.get_concept_ids(descendant_concepts)
-            concept_id_in = BuilderUtils.split_in_clause("ca.ancestor_concept_id", descendant_ids, self.MAX_IN_LENGTH)
+            concept_id_in = BuilderUtils.split_in_clause(
+                "ca.ancestor_concept_id", descendant_ids, self.MAX_IN_LENGTH
+            )
             query = self.CONCEPT_SET_DESCENDANTS_TEMPLATE.replace("@conceptIdIn", concept_id_in)
             queries.append(query)
 
         return "\nUNION  ".join(queries)
 
-    def build_concept_set_mapped_query(self, mapped_concepts: list[Concept], mapped_descendant_concepts: list[Concept]) -> str:
+    def build_concept_set_mapped_query(
+        self,
+        mapped_concepts: list[Concept],
+        mapped_descendant_concepts: list[Concept],
+    ) -> str:
         """Build concept set mapped query.
 
         Java equivalent: buildConceptSetMappedQuery()

@@ -24,9 +24,7 @@ class TestMarkdownRenderCoverage(unittest.TestCase):
     def test_render_cohort_expression_with_concept_sets(self):
         # Line 90: cohort expression has concept sets
         cohort_json = '{"title": "With CS", "conceptSets": [{"id": 1, "name": "CS1", "expression": {"items": []}}], "primaryCriteria": {"observationWindow": {"priorDays": 0, "postDays": 0}, "primaryEvents": []}}'
-        output = self.renderer.render_cohort_expression(
-            cohort_json, include_concept_sets=True
-        )
+        output = self.renderer.render_cohort_expression(cohort_json, include_concept_sets=True)
         self.assertIn("Concept Sets", output)
         self.assertIn("CS1", output)
 

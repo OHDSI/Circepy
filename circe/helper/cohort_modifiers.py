@@ -493,7 +493,9 @@ def set_end_date_strategy(
         )
 
     else:
-        raise ValueError(f"Unknown strategy '{strategy}'. Expected 'fixed_duration', 'end_of_observation', or 'custom_era'.")
+        raise ValueError(
+            f"Unknown strategy '{strategy}'. Expected 'fixed_duration', 'end_of_observation', or 'custom_era'."
+        )
 
     return cohort_expression
 
@@ -611,7 +613,9 @@ def set_clean_window(
 
     pc = cohort_expression.primary_criteria
     if pc is None or not pc.criteria_list:
-        raise ValueError("Cannot set a clean window without primary criteria. Add at least one primary criterion first.")
+        raise ValueError(
+            "Cannot set a clean window without primary criteria. Add at least one primary criterion first."
+        )
 
     # Remove any existing clean-window rule before adding a new one
     reset_clean_window(cohort_expression)
@@ -678,7 +682,11 @@ def reset_clean_window(
         The modified *cohort_expression*.
     """
     if cohort_expression.inclusion_rules:
-        cohort_expression.inclusion_rules = [r for r in cohort_expression.inclusion_rules if getattr(r, "name", None) != _CLEAN_WINDOW_RULE_NAME]
+        cohort_expression.inclusion_rules = [
+            r
+            for r in cohort_expression.inclusion_rules
+            if getattr(r, "name", None) != _CLEAN_WINDOW_RULE_NAME
+        ]
     return cohort_expression
 
 

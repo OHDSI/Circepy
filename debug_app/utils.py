@@ -333,7 +333,9 @@ def get_ai_explanation(ref_content: str, gen_content: str, type_label: str = "SQ
 
     api_key = os.environ.get("GOOGLE_API_KEY")
     if not api_key:
-        return {"error": "GOOGLE_API_KEY environment variable not set. Please set it in a .env file or in your terminal."}
+        return {
+            "error": "GOOGLE_API_KEY environment variable not set. Please set it in a .env file or in your terminal."
+        }
 
     # 4. Call API
     try:

@@ -94,7 +94,9 @@ class UnusedConceptsCheck(BaseCheck):
         if expression.additional_criteria:
             additional_criteria.extend(self._to_criteria_list(expression.additional_criteria.criteria_list))
             if expression.additional_criteria.groups:
-                additional_criteria.extend(self._to_criteria_list_from_groups(expression.additional_criteria.groups))
+                additional_criteria.extend(
+                    self._to_criteria_list_from_groups(expression.additional_criteria.groups)
+                )
         return additional_criteria
 
     def _is_used(
@@ -132,16 +134,30 @@ class UnusedConceptsCheck(BaseCheck):
                     # Convert rule expression to criteria list
                     rule_criteria_list = []
                     if hasattr(rule.expression, "criteria_list") and rule.expression.criteria_list:
-                        rule_criteria_list.extend([c.criteria for c in rule.expression.criteria_list if hasattr(c, "criteria") and c.criteria])
-                    if rule_criteria_list and self._is_concept_set_used_in_list(concept_set, rule_criteria_list):
+                        rule_criteria_list.extend(
+                            [
+                                c.criteria
+                                for c in rule.expression.criteria_list
+                                if hasattr(c, "criteria") and c.criteria
+                            ]
+                        )
+                    if rule_criteria_list and self._is_concept_set_used_in_list(
+                        concept_set, rule_criteria_list
+                    ):
                         return True
 
         # Check end strategy (CustomEraStrategy)
-        if isinstance(expression.end_strategy, CustomEraStrategy) and expression.end_strategy.drug_codeset_id == concept_set.id:
+        if (
+            isinstance(expression.end_strategy, CustomEraStrategy)
+            and expression.end_strategy.drug_codeset_id == concept_set.id
+        ):
             return True
 
         # Check censoring criteria
-        return bool(expression.censoring_criteria and self._is_concept_set_used(concept_set, expression.censoring_criteria))
+        return bool(
+            expression.censoring_criteria
+            and self._is_concept_set_used(concept_set, expression.censoring_criteria)
+        )
 
     def _is_concept_set_used(self, concept_set: "ConceptSet", target) -> bool:
         """Check if a concept set is used (supports both List[Criteria] and CriteriaGroup).
@@ -171,7 +187,11 @@ class UnusedConceptsCheck(BaseCheck):
         else:
             return False
 
-    def _is_concept_set_used_in_list(self, concept_set: "ConceptSet", criteria_list: list["Criteria"]) -> bool:
+    def _is_concept_set_used_in_list(
+        self,
+        concept_set: "ConceptSet",
+        criteria_list: list["Criteria"],
+    ) -> bool:
         """Check if a concept set is used in a criteria list.
 
         Args:
@@ -208,11 +228,19 @@ class UnusedConceptsCheck(BaseCheck):
         """
         criteria_list: list[Criteria] = []
         if hasattr(correlated_criteria, "criteria_list") and correlated_criteria.criteria_list:
-            criteria_list.extend([c.criteria for c in correlated_criteria.criteria_list if hasattr(c, "criteria") and c.criteria])
+            criteria_list.extend(
+                [
+                    c.criteria
+                    for c in correlated_criteria.criteria_list
+                    if hasattr(c, "criteria") and c.criteria
+                ]
+            )
         if hasattr(correlated_criteria, "groups") and correlated_criteria.groups:
             for group in correlated_criteria.groups:
                 if hasattr(group, "criteria_list") and group.criteria_list:
-                    criteria_list.extend([c.criteria for c in group.criteria_list if hasattr(c, "criteria") and c.criteria])
+                    criteria_list.extend(
+                        [c.criteria for c in group.criteria_list if hasattr(c, "criteria") and c.criteria]
+                    )
         return criteria_list
 
     def _to_criteria_list(self, criteria_list: Optional[list["CorelatedCriteria"]]) -> list["Criteria"]:

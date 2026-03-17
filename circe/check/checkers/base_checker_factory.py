@@ -63,7 +63,10 @@ class BaseCheckerFactory:
         """
         raise NotImplementedError("Subclasses must implement _get_check_criteria")
 
-    def _get_check_demographic(self, criteria: "DemographicCriteria") -> Callable[["DemographicCriteria"], None]:
+    def _get_check_demographic(
+        self,
+        criteria: "DemographicCriteria",
+    ) -> Callable[["DemographicCriteria"], None]:
         """Get a checker function for a demographic criteria (to be implemented by subclasses).
 
         Args:

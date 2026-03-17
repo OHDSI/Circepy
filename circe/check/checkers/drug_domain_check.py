@@ -152,7 +152,10 @@ class DrugDomainCheck(BaseCheck):
         if not concept_set or not concept_set.expression or not concept_set.expression.items:
             return False
 
-        return any(item.concept and item.concept.domain_id and item.concept.domain_id.upper() == "DRUG" for item in concept_set.expression.items)
+        return any(
+            item.concept and item.concept.domain_id and item.concept.domain_id.upper() == "DRUG"
+            for item in concept_set.expression.items
+        )
 
     def _map_concept_set(self, expression: "CohortExpression", codeset_id: int) -> Optional["ConceptSet"]:
         """Map a codeset ID to a concept set.

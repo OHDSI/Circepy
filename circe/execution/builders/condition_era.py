@@ -24,7 +24,9 @@ def build_condition_era(criteria: ConditionEra, ctx: BuildContext):
     table = apply_date_range(table, "condition_era_start_date", criteria.era_start_date)
     table = apply_date_range(table, "condition_era_end_date", criteria.era_end_date)
     table = apply_numeric_range(table, "condition_occurrence_count", criteria.occurrence_count)
-    table = apply_interval_range(table, "condition_era_start_date", "condition_era_end_date", criteria.era_length)
+    table = apply_interval_range(
+        table, "condition_era_start_date", "condition_era_end_date", criteria.era_length
+    )
 
     if criteria.age_at_start:
         table = apply_age_filter(table, criteria.age_at_start, ctx, "condition_era_start_date")

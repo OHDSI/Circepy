@@ -54,11 +54,23 @@ WHERE @whereClause
 
         # Parent links
         if criteria.waveform_occurrence_id:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.waveform_occurrence_id", criteria.waveform_occurrence_id))
+            where_clauses.append(
+                BuilderUtils.build_numeric_range_clause(
+                    "C.waveform_occurrence_id", criteria.waveform_occurrence_id
+                )
+            )
         if criteria.waveform_registry_id:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.waveform_registry_id", criteria.waveform_registry_id))
+            where_clauses.append(
+                BuilderUtils.build_numeric_range_clause(
+                    "C.waveform_registry_id", criteria.waveform_registry_id
+                )
+            )
         if criteria.waveform_channel_metadata_id:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.waveform_channel_metadata_id", criteria.waveform_channel_metadata_id))
+            where_clauses.append(
+                BuilderUtils.build_numeric_range_clause(
+                    "C.waveform_channel_metadata_id", criteria.waveform_channel_metadata_id
+                )
+            )
 
         # Feature type (e.g., heart rate, SpO2)
         if criteria.feature_concept_id:
@@ -72,17 +84,31 @@ WHERE @whereClause
             if ids:
                 where_clauses.append(f"C.algorithm_concept_id IN ({','.join(ids)})")
         if criteria.algorithm_source_value:
-            where_clauses.append(BuilderUtils.build_text_filter_clause("C.algorithm_source_value", criteria.algorithm_source_value))
+            where_clauses.append(
+                BuilderUtils.build_text_filter_clause(
+                    "C.algorithm_source_value", criteria.algorithm_source_value
+                )
+            )
 
         # Temporal window
         if criteria.feature_start_timestamp:
-            where_clauses.append(BuilderUtils.build_date_range_clause("C.waveform_feature_start_timestamp", criteria.feature_start_timestamp))
+            where_clauses.append(
+                BuilderUtils.build_date_range_clause(
+                    "C.waveform_feature_start_timestamp", criteria.feature_start_timestamp
+                )
+            )
         if criteria.feature_end_timestamp:
-            where_clauses.append(BuilderUtils.build_date_range_clause("C.waveform_feature_end_timestamp", criteria.feature_end_timestamp))
+            where_clauses.append(
+                BuilderUtils.build_date_range_clause(
+                    "C.waveform_feature_end_timestamp", criteria.feature_end_timestamp
+                )
+            )
 
         # Feature values
         if criteria.value_as_number:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.value_as_number", criteria.value_as_number))
+            where_clauses.append(
+                BuilderUtils.build_numeric_range_clause("C.value_as_number", criteria.value_as_number)
+            )
         if criteria.value_as_concept_id:
             ids = [str(c.concept_id) for c in criteria.value_as_concept_id if c.concept_id]
             if ids:
@@ -96,15 +122,21 @@ WHERE @whereClause
 
         # Links to standard OMOP tables
         if criteria.measurement_id:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.measurement_id", criteria.measurement_id))
+            where_clauses.append(
+                BuilderUtils.build_numeric_range_clause("C.measurement_id", criteria.measurement_id)
+            )
         if criteria.observation_id:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.observation_id", criteria.observation_id))
+            where_clauses.append(
+                BuilderUtils.build_numeric_range_clause("C.observation_id", criteria.observation_id)
+            )
 
         # Get person_id from occurrence
         where_clauses.append("WO.person_id IS NOT NULL")
 
         # Apply replacements
-        query = query.replace("@cdm_database_schema", options.cdm_database_schema if options else "@cdm_database_schema")
+        query = query.replace(
+            "@cdm_database_schema", options.cdm_database_schema if options else "@cdm_database_schema"
+        )
         query = query.replace("@codesetClause", codeset_clause)
         query = query.replace("@joinClause", "\n".join(join_clauses))
         query = query.replace("@whereClause", " AND ".join(where_clauses) if where_clauses else "1=1")

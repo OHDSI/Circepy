@@ -48,9 +48,7 @@ def test_simple_object_generation():
     """Test generation of a simple object."""
     from circe.cohortdefinition.core import Period
 
-    Period(
-        value=10, unit="d"
-    )  # Note: Unit might be a string or enum depending on Period def
+    Period(value=10, unit="d")  # Note: Unit might be a string or enum depending on Period def
     # Let's check Period definition first, wait, I can assume it works if the main one works.
     pass
 

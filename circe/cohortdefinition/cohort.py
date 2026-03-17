@@ -228,11 +228,23 @@ class CohortExpression(CirceBaseModel):
                 data_copy = dict(criteria_data)
                 if "First" not in data_copy and "first" not in data_copy:
                     data_copy["First"] = False
-                if criteria_type == "Measurement" and "MeasurementTypeExclude" not in data_copy and "measurementTypeExclude" not in data_copy:
+                if (
+                    criteria_type == "Measurement"
+                    and "MeasurementTypeExclude" not in data_copy
+                    and "measurementTypeExclude" not in data_copy
+                ):
                     data_copy["MeasurementTypeExclude"] = False
-                if criteria_type == "Observation" and "ObservationTypeExclude" not in data_copy and "observationTypeExclude" not in data_copy:
+                if (
+                    criteria_type == "Observation"
+                    and "ObservationTypeExclude" not in data_copy
+                    and "observationTypeExclude" not in data_copy
+                ):
                     data_copy["ObservationTypeExclude"] = False
-                if criteria_type == "ConditionOccurrence" and "ConditionTypeExclude" not in data_copy and "conditionTypeExclude" not in data_copy:
+                if (
+                    criteria_type == "ConditionOccurrence"
+                    and "ConditionTypeExclude" not in data_copy
+                    and "conditionTypeExclude" not in data_copy
+                ):
                     data_copy["ConditionTypeExclude"] = False
 
                 criteria_obj = criteria_class_map[criteria_type].model_validate(data_copy, strict=False)
@@ -298,7 +310,9 @@ class CohortExpression(CirceBaseModel):
         Removes a censoring criteria by its type
         """
         if self.censoring_criteria:
-            self.censoring_criteria = [c for c in self.censoring_criteria if c.__class__.__name__ != criteria_type]
+            self.censoring_criteria = [
+                c for c in self.censoring_criteria if c.__class__.__name__ != criteria_type
+            ]
 
     def validate_expression(self) -> bool:
         """Validate the cohort expression."""

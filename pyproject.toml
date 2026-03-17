@@ -97,30 +97,6 @@ exclude = ["circe.tests*"]
 circe = ["py.typed"]
 "circe.extensions.waveform" = ["templates/*.j2"]
 
-[tool.black]
-line-length = 88
-target-version = ['py39']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-line_length = 88
-known_first_party = ["circe"]
-
 [tool.mypy]
 python_version = "3.9"
 warn_return_any = true
@@ -180,7 +156,7 @@ markers = [
 
 [tool.ruff]
 # Allow longer lines for code and docstrings.
-line-length = 150
+line-length = 110
 
 # Exclude directories
 extend-exclude = [
@@ -193,7 +169,6 @@ extend-exclude = [
     "build",
     "dist",
     "circe-be",
-    "tests",
 ]
 
 [tool.ruff.lint]

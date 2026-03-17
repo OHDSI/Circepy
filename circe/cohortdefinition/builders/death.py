@@ -86,7 +86,9 @@ FROM
         select_cols = ["d.person_id", "d.cause_concept_id"]
 
         # deathType
-        if (criteria.death_type and len(criteria.death_type) > 0) or (criteria.death_type_cs and criteria.death_type_cs.codeset_id):
+        if (criteria.death_type and len(criteria.death_type) > 0) or (
+            criteria.death_type_cs and criteria.death_type_cs.codeset_id
+        ):
             select_cols.append("d.death_type_concept_id")
 
         # dateAdjustment or default start/end dates
@@ -109,7 +111,11 @@ FROM
         joins = []
 
         # join to PERSON
-        if criteria.age or (criteria.gender and len(criteria.gender) > 0) or (criteria.gender_cs and criteria.gender_cs.codeset_id):
+        if (
+            criteria.age
+            or (criteria.gender and len(criteria.gender) > 0)
+            or (criteria.gender_cs and criteria.gender_cs.codeset_id)
+        ):
             joins.append("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id")
 
         return joins
@@ -132,11 +138,17 @@ FROM
 
         # deathTypeCS
         if criteria.death_type_cs and criteria.death_type_cs.codeset_id:
-            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.death_type_cs.codeset_id, "C.death_type_concept_id"))
+            where_clauses.append(
+                BuilderUtils.get_codeset_in_expression(
+                    criteria.death_type_cs.codeset_id, "C.death_type_concept_id"
+                )
+            )
 
         # age
         if criteria.age:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age))
+            where_clauses.append(
+                BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age)
+            )
 
         # gender
         if criteria.gender and len(criteria.gender) > 0:
@@ -145,6 +157,8 @@ FROM
 
         # genderCS
         if criteria.gender_cs and criteria.gender_cs.codeset_id:
-            where_clauses.append(BuilderUtils.get_codeset_in_expression(criteria.gender_cs.codeset_id, "P.gender_concept_id"))
+            where_clauses.append(
+                BuilderUtils.get_codeset_in_expression(criteria.gender_cs.codeset_id, "P.gender_concept_id")
+            )
 
         return where_clauses

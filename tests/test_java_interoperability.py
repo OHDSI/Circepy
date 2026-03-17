@@ -205,9 +205,7 @@ class TestJavaExportCompatibility(unittest.TestCase):
     def test_criteria_polymorphic_wrapper(self):
         """Test that criteria objects are wrapped in type names."""
         # Create a condition occurrence
-        condition = ConditionOccurrence(
-            codeset_id=6, first=False, condition_type_exclude=False
-        )
+        condition = ConditionOccurrence(codeset_id=6, first=False, condition_type_exclude=False)
 
         # Export to JSON
         json_data = condition.model_dump(by_alias=True, exclude_none=True)
@@ -222,11 +220,7 @@ class TestJavaExportCompatibility(unittest.TestCase):
         """Test PrimaryCriteria exports with PascalCase field names."""
 
         primary = PrimaryCriteria(
-            criteria_list=[
-                ConditionOccurrence(
-                    codeset_id=1, first=True, condition_type_exclude=False
-                )
-            ],
+            criteria_list=[ConditionOccurrence(codeset_id=1, first=True, condition_type_exclude=False)],
             observation_window=ObservationFilter(prior_days=365, post_days=1),
             primary_limit=ResultLimit(type="All"),
         )

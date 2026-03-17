@@ -96,9 +96,7 @@ class TestBuilderUtils(unittest.TestCase):
         """Test date adjustment expression generation."""
         date_adjustment = DateAdjustment(start_offset=30, end_offset=-7)
 
-        result = BuilderUtils.get_date_adjustment_expression(
-            date_adjustment, "start_col", "end_col"
-        )
+        result = BuilderUtils.get_date_adjustment_expression(date_adjustment, "start_col", "end_col")
 
         expected = "DATEADD(day,30, start_col) as start_date, DATEADD(day,-7, end_col) as end_date"
         self.assertEqual(result, expected)
@@ -112,9 +110,7 @@ class TestBuilderUtils(unittest.TestCase):
             source_concept_column="source_concept_id",
         )
 
-        expected = (
-            "JOIN #Codesets cs on (concept_id = cs.concept_id and cs.codeset_id = 123)"
-        )
+        expected = "JOIN #Codesets cs on (concept_id = cs.concept_id and cs.codeset_id = 123)"
         self.assertEqual(result, expected)
 
     def test_get_codeset_join_expression_source_only(self):
@@ -161,9 +157,7 @@ class TestBuilderUtils(unittest.TestCase):
             codeset_id=123, column_name="concept_id", is_exclusion=False
         )
 
-        expected = (
-            " concept_id in (select concept_id from #Codesets where codeset_id = 123)"
-        )
+        expected = " concept_id in (select concept_id from #Codesets where codeset_id = 123)"
         self.assertEqual(result, expected)
 
     def test_get_codeset_in_expression_exclusion(self):
@@ -208,9 +202,7 @@ class TestBuilderUtils(unittest.TestCase):
 
         # Test that the method handles the case where concept_id might be None
         # by testing the filtering logic directly
-        concept_ids = [
-            concept.concept_id for concept in concepts if concept.concept_id is not None
-        ]
+        concept_ids = [concept.concept_id for concept in concepts if concept.concept_id is not None]
         self.assertEqual(concept_ids, [1, 2, 3])
 
     def test_build_date_range_clause_with_range(self):
@@ -275,9 +267,7 @@ class TestCriteriaSqlBuilder(unittest.TestCase):
 
         # This tests that the generic type constraint works
         class TestBuilder(CriteriaSqlBuilder[Criteria]):
-            def get_table_column_for_criteria_column(
-                self, column: CriteriaColumn
-            ) -> str:
+            def get_table_column_for_criteria_column(self, column: CriteriaColumn) -> str:
                 return f"test.{column.value}"
 
             def get_query_template(self) -> str:
@@ -322,45 +312,33 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
 
     def test_get_table_column_for_criteria_column_domain_concept(self):
         """Test table column mapping for domain concept."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.DOMAIN_CONCEPT
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT)
         self.assertEqual(result, "C.condition_concept_id")
 
     def test_get_table_column_for_criteria_column_duration(self):
         """Test table column mapping for duration."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.DURATION
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.DURATION)
         self.assertEqual(result, "(DATEDIFF(d,C.start_date, C.end_date))")
 
     def test_get_table_column_for_criteria_column_start_date(self):
         """Test table column mapping for start date."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.START_DATE
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.START_DATE)
         self.assertEqual(result, "C.start_date")
 
     def test_get_table_column_for_criteria_column_end_date(self):
         """Test table column mapping for end date."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.END_DATE
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.END_DATE)
         self.assertEqual(result, "C.end_date")
 
     def test_get_table_column_for_criteria_column_visit_id(self):
         """Test table column mapping for visit ID."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.VISIT_ID
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.VISIT_ID)
         self.assertEqual(result, "C.visit_occurrence_id")
 
     def test_get_table_column_for_criteria_column_other(self):
         """Test table column mapping for other columns."""
         # Using DOMAIN_CONCEPT as other column instead of removed AGE
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.DOMAIN_CONCEPT
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT)
         self.assertEqual(result, "C.condition_concept_id")
 
     def test_embed_codeset_clause(self):
@@ -475,30 +453,22 @@ class TestDrugExposureSqlBuilder(unittest.TestCase):
 
     def test_get_table_column_for_criteria_column_domain_concept(self):
         """Test table column mapping for domain concept."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.DOMAIN_CONCEPT
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT)
         self.assertEqual(result, "C.drug_concept_id")
 
     def test_get_table_column_for_criteria_column_duration(self):
         """Test table column mapping for duration."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.DURATION
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.DURATION)
         self.assertEqual(result, "(DATEDIFF(d,C.start_date, C.end_date))")
 
     def test_get_table_column_for_criteria_column_start_date(self):
         """Test table column mapping for start date."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.START_DATE
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.START_DATE)
         self.assertEqual(result, "C.start_date")
 
     def test_get_table_column_for_criteria_column_end_date(self):
         """Test table column mapping for end date."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.END_DATE
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.END_DATE)
         self.assertEqual(result, "C.end_date")
 
     def test_get_criteria_sql_basic(self):
@@ -546,30 +516,22 @@ class TestProcedureOccurrenceSqlBuilder(unittest.TestCase):
 
     def test_get_table_column_for_criteria_column_domain_concept(self):
         """Test table column mapping for domain concept."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.DOMAIN_CONCEPT
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT)
         self.assertEqual(result, "C.procedure_concept_id")
 
     def test_get_table_column_for_criteria_column_duration(self):
         """Test table column mapping for duration."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.DURATION
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.DURATION)
         self.assertEqual(result, "CAST(1 as int)")
 
     def test_get_table_column_for_criteria_column_start_date(self):
         """Test table column mapping for start date."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.START_DATE
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.START_DATE)
         self.assertEqual(result, "C.start_date")
 
     def test_get_table_column_for_criteria_column_end_date(self):
         """Test table column mapping for end date."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.END_DATE
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.END_DATE)
         self.assertEqual(result, "C.end_date")
 
     def test_get_criteria_sql_basic(self):

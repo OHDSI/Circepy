@@ -87,21 +87,41 @@ FROM
             query = query.replace("@ordinalExpression", "")
         return query
 
-    def resolve_select_clauses(self, criteria: ConditionEra, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_select_clauses(
+        self,
+        criteria: ConditionEra,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve select clauses for condition era criteria."""
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
 
         # dateAdjustment or default start/end dates
         if criteria.date_adjustment is not None:
-            start_column = "ce.condition_era_start_date" if criteria.date_adjustment.start_with == "start_date" else "ce.condition_era_end_date"
-            end_column = "ce.condition_era_start_date" if criteria.date_adjustment.end_with == "start_date" else "ce.condition_era_end_date"
-            select_cols.append(BuilderUtils.get_date_adjustment_expression(criteria.date_adjustment, start_column, end_column))
+            start_column = (
+                "ce.condition_era_start_date"
+                if criteria.date_adjustment.start_with == "start_date"
+                else "ce.condition_era_end_date"
+            )
+            end_column = (
+                "ce.condition_era_start_date"
+                if criteria.date_adjustment.end_with == "start_date"
+                else "ce.condition_era_end_date"
+            )
+            select_cols.append(
+                BuilderUtils.get_date_adjustment_expression(
+                    criteria.date_adjustment, start_column, end_column
+                )
+            )
         else:
-            select_cols.append("ce.condition_era_start_date as start_date, ce.condition_era_end_date as end_date")
+            select_cols.append(
+                "ce.condition_era_start_date as start_date, ce.condition_era_end_date as end_date"
+            )
 
         return select_cols
 
-    def resolve_join_clauses(self, criteria: ConditionEra, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_join_clauses(
+        self, criteria: ConditionEra, options: Optional[BuilderOptions] = None
+    ) -> list[str]:
         """Resolve join clauses for condition era criteria."""
         join_clauses = []
 
@@ -116,7 +136,11 @@ FROM
 
         return join_clauses
 
-    def resolve_where_clauses(self, criteria: ConditionEra, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_where_clauses(
+        self,
+        criteria: ConditionEra,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve where clauses for condition era criteria."""
         where_clauses = []
 
@@ -134,25 +158,33 @@ FROM
 
         # occurrenceCount
         if criteria.occurrence_count is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause("C.condition_occurrence_count", criteria.occurrence_count)
+            numeric_clause = BuilderUtils.build_numeric_range_clause(
+                "C.condition_occurrence_count", criteria.occurrence_count
+            )
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # eraLength
         if criteria.era_length is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause("DATEDIFF(d,C.start_date, C.end_date)", criteria.era_length)
+            numeric_clause = BuilderUtils.build_numeric_range_clause(
+                "DATEDIFF(d,C.start_date, C.end_date)", criteria.era_length
+            )
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # ageAtStart
         if criteria.age_at_start is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age_at_start)
+            numeric_clause = BuilderUtils.build_numeric_range_clause(
+                "YEAR(C.start_date) - P.year_of_birth", criteria.age_at_start
+            )
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # ageAtEnd
         if criteria.age_at_end is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.end_date) - P.year_of_birth", criteria.age_at_end)
+            numeric_clause = BuilderUtils.build_numeric_range_clause(
+                "YEAR(C.end_date) - P.year_of_birth", criteria.age_at_end
+            )
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 

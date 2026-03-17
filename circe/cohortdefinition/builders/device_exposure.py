@@ -65,7 +65,9 @@ FROM
         ]
 
         # Device Type
-        if (criteria.device_type and len(criteria.device_type) > 0) or (criteria.device_type_cs and criteria.device_type_cs.codeset_id):
+        if (criteria.device_type and len(criteria.device_type) > 0) or (
+            criteria.device_type_cs and criteria.device_type_cs.codeset_id
+        ):
             select_cols.append("de.device_type_concept_id")
 
         # unique_device_id
@@ -108,11 +110,17 @@ FROM
         joins = []
 
         # Join to PERSON
-        if criteria.age or (criteria.gender and len(criteria.gender) > 0) or (criteria.gender_cs and criteria.gender_cs.codeset_id):
+        if (
+            criteria.age
+            or (criteria.gender and len(criteria.gender) > 0)
+            or (criteria.gender_cs and criteria.gender_cs.codeset_id)
+        ):
             joins.append("JOIN @cdm_database_schema.PERSON P ON C.person_id = P.person_id")
 
         # Join to VISIT_OCCURRENCE
-        if (criteria.visit_type and len(criteria.visit_type) > 0) or (criteria.visit_type_cs and criteria.visit_type_cs.codeset_id):
+        if (criteria.visit_type and len(criteria.visit_type) > 0) or (
+            criteria.visit_type_cs and criteria.visit_type_cs.codeset_id
+        ):
             joins.append(
                 "JOIN @cdm_database_schema.VISIT_OCCURRENCE V ON C.visit_occurrence_id = V.visit_occurrence_id AND C.person_id = V.person_id"
             )
@@ -160,11 +168,17 @@ FROM
 
         # deviceTypeCS
         if criteria.device_type_cs and criteria.device_type_cs.codeset_id:
-            conditions.append(BuilderUtils.get_codeset_in_expression(criteria.device_type_cs.codeset_id, "C.device_type_concept_id"))
+            conditions.append(
+                BuilderUtils.get_codeset_in_expression(
+                    criteria.device_type_cs.codeset_id, "C.device_type_concept_id"
+                )
+            )
 
         # Add unique device ID condition
         if criteria.unique_device_id:
-            device_id_clause = BuilderUtils.build_text_filter_clause(criteria.unique_device_id, "C.unique_device_id")
+            device_id_clause = BuilderUtils.build_text_filter_clause(
+                criteria.unique_device_id, "C.unique_device_id"
+            )
             if device_id_clause:
                 conditions.append(device_id_clause)
 
@@ -176,7 +190,9 @@ FROM
 
         # Age
         if criteria.age:
-            conditions.append(BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age))
+            conditions.append(
+                BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age)
+            )
 
         # Gender
         if criteria.gender and len(criteria.gender) > 0:
@@ -185,7 +201,9 @@ FROM
 
         # GenderCS
         if criteria.gender_cs and criteria.gender_cs.codeset_id:
-            conditions.append(BuilderUtils.get_codeset_in_expression(criteria.gender_cs.codeset_id, "P.gender_concept_id"))
+            conditions.append(
+                BuilderUtils.get_codeset_in_expression(criteria.gender_cs.codeset_id, "P.gender_concept_id")
+            )
 
         # Provider Specialty
         if criteria.provider_specialty and len(criteria.provider_specialty) > 0:
@@ -194,7 +212,11 @@ FROM
 
         # Provider Specialty CS
         if criteria.provider_specialty_cs and criteria.provider_specialty_cs.codeset_id:
-            conditions.append(BuilderUtils.get_codeset_in_expression(criteria.provider_specialty_cs.codeset_id, "PR.specialty_concept_id"))
+            conditions.append(
+                BuilderUtils.get_codeset_in_expression(
+                    criteria.provider_specialty_cs.codeset_id, "PR.specialty_concept_id"
+                )
+            )
 
         # Visit Type
         if criteria.visit_type and len(criteria.visit_type) > 0:
@@ -203,7 +225,11 @@ FROM
 
         # Visit Type CS
         if criteria.visit_type_cs and criteria.visit_type_cs.codeset_id:
-            conditions.append(BuilderUtils.get_codeset_in_expression(criteria.visit_type_cs.codeset_id, "V.visit_concept_id"))
+            conditions.append(
+                BuilderUtils.get_codeset_in_expression(
+                    criteria.visit_type_cs.codeset_id, "V.visit_concept_id"
+                )
+            )
 
         return conditions
 
@@ -213,7 +239,11 @@ FROM
             return ", row_number() over (PARTITION BY de.person_id ORDER BY de.device_exposure_start_date, de.device_exposure_id) as ordinal"
         return ""
 
-    def get_ordinal_expression_where_clause(self, criteria: DeviceExposure, options: BuilderOptions) -> list[str]:
+    def get_ordinal_expression_where_clause(
+        self,
+        criteria: DeviceExposure,
+        options: BuilderOptions,
+    ) -> list[str]:
         if criteria.first:
             return ["C.ordinal = 1"]
         return []

@@ -25,7 +25,9 @@ class OcurrenceCheck(BaseCorelatedCriteriaCheck):
     Java equivalent: org.ohdsi.circe.check.checkers.OcurrenceCheck
     """
 
-    AT_LEAST_0_WARNING = "'at least 0' occurrence is not a real constraint, probably meant 'exactly 0' or 'at least 1'"
+    AT_LEAST_0_WARNING = (
+        "'at least 0' occurrence is not a real constraint, probably meant 'exactly 0' or 'at least 1'"
+    )
     AT_LEAST = 2
 
     def _define_severity(self) -> WarningSeverity:
@@ -36,7 +38,12 @@ class OcurrenceCheck(BaseCorelatedCriteriaCheck):
         """
         return WarningSeverity.WARNING
 
-    def _check_criteria(self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter) -> None:
+    def _check_criteria(
+        self,
+        criteria: "CorelatedCriteria",
+        group_name: str,
+        reporter: WarningReporter,
+    ) -> None:
         """Check occurrence for invalid values.
 
         Args:

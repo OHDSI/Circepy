@@ -33,7 +33,9 @@ class DeathTimeWindowCheck(BaseCorelatedCriteriaCheck):
     Java equivalent: org.ohdsi.circe.check.checkers.DeathTimeWindowCheck
     """
 
-    MESSAGE = "%s attempts to identify death event prior to index event. Events post-death may not be available"
+    MESSAGE = (
+        "%s attempts to identify death event prior to index event. Events post-death may not be available"
+    )
 
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.
@@ -105,7 +107,12 @@ class DeathTimeWindowCheck(BaseCorelatedCriteriaCheck):
                         for corelated_criteria in group.criteria_list:
                             self._check_criteria(corelated_criteria, group_name, reporter)
 
-    def _check_criteria(self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter) -> None:
+    def _check_criteria(
+        self,
+        criteria: "CorelatedCriteria",
+        group_name: str,
+        reporter: WarningReporter,
+    ) -> None:
         """Check a corelated criteria for death time window issues.
 
         Args:
@@ -119,6 +126,8 @@ class DeathTimeWindowCheck(BaseCorelatedCriteriaCheck):
         match_result.is_a(Death)
         match_result.then(
             lambda death: (
-                Operations.match(criteria).when(lambda c: Comparisons.is_before(c.start_window)).then(lambda c: reporter(self.MESSAGE, name))
+                Operations.match(criteria)
+                .when(lambda c: Comparisons.is_before(c.start_window))
+                .then(lambda c: reporter(self.MESSAGE, name))
             )
         )

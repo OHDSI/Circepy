@@ -61,37 +61,27 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
 
     def test_get_table_column_for_criteria_column_domain_concept(self):
         """Test table column mapping for domain concept."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.DOMAIN_CONCEPT
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT)
         self.assertEqual(result, "C.condition_concept_id")
 
     def test_get_table_column_for_criteria_column_duration(self):
         """Test table column mapping for duration."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.DURATION
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.DURATION)
         self.assertEqual(result, "(DATEDIFF(d,C.start_date, C.end_date))")
 
     def test_get_table_column_for_criteria_column_start_date(self):
         """Test table column mapping for start date."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.START_DATE
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.START_DATE)
         self.assertEqual(result, "C.start_date")
 
     def test_get_table_column_for_criteria_column_end_date(self):
         """Test table column mapping for end date."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.END_DATE
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.END_DATE)
         self.assertEqual(result, "C.end_date")
 
     def test_get_table_column_for_criteria_column_visit_id(self):
         """Test table column mapping for visit ID."""
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.VISIT_ID
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.VISIT_ID)
         self.assertEqual(result, "C.visit_occurrence_id")
 
     def test_embed_codeset_clause_with_codeset_id(self):
@@ -238,27 +228,19 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
         """Test join clauses with age criteria."""
         criteria = ConditionOccurrence(age=NumericRange(op="gte", value=18, extent=65))
         result = self.builder.resolve_join_clauses(criteria)
-        self.assertIn(
-            "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id", result
-        )
+        self.assertIn("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id", result)
 
     def test_resolve_join_clauses_with_gender(self):
         """Test join clauses with gender criteria."""
         criteria = ConditionOccurrence(gender=[Concept(concept_id=1)])
         result = self.builder.resolve_join_clauses(criteria)
-        self.assertIn(
-            "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id", result
-        )
+        self.assertIn("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id", result)
 
     def test_resolve_join_clauses_with_gender_cs(self):
         """Test join clauses with gender_cs criteria."""
-        criteria = ConditionOccurrence(
-            gender_cs=ConceptSetSelection(codeset_id=1, is_exclusion=False)
-        )
+        criteria = ConditionOccurrence(gender_cs=ConceptSetSelection(codeset_id=1, is_exclusion=False))
         result = self.builder.resolve_join_clauses(criteria)
-        self.assertIn(
-            "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id", result
-        )
+        self.assertIn("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id", result)
 
     def test_resolve_join_clauses_with_visit_type(self):
         """Test join clauses with visit_type criteria."""
@@ -271,9 +253,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
 
     def test_resolve_join_clauses_with_visit_type_cs(self):
         """Test join clauses with visit_type_cs criteria."""
-        criteria = ConditionOccurrence(
-            visit_type_cs=ConceptSetSelection(codeset_id=1, is_exclusion=False)
-        )
+        criteria = ConditionOccurrence(visit_type_cs=ConceptSetSelection(codeset_id=1, is_exclusion=False))
         result = self.builder.resolve_join_clauses(criteria)
         self.assertIn(
             "JOIN @cdm_database_schema.VISIT_OCCURRENCE V on C.visit_occurrence_id = V.visit_occurrence_id and C.person_id = V.person_id",
@@ -309,9 +289,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
         )
         result = self.builder.resolve_join_clauses(criteria)
         self.assertEqual(len(result), 3)
-        self.assertIn(
-            "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id", result
-        )
+        self.assertIn("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id", result)
         self.assertIn(
             "JOIN @cdm_database_schema.VISIT_OCCURRENCE V on C.visit_occurrence_id = V.visit_occurrence_id and C.person_id = V.person_id",
             result,
@@ -329,9 +307,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
     def test_resolve_where_clauses_with_occurrence_start_date(self):
         """Test where clauses with occurrence_start_date."""
         criteria = ConditionOccurrence(
-            occurrence_start_date=DateRange(
-                op="gte", value="2020-01-01", extent="2020-12-31"
-            )
+            occurrence_start_date=DateRange(op="gte", value="2020-01-01", extent="2020-12-31")
         )
         result = self.builder.resolve_where_clauses(criteria)
         self.assertTrue(any("C.start_date" in clause for clause in result))
@@ -339,9 +315,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
     def test_resolve_where_clauses_with_occurrence_end_date(self):
         """Test where clauses with occurrence_end_date."""
         criteria = ConditionOccurrence(
-            occurrence_end_date=DateRange(
-                op="gte", value="2020-01-01", extent="2020-12-31"
-            )
+            occurrence_end_date=DateRange(op="gte", value="2020-01-01", extent="2020-12-31")
         )
         result = self.builder.resolve_where_clauses(criteria)
         self.assertTrue(any("C.end_date" in clause for clause in result))
@@ -350,15 +324,11 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
         """Test where clauses with condition_type."""
         criteria = ConditionOccurrence(condition_type=[Concept(concept_id=1)])
         result = self.builder.resolve_where_clauses(criteria)
-        self.assertTrue(
-            any("C.condition_type_concept_id" in clause for clause in result)
-        )
+        self.assertTrue(any("C.condition_type_concept_id" in clause for clause in result))
 
     def test_resolve_where_clauses_with_condition_type_exclude(self):
         """Test where clauses with condition_type_exclude=True."""
-        criteria = ConditionOccurrence(
-            condition_type=[Concept(concept_id=1)], condition_type_exclude=True
-        )
+        criteria = ConditionOccurrence(condition_type=[Concept(concept_id=1)], condition_type_exclude=True)
         result = self.builder.resolve_where_clauses(criteria)
         self.assertTrue(any("not" in clause for clause in result))
 
@@ -368,9 +338,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
             condition_type_cs=ConceptSetSelection(codeset_id=1, is_exclusion=False)
         )
         result = self.builder.resolve_where_clauses(criteria)
-        self.assertTrue(
-            any("C.condition_type_concept_id" in clause for clause in result)
-        )
+        self.assertTrue(any("C.condition_type_concept_id" in clause for clause in result))
 
     def test_resolve_where_clauses_with_stop_reason(self):
         """Test where clauses with stop_reason."""
@@ -382,9 +350,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
         """Test where clauses with age criteria."""
         criteria = ConditionOccurrence(age=NumericRange(op="gte", value=18, extent=65))
         result = self.builder.resolve_where_clauses(criteria)
-        self.assertTrue(
-            any("YEAR(C.start_date) - P.year_of_birth" in clause for clause in result)
-        )
+        self.assertTrue(any("YEAR(C.start_date) - P.year_of_birth" in clause for clause in result))
 
     def test_resolve_where_clauses_with_gender(self):
         """Test where clauses with gender criteria."""
@@ -394,9 +360,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
 
     def test_resolve_where_clauses_with_gender_cs(self):
         """Test where clauses with gender_cs criteria."""
-        criteria = ConditionOccurrence(
-            gender_cs=ConceptSetSelection(codeset_id=1, is_exclusion=False)
-        )
+        criteria = ConditionOccurrence(gender_cs=ConceptSetSelection(codeset_id=1, is_exclusion=False))
         result = self.builder.resolve_where_clauses(criteria)
         self.assertTrue(any("P.gender_concept_id" in clause for clause in result))
 
@@ -422,9 +386,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
 
     def test_resolve_where_clauses_with_visit_type_cs(self):
         """Test where clauses with visit_type_cs criteria."""
-        criteria = ConditionOccurrence(
-            visit_type_cs=ConceptSetSelection(codeset_id=1, is_exclusion=False)
-        )
+        criteria = ConditionOccurrence(visit_type_cs=ConceptSetSelection(codeset_id=1, is_exclusion=False))
         result = self.builder.resolve_where_clauses(criteria)
         self.assertTrue(any("V.visit_concept_id" in clause for clause in result))
 
@@ -432,9 +394,7 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
         """Test where clauses with condition_status criteria."""
         criteria = ConditionOccurrence(condition_status=[Concept(concept_id=1)])
         result = self.builder.resolve_where_clauses(criteria)
-        self.assertTrue(
-            any("C.condition_status_concept_id" in clause for clause in result)
-        )
+        self.assertTrue(any("C.condition_status_concept_id" in clause for clause in result))
 
     def test_resolve_where_clauses_with_condition_status_cs(self):
         """Test where clauses with condition_status_cs criteria."""
@@ -442,25 +402,19 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
             condition_status_cs=ConceptSetSelection(codeset_id=1, is_exclusion=False)
         )
         result = self.builder.resolve_where_clauses(criteria)
-        self.assertTrue(
-            any("C.condition_status_concept_id" in clause for clause in result)
-        )
+        self.assertTrue(any("C.condition_status_concept_id" in clause for clause in result))
 
     def test_resolve_where_clauses_with_multiple_conditions(self):
         """Test where clauses with multiple conditions."""
         criteria = ConditionOccurrence(
-            occurrence_start_date=DateRange(
-                op="gte", value="2020-01-01", extent="2020-12-31"
-            ),
+            occurrence_start_date=DateRange(op="gte", value="2020-01-01", extent="2020-12-31"),
             age=NumericRange(op="gte", value=18, extent=65),
             gender=[Concept(concept_id=1)],
         )
         result = self.builder.resolve_where_clauses(criteria)
         self.assertGreater(len(result), 0)
         self.assertTrue(any("C.start_date" in clause for clause in result))
-        self.assertTrue(
-            any("YEAR(C.start_date) - P.year_of_birth" in clause for clause in result)
-        )
+        self.assertTrue(any("YEAR(C.start_date) - P.year_of_birth" in clause for clause in result))
         self.assertTrue(any("P.gender_concept_id" in clause for clause in result))
 
     def test_get_criteria_sql_basic(self):
@@ -563,18 +517,14 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
 
     def test_edge_case_date_range_none_values(self):
         """Test edge case with date range containing None values."""
-        criteria = ConditionOccurrence(
-            occurrence_start_date=DateRange(op="gte", value=None, extent=None)
-        )
+        criteria = ConditionOccurrence(occurrence_start_date=DateRange(op="gte", value=None, extent=None))
         result = self.builder.resolve_where_clauses(criteria)
         # Should handle None values gracefully
         self.assertIsInstance(result, list)
 
     def test_edge_case_numeric_range_none_values(self):
         """Test edge case with numeric range containing None values."""
-        criteria = ConditionOccurrence(
-            age=NumericRange(op="gte", value=None, extent=None)
-        )
+        criteria = ConditionOccurrence(age=NumericRange(op="gte", value=None, extent=None))
         result = self.builder.resolve_where_clauses(criteria)
         # Should handle None values gracefully
         self.assertIsInstance(result, list)
@@ -584,12 +534,8 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
         criteria = ConditionOccurrence(
             codeset_id=123,
             first=True,
-            occurrence_start_date=DateRange(
-                op="gte", value="2020-01-01", extent="2020-12-31"
-            ),
-            occurrence_end_date=DateRange(
-                op="gte", value="2020-01-01", extent="2020-12-31"
-            ),
+            occurrence_start_date=DateRange(op="gte", value="2020-01-01", extent="2020-12-31"),
+            occurrence_end_date=DateRange(op="gte", value="2020-01-01", extent="2020-12-31"),
             condition_type=[Concept(concept_id=1)],
             condition_type_exclude=False,
             stop_reason=TextFilter(text="test"),
@@ -623,12 +569,8 @@ class TestConditionOccurrenceSqlBuilder(unittest.TestCase):
         # Should contain various clauses
         self.assertIn("row_number()", result)  # ordinal expression
         self.assertIn("JOIN @cdm_database_schema.PERSON P", result)  # person join
-        self.assertIn(
-            "JOIN @cdm_database_schema.VISIT_OCCURRENCE V", result
-        )  # visit join
-        self.assertIn(
-            "LEFT JOIN @cdm_database_schema.PROVIDER PR", result
-        )  # provider join
+        self.assertIn("JOIN @cdm_database_schema.VISIT_OCCURRENCE V", result)  # visit join
+        self.assertIn("LEFT JOIN @cdm_database_schema.PROVIDER PR", result)  # provider join
 
 
 if __name__ == "__main__":

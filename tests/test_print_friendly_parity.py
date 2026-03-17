@@ -384,9 +384,7 @@ class TestPrintFriendlyParity(unittest.TestCase):
         expression = CohortExpression.model_validate_json(json_str)
         markdown = self.pf.render_cohort_expression(expression)
 
-        self.assertInNormalized(
-            "People enter the cohort when observing any of the following:", markdown
-        )
+        self.assertInNormalized("People enter the cohort when observing any of the following:", markdown)
 
     def test_continuous_observation_prior_test(self):
         json_str = get_resource_as_string("continuousObservation_prior.json")

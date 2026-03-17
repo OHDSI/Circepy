@@ -39,45 +39,31 @@ class TestDrugEraSqlBuilder:
     def test_get_table_column_for_criteria_column(self):
         """Test get_table_column_for_criteria_column method."""
         # Test domain concept
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.DOMAIN_CONCEPT
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT)
         assert result == "C.drug_concept_id"
 
         # Test era occurrences
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.ERA_OCCURRENCES
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.ERA_OCCURRENCES)
         assert result == "C.drug_exposure_count"
 
         # Test gap days
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.GAP_DAYS
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.GAP_DAYS)
         assert result == "C.gap_days"
 
         # Test duration
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.DURATION
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.DURATION)
         assert result == "DATEDIFF(d,C.start_date, C.end_date)"
 
         # Test start date
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.START_DATE
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.START_DATE)
         assert result == "C.start_date"
 
         # Test end date
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.END_DATE
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.END_DATE)
         assert result == "C.end_date"
 
         # Test visit id
-        result = self.builder.get_table_column_for_criteria_column(
-            CriteriaColumn.VISIT_ID
-        )
+        result = self.builder.get_table_column_for_criteria_column(CriteriaColumn.VISIT_ID)
         assert result == "NULL"
 
     def test_get_query_template(self):
@@ -99,7 +85,9 @@ class TestDrugEraSqlBuilder:
         result = self.builder.embed_codeset_clause(query, criteria)
 
         # Note: Reference uses lowercase 'where' and double space before #Codesets
-        expected_clause = "where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = 123)"
+        expected_clause = (
+            "where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = 123)"
+        )
         assert "@codesetClause" not in result
         assert expected_clause in result
 
@@ -160,10 +148,7 @@ class TestDrugEraSqlBuilder:
         assert "de.drug_concept_id" in result
         assert "de.drug_exposure_count" in result
         assert "de.gap_days" in result
-        assert (
-            "de.drug_era_start_date as start_date, de.drug_era_end_date as end_date"
-            in result
-        )
+        assert "de.drug_era_start_date as start_date, de.drug_era_end_date as end_date" in result
 
     def test_resolve_select_clauses_with_date_adjustment(self):
         """Test resolve_select_clauses with date adjustment."""
@@ -196,10 +181,7 @@ class TestDrugEraSqlBuilder:
         result = self.builder.resolve_join_clauses(criteria)
 
         assert len(result) == 1
-        assert (
-            "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id"
-            in result[0]
-        )
+        assert "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id" in result[0]
 
     def test_resolve_join_clauses_with_age_at_end(self):
         """Test resolve_join_clauses with age_at_end."""
@@ -208,10 +190,7 @@ class TestDrugEraSqlBuilder:
         result = self.builder.resolve_join_clauses(criteria)
 
         assert len(result) == 1
-        assert (
-            "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id"
-            in result[0]
-        )
+        assert "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id" in result[0]
 
     def test_resolve_join_clauses_with_gender(self):
         """Test resolve_join_clauses with gender."""
@@ -220,24 +199,16 @@ class TestDrugEraSqlBuilder:
         result = self.builder.resolve_join_clauses(criteria)
 
         assert len(result) == 1
-        assert (
-            "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id"
-            in result[0]
-        )
+        assert "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id" in result[0]
 
     def test_resolve_join_clauses_with_gender_cs(self):
         """Test resolve_join_clauses with gender_cs."""
-        criteria = DrugEra(
-            gender_cs=ConceptSetSelection(codeset_id=123, is_exclusion=False)
-        )
+        criteria = DrugEra(gender_cs=ConceptSetSelection(codeset_id=123, is_exclusion=False))
 
         result = self.builder.resolve_join_clauses(criteria)
 
         assert len(result) == 1
-        assert (
-            "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id"
-            in result[0]
-        )
+        assert "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id" in result[0]
 
     def test_resolve_join_clauses_with_multiple_conditions(self):
         """Test resolve_join_clauses with multiple conditions."""
@@ -250,10 +221,7 @@ class TestDrugEraSqlBuilder:
         result = self.builder.resolve_join_clauses(criteria)
 
         assert len(result) == 1  # Should only join once
-        assert (
-            "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id"
-            in result[0]
-        )
+        assert "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id" in result[0]
 
     def test_resolve_where_clauses_empty(self):
         """Test resolve_where_clauses with no conditions."""
@@ -347,9 +315,7 @@ class TestDrugEraSqlBuilder:
 
     def test_resolve_where_clauses_with_gender_cs(self):
         """Test resolve_where_clauses with gender_cs."""
-        criteria = DrugEra(
-            gender_cs=ConceptSetSelection(codeset_id=123, is_exclusion=False)
-        )
+        criteria = DrugEra(gender_cs=ConceptSetSelection(codeset_id=123, is_exclusion=False))
 
         result = self.builder.resolve_where_clauses(criteria)
 
@@ -377,18 +343,12 @@ class TestDrugEraSqlBuilder:
         assert any("C.start_date" in clause for clause in result)
         assert any("C.end_date" in clause for clause in result)
         assert any("C.drug_exposure_count" in clause for clause in result)
-        assert any(
-            "DATEDIFF(d,C.start_date, C.end_date)" in clause for clause in result
-        )
+        assert any("DATEDIFF(d,C.start_date, C.end_date)" in clause for clause in result)
         assert any("C.gap_days" in clause for clause in result)
-        assert any(
-            "YEAR(C.start_date) - P.year_of_birth" in clause for clause in result
-        )
+        assert any("YEAR(C.start_date) - P.year_of_birth" in clause for clause in result)
         assert any("YEAR(C.end_date) - P.year_of_birth" in clause for clause in result)
         assert any("P.gender_concept_id in (8507)" in clause for clause in result)
-        assert any(
-            "P.gender_concept_id" in clause and "123" in clause for clause in result
-        )
+        assert any("P.gender_concept_id" in clause and "123" in clause for clause in result)
 
     def test_get_criteria_sql_basic(self):
         """Test get_criteria_sql with basic criteria."""
@@ -415,8 +375,7 @@ class TestDrugEraSqlBuilder:
 
         # Note: Reference uses lowercase 'where' and double space before #Codesets
         assert (
-            "where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = 123)"
-            in result
+            "where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = 123)" in result
         )
 
     def test_get_criteria_sql_with_first_true(self):
@@ -449,9 +408,7 @@ class TestDrugEraSqlBuilder:
 
         result = self.builder.get_criteria_sql(criteria)
 
-        assert (
-            "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id" in result
-        )
+        assert "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id" in result
         assert "YEAR(C.start_date) - P.year_of_birth" in result
 
     def test_get_criteria_sql_with_gap_days(self):
@@ -557,14 +514,11 @@ class TestDrugEraSqlBuilder:
         # Verify all components are present
         # Note: Reference uses lowercase 'where' and double space before #Codesets
         assert (
-            "where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = 456)"
-            in result
+            "where de.drug_concept_id in (SELECT concept_id from  #Codesets where codeset_id = 456)" in result
         )
         assert "row_number() over" in result
         assert "C.ordinal = 1" in result
-        assert (
-            "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id" in result
-        )
+        assert "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id" in result
         assert "DATEADD(day,7" in result
         assert "DATEADD(day,-7" in result
         assert "C.start_date" in result

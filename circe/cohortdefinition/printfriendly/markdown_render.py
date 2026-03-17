@@ -33,7 +33,10 @@ class MarkdownRender:
     """
 
     def __init__(
-        self, concept_sets: Optional[list[ConceptSet]] = None, include_concept_sets: bool = False, template_paths: Optional[list[Path]] = None
+        self,
+        concept_sets: Optional[list[ConceptSet]] = None,
+        include_concept_sets: bool = False,
+        template_paths: Optional[list[Path]] = None,
     ):
         """Initialize the markdown renderer.
 
@@ -116,7 +119,9 @@ class MarkdownRender:
             self._concept_sets = cohort_expression.concept_sets
 
         # Determine whether to include concept sets
-        should_include = include_concept_sets if include_concept_sets is not None else self._include_concept_sets
+        should_include = (
+            include_concept_sets if include_concept_sets is not None else self._include_concept_sets
+        )
 
         # Load and render the main template
         template = self._env.get_template("cohort_expression.j2")
@@ -142,7 +147,11 @@ class MarkdownRender:
         # Handle JSON string input
         if isinstance(concept_sets, str):
             data = json.loads(concept_sets)
-            concept_sets = [ConceptSet.model_validate(item) for item in data] if isinstance(data, list) else [ConceptSet.model_validate(data)]
+            concept_sets = (
+                [ConceptSet.model_validate(item) for item in data]
+                if isinstance(data, list)
+                else [ConceptSet.model_validate(data)]
+            )
 
         if not concept_sets:
             return "No concept sets specified.\n"

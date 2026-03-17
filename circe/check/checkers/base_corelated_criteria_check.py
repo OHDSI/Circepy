@@ -84,7 +84,12 @@ class BaseCorelatedCriteriaCheck(BaseIterableCheck):
                             if hasattr(corelated_criteria, "criteria") and corelated_criteria.criteria:
                                 self._check_criteria_group(corelated_criteria.criteria, group_name, reporter)
 
-    def _check_criteria(self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter) -> None:
+    def _check_criteria(
+        self,
+        criteria: "CorelatedCriteria",
+        group_name: str,
+        reporter: WarningReporter,
+    ) -> None:
         """Check a single corelated criteria (to be implemented by subclasses).
 
         Args:

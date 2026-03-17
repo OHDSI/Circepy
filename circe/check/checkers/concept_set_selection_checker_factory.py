@@ -101,7 +101,10 @@ class ConceptSetSelectionCheckerFactory(BaseCheckerFactory):
         else:
             return lambda c: None  # No ConceptSetSelection checks for other criteria types
 
-    def _get_check_demographic(self, criteria: "DemographicCriteria") -> Callable[["DemographicCriteria"], None]:
+    def _get_check_demographic(
+        self,
+        criteria: "DemographicCriteria",
+    ) -> Callable[["DemographicCriteria"], None]:
         """Get a checker function for demographic criteria.
 
         Args:
@@ -129,6 +132,8 @@ class ConceptSetSelectionCheckerFactory(BaseCheckerFactory):
         def warning(template: str) -> None:
             self._reporter(template, self._group_name, criteria_name, attribute)
 
-        Operations.match(concept_set_selection).when(lambda css: css is not None and css.codeset_id is None).then(
-            lambda css: warning(self.WARNING_EMPTY_VALUE)
+        (
+            Operations.match(concept_set_selection)
+            .when(lambda css: css is not None and css.codeset_id is None)
+            .then(lambda css: warning(self.WARNING_EMPTY_VALUE))
         )

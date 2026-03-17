@@ -61,7 +61,11 @@ class ExtensionRegistry:
         """
         self._criteria_classes[name] = cls
 
-    def register_sql_builder(self, criteria_cls: type["Criteria"], builder_cls: type["CriteriaSqlBuilder"]) -> None:
+    def register_sql_builder(
+        self,
+        criteria_cls: type["Criteria"],
+        builder_cls: type["CriteriaSqlBuilder"],
+    ) -> None:
         """Register a SQL builder for a criteria type.
 
         Args:
@@ -163,7 +167,9 @@ def criteria_class(name: str) -> "Callable[[type['Criteria']], type['Criteria']]
     return decorator  # type: ignore[return-value]
 
 
-def sql_builder(criteria_cls: "type['Criteria']") -> "Callable[[type['CriteriaSqlBuilder']], type['CriteriaSqlBuilder']]":
+def sql_builder(
+    criteria_cls: "type['Criteria']",
+) -> "Callable[[type['CriteriaSqlBuilder']], type['CriteriaSqlBuilder']]":
     """Class decorator that registers a SQL builder for a given Criteria type.
 
     Args:

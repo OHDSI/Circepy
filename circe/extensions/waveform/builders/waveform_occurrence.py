@@ -29,7 +29,12 @@ WHERE @whereClause
 """
 
     def get_default_columns(self) -> set[CriteriaColumn]:
-        return {CriteriaColumn.START_DATE, CriteriaColumn.END_DATE, CriteriaColumn.VISIT_ID, CriteriaColumn.DOMAIN_CONCEPT}
+        return {
+            CriteriaColumn.START_DATE,
+            CriteriaColumn.END_DATE,
+            CriteriaColumn.VISIT_ID,
+            CriteriaColumn.DOMAIN_CONCEPT,
+        }
 
     def get_table_column_for_criteria_column(self, column: CriteriaColumn) -> str:
         if column == CriteriaColumn.START_DATE:
@@ -58,34 +63,54 @@ WHERE @whereClause
 
         # Date filters
         if criteria.occurrence_start_datetime:
-            where_clauses.append(BuilderUtils.build_date_range_clause("C.waveform_occurrence_start_datetime", criteria.occurrence_start_datetime))
+            where_clauses.append(
+                BuilderUtils.build_date_range_clause(
+                    "C.waveform_occurrence_start_datetime", criteria.occurrence_start_datetime
+                )
+            )
         if criteria.occurrence_end_datetime:
-            where_clauses.append(BuilderUtils.build_date_range_clause("C.waveform_occurrence_end_datetime", criteria.occurrence_end_datetime))
+            where_clauses.append(
+                BuilderUtils.build_date_range_clause(
+                    "C.waveform_occurrence_end_datetime", criteria.occurrence_end_datetime
+                )
+            )
 
         # Visit context
         if criteria.visit_occurrence_id:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.visit_occurrence_id", criteria.visit_occurrence_id))
+            where_clauses.append(
+                BuilderUtils.build_numeric_range_clause("C.visit_occurrence_id", criteria.visit_occurrence_id)
+            )
         if criteria.visit_detail_id:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.visit_detail_id", criteria.visit_detail_id))
+            where_clauses.append(
+                BuilderUtils.build_numeric_range_clause("C.visit_detail_id", criteria.visit_detail_id)
+            )
 
         # File metadata
         if criteria.num_of_files:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.num_of_files", criteria.num_of_files))
+            where_clauses.append(
+                BuilderUtils.build_numeric_range_clause("C.num_of_files", criteria.num_of_files)
+            )
 
         # Source value text filter
         if criteria.waveform_occurrence_source_value:
             where_clauses.append(
-                BuilderUtils.build_text_filter_clause("C.waveform_occurrence_source_value", criteria.waveform_occurrence_source_value)
+                BuilderUtils.build_text_filter_clause(
+                    "C.waveform_occurrence_source_value", criteria.waveform_occurrence_source_value
+                )
             )
 
         # Sequence/chain filtering
         if criteria.preceding_waveform_occurrence_id:
             where_clauses.append(
-                BuilderUtils.build_numeric_range_clause("C.preceding_waveform_occurrence_id", criteria.preceding_waveform_occurrence_id)
+                BuilderUtils.build_numeric_range_clause(
+                    "C.preceding_waveform_occurrence_id", criteria.preceding_waveform_occurrence_id
+                )
             )
 
         # Apply replacements
-        query = query.replace("@cdm_database_schema", options.cdm_database_schema if options else "@cdm_database_schema")
+        query = query.replace(
+            "@cdm_database_schema", options.cdm_database_schema if options else "@cdm_database_schema"
+        )
         query = query.replace("@codesetClause", codeset_clause)
         query = query.replace("@joinClause", "\n".join(join_clauses))
         query = query.replace("@whereClause", " AND ".join(where_clauses) if where_clauses else "1=1")

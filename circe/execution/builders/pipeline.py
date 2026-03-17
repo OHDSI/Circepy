@@ -112,7 +112,11 @@ def _assign_primary_event_ids(events):
         event_id=(person_rank + 1),
         _person_ordinal=(person_rank + 1),
     )
-    supplemental = [events[column] for column in ("observation_period_start_date", "observation_period_end_date") if column in events.columns]
+    supplemental = [
+        events[column]
+        for column in ("observation_period_start_date", "observation_period_end_date")
+        if column in events.columns
+    ]
     return events.select(
         events.person_id,
         events.event_id,

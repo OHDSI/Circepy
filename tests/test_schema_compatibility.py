@@ -89,9 +89,7 @@ def test_compare_python_java_schema():
     # - specific definition keys that we know differ (e.g. CriteriaColumn is missing in Python)
     exclude_regex = [r"root\['version'\]", r"root\['\$defs'\]\['CriteriaColumn'\]"]
 
-    diff = DeepDiff(
-        norm_java, norm_python, ignore_order=True, exclude_regex_paths=exclude_regex
-    )
+    diff = DeepDiff(norm_java, norm_python, ignore_order=True, exclude_regex_paths=exclude_regex)
 
     if diff:
         print("\n❌ Schema differences found after normalization:")

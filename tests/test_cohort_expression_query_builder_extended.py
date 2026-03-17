@@ -133,25 +133,21 @@ class TestCohortExpressionQueryBuilderExtended(unittest.TestCase):
 
         for criteria, mock_builder, name in test_cases:
             with self.subTest(msg=f"Testing dispatch for {name}"):
-                mock_builder.get_criteria_sql_with_options.return_value = (
-                    f"SELECT * FROM {name}"
-                )
+                mock_builder.get_criteria_sql_with_options.return_value = f"SELECT * FROM {name}"
                 sql = self.builder.get_criteria_sql(criteria)
-                mock_builder.get_criteria_sql_with_options.assert_called_with(
-                    criteria, None
-                )
+                mock_builder.get_criteria_sql_with_options.assert_called_with(criteria, None)
                 self.assertIn(f"SELECT * FROM {name}", sql)
 
     def test_get_criteria_sql_from_dict(self):
         """Test get_criteria_sql handling dictionary input (deserialization)."""
         criteria_dict = {"ConditionOccurrence": {"CodesetId": 1, "First": True}}
-        self.builder.condition_occurrence_sql_builder.get_criteria_sql_with_options.return_value = "SELECT * FROM CO"
+        self.builder.condition_occurrence_sql_builder.get_criteria_sql_with_options.return_value = (
+            "SELECT * FROM CO"
+        )
 
         sql = self.builder.get_criteria_sql(criteria_dict)
 
-        self.assertTrue(
-            self.builder.condition_occurrence_sql_builder.get_criteria_sql_with_options.called
-        )
+        self.assertTrue(self.builder.condition_occurrence_sql_builder.get_criteria_sql_with_options.called)
         call_args = self.builder.condition_occurrence_sql_builder.get_criteria_sql_with_options.call_args
         self.assertIsInstance(call_args[0][0], ConditionOccurrence)
         self.assertEqual(call_args[0][0].codeset_id, 1)
@@ -161,15 +157,11 @@ class TestCohortExpressionQueryBuilderExtended(unittest.TestCase):
         """Test get_windowed_criteria_query with basic configuration."""
         criteria = WindowedCriteria(
             criteria=ConditionOccurrence(first=True, codeset_id=1),
-            start_window=Window(
-                start={"days": 0, "coeff": -1}, end={"days": 0, "coeff": 1}
-            ),
+            start_window=Window(start={"days": 0, "coeff": -1}, end={"days": 0, "coeff": 1}),
             ignore_observation_period=False,
         )
         # Mock criteria acceptance
-        with patch.object(
-            ConditionOccurrence, "accept", return_value="SELECT * FROM Criteria"
-        ):
+        with patch.object(ConditionOccurrence, "accept", return_value="SELECT * FROM Criteria"):
             sql = self.builder.get_windowed_criteria_query(criteria, "#events")
 
             self.assertIn("SELECT * FROM Criteria", sql)
@@ -181,31 +173,21 @@ class TestCohortExpressionQueryBuilderExtended(unittest.TestCase):
         """Test get_windowed_criteria_query with ignore_observation_period=True."""
         criteria = WindowedCriteria(
             criteria=ConditionOccurrence(first=True, codeset_id=1),
-            start_window=Window(
-                start={"days": 0, "coeff": -1}, end={"days": 0, "coeff": 1}
-            ),
+            start_window=Window(start={"days": 0, "coeff": -1}, end={"days": 0, "coeff": 1}),
             ignore_observation_period=True,  # Important
         )
-        with patch.object(
-            ConditionOccurrence, "accept", return_value="SELECT * FROM Criteria"
-        ):
+        with patch.object(ConditionOccurrence, "accept", return_value="SELECT * FROM Criteria"):
             sql = self.builder.get_windowed_criteria_query(criteria, "#events")
-            self.assertNotIn(
-                "A.START_DATE >= P.OP_START_DATE AND A.START_DATE <= P.OP_END_DATE", sql
-            )
+            self.assertNotIn("A.START_DATE >= P.OP_START_DATE AND A.START_DATE <= P.OP_END_DATE", sql)
 
     def test_get_windowed_criteria_query_restrict_visit(self):
         """Test get_windowed_criteria_query with restrict_visit=True."""
         criteria = WindowedCriteria(
             criteria=ConditionOccurrence(first=True, codeset_id=1),
-            start_window=Window(
-                start={"days": 0, "coeff": -1}, end={"days": 0, "coeff": 1}
-            ),
+            start_window=Window(start={"days": 0, "coeff": -1}, end={"days": 0, "coeff": 1}),
             restrict_visit=True,
         )
-        with patch.object(
-            ConditionOccurrence, "accept", return_value="SELECT * FROM Criteria"
-        ):
+        with patch.object(ConditionOccurrence, "accept", return_value="SELECT * FROM Criteria"):
             sql = self.builder.get_windowed_criteria_query(criteria, "#events")
             self.assertIn("A.visit_occurrence_id = P.visit_occurrence_id", sql)
 
@@ -219,9 +201,7 @@ class TestCohortExpressionQueryBuilderExtended(unittest.TestCase):
 
         event_query = "SELECT person_id, event_id, start_date, end_date FROM #table"
 
-        with patch.object(
-            ConditionOccurrence, "accept", return_value="SELECT * FROM Criteria"
-        ):
+        with patch.object(ConditionOccurrence, "accept", return_value="SELECT * FROM Criteria"):
             sql = self.builder.get_corelated_criteria_query(cc, event_query)
 
             # Should inject observation period join

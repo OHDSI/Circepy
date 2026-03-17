@@ -50,13 +50,25 @@ WHERE @whereClause
 
         # Link to parent occurrence
         if criteria.waveform_occurrence_id:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.waveform_occurrence_id", criteria.waveform_occurrence_id))
+            where_clauses.append(
+                BuilderUtils.build_numeric_range_clause(
+                    "C.waveform_occurrence_id", criteria.waveform_occurrence_id
+                )
+            )
 
         # File temporal bounds
         if criteria.file_start_datetime:
-            where_clauses.append(BuilderUtils.build_date_range_clause("C.waveform_file_start_datetime", criteria.file_start_datetime))
+            where_clauses.append(
+                BuilderUtils.build_date_range_clause(
+                    "C.waveform_file_start_datetime", criteria.file_start_datetime
+                )
+            )
         if criteria.file_end_datetime:
-            where_clauses.append(BuilderUtils.build_date_range_clause("C.waveform_file_end_datetime", criteria.file_end_datetime))
+            where_clauses.append(
+                BuilderUtils.build_date_range_clause(
+                    "C.waveform_file_end_datetime", criteria.file_end_datetime
+                )
+            )
 
         # File format
         if criteria.file_extension_concept_id:
@@ -64,16 +76,26 @@ WHERE @whereClause
             if ids:
                 where_clauses.append(f"C.file_extension_concept_id IN ({','.join(ids)})")
         if criteria.file_extension_source_value:
-            where_clauses.append(BuilderUtils.build_text_filter_clause("C.file_extension_source_value", criteria.file_extension_source_value))
+            where_clauses.append(
+                BuilderUtils.build_text_filter_clause(
+                    "C.file_extension_source_value", criteria.file_extension_source_value
+                )
+            )
 
         # Visit context
         if criteria.visit_occurrence_id:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.visit_occurrence_id", criteria.visit_occurrence_id))
+            where_clauses.append(
+                BuilderUtils.build_numeric_range_clause("C.visit_occurrence_id", criteria.visit_occurrence_id)
+            )
         if criteria.visit_detail_id:
-            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.visit_detail_id", criteria.visit_detail_id))
+            where_clauses.append(
+                BuilderUtils.build_numeric_range_clause("C.visit_detail_id", criteria.visit_detail_id)
+            )
 
         # Apply replacements
-        query = query.replace("@cdm_database_schema", options.cdm_database_schema if options else "@cdm_database_schema")
+        query = query.replace(
+            "@cdm_database_schema", options.cdm_database_schema if options else "@cdm_database_schema"
+        )
         query = query.replace("@codesetClause", codeset_clause)
         query = query.replace("@joinClause", "\n".join(join_clauses))
         query = query.replace("@whereClause", " AND ".join(where_clauses) if where_clauses else "1=1")

@@ -44,7 +44,11 @@ class BuilderUtils:
     NON_STANDARD_ALIAS = "cns"
 
     @staticmethod
-    def get_date_adjustment_expression(date_adjustment: DateAdjustment, start_column: str, end_column: str) -> str:
+    def get_date_adjustment_expression(
+        date_adjustment: DateAdjustment,
+        start_column: str,
+        end_column: str,
+    ) -> str:
         """Get date adjustment expression for SQL.
 
         Java equivalent: BuilderUtils.getDateAdjustmentExpression()

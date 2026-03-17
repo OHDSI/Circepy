@@ -21,10 +21,7 @@ class TestDrugExposureSqlBuilder:
         sql = normalize_sql(builder.get_criteria_sql(criteria, options))
 
         assert "from @cdm_database_schema.drug_exposure de" in sql
-        assert (
-            "join #codesets cs on (de.drug_concept_id = cs.concept_id and cs.codeset_id = 1)"
-            in sql
-        )
+        assert "join #codesets cs on (de.drug_concept_id = cs.concept_id and cs.codeset_id = 1)" in sql
 
     def test_full_drug_exposure(self):
         # Test with more options to verify column mapping and joins
@@ -48,7 +45,4 @@ class TestDeviceExposureSqlBuilder:
         assert ") c" in sql  # Outer alias
 
         # 2. Codeset join
-        assert (
-            "join #codesets cs on (de.device_concept_id = cs.concept_id and cs.codeset_id = 2)"
-            in sql
-        )
+        assert "join #codesets cs on (de.device_concept_id = cs.concept_id and cs.codeset_id = 2)" in sql

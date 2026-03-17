@@ -98,7 +98,11 @@ from
             query = query.replace("@ordinalExpression", "")
         return query
 
-    def resolve_select_clauses(self, criteria: DrugEra, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_select_clauses(
+        self,
+        criteria: DrugEra,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve select clauses for drug era criteria."""
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
 
@@ -106,9 +110,21 @@ from
 
         # dateAdjustment or default start/end dates
         if criteria.date_adjustment is not None:
-            start_column = "de.drug_era_start_date" if criteria.date_adjustment.start_with == "start_date" else "de.drug_era_end_date"
-            end_column = "de.drug_era_start_date" if criteria.date_adjustment.end_with == "start_date" else "de.drug_era_end_date"
-            select_cols.append(BuilderUtils.get_date_adjustment_expression(criteria.date_adjustment, start_column, end_column))
+            start_column = (
+                "de.drug_era_start_date"
+                if criteria.date_adjustment.start_with == "start_date"
+                else "de.drug_era_end_date"
+            )
+            end_column = (
+                "de.drug_era_start_date"
+                if criteria.date_adjustment.end_with == "start_date"
+                else "de.drug_era_end_date"
+            )
+            select_cols.append(
+                BuilderUtils.get_date_adjustment_expression(
+                    criteria.date_adjustment, start_column, end_column
+                )
+            )
         else:
             select_cols.append("de.drug_era_start_date as start_date, de.drug_era_end_date as end_date")
 
@@ -147,13 +163,17 @@ from
 
         # occurrenceCount
         if criteria.occurrence_count is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause("C.drug_exposure_count", criteria.occurrence_count)
+            numeric_clause = BuilderUtils.build_numeric_range_clause(
+                "C.drug_exposure_count", criteria.occurrence_count
+            )
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # eraLength
         if criteria.era_length is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause("DATEDIFF(d,C.start_date, C.end_date)", criteria.era_length)
+            numeric_clause = BuilderUtils.build_numeric_range_clause(
+                "DATEDIFF(d,C.start_date, C.end_date)", criteria.era_length
+            )
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
@@ -165,13 +185,17 @@ from
 
         # ageAtStart
         if criteria.age_at_start is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age_at_start)
+            numeric_clause = BuilderUtils.build_numeric_range_clause(
+                "YEAR(C.start_date) - P.year_of_birth", criteria.age_at_start
+            )
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # ageAtEnd
         if criteria.age_at_end is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.end_date) - P.year_of_birth", criteria.age_at_end)
+            numeric_clause = BuilderUtils.build_numeric_range_clause(
+                "YEAR(C.end_date) - P.year_of_birth", criteria.age_at_end
+            )
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 

@@ -54,9 +54,11 @@ def standardize_output(
         needs_offset = ibis.literal(True)
     one_day = ibis.interval(days=1)
     end_expr = ibis.ifelse(needs_offset, cast(Any, end_expr) + one_day, end_expr).cast("timestamp")
-    visit_expr = (table.visit_occurrence_id.cast("int64") if "visit_occurrence_id" in table.columns else ibis.null().cast("int64")).name(
-        "visit_occurrence_id"
-    )
+    visit_expr = (
+        table.visit_occurrence_id.cast("int64")
+        if "visit_occurrence_id" in table.columns
+        else ibis.null().cast("int64")
+    ).name("visit_occurrence_id")
     return table.select(
         table.person_id.cast("int64").name("person_id"),
         table[primary_key].cast("int64").name("event_id"),
@@ -108,7 +110,9 @@ def apply_concept_set_selection(
         return table
     base_columns = table.columns
     left = table.view()
-    codeset_table = ctx.codesets.filter(ctx.codesets["codeset_id"] == ibis.literal(selection.codeset_id)).view()
+    codeset_table = ctx.codesets.filter(
+        ctx.codesets["codeset_id"] == ibis.literal(selection.codeset_id)
+    ).view()
     if selection.is_exclusion:
         return left.anti_join(codeset_table, [left[column] == codeset_table.concept_id])
     joined = left.join(codeset_table, [left[column] == codeset_table.concept_id])
@@ -367,7 +371,9 @@ def apply_observation_window(
 ) -> ir.Table:
     if observation_window is None:
         return events
-    observation = ctx.table("observation_period").select("person_id", "observation_period_start_date", "observation_period_end_date")
+    observation = ctx.table("observation_period").select(
+        "person_id", "observation_period_start_date", "observation_period_end_date"
+    )
     # Use a view to ensure subsequent joins don't mix incompatible relations.
     left = events.view()
     joined = left.join(observation, ["person_id"])
@@ -379,7 +385,11 @@ def apply_observation_window(
     end_bound = end_col - cast(Any, post_days)
     filtered = joined.filter((joined.start_date >= start_bound) & (joined.start_date <= end_bound))
     base_projection = [filtered[col] for col in events.columns]
-    base_projection.extend(filtered[col] for col in ("observation_period_start_date", "observation_period_end_date") if col in filtered.columns)
+    base_projection.extend(
+        filtered[col]
+        for col in ("observation_period_start_date", "observation_period_end_date")
+        if col in filtered.columns
+    )
     return filtered.select(*base_projection)
 
 
@@ -442,7 +452,9 @@ def apply_care_site_filter(
     if not place_of_service_selection:
         return table
     care_site = ctx.table("care_site")
-    filtered = apply_concept_set_selection(care_site, "place_of_service_concept_id", place_of_service_selection, ctx)
+    filtered = apply_concept_set_selection(
+        care_site, "place_of_service_concept_id", place_of_service_selection, ctx
+    )
     filtered = filtered.select(filtered.care_site_id)
     return table.semi_join(filtered, [table[care_site_column] == filtered.care_site_id])
 
@@ -564,7 +576,11 @@ def apply_end_strategy(
     if date_offset:
         interval = ibis.interval(days=int(date_offset.offset))
         date_field = str(date_offset.date_field or "StartDate").lower()
-        anchor = _ensure_timestamp(result.start_date) if date_field == "startdate" else _ensure_timestamp(result.end_date)
+        anchor = (
+            _ensure_timestamp(result.start_date)
+            if date_field == "startdate"
+            else _ensure_timestamp(result.end_date)
+        )
         shifted = anchor + cast(Any, interval)
         if "observation_period_end_date" in result.columns:
             shifted = ibis.least(
@@ -670,7 +686,9 @@ def _apply_custom_era_strategy(events: ir.Table, strategy: CustomEraStrategy, ct
             )
         )
 
-    exposures = _exposure_query("drug_concept_id").union(_exposure_query("drug_source_concept_id"), distinct=False)
+    exposures = _exposure_query("drug_concept_id").union(
+        _exposure_query("drug_source_concept_id"), distinct=False
+    )
 
     gap = int(strategy.gap_days or 0)
     offset = int(strategy.offset or 0)
@@ -699,11 +717,19 @@ def _apply_custom_era_strategy(events: ir.Table, strategy: CustomEraStrategy, ct
         era_end=(annotated.extended_end.max() - ibis.interval(days=gap)),
     )
 
-    join_condition = (events.person_id == eras.person_id) & (events.start_date >= eras.era_start) & (events.start_date <= eras.era_end)
+    join_condition = (
+        (events.person_id == eras.person_id)
+        & (events.start_date >= eras.era_start)
+        & (events.start_date <= eras.era_end)
+    )
     joined = events.join(eras, join_condition, how="inner")
     if not joined.columns:
         return events.limit(0)
-    supplemental = [joined[column] for column in ("observation_period_start_date", "observation_period_end_date") if column in joined.columns]
+    supplemental = [
+        joined[column]
+        for column in ("observation_period_start_date", "observation_period_end_date")
+        if column in joined.columns
+    ]
     return joined.select(
         joined.person_id,
         joined.event_id,

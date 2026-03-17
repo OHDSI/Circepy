@@ -29,9 +29,7 @@ class TestVisitOccurrenceSqlBuilderParity(unittest.TestCase):
 
     def test_get_table_column_for_criteria_column(self):
         self.assertEqual(
-            self.builder.get_table_column_for_criteria_column(
-                CriteriaColumn.DOMAIN_CONCEPT
-            ),
+            self.builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT),
             "C.visit_concept_id",
         )
         self.assertEqual(
@@ -39,9 +37,7 @@ class TestVisitOccurrenceSqlBuilderParity(unittest.TestCase):
             "DATEDIFF(d, C.start_date, C.end_date)",
         )
         with self.assertRaises(ValueError):
-            self.builder.get_table_column_for_criteria_column(
-                CriteriaColumn.VALUE_AS_NUMBER
-            )
+            self.builder.get_table_column_for_criteria_column(CriteriaColumn.VALUE_AS_NUMBER)
 
     def test_get_criteria_sql_basic(self):
         criteria = VisitOccurrence()
@@ -51,9 +47,7 @@ class TestVisitOccurrenceSqlBuilderParity(unittest.TestCase):
             sql,
         )
         self.assertIn("vo.person_id,vo.visit_occurrence_id,vo.visit_concept_id", sql)
-        self.assertIn(
-            "vo.visit_start_date as start_date, vo.visit_end_date as end_date", sql
-        )
+        self.assertIn("vo.visit_start_date as start_date, vo.visit_end_date as end_date", sql)
 
     def test_get_criteria_sql_with_codeset(self):
         criteria = VisitOccurrence(codeset_id=123)
@@ -90,15 +84,11 @@ class TestVisitOccurrenceSqlBuilderParity(unittest.TestCase):
     def test_get_criteria_sql_with_age(self):
         criteria = VisitOccurrence(age=NumericRange(op="gte", value=18))
         sql = self.builder.get_criteria_sql(criteria)
-        self.assertIn(
-            "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id", sql
-        )
+        self.assertIn("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id", sql)
         self.assertIn("YEAR(C.start_date) - P.year_of_birth >= 18", sql)
 
     def test_get_criteria_sql_with_provider_specialty(self):
-        criteria = VisitOccurrence(
-            provider_specialty_cs=ConceptSetSelection(codeset_id=789)
-        )
+        criteria = VisitOccurrence(provider_specialty_cs=ConceptSetSelection(codeset_id=789))
         sql = self.builder.get_criteria_sql(criteria)
         self.assertIn("vo.provider_id", sql)  # Added to select
         self.assertIn(
@@ -111,9 +101,7 @@ class TestVisitOccurrenceSqlBuilderParity(unittest.TestCase):
         )
 
     def test_get_criteria_sql_with_place_of_service(self):
-        criteria = VisitOccurrence(
-            place_of_service_cs=ConceptSetSelection(codeset_id=101)
-        )
+        criteria = VisitOccurrence(place_of_service_cs=ConceptSetSelection(codeset_id=101))
         sql = self.builder.get_criteria_sql(criteria)
         self.assertIn("vo.care_site_id", sql)  # Added to select
         self.assertIn(

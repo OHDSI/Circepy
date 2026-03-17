@@ -77,7 +77,11 @@ class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
         """Embed ordinal expression in query."""
         return query.replace("@ordinalExpression", "")
 
-    def resolve_select_clauses(self, criteria: LocationRegion, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_select_clauses(
+        self,
+        criteria: LocationRegion,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve select clauses for location region criteria."""
         # Default select columns that are always returned
         select_cols = ["C.person_id", "C.location_id", "C.region_concept_id"]
@@ -94,10 +98,18 @@ class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
 
         return select_cols
 
-    def resolve_join_clauses(self, criteria: LocationRegion, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_join_clauses(
+        self,
+        criteria: LocationRegion,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve join clauses for location region criteria."""
         return []
 
-    def resolve_where_clauses(self, criteria: LocationRegion, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_where_clauses(
+        self,
+        criteria: LocationRegion,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve where clauses for location region criteria."""
         return []

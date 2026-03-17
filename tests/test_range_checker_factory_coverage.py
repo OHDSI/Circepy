@@ -294,9 +294,7 @@ class TestRangeCheckerFactoryCoverage(unittest.TestCase):
                     Constants.Criteria.MEASUREMENT,
                     Constants.Attributes.RANGE_HIGH_RATIO_ATTR,
                 ),
-                call(
-                    c.age, Constants.Criteria.MEASUREMENT, Constants.Attributes.AGE_ATTR
-                ),
+                call(c.age, Constants.Criteria.MEASUREMENT, Constants.Attributes.AGE_ATTR),
             ]
             mock_check.assert_has_calls(calls, any_order=True)
 
@@ -315,9 +313,7 @@ class TestRangeCheckerFactoryCoverage(unittest.TestCase):
                     Constants.Criteria.OBSERVATION,
                     Constants.Attributes.VALUE_AS_NUMBER_ATTR,
                 ),
-                call(
-                    c.age, Constants.Criteria.OBSERVATION, Constants.Attributes.AGE_ATTR
-                ),
+                call(c.age, Constants.Criteria.OBSERVATION, Constants.Attributes.AGE_ATTR),
             ]
             mock_check.assert_has_calls(calls, any_order=True)
 
@@ -533,9 +529,7 @@ class TestRangeCheckerFactoryCoverage(unittest.TestCase):
                     Constants.Criteria.DEMOGRAPHIC,
                     Constants.Attributes.OCCURRENCE_START_DATE_ATTR,
                 ),
-                call(
-                    c.age, Constants.Criteria.DEMOGRAPHIC, Constants.Attributes.AGE_ATTR
-                ),
+                call(c.age, Constants.Criteria.DEMOGRAPHIC, Constants.Attributes.AGE_ATTR),
             ]
             mock_check.assert_has_calls(calls, any_order=True)
 

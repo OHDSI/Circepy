@@ -189,10 +189,17 @@ class Comparisons:
         def compare_func(concept_set: "ConceptSet") -> bool:
             if concept_set.expression == source.expression:
                 return True
-            if concept_set.expression and source.expression and len(concept_set.expression.items) == len(source.expression.items):
+            if (
+                concept_set.expression
+                and source.expression
+                and len(concept_set.expression.items) == len(source.expression.items)
+            ):
                 source_concepts = [item.concept for item in source.expression.items]
                 return all(
-                    any(Comparisons.compare_concept(concept)(source_concept) for source_concept in source_concepts)
+                    any(
+                        Comparisons.compare_concept(concept)(source_concept)
+                        for source_concept in source_concepts
+                    )
                     for concept in [item.concept for item in concept_set.expression.items]
                 )
             return False

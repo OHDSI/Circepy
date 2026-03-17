@@ -48,7 +48,11 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
         if len(self._criteria_list) > 1:
             for i in range(len(self._criteria_list) - 1):
                 criteria, criteria_obj = self._criteria_list[i]
-                duplicates = [(name, obj) for name, obj in self._criteria_list[i + 1 :] if self._compare_criteria(criteria_obj, obj)]
+                duplicates = [
+                    (name, obj)
+                    for name, obj in self._criteria_list[i + 1 :]
+                    if self._compare_criteria(criteria_obj, obj)
+                ]
                 if duplicates:
                     names = ", ".join(name for name, _ in duplicates)
                     reporter(self.DUPLICATE_WARNING, criteria, names)
@@ -96,7 +100,9 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
         if isinstance(c1, ConditionEra):
             return c1.codeset_id == c2.codeset_id
         elif isinstance(c1, ConditionOccurrence):
-            return c1.codeset_id == c2.codeset_id and c1.condition_source_concept == c2.condition_source_concept
+            return (
+                c1.codeset_id == c2.codeset_id and c1.condition_source_concept == c2.condition_source_concept
+            )
         elif isinstance(
             c1,
             (

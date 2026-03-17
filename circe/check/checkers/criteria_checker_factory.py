@@ -134,10 +134,14 @@ class CriteriaCheckerFactory:
             return c.codeset_id == self._concept_set.id or c.drug_source_concept == self._concept_set.id
 
         def check_measurement(c: "Measurement") -> bool:
-            return c.codeset_id == self._concept_set.id or c.measurement_source_concept == self._concept_set.id
+            return (
+                c.codeset_id == self._concept_set.id or c.measurement_source_concept == self._concept_set.id
+            )
 
         def check_observation(c: "Observation") -> bool:
-            return c.codeset_id == self._concept_set.id or c.observation_source_concept == self._concept_set.id
+            return (
+                c.codeset_id == self._concept_set.id or c.observation_source_concept == self._concept_set.id
+            )
 
         def check_procedure_occurrence(c: "ProcedureOccurrence") -> bool:
             return c.codeset_id == self._concept_set.id or c.procedure_source_concept == self._concept_set.id
@@ -197,7 +201,10 @@ class CriteriaCheckerFactory:
         else:
             return default_check
 
-    def _get_concept_set_selection_suppliers(self, criteria: "VisitDetail") -> list[Callable[[], Optional["ConceptSetSelection"]]]:
+    def _get_concept_set_selection_suppliers(
+        self,
+        criteria: "VisitDetail",
+    ) -> list[Callable[[], Optional["ConceptSetSelection"]]]:
         """Get suppliers for ConceptSetSelection fields in VisitDetail.
 
         Args:

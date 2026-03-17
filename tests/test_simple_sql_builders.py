@@ -39,8 +39,7 @@ class TestBasicSqlBuilderFunctionality:
 
         # Test column mapping
         assert (
-            builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT)
-            == "C.drug_concept_id"
+            builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT) == "C.drug_concept_id"
         )
         assert (
             builder.get_table_column_for_criteria_column(CriteriaColumn.DURATION)

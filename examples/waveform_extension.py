@@ -11,13 +11,21 @@ Reference: https://ohdsi.github.io/WaveformWG/waveform-tables.html
 """
 
 from circe.cohortdefinition import CohortExpression, PrimaryCriteria
-from circe.cohortdefinition.cohort_expression_query_builder import BuildExpressionQueryOptions, CohortExpressionQueryBuilder
+from circe.cohortdefinition.cohort_expression_query_builder import (
+    BuildExpressionQueryOptions,
+    CohortExpressionQueryBuilder,
+)
 from circe.cohortdefinition.core import DateRange, NumericRange
 from circe.cohortdefinition.printfriendly.markdown_render import MarkdownRender
 
 # Import the extension — registration is automatic via decorators
 # Import criteria classes
-from circe.extensions.waveform.criteria import WaveformChannelMetadata, WaveformFeature, WaveformOccurrence, WaveformRegistry
+from circe.extensions.waveform.criteria import (
+    WaveformChannelMetadata,
+    WaveformFeature,
+    WaveformOccurrence,
+    WaveformRegistry,
+)
 from circe.vocabulary.concept import Concept
 
 
@@ -50,7 +58,9 @@ waveform_occ_example = WaveformOccurrence(
 
 expression1 = CohortExpression(
     primary_criteria=PrimaryCriteria(
-        criteria_list=[waveform_occ_example], observation_window={"priorDays": 0, "postDays": 0}, primary_limit={"type": "First"}
+        criteria_list=[waveform_occ_example],
+        observation_window={"priorDays": 0, "postDays": 0},
+        primary_limit={"type": "First"},
     ),
     concept_sets=[],
     inclusion_rules=[],
@@ -85,7 +95,9 @@ waveform_reg_example = WaveformRegistry(file_extension_concept_id=[create_concep
 
 expression2 = CohortExpression(
     primary_criteria=PrimaryCriteria(
-        criteria_list=[waveform_reg_example], observation_window={"priorDays": 0, "postDays": 0}, primary_limit={"type": "First"}
+        criteria_list=[waveform_reg_example],
+        observation_window={"priorDays": 0, "postDays": 0},
+        primary_limit={"type": "First"},
     ),
     concept_sets=[],
     inclusion_rules=[],
@@ -114,7 +126,9 @@ waveform_chan_example = WaveformChannelMetadata(
 
 expression3 = CohortExpression(
     primary_criteria=PrimaryCriteria(
-        criteria_list=[waveform_chan_example], observation_window={"priorDays": 0, "postDays": 0}, primary_limit={"type": "First"}
+        criteria_list=[waveform_chan_example],
+        observation_window={"priorDays": 0, "postDays": 0},
+        primary_limit={"type": "First"},
     ),
     concept_sets=[],
     inclusion_rules=[],
@@ -144,7 +158,9 @@ waveform_feat_example = WaveformFeature(
 
 expression4 = CohortExpression(
     primary_criteria=PrimaryCriteria(
-        criteria_list=[waveform_feat_example], observation_window={"priorDays": 0, "postDays": 0}, primary_limit={"type": "First"}
+        criteria_list=[waveform_feat_example],
+        observation_window={"priorDays": 0, "postDays": 0},
+        primary_limit={"type": "First"},
     ),
     concept_sets=[],
     inclusion_rules=[],

@@ -81,9 +81,7 @@ class TestKitchenSinkCohort(unittest.TestCase):
                 expression=ConceptSetExpression(
                     items=[
                         ConceptSetItem(
-                            concept=Concept(
-                                concept_id=1112807, concept_name="Metformin"
-                            ),
+                            concept=Concept(concept_id=1112807, concept_name="Metformin"),
                             is_excluded=False,
                             include_descendants=True,
                             include_mapped=True,
@@ -101,21 +99,15 @@ class TestKitchenSinkCohort(unittest.TestCase):
             first=True,
             occurrence_start_date=DateRange(value="2010-01-01", op="gt"),
             occurrence_end_date=DateRange(value="2020-01-01", op="lt"),
-            condition_type=[
-                Concept(concept_id=32020, concept_name="EHR encounter diagnosis")
-            ],
+            condition_type=[Concept(concept_id=32020, concept_name="EHR encounter diagnosis")],
             condition_type_exclude=True,
             stop_reason=TextFilter(text="recovered", op="contains"),
             condition_source_concept=123,
             age=NumericRange(value=18, op="gt"),
             gender=[Concept(concept_id=8507, concept_name="Male")],
-            provider_specialty=[
-                Concept(concept_id=38004456, concept_name="Endocrinology")
-            ],
+            provider_specialty=[Concept(concept_id=38004456, concept_name="Endocrinology")],
             visit_type=[Concept(concept_id=9201, concept_name="Inpatient Visit")],
-            condition_status=[
-                Concept(concept_id=4230359, concept_name="Final diagnosis")
-            ],
+            condition_status=[Concept(concept_id=4230359, concept_name="Final diagnosis")],
         )
 
         # Drug Exposure
@@ -124,9 +116,7 @@ class TestKitchenSinkCohort(unittest.TestCase):
             first=False,
             occurrence_start_date=DateRange(value="2010-01-01", op="gt"),
             occurrence_end_date=DateRange(value="2020-01-01", op="lt"),
-            drug_type=[
-                Concept(concept_id=38000177, concept_name="Prescription written")
-            ],
+            drug_type=[Concept(concept_id=38000177, concept_name="Prescription written")],
             drug_type_exclude=False,
             stop_reason=TextFilter(text="adversereaction", op="endswith"),
             refills=NumericRange(value=1, op="gte"),
@@ -138,9 +128,7 @@ class TestKitchenSinkCohort(unittest.TestCase):
             lot_number=TextFilter(text="LOT123", op="eq"),
             age=NumericRange(value=50, op="lt"),
             gender=[Concept(concept_id=8532, concept_name="Female")],
-            provider_specialty=[
-                Concept(concept_id=38004456, concept_name="Endocrinology")
-            ],
+            provider_specialty=[Concept(concept_id=38004456, concept_name="Endocrinology")],
             visit_type=[Concept(concept_id=9202, concept_name="Outpatient Visit")],
         )
 
@@ -149,9 +137,7 @@ class TestKitchenSinkCohort(unittest.TestCase):
             codeset_id=1,
             first=True,
             occurrence_start_date=DateRange(value="2015-01-01", op="gt"),
-            procedure_type=[
-                Concept(concept_id=38000275, concept_name="EHR order list entry")
-            ],
+            procedure_type=[Concept(concept_id=38000275, concept_name="EHR order list entry")],
             procedure_type_exclude=True,
             modifier=[Concept(concept_id=123, concept_name="Modifier")],
             quantity=NumericRange(value=1, op="eq"),
@@ -165,20 +151,14 @@ class TestKitchenSinkCohort(unittest.TestCase):
             first=True,
             occurrence_start_date=DateRange(value="2010-01-01", op="gt"),
             occurrence_end_date=DateRange(value="2020-01-01", op="lt"),
-            visit_type=[
-                Concept(concept_id=44818518, concept_name="Visit derived from EHR")
-            ],
+            visit_type=[Concept(concept_id=44818518, concept_name="Visit derived from EHR")],
             visit_type_exclude=False,
             visit_source_concept=789,
             visit_length=NumericRange(value=1, op="gt"),
             age=NumericRange(value=18, op="gt"),
             gender=[Concept(concept_id=8507, concept_name="Male")],
-            provider_specialty=[
-                Concept(concept_id=38003845, concept_name="General Practice")
-            ],
-            place_of_service=[
-                Concept(concept_id=8717, concept_name="Inpatient Hospital")
-            ],
+            provider_specialty=[Concept(concept_id=38003845, concept_name="General Practice")],
+            place_of_service=[Concept(concept_id=8717, concept_name="Inpatient Hospital")],
             place_of_service_location=12345,
         )
 
@@ -207,11 +187,7 @@ class TestKitchenSinkCohort(unittest.TestCase):
             codeset_id=1,
             first=False,
             occurrence_start_date=DateRange(value="2010-01-01", op="gt"),
-            observation_type=[
-                Concept(
-                    concept_id=38000280, concept_name="Observation recorded from EHR"
-                )
-            ],
+            observation_type=[Concept(concept_id=38000280, concept_name="Observation recorded from EHR")],
             observation_type_exclude=False,
             value_as_number=NumericRange(value=10, op="gt"),
             value_as_string=TextFilter(text="positive", op="eq"),
@@ -240,9 +216,7 @@ class TestKitchenSinkCohort(unittest.TestCase):
             codeset_id=1,
             first=True,
             occurrence_start_date=DateRange(value="2010-01-01", op="gt"),
-            specimen_type=[
-                Concept(concept_id=38000281, concept_name="Specimen from EHR")
-            ],
+            specimen_type=[Concept(concept_id=38000281, concept_name="Specimen from EHR")],
             specimen_type_exclude=True,
             unit=[Concept(concept_id=8576, concept_name="milligram")],
             anatomic_site=[Concept(concept_id=4044352, concept_name="Arm")],
@@ -254,9 +228,7 @@ class TestKitchenSinkCohort(unittest.TestCase):
             age=NumericRange(value=18, op="gt"),
             gender=[Concept(concept_id=8507, concept_name="Male")],
             race=[Concept(concept_id=8527, concept_name="White")],
-            ethnicity=[
-                Concept(concept_id=38003564, concept_name="Not Hispanic or Latino")
-            ],
+            ethnicity=[Concept(concept_id=38003564, concept_name="Not Hispanic or Latino")],
             occurrence_start_date=DateRange(value="2010-01-01", op="gt"),
             occurrence_end_date=DateRange(value="2020-01-01", op="lt"),
         )
@@ -311,9 +283,7 @@ class TestKitchenSinkCohort(unittest.TestCase):
         # 4. Inclusion Rules
 
         # Rule 1: Must have Metformin
-        rule1_crit = DrugExposure(
-            codeset_id=2, first=True, age=NumericRange(value=18, op="gt")
-        )
+        rule1_crit = DrugExposure(codeset_id=2, first=True, age=NumericRange(value=18, op="gt"))
 
         # Corelated Criteria (Windowed)
         # We need to wrap the drug exposure in a CorelatedCriteria/WindowedCriteria structure usually
@@ -371,11 +341,7 @@ class TestKitchenSinkCohort(unittest.TestCase):
             first=True,
             period_start_date=DateRange(value="2010-01-01", op="gt"),
             period_end_date=DateRange(value="2020-01-01", op="lt"),
-            period_type=[
-                Concept(
-                    concept_id=38000280, concept_name="Observation recorded from EHR"
-                )
-            ],
+            period_type=[Concept(concept_id=38000280, concept_name="Observation recorded from EHR")],
             period_length=NumericRange(value=365, op="gt"),
             age_at_start=NumericRange(value=18, op="gt"),
             age_at_end=NumericRange(value=90, op="lt"),
@@ -472,14 +438,10 @@ class TestKitchenSinkCohort(unittest.TestCase):
             primary_criteria=primary,
             inclusion_rules=[rule1],
             censoring_criteria=censoring,
-            collapse_settings=CollapseSettings(
-                era_pad=0, collapse_type=CollapseType.ERA
-            ),
+            collapse_settings=CollapseSettings(era_pad=0, collapse_type=CollapseType.ERA),
             censor_window=Period(start_date="2010-01-01", end_date="2025-01-01"),
             # End Strategies - Using CustomEraStrategy this time
-            end_strategy=CustomEraStrategy(
-                drug_codeset_id=2, gap_days=30, offset=7, days_supply_override=0
-            ),
+            end_strategy=CustomEraStrategy(drug_codeset_id=2, gap_days=30, offset=7, days_supply_override=0),
         )
 
         return cohort

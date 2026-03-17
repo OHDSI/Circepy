@@ -25,9 +25,7 @@ class TestDrugExposureSqlBuilder(unittest.TestCase):
 
     def test_get_table_column_for_criteria_column(self):
         self.assertEqual(
-            self.builder.get_table_column_for_criteria_column(
-                CriteriaColumn.DOMAIN_CONCEPT
-            ),
+            self.builder.get_table_column_for_criteria_column(CriteriaColumn.DOMAIN_CONCEPT),
             "C.drug_concept_id",
         )
         self.assertEqual(
@@ -35,9 +33,7 @@ class TestDrugExposureSqlBuilder(unittest.TestCase):
             "(DATEDIFF(d,C.start_date, C.end_date))",
         )
         self.assertEqual(
-            self.builder.get_table_column_for_criteria_column(
-                CriteriaColumn.START_DATE
-            ),
+            self.builder.get_table_column_for_criteria_column(CriteriaColumn.START_DATE),
             "C.start_date",
         )
         self.assertEqual(
@@ -84,12 +80,7 @@ class TestDrugExposureSqlBuilder(unittest.TestCase):
         )
         select_cols = self.builder.resolve_select_clauses(criteria)
         # Verify custom select logic replaces the default one
-        self.assertTrue(
-            any(
-                "DATEADD(day,1, de.drug_exposure_start_date)" in col
-                for col in select_cols
-            )
-        )
+        self.assertTrue(any("DATEADD(day,1, de.drug_exposure_start_date)" in col for col in select_cols))
 
     def test_resolve_join_clauses(self):
         criteria = DrugExposure(
@@ -100,17 +91,9 @@ class TestDrugExposureSqlBuilder(unittest.TestCase):
             provider_specialty=[Concept(concept_id=2, concept_name="Spec")],
         )
         joins = self.builder.resolve_join_clauses(criteria)
-        self.assertTrue(
-            any("JOIN @cdm_database_schema.PERSON P" in join for join in joins)
-        )
-        self.assertTrue(
-            any(
-                "JOIN @cdm_database_schema.VISIT_OCCURRENCE V" in join for join in joins
-            )
-        )
-        self.assertTrue(
-            any("LEFT JOIN @cdm_database_schema.PROVIDER PR" in join for join in joins)
-        )
+        self.assertTrue(any("JOIN @cdm_database_schema.PERSON P" in join for join in joins))
+        self.assertTrue(any("JOIN @cdm_database_schema.VISIT_OCCURRENCE V" in join for join in joins))
+        self.assertTrue(any("LEFT JOIN @cdm_database_schema.PROVIDER PR" in join for join in joins))
 
     def test_resolve_where_clauses_basic(self):
         criteria = DrugExposure(
@@ -140,33 +123,15 @@ class TestDrugExposureSqlBuilder(unittest.TestCase):
         )
         where_clauses = self.builder.resolve_where_clauses(criteria)
 
-        self.assertTrue(
-            any(
-                "C.drug_type_concept_id not in (1)" in clause
-                for clause in where_clauses
-            )
-        )
+        self.assertTrue(any("C.drug_type_concept_id not in (1)" in clause for clause in where_clauses))
         self.assertTrue(any("C.refills > 1" in clause for clause in where_clauses))
         self.assertTrue(any("C.quantity < 10" in clause for clause in where_clauses))
         self.assertTrue(any("C.days_supply = 30" in clause for clause in where_clauses))
-        self.assertTrue(
-            any(
-                "YEAR(C.start_date) - P.year_of_birth" in clause
-                for clause in where_clauses
-            )
-        )
-        self.assertTrue(
-            any("P.gender_concept_id in (8507)" in clause for clause in where_clauses)
-        )
-        self.assertTrue(
-            any("PR.specialty_concept_id in (3)" in clause for clause in where_clauses)
-        )
-        self.assertTrue(
-            any("V.visit_concept_id in (4)" in clause for clause in where_clauses)
-        )
-        self.assertTrue(
-            any("C.route_concept_id in (5)" in clause for clause in where_clauses)
-        )
+        self.assertTrue(any("YEAR(C.start_date) - P.year_of_birth" in clause for clause in where_clauses))
+        self.assertTrue(any("P.gender_concept_id in (8507)" in clause for clause in where_clauses))
+        self.assertTrue(any("PR.specialty_concept_id in (3)" in clause for clause in where_clauses))
+        self.assertTrue(any("V.visit_concept_id in (4)" in clause for clause in where_clauses))
+        self.assertTrue(any("C.route_concept_id in (5)" in clause for clause in where_clauses))
 
     def test_resolve_where_clauses_codesets(self):
         """Test attributes using codesets."""
@@ -182,32 +147,19 @@ class TestDrugExposureSqlBuilder(unittest.TestCase):
         where_clauses = self.builder.resolve_where_clauses(criteria)
 
         self.assertTrue(
-            any(
-                "C.drug_type_concept_id" in clause and "codeset_id = 2" in clause
-                for clause in where_clauses
-            )
+            any("C.drug_type_concept_id" in clause and "codeset_id = 2" in clause for clause in where_clauses)
+        )
+        self.assertTrue(
+            any("C.route_concept_id" in clause and "codeset_id = 3" in clause for clause in where_clauses)
+        )
+        self.assertTrue(
+            any("P.gender_concept_id" in clause and "codeset_id = 4" in clause for clause in where_clauses)
         )
         self.assertTrue(
             any(
-                "C.route_concept_id" in clause and "codeset_id = 3" in clause
-                for clause in where_clauses
+                "PR.specialty_concept_id" in clause and "codeset_id = 5" in clause for clause in where_clauses
             )
         )
         self.assertTrue(
-            any(
-                "P.gender_concept_id" in clause and "codeset_id = 4" in clause
-                for clause in where_clauses
-            )
-        )
-        self.assertTrue(
-            any(
-                "PR.specialty_concept_id" in clause and "codeset_id = 5" in clause
-                for clause in where_clauses
-            )
-        )
-        self.assertTrue(
-            any(
-                "V.visit_concept_id" in clause and "codeset_id = 6" in clause
-                for clause in where_clauses
-            )
+            any("V.visit_concept_id" in clause and "codeset_id = 6" in clause for clause in where_clauses)
         )

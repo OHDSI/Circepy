@@ -62,7 +62,12 @@ class TimeWindowCheck(BaseCorelatedCriteriaCheck):
         if expression.primary_criteria:
             self._observation_filter = expression.primary_criteria.observation_window
 
-    def _check_criteria(self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter) -> None:
+    def _check_criteria(
+        self,
+        criteria: "CorelatedCriteria",
+        group_name: str,
+        reporter: WarningReporter,
+    ) -> None:
         """Check criteria for time window issues.
 
         Args:

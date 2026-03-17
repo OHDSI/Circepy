@@ -94,15 +94,31 @@ FROM
             query = query.replace("@ordinalExpression", "")
         return query
 
-    def resolve_select_clauses(self, criteria: DoseEra, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_select_clauses(
+        self,
+        criteria: DoseEra,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve select clauses for dose era criteria."""
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
 
         # dateAdjustment or default start/end dates
         if criteria.date_adjustment is not None:
-            start_column = "de.dose_era_start_date" if criteria.date_adjustment.start_with == "start_date" else "de.dose_era_end_date"
-            end_column = "de.dose_era_start_date" if criteria.date_adjustment.end_with == "start_date" else "de.dose_era_end_date"
-            select_cols.append(BuilderUtils.get_date_adjustment_expression(criteria.date_adjustment, start_column, end_column))
+            start_column = (
+                "de.dose_era_start_date"
+                if criteria.date_adjustment.start_with == "start_date"
+                else "de.dose_era_end_date"
+            )
+            end_column = (
+                "de.dose_era_start_date"
+                if criteria.date_adjustment.end_with == "start_date"
+                else "de.dose_era_end_date"
+            )
+            select_cols.append(
+                BuilderUtils.get_date_adjustment_expression(
+                    criteria.date_adjustment, start_column, end_column
+                )
+            )
         else:
             select_cols.append("de.dose_era_start_date as start_date, de.dose_era_end_date as end_date")
 
@@ -157,25 +173,33 @@ FROM
 
         # doseValue
         if criteria.dose_value is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause("C.dose_value", criteria.dose_value, ".4f")
+            numeric_clause = BuilderUtils.build_numeric_range_clause(
+                "C.dose_value", criteria.dose_value, ".4f"
+            )
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # eraLength
         if criteria.era_length is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause("DATEDIFF(d,C.start_date, C.end_date)", criteria.era_length)
+            numeric_clause = BuilderUtils.build_numeric_range_clause(
+                "DATEDIFF(d,C.start_date, C.end_date)", criteria.era_length
+            )
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # ageAtStart
         if criteria.age_at_start is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age_at_start)
+            numeric_clause = BuilderUtils.build_numeric_range_clause(
+                "YEAR(C.start_date) - P.year_of_birth", criteria.age_at_start
+            )
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 
         # ageAtEnd
         if criteria.age_at_end is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.end_date) - P.year_of_birth", criteria.age_at_end)
+            numeric_clause = BuilderUtils.build_numeric_range_clause(
+                "YEAR(C.end_date) - P.year_of_birth", criteria.age_at_end
+            )
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 

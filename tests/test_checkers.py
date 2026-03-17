@@ -121,9 +121,7 @@ def load_cohort_expression(resource_path: str) -> CohortExpression:
                 collapse["era_pad"] = collapse.pop("eraPad")
 
     # Handle cdmVersionRange as string (Java allows this, but Python expects Period)
-    if "cdmVersionRange" in normalized_data and isinstance(
-        normalized_data["cdmVersionRange"], str
-    ):
+    if "cdmVersionRange" in normalized_data and isinstance(normalized_data["cdmVersionRange"], str):
         # Convert string to Period if needed, or just remove it for testing
         # For now, we'll remove it as it's not critical for checker tests
         normalized_data.pop("cdmVersionRange", None)
@@ -156,9 +154,7 @@ class TestInitialEventCheck:
     def test_check_empty_primary_criteria(self):
         """Test that missing primary criteria triggers a warning."""
         try:
-            expression = load_cohort_expression(
-                "checkers/emptyPrimaryCriteriaList.json"
-            )
+            expression = load_cohort_expression("checkers/emptyPrimaryCriteriaList.json")
             check = InitialEventCheck()
             warnings = check.check(expression)
 
@@ -194,9 +190,7 @@ class TestInitialEventCheck:
         """Test that valid primary criteria produces no warnings."""
         # Create a minimal valid expression
         expression = CohortExpression(
-            primary_criteria={
-                "criteriaList": [{"conditionOccurrence": {"codesetId": 0}}]
-            }
+            primary_criteria={"criteriaList": [{"conditionOccurrence": {"codesetId": 0}}]}
         )
         check = InitialEventCheck()
         warnings = check.check(expression)
@@ -262,9 +256,7 @@ class TestEmptyConceptSetCheck:
 
     def test_check_none_expression(self):
         """Test that concept sets with None expression trigger warnings."""
-        expression = CohortExpression(
-            concept_sets=[{"id": 0, "name": "None Expression", "expression": None}]
-        )
+        expression = CohortExpression(concept_sets=[{"id": 0, "name": "None Expression", "expression": None}])
         check = EmptyConceptSetCheck()
         warnings = check.check(expression)
 
@@ -282,9 +274,7 @@ class TestUnusedConceptsCheck:
             warnings = check.check(expression)
 
             # Count ConceptSetWarning instances
-            concept_set_warnings = [
-                w for w in warnings if isinstance(w, ConceptSetWarning)
-            ]
+            concept_set_warnings = [w for w in warnings if isinstance(w, ConceptSetWarning)]
 
             # Should have warnings for unused concept sets
             assert len(concept_set_warnings) > 0
@@ -299,9 +289,7 @@ class TestUnusedConceptsCheck:
             warnings = check.check(expression)
 
             # Should have no ConceptSetWarning instances
-            concept_set_warnings = [
-                w for w in warnings if isinstance(w, ConceptSetWarning)
-            ]
+            concept_set_warnings = [w for w in warnings if isinstance(w, ConceptSetWarning)]
 
             # Accept any result - the checker may detect issues differently than Java
             # The important thing is that the test runs without errors
@@ -320,9 +308,7 @@ class TestIncompleteRuleCheck:
             check = IncompleteRuleCheck()
             warnings = check.check(expression)
 
-            incomplete_warnings = [
-                w for w in warnings if isinstance(w, IncompleteRuleWarning)
-            ]
+            incomplete_warnings = [w for w in warnings if isinstance(w, IncompleteRuleWarning)]
 
             assert len(incomplete_warnings) > 0
         except FileNotFoundError:
@@ -342,9 +328,7 @@ class TestIncompleteRuleCheck:
             check = IncompleteRuleCheck()
             warnings = check.check(expression)
 
-            incomplete_warnings = [
-                w for w in warnings if isinstance(w, IncompleteRuleWarning)
-            ]
+            incomplete_warnings = [w for w in warnings if isinstance(w, IncompleteRuleWarning)]
 
             assert len(incomplete_warnings) == 1
             assert incomplete_warnings[0].rule_name == "Empty Rule"
@@ -355,20 +339,14 @@ class TestIncompleteRuleCheck:
             inclusion_rules=[
                 {
                     "name": "Valid Rule",
-                    "expression": {
-                        "criteriaList": [
-                            {"criteria": {"conditionOccurrence": {"codesetId": 0}}}
-                        ]
-                    },
+                    "expression": {"criteriaList": [{"criteria": {"conditionOccurrence": {"codesetId": 0}}}]},
                 }
             ]
         )
         check = IncompleteRuleCheck()
         warnings = check.check(expression)
 
-        incomplete_warnings = [
-            w for w in warnings if isinstance(w, IncompleteRuleWarning)
-        ]
+        incomplete_warnings = [w for w in warnings if isinstance(w, IncompleteRuleWarning)]
 
         assert len(incomplete_warnings) == 0
 
@@ -379,9 +357,7 @@ class TestDuplicatesConceptSetCheck:
     def test_check_duplicate_concept_sets(self):
         """Test that duplicate concept sets trigger warnings."""
         try:
-            expression = load_cohort_expression(
-                "checkers/duplicatesConceptSetCheckIncorrect.json"
-            )
+            expression = load_cohort_expression("checkers/duplicatesConceptSetCheckIncorrect.json")
             check = DuplicatesConceptSetCheck()
             warnings = check.check(expression)
 
@@ -440,9 +416,7 @@ class TestDuplicatesConceptSetCheck:
     def test_check_no_duplicates(self):
         """Test that non-duplicate concept sets produce no warnings."""
         try:
-            expression = load_cohort_expression(
-                "checkers/duplicatesConceptSetCheckCorrect.json"
-            )
+            expression = load_cohort_expression("checkers/duplicatesConceptSetCheckCorrect.json")
             check = DuplicatesConceptSetCheck()
             warnings = check.check(expression)
 
@@ -457,9 +431,7 @@ class TestConceptSetCriteriaCheck:
     def test_check_missing_concept_set(self):
         """Test that criteria without concept sets trigger warnings."""
         try:
-            expression = load_cohort_expression(
-                "checkers/conceptSetCriteriaCheckIncorrect.json"
-            )
+            expression = load_cohort_expression("checkers/conceptSetCriteriaCheckIncorrect.json")
             check = ConceptSetCriteriaCheck()
             warnings = check.check(expression)
 
@@ -472,9 +444,7 @@ class TestConceptSetCriteriaCheck:
     def test_check_valid_concept_set(self):
         """Test that criteria with valid concept sets produce no warnings."""
         expression = CohortExpression(
-            primary_criteria={
-                "criteriaList": [{"conditionOccurrence": {"codesetId": 0}}]
-            }
+            primary_criteria={"criteriaList": [{"conditionOccurrence": {"codesetId": 0}}]}
         )
         check = ConceptSetCriteriaCheck()
         print(f"DEBUG: criteria list: {expression.primary_criteria.criteria_list}")
@@ -494,9 +464,7 @@ class TestExitCriteriaCheck:
     def test_check_missing_drug_concept_set(self):
         """Test that CustomEraStrategy without drug codeset triggers warning."""
         try:
-            expression = load_cohort_expression(
-                "checkers/exitCriteriaCheckIncorrect.json"
-            )
+            expression = load_cohort_expression("checkers/exitCriteriaCheckIncorrect.json")
             check = ExitCriteriaCheck()
             warnings = check.check(expression)
             # Accept any result from resource file
@@ -531,9 +499,7 @@ class TestExitCriteriaDaysOffsetCheck:
     def test_check_zero_days_offset(self):
         """Test that zero days offset from start date triggers warning."""
         try:
-            expression = load_cohort_expression(
-                "checkers/exitCriteriaDaysOffsetCheckIncorrect.json"
-            )
+            expression = load_cohort_expression("checkers/exitCriteriaDaysOffsetCheckIncorrect.json")
             check = ExitCriteriaDaysOffsetCheck()
             warnings = check.check(expression)
             # Accept any result from resource file
@@ -552,16 +518,11 @@ class TestExitCriteriaDaysOffsetCheck:
 
             assert len(warnings) == 1
             assert warnings[0].severity == WarningSeverity.WARNING
-            assert (
-                "Days offset from start date should be greater than 0"
-                in warnings[0].to_message()
-            )
+            assert "Days offset from start date should be greater than 0" in warnings[0].to_message()
 
     def test_check_valid_days_offset(self):
         """Test that valid days offset produces no warnings."""
-        expression = CohortExpression(
-            end_strategy={"DateOffset": {"dateField": "StartDate", "offset": 30}}
-        )
+        expression = CohortExpression(end_strategy={"DateOffset": {"dateField": "StartDate", "offset": 30}})
         check = ExitCriteriaDaysOffsetCheck()
         warnings = check.check(expression)
 
@@ -690,9 +651,7 @@ class TestOcurrenceCheck:
     def test_check_at_least_zero(self):
         """Test that 'at least 0' occurrence triggers warning."""
         try:
-            expression = load_cohort_expression(
-                "checkers/occurrenceCheckIncorrect.json"
-            )
+            expression = load_cohort_expression("checkers/occurrenceCheckIncorrect.json")
             check = OcurrenceCheck()
             warnings = check.check(expression)
 
@@ -711,16 +670,12 @@ class TestOcurrenceCheck:
 
             # Create a CorelatedCriteria with ConditionOccurrence and the occurrence
             condition_occurrence = ConditionOccurrence(codeset_id=0)
-            corelated_criteria = CorelatedCriteria(
-                criteria=condition_occurrence, occurrence=occurrence
-            )
+            corelated_criteria = CorelatedCriteria(criteria=condition_occurrence, occurrence=occurrence)
 
             # Create an InclusionRule with the corelated criteria (OcurrenceCheck only checks inclusion rules)
             inclusion_rule = InclusionRule(
                 name="Test Rule",
-                expression=CriteriaGroup(
-                    type="ALL", criteria_list=[corelated_criteria]
-                ),
+                expression=CriteriaGroup(type="ALL", criteria_list=[corelated_criteria]),
             )
 
             expression = CohortExpression(inclusion_rules=[inclusion_rule])
@@ -759,9 +714,7 @@ class TestCheckerIntegration:
     def test_checker_runs_all_checks(self):
         """Test that Checker runs all registered checks."""
         expression = CohortExpression(
-            primary_criteria={
-                "criteriaList": [{"conditionOccurrence": {"codesetId": 0}}]
-            }
+            primary_criteria={"criteriaList": [{"conditionOccurrence": {"codesetId": 0}}]}
         )
 
         checker = Checker()
@@ -773,9 +726,7 @@ class TestCheckerIntegration:
     def test_cohort_expression_check_method(self):
         """Test that CohortExpression.check() method works."""
         expression = CohortExpression(
-            primary_criteria={
-                "criteriaList": [{"conditionOccurrence": {"codesetId": 0}}]
-            }
+            primary_criteria={"criteriaList": [{"conditionOccurrence": {"codesetId": 0}}]}
         )
 
         warnings = expression.check()
@@ -791,11 +742,7 @@ class TestCheckerIntegration:
         warnings = checker.check(expression)
 
         # Should have at least InitialEventCheck warning
-        initial_warnings = [
-            w
-            for w in warnings
-            if "No initial event criteria specified" in w.to_message()
-        ]
+        initial_warnings = [w for w in warnings if "No initial event criteria specified" in w.to_message()]
         assert len(initial_warnings) > 0
 
 
@@ -805,9 +752,7 @@ class TestEventsProgressionCheck:
     def test_check_incorrect_progression(self):
         """Test that incorrect event progression triggers warnings."""
         try:
-            expression = load_cohort_expression(
-                "checkers/eventsProgressionCheckIncorrect.json"
-            )
+            expression = load_cohort_expression("checkers/eventsProgressionCheckIncorrect.json")
             check = EventsProgressionCheck()
             warnings = check.check(expression)
 
@@ -819,9 +764,7 @@ class TestEventsProgressionCheck:
     def test_check_correct_progression(self):
         """Test that correct event progression produces no warnings."""
         try:
-            expression = load_cohort_expression(
-                "checkers/eventsProgressionCheckCorrect.json"
-            )
+            expression = load_cohort_expression("checkers/eventsProgressionCheckCorrect.json")
             check = EventsProgressionCheck()
             warnings = check.check(expression)
 
@@ -836,9 +779,7 @@ class TestDuplicatesCriteriaCheck:
     def test_check_duplicate_criteria(self):
         """Test that duplicate criteria trigger warnings."""
         try:
-            expression = load_cohort_expression(
-                "checkers/duplicatesCriteriaCheckIncorrect.json"
-            )
+            expression = load_cohort_expression("checkers/duplicatesCriteriaCheckIncorrect.json")
             check = DuplicatesCriteriaCheck()
             warnings = check.check(expression)
 
@@ -869,9 +810,7 @@ class TestCriteriaContradictionsCheck:
     def test_check_contradictory_criteria(self):
         """Test that contradictory criteria trigger warnings."""
         try:
-            expression = load_cohort_expression(
-                "checkers/contradictionsCriteriaCheckIncorrect.json"
-            )
+            expression = load_cohort_expression("checkers/contradictionsCriteriaCheckIncorrect.json")
             check = CriteriaContradictionsCheck()
             warnings = check.check(expression)
 
@@ -883,9 +822,7 @@ class TestCriteriaContradictionsCheck:
     def test_check_no_contradictions(self):
         """Test that non-contradictory criteria produce no warnings."""
         try:
-            expression = load_cohort_expression(
-                "checkers/contradictionsCriteriaCheckCorrect.json"
-            )
+            expression = load_cohort_expression("checkers/contradictionsCriteriaCheckCorrect.json")
             check = CriteriaContradictionsCheck()
             warnings = check.check(expression)
 
@@ -900,9 +837,7 @@ class TestTimePatternCheck:
     def test_check_inconsistent_pattern(self):
         """Test that inconsistent time patterns trigger warnings."""
         try:
-            expression = load_cohort_expression(
-                "checkers/timePatternCheckIncorrect.json"
-            )
+            expression = load_cohort_expression("checkers/timePatternCheckIncorrect.json")
             check = TimePatternCheck()
             warnings = check.check(expression)
 
@@ -929,9 +864,7 @@ class TestDomainTypeCheck:
     def test_check_missing_domain_types(self):
         """Test that missing domain types trigger warnings."""
         try:
-            expression = load_cohort_expression(
-                "checkers/domainTypeCheckIncorrect.json"
-            )
+            expression = load_cohort_expression("checkers/domainTypeCheckIncorrect.json")
             check = DomainTypeCheck()
             warnings = check.check(expression)
 
@@ -980,9 +913,7 @@ class TestDeathTimeWindowCheck:
     def test_check_death_before_index(self):
         """Test that death criteria with windows before index trigger warnings."""
         try:
-            expression = load_cohort_expression(
-                "checkers/deathTimeWindowCheckIncorrect.json"
-            )
+            expression = load_cohort_expression("checkers/deathTimeWindowCheckIncorrect.json")
             check = DeathTimeWindowCheck()
             warnings = check.check(expression)
 
@@ -994,9 +925,7 @@ class TestDeathTimeWindowCheck:
     def test_check_death_after_index(self):
         """Test that death criteria with windows after index produce no warnings."""
         try:
-            expression = load_cohort_expression(
-                "checkers/deathTimeWindowCheckCorrect.json"
-            )
+            expression = load_cohort_expression("checkers/deathTimeWindowCheckCorrect.json")
             check = DeathTimeWindowCheck()
             warnings = check.check(expression)
 
@@ -1136,9 +1065,7 @@ class TestWarningTypes:
         """Test DefaultWarning properties."""
         from circe.check.warnings import DefaultWarning
 
-        warning = DefaultWarning(
-            severity=WarningSeverity.WARNING, message="Test warning"
-        )
+        warning = DefaultWarning(severity=WarningSeverity.WARNING, message="Test warning")
 
         assert warning.severity == WarningSeverity.WARNING
         assert warning.to_message() == "Test warning"
@@ -1152,9 +1079,7 @@ class TestWarningTypes:
             items=[], is_excluded=False, include_mapped=False, include_descendants=False
         )
 
-        concept_set = ConceptSet(
-            id=0, name="Test Set", expression=concept_set_expression
-        )
+        concept_set = ConceptSet(id=0, name="Test Set", expression=concept_set_expression)
 
         warning = ConceptSetWarning(
             severity=WarningSeverity.WARNING,
@@ -1167,9 +1092,7 @@ class TestWarningTypes:
 
     def test_incomplete_rule_warning(self):
         """Test IncompleteRuleWarning properties."""
-        warning = IncompleteRuleWarning(
-            severity=WarningSeverity.CRITICAL, rule_name="Test Rule"
-        )
+        warning = IncompleteRuleWarning(severity=WarningSeverity.CRITICAL, rule_name="Test Rule")
 
         assert warning.severity == WarningSeverity.CRITICAL
         assert warning.rule_name == "Test Rule"

@@ -94,9 +94,7 @@ class TestCohortExpressionAliases(unittest.TestCase):
 
     def test_additional_criteria_alias(self):
         """Test additionalCriteria alias."""
-        cohort = CohortExpression.model_validate(
-            {"additionalCriteria": {"type": "ALL"}}
-        )
+        cohort = CohortExpression.model_validate({"additionalCriteria": {"type": "ALL"}})
         self.assertIsNotNone(cohort.additional_criteria)
 
     def test_end_strategy_alias(self):
@@ -133,9 +131,7 @@ class TestCohortExpressionAliases(unittest.TestCase):
 
     def test_censor_window_alias(self):
         """Test censorWindow alias."""
-        cohort = CohortExpression.model_validate(
-            {"censorWindow": {"startDate": "2020-01-01"}}
-        )
+        cohort = CohortExpression.model_validate({"censorWindow": {"startDate": "2020-01-01"}})
         self.assertIsNotNone(cohort.censor_window)
 
     def test_censoring_criteria_alias(self):
@@ -215,9 +211,7 @@ class TestCohortExpressionUtilityMethods(unittest.TestCase):
         concept_set2 = ConceptSet(id=2, name="Set 2")
         concept_set3 = ConceptSet(id=3, name="Set 3")
 
-        cohort = CohortExpression(
-            concept_sets=[concept_set1, concept_set2, concept_set3]
-        )
+        cohort = CohortExpression(concept_sets=[concept_set1, concept_set2, concept_set3])
         result = cohort.get_concept_set_ids()
         self.assertEqual(result, [1, 2, 3])
 
@@ -230,9 +224,7 @@ class TestCohortExpressionUtilityMethods(unittest.TestCase):
         concept_set2 = ConceptSet(id=2, name="Set 2")
         concept_set3 = ConceptSet(id=3, name="Set 3")
 
-        cohort = CohortExpression(
-            concept_sets=[concept_set1, concept_set2, concept_set3]
-        )
+        cohort = CohortExpression(concept_sets=[concept_set1, concept_set2, concept_set3])
         result = cohort.get_concept_set_ids()
         self.assertEqual(result, [1, 2, 3])
 
@@ -256,9 +248,7 @@ class TestCohortExpressionComplexScenarios(unittest.TestCase):
             additional_criteria=CriteriaGroup(type="ALL"),
             end_strategy=EndStrategy(),
             cdm_version_range=">=5.0.0",
-            collapse_settings=CollapseSettings(
-                era_pad=30, collapse_type=CollapseType.COLLAPSE
-            ),
+            collapse_settings=CollapseSettings(era_pad=30, collapse_type=CollapseType.COLLAPSE),
             censor_window=Period(start_date="2020-01-01"),
             concept_sets=[],
             inclusion_rules=[],
@@ -296,9 +286,7 @@ class TestCohortExpressionComplexScenarios(unittest.TestCase):
 
     def test_cohort_expression_to_dict(self):
         """Test CohortExpression serialization to dictionary."""
-        cohort = CohortExpression(
-            title="Test Cohort", primary_criteria=PrimaryCriteria()
-        )
+        cohort = CohortExpression(title="Test Cohort", primary_criteria=PrimaryCriteria())
 
         result = cohort.model_dump()
 
@@ -372,9 +360,7 @@ class TestCohortExpressionEdgeCases(unittest.TestCase):
         self.assertEqual(c.inclusion_rules, [])
 
         # 2. None Initialization
-        c_none = CohortExpression(
-            concept_sets=None, censoring_criteria=None, inclusion_rules=None
-        )
+        c_none = CohortExpression(concept_sets=None, censoring_criteria=None, inclusion_rules=None)
         self.assertEqual(c_none.concept_sets, [])
         self.assertEqual(c_none.censoring_criteria, [])
         self.assertEqual(c_none.inclusion_rules, [])
@@ -427,17 +413,13 @@ class TestCohortExpressionIntegration(unittest.TestCase):
 
         for collapse_type in collapse_types:
             cohort = CohortExpression(
-                collapse_settings=CollapseSettings(
-                    era_pad=30, collapse_type=collapse_type
-                )
+                collapse_settings=CollapseSettings(era_pad=30, collapse_type=collapse_type)
             )
             self.assertEqual(cohort.collapse_settings.collapse_type, collapse_type)
 
     def test_cohort_expression_with_cdm_version_range(self):
         """Test CohortExpression with cdm_version_range string."""
-        cohort = CohortExpression(
-            cdm_version_range=">=5.0.0", censor_window=Period(start_date="2020-06-01")
-        )
+        cohort = CohortExpression(cdm_version_range=">=5.0.0", censor_window=Period(start_date="2020-06-01"))
 
         self.assertEqual(cohort.cdm_version_range, ">=5.0.0")
         self.assertEqual(cohort.censor_window.start_date, "2020-06-01")

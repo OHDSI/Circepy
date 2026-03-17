@@ -9,9 +9,7 @@ from circe.vocabulary.concept import Concept
 
 class TestDeviceExposureSql(unittest.TestCase):
     def test_basic_device_exposure(self):
-        criteria = DeviceExposure(
-            codeset_id=1, occurrence_start_date=DateRange(value="2023-01-01", op="gt")
-        )
+        criteria = DeviceExposure(codeset_id=1, occurrence_start_date=DateRange(value="2023-01-01", op="gt"))
         builder = DeviceExposureSqlBuilder()
         options = BuilderOptions()
 
@@ -24,9 +22,7 @@ class TestDeviceExposureSql(unittest.TestCase):
             any("C.start_date" in c for c in where_clauses),
             "Should have start date condition",
         )
-        self.assertEqual(
-            len(join_clauses), 0, "Should have no joins for basic criteria"
-        )
+        self.assertEqual(len(join_clauses), 0, "Should have no joins for basic criteria")
 
     def test_device_exposure_with_age(self):
         criteria = DeviceExposure(age=NumericRange(value=50, op="gt"))
@@ -43,9 +39,7 @@ class TestDeviceExposureSql(unittest.TestCase):
         )
 
         # Check date diff logic for age
-        age_logic_present = any(
-            "YEAR(C.start_date) - P.year_of_birth" in c for c in where_clauses
-        )
+        age_logic_present = any("YEAR(C.start_date) - P.year_of_birth" in c for c in where_clauses)
         self.assertTrue(age_logic_present, "Should use correct age calculation logic")
 
     def test_device_exposure_joins(self):
@@ -59,10 +53,7 @@ class TestDeviceExposureSql(unittest.TestCase):
         join_clauses = builder.resolve_join_clauses(criteria, options)
 
         self.assertTrue(
-            any(
-                "JOIN @cdm_database_schema.VISIT_OCCURRENCE V" in c
-                for c in join_clauses
-            ),
+            any("JOIN @cdm_database_schema.VISIT_OCCURRENCE V" in c for c in join_clauses),
             "Should join to VISIT_OCCURRENCE",
         )
         self.assertTrue(

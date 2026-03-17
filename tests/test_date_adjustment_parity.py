@@ -56,9 +56,7 @@ class TestDateAdjustmentParity:
         self.db.con.execute(
             "INSERT INTO drug_era (person_id, drug_era_id, drug_concept_id, drug_era_start_date, drug_era_end_date, drug_exposure_count, gap_days) VALUES (1, 100, 10, '2020-01-10'::DATE, '2020-01-20'::DATE, 1, 0)"
         )
-        self.db.con.execute(
-            "INSERT INTO Codesets (codeset_id, concept_id) VALUES (1, 10)"
-        )
+        self.db.con.execute("INSERT INTO Codesets (codeset_id, concept_id) VALUES (1, 10)")
 
         query = f"SELECT C.start_date, C.end_date FROM ({sql}) C"
         results = self.db.query(query)
@@ -88,8 +86,7 @@ class TestDateAdjustmentParity:
         # Note: End date logic uses COALESCE for safety
         assert "DATEADD(day,1, co.condition_start_date)" in sql
         assert (
-            "DATEADD(day,1, COALESCE(co.condition_end_date, DATEADD(day,1,co.condition_start_date)))"
-            in sql
+            "DATEADD(day,1, COALESCE(co.condition_end_date, DATEADD(day,1,co.condition_start_date)))" in sql
         )
 
         # Setup Data
@@ -116,9 +113,7 @@ class TestDateAdjustmentParity:
         self.db.con.execute(
             "INSERT INTO condition_occurrence (person_id, condition_occurrence_id, condition_concept_id, condition_start_date, condition_end_date, condition_type_concept_id) VALUES (1, 100, 10, '2020-02-01'::DATE, '2020-02-05'::DATE, 0)"
         )
-        self.db.con.execute(
-            "INSERT INTO Codesets (codeset_id, concept_id) VALUES (1, 10)"
-        )
+        self.db.con.execute("INSERT INTO Codesets (codeset_id, concept_id) VALUES (1, 10)")
 
         query = f"SELECT C.start_date, C.end_date FROM ({sql}) C"
         results = self.db.query(query)
@@ -189,9 +184,7 @@ class TestDateAdjustmentParity:
         self.db.con.execute(
             "INSERT INTO drug_exposure (person_id, drug_exposure_id, drug_concept_id, drug_exposure_start_date, drug_exposure_end_date, drug_type_concept_id) VALUES (1, 100, 10, '2020-03-01'::DATE, '2020-03-10'::DATE, 0)"
         )
-        self.db.con.execute(
-            "INSERT INTO Codesets (codeset_id, concept_id) VALUES (1, 10)"
-        )
+        self.db.con.execute("INSERT INTO Codesets (codeset_id, concept_id) VALUES (1, 10)")
 
         query = f"SELECT C.start_date, C.end_date FROM ({sql}) C"
         results = self.db.query(query)
@@ -237,9 +230,7 @@ class TestDateAdjustmentParity:
         self.db.con.execute(
             "INSERT INTO dose_era (person_id, dose_era_id, drug_concept_id, dose_era_start_date, dose_era_end_date) VALUES (1, 100, 10, '2020-04-01'::DATE, '2020-04-05'::DATE)"
         )
-        self.db.con.execute(
-            "INSERT INTO Codesets (codeset_id, concept_id) VALUES (1, 10)"
-        )
+        self.db.con.execute("INSERT INTO Codesets (codeset_id, concept_id) VALUES (1, 10)")
 
         query = f"SELECT C.start_date, C.end_date FROM ({sql}) C"
         results = self.db.query(query)
@@ -317,9 +308,7 @@ class TestDateAdjustmentParity:
         )
 
         # Insert codeset mapping
-        self.db.con.execute(
-            "INSERT INTO Codesets (codeset_id, concept_id) VALUES (1, 10)"
-        )
+        self.db.con.execute("INSERT INTO Codesets (codeset_id, concept_id) VALUES (1, 10)")
 
         # Construct full query
         # We replace @indexId with 0 or similar

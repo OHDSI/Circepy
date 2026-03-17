@@ -22,9 +22,7 @@ class TestBuilderUtilsNumericRanges:
         assert "age >= 10" in clause and "age <= 20" in clause
 
         # Double range (with format)
-        clause_decimal = BuilderUtils.build_numeric_range_clause(
-            "age", range_val, format=".4f"
-        )
+        clause_decimal = BuilderUtils.build_numeric_range_clause("age", range_val, format=".4f")
         assert "age >= 10.0000" in clause_decimal and "age <= 20.0000" in clause_decimal
 
     def test_numeric_range_greater_than(self):
@@ -165,9 +163,7 @@ class TestBuilderUtilsCodesets:
 
     def test_get_codeset_in_expression_with_exclusion(self):
         """Test codeset NOT IN expression generation."""
-        expr = BuilderUtils.get_codeset_in_expression(
-            5, "drug_concept_id", is_exclusion=True
-        )
+        expr = BuilderUtils.get_codeset_in_expression(5, "drug_concept_id", is_exclusion=True)
         assert "drug_concept_id" in expr
         assert "not" in expr.lower()
 

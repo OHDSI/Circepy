@@ -259,7 +259,9 @@ class BuildContext:
             raise ValueError("result_schema must be set (argument or CohortBuildOptions.result_schema)")
 
         cohort_id = self._options.cohort_id
-        cohort_id_expr = ibis.literal(int(cohort_id), type="int64") if cohort_id is not None else ibis.null().cast("int64")
+        cohort_id_expr = (
+            ibis.literal(int(cohort_id), type="int64") if cohort_id is not None else ibis.null().cast("int64")
+        )
 
         result = events.select(
             cohort_id_expr.name("cohort_definition_id"),

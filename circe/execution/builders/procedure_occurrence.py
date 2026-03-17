@@ -62,7 +62,9 @@ def build_procedure_occurrence(criteria: ProcedureOccurrence, ctx: BuildContext)
     table = apply_visit_concept_filters(table, criteria.visit_type, criteria.visit_type_cs, ctx)
 
     if criteria.procedure_source_concept is not None:
-        table = apply_codeset_filter(table, "procedure_source_concept_id", criteria.procedure_source_concept, ctx)
+        table = apply_codeset_filter(
+            table, "procedure_source_concept_id", criteria.procedure_source_concept, ctx
+        )
 
     events = standardize_output(
         table,

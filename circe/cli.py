@@ -53,7 +53,9 @@ def main():
     md_parser.add_argument("--title", "-t", type=str, help="Title to add to markdown document")
 
     # Generate source code command
-    source_parser = subparsers.add_parser("generate-source", help="Generate Python source code from cohort definition")
+    source_parser = subparsers.add_parser(
+        "generate-source", help="Generate Python source code from cohort definition"
+    )
     source_parser.add_argument("input", help="Input JSON file")
     source_parser.add_argument("--output", "-o", help="Output Python file (default: stdout)")
 

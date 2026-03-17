@@ -435,9 +435,7 @@ class TestDeath(unittest.TestCase):
             death_type_cs=ConceptSetSelection(codeset_id=2, is_exclusion=False),
             death_type_exclude=False,
             cause_source_concept=67890,
-            cause_source_concept_cs=ConceptSetSelection(
-                codeset_id=3, is_exclusion=False
-            ),
+            cause_source_concept_cs=ConceptSetSelection(codeset_id=3, is_exclusion=False),
             codeset_id=100,
             age=NumericRange(op="gte", value=18, extent=65),
             occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01"),

@@ -83,7 +83,12 @@ FROM
             ),
         )
 
-    def embed_ordinal_expression(self, query: str, criteria: ConditionOccurrence, where_clauses: list[str]) -> str:
+    def embed_ordinal_expression(
+        self,
+        query: str,
+        criteria: ConditionOccurrence,
+        where_clauses: list[str],
+    ) -> str:
         """Embed ordinal expression in query."""
         # first
         if criteria.first is not None and criteria.first:
@@ -96,12 +101,18 @@ FROM
             query = query.replace("@ordinalExpression", "")
         return query
 
-    def resolve_select_clauses(self, criteria: ConditionOccurrence, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_select_clauses(
+        self,
+        criteria: ConditionOccurrence,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve select clauses for condition occurrence criteria."""
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
 
         # Condition Type
-        if (criteria.condition_type is not None and len(criteria.condition_type) > 0) or criteria.condition_type_cs is not None:
+        if (
+            criteria.condition_type is not None and len(criteria.condition_type) > 0
+        ) or criteria.condition_type_cs is not None:
             select_cols.append("co.condition_type_concept_id")
 
         # Stop Reason
@@ -109,11 +120,15 @@ FROM
             select_cols.append("co.stop_reason")
 
         # providerSpecialty
-        if (criteria.provider_specialty is not None and len(criteria.provider_specialty) > 0) or criteria.provider_specialty_cs is not None:
+        if (
+            criteria.provider_specialty is not None and len(criteria.provider_specialty) > 0
+        ) or criteria.provider_specialty_cs is not None:
             select_cols.append("co.provider_id")
 
         # conditionStatus
-        if (criteria.condition_status is not None and len(criteria.condition_status) > 0) or criteria.condition_status_cs is not None:
+        if (
+            criteria.condition_status is not None and len(criteria.condition_status) > 0
+        ) or criteria.condition_status_cs is not None:
             select_cols.append("co.condition_status_concept_id")
 
         # dateAdjustment or default start/end dates
@@ -128,7 +143,11 @@ FROM
                 if criteria.date_adjustment.end_with == "start_date"
                 else "COALESCE(co.condition_end_date, DATEADD(day,1,co.condition_start_date))"
             )
-            select_cols.append(BuilderUtils.get_date_adjustment_expression(criteria.date_adjustment, start_column, end_column))
+            select_cols.append(
+                BuilderUtils.get_date_adjustment_expression(
+                    criteria.date_adjustment, start_column, end_column
+                )
+            )
         else:
             select_cols.append(
                 "co.condition_start_date as start_date, COALESCE(co.condition_end_date, DATEADD(day,1,co.condition_start_date)) as end_date"
@@ -136,27 +155,43 @@ FROM
 
         return select_cols
 
-    def resolve_join_clauses(self, criteria: ConditionOccurrence, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_join_clauses(
+        self,
+        criteria: ConditionOccurrence,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve join clauses for condition occurrence criteria."""
         join_clauses = []
 
         # join to PERSON
-        if criteria.age is not None or (criteria.gender is not None and len(criteria.gender) > 0) or criteria.gender_cs is not None:
+        if (
+            criteria.age is not None
+            or (criteria.gender is not None and len(criteria.gender) > 0)
+            or criteria.gender_cs is not None
+        ):
             join_clauses.append("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id")
 
         # join to VISIT_OCCURRENCE
-        if (criteria.visit_type is not None and len(criteria.visit_type) > 0) or criteria.visit_type_cs is not None:
+        if (
+            criteria.visit_type is not None and len(criteria.visit_type) > 0
+        ) or criteria.visit_type_cs is not None:
             join_clauses.append(
                 "JOIN @cdm_database_schema.VISIT_OCCURRENCE V on C.visit_occurrence_id = V.visit_occurrence_id and C.person_id = V.person_id"
             )
 
         # join to PROVIDER
-        if (criteria.provider_specialty is not None and len(criteria.provider_specialty) > 0) or criteria.provider_specialty_cs is not None:
-            join_clauses.append("LEFT JOIN @cdm_database_schema.PROVIDER PR on C.provider_id = PR.provider_id")
+        if (
+            criteria.provider_specialty is not None and len(criteria.provider_specialty) > 0
+        ) or criteria.provider_specialty_cs is not None:
+            join_clauses.append(
+                "LEFT JOIN @cdm_database_schema.PROVIDER PR on C.provider_id = PR.provider_id"
+            )
 
         return join_clauses
 
-    def resolve_where_clauses(self, criteria: ConditionOccurrence, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_where_clauses(
+        self, criteria: ConditionOccurrence, options: Optional[BuilderOptions] = None
+    ) -> list[str]:
         """Resolve where clauses for condition occurrence criteria."""
         where_clauses = []
 
@@ -177,7 +212,9 @@ FROM
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.condition_type)
             if concept_ids:
                 exclude_clause = "not" if criteria.condition_type_exclude else ""
-                where_clauses.append(f"C.condition_type_concept_id {exclude_clause} in ({','.join(map(str, concept_ids))})")
+                where_clauses.append(
+                    f"C.condition_type_concept_id {exclude_clause} in ({','.join(map(str, concept_ids))})"
+                )
 
         # conditionTypeCS
         if criteria.condition_type_cs is not None:
@@ -197,7 +234,9 @@ FROM
 
         # age
         if criteria.age is not None:
-            numeric_clause = BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age)
+            numeric_clause = BuilderUtils.build_numeric_range_clause(
+                "YEAR(C.start_date) - P.year_of_birth", criteria.age
+            )
             if numeric_clause:
                 where_clauses.append(numeric_clause)
 

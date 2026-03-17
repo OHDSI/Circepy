@@ -31,7 +31,6 @@ COHORTS_DIR = Path(__file__).parent / "cohorts"
 REFERENCE_DIR = COHORTS_DIR / "reference_outputs"
 
 
-
 def get_target_cohort_files(config):
     """Discover cohort files based on configuration."""
     if not COHORTS_DIR.exists():
@@ -213,13 +212,9 @@ def compare_outputs(python_output: str, reference_output: str, label: str) -> di
         "is_identical": is_identical,
         "python_length": len(py_normalized),
         "reference_length": len(ref_normalized),
-        "python_lines": len(
-            python_output.splitlines()
-        ),  # Original line count for reference
+        "python_lines": len(python_output.splitlines()),  # Original line count for reference
         "reference_lines": len(reference_output.splitlines()),  # Original line count
-        "diff_lines": len(
-            [line for line in diff if line.startswith("+") or line.startswith("-")]
-        ),
+        "diff_lines": len([line for line in diff if line.startswith("+") or line.startswith("-")]),
         "diff": diff[:50],  # Limit to first 50 chunks for readability
     }
 
@@ -250,37 +245,25 @@ def analyze_sql_differences(py_sql: str, ref_sql: str) -> list:
 
     # Check for specific criteria handling
     if "drug_era" in ref_sql.lower() and "drug_era" not in py_sql.lower():
-        issues.append(
-            "Missing DRUG_ERA handling - DrugEra criteria may not be implemented"
-        )
+        issues.append("Missing DRUG_ERA handling - DrugEra criteria may not be implemented")
 
     if "measurement" in ref_sql.lower() and "measurement" not in py_sql.lower():
-        issues.append(
-            "Missing MEASUREMENT handling - Measurement criteria may not be implemented"
-        )
+        issues.append("Missing MEASUREMENT handling - Measurement criteria may not be implemented")
 
-    if (
-        "procedure_occurrence" in ref_sql.lower()
-        and "procedure_occurrence" not in py_sql.lower()
-    ):
+    if "procedure_occurrence" in ref_sql.lower() and "procedure_occurrence" not in py_sql.lower():
         issues.append(
             "Missing PROCEDURE_OCCURRENCE handling - ProcedureOccurrence criteria may not be implemented"
         )
 
     # Check for value_as_number handling
     if "value_as_number" in ref_sql.lower() and "value_as_number" not in py_sql.lower():
-        issues.append(
-            "Missing value_as_number handling - numeric range criteria may not be implemented"
-        )
+        issues.append("Missing value_as_number handling - numeric range criteria may not be implemented")
 
     # Check for source concept handling
     if ("source_concept_id" in ref_sql.lower() or "source_value" in ref_sql.lower()) and (
-        "source_concept_id" not in py_sql.lower()
-        and "source_value" not in py_sql.lower()
+        "source_concept_id" not in py_sql.lower() and "source_value" not in py_sql.lower()
     ):
-        issues.append(
-            "Missing source concept handling - ConditionSourceConcept may not be implemented"
-        )
+        issues.append("Missing source concept handling - ConditionSourceConcept may not be implemented")
 
     return issues
 
@@ -333,8 +316,7 @@ def test_sql_generation_has_key_structures(cohort_name):
 
     if issues:
         pytest.fail(
-            f"SQL structure issues for {cohort_name}:\n"
-            + "\n".join(f"  - {issue}" for issue in issues)
+            f"SQL structure issues for {cohort_name}:\n" + "\n".join(f"  - {issue}" for issue in issues)
         )
 
 
@@ -591,13 +573,10 @@ def test_markdown_has_no_unknown_types(cohort_name):
     matches = unknown_pattern.findall(markdown)
 
     if matches:
-        lines_with_unknown = [
-            line for line in markdown.split("\n") if "unknown" in line.lower()
-        ]
+        lines_with_unknown = [line for line in markdown.split("\n") if "unknown" in line.lower()]
         pytest.fail(
             f"Markdown contains 'Unknown criteria type' for {cohort_name}\n\n"
-            f"Lines with unknown types:\n"
-            + "\n".join(f"  {line}" for line in lines_with_unknown)
+            f"Lines with unknown types:\n" + "\n".join(f"  {line}" for line in lines_with_unknown)
         )
 
 

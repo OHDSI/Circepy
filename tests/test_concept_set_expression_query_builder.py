@@ -111,9 +111,7 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         c1 = Concept(concept_id=1, concept_name="C1")
 
         # Test mapped + descendants
-        item = ConceptSetItem(
-            concept=c1, is_excluded=False, include_descendants=True, include_mapped=True
-        )
+        item = ConceptSetItem(concept=c1, is_excluded=False, include_descendants=True, include_mapped=True)
         expression = ConceptSetExpression(items=[item])
 
         query = self.builder.build_expression_query(expression)
@@ -130,9 +128,7 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         c1 = Concept(concept_id=1, concept_name="C1")
 
         # Test excluded + mapped + descendants
-        item = ConceptSetItem(
-            concept=c1, is_excluded=True, include_descendants=True, include_mapped=True
-        )
+        item = ConceptSetItem(concept=c1, is_excluded=True, include_descendants=True, include_mapped=True)
         expression = ConceptSetExpression(items=[item])
 
         query = self.builder.build_expression_query(expression)

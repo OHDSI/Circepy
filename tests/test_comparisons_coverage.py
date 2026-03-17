@@ -38,77 +38,49 @@ class TestComparisonsCoverage(unittest.TestCase):
         self.assertFalse(Comparisons.start_is_greater_than_end(NumericRange()))
 
     def test_start_is_greater_than_end_date_incomplete(self):
-        self.assertFalse(
-            Comparisons.start_is_greater_than_end(DateRange(value="2020-01-01"))
-        )
-        self.assertFalse(
-            Comparisons.start_is_greater_than_end(DateRange(extent="2020-01-01"))
-        )
+        self.assertFalse(Comparisons.start_is_greater_than_end(DateRange(value="2020-01-01")))
+        self.assertFalse(Comparisons.start_is_greater_than_end(DateRange(extent="2020-01-01")))
         self.assertFalse(Comparisons.start_is_greater_than_end(DateRange()))
 
     def test_start_is_greater_than_end_date_invalid(self):
         self.assertFalse(
-            Comparisons.start_is_greater_than_end(
-                DateRange(value="invalid", extent="2020-01-01")
-            )
+            Comparisons.start_is_greater_than_end(DateRange(value="invalid", extent="2020-01-01"))
         )
         self.assertFalse(
-            Comparisons.start_is_greater_than_end(
-                DateRange(value="2020-01-01", extent="invalid")
-            )
+            Comparisons.start_is_greater_than_end(DateRange(value="2020-01-01", extent="invalid"))
         )
 
     def test_start_is_greater_than_end_period_incomplete(self):
-        self.assertFalse(
-            Comparisons.start_is_greater_than_end(Period(start_date="2020-01-01"))
-        )
-        self.assertFalse(
-            Comparisons.start_is_greater_than_end(Period(end_date="2020-01-01"))
-        )
+        self.assertFalse(Comparisons.start_is_greater_than_end(Period(start_date="2020-01-01")))
+        self.assertFalse(Comparisons.start_is_greater_than_end(Period(end_date="2020-01-01")))
         self.assertFalse(Comparisons.start_is_greater_than_end(Period()))
 
     def test_start_is_greater_than_end_period_invalid(self):
         self.assertFalse(
-            Comparisons.start_is_greater_than_end(
-                Period(start_date="invalid", end_date="2020-01-01")
-            )
+            Comparisons.start_is_greater_than_end(Period(start_date="invalid", end_date="2020-01-01"))
         )
         self.assertFalse(
-            Comparisons.start_is_greater_than_end(
-                Period(start_date="2020-01-01", end_date="invalid")
-            )
+            Comparisons.start_is_greater_than_end(Period(start_date="2020-01-01", end_date="invalid"))
         )
 
     def test_start_is_greater_than_end_period_valid(self):
         self.assertTrue(
-            Comparisons.start_is_greater_than_end(
-                Period(start_date="2020-01-02", end_date="2020-01-01")
-            )
+            Comparisons.start_is_greater_than_end(Period(start_date="2020-01-02", end_date="2020-01-01"))
         )
         self.assertFalse(
-            Comparisons.start_is_greater_than_end(
-                Period(start_date="2020-01-01", end_date="2020-01-02")
-            )
+            Comparisons.start_is_greater_than_end(Period(start_date="2020-01-01", end_date="2020-01-02"))
         )
 
     def test_start_is_greater_than_end_numeric_valid(self):
-        self.assertTrue(
-            Comparisons.start_is_greater_than_end(NumericRange(value=10, extent=5))
-        )
-        self.assertFalse(
-            Comparisons.start_is_greater_than_end(NumericRange(value=5, extent=10))
-        )
+        self.assertTrue(Comparisons.start_is_greater_than_end(NumericRange(value=10, extent=5)))
+        self.assertFalse(Comparisons.start_is_greater_than_end(NumericRange(value=5, extent=10)))
 
     def test_start_is_greater_than_end_date_valid(self):
         self.assertTrue(
-            Comparisons.start_is_greater_than_end(
-                DateRange(value="2020-01-02", extent="2020-01-01")
-            )
+            Comparisons.start_is_greater_than_end(DateRange(value="2020-01-02", extent="2020-01-01"))
         )
         self.assertFalse(
-            Comparisons.start_is_greater_than_end(
-                DateRange(value="2020-01-01", extent="2020-01-02")
-            )
+            Comparisons.start_is_greater_than_end(DateRange(value="2020-01-01", extent="2020-01-02"))
         )
 
     def test_start_is_greater_than_end_other_type(self):
@@ -143,9 +115,7 @@ class TestComparisonsCoverage(unittest.TestCase):
 
     def test_compare_to_none(self):
         self.assertEqual(Comparisons.compare_to(None, Window()), 0)
-        self.assertEqual(
-            Comparisons.compare_to(ObservationFilter(priorDays=0, postDays=0), None), 0
-        )
+        self.assertEqual(Comparisons.compare_to(ObservationFilter(priorDays=0, postDays=0), None), 0)
 
     def test_compare_to_calculation(self):
         # range1 = prior + post = 10 + 20 = 30
@@ -154,9 +124,7 @@ class TestComparisonsCoverage(unittest.TestCase):
         # range2_start = coeff * days = -1 * 5 = -5
         # range2_end = coeff * days = 1 * 5 = 5
         # range2_diff = 5 - (-5) = 10
-        w = Window(
-            start=WindowBound(coeff=-1, days=5), end=WindowBound(coeff=1, days=5)
-        )
+        w = Window(start=WindowBound(coeff=-1, days=5), end=WindowBound(coeff=1, days=5))
 
         # result = 30 - 10 = 20
         self.assertEqual(Comparisons.compare_to(f, w), 20)
@@ -180,21 +148,15 @@ class TestComparisonsCoverage(unittest.TestCase):
 
     def test_is_before_true(self):
         # start before (< 0), end not after (<= 0)
-        w = Window(
-            start=WindowBound(coeff=-1, days=1), end=WindowBound(coeff=-1, days=1)
-        )
+        w = Window(start=WindowBound(coeff=-1, days=1), end=WindowBound(coeff=-1, days=1))
         self.assertTrue(Comparisons.is_before(w))
 
     def test_is_before_false_start_not_before(self):
-        w = Window(
-            start=WindowBound(coeff=1, days=1), end=WindowBound(coeff=-1, days=1)
-        )
+        w = Window(start=WindowBound(coeff=1, days=1), end=WindowBound(coeff=-1, days=1))
         self.assertFalse(Comparisons.is_before(w))
 
     def test_is_before_false_end_after(self):
-        w = Window(
-            start=WindowBound(coeff=-1, days=1), end=WindowBound(coeff=1, days=1)
-        )
+        w = Window(start=WindowBound(coeff=-1, days=1), end=WindowBound(coeff=1, days=1))
         self.assertFalse(Comparisons.is_before(w))
 
     # --- compare_concept_set ---
@@ -251,9 +213,7 @@ class TestComparisonsCoverage(unittest.TestCase):
         self.assertTrue(predicate(cs2))
 
         # Diff content (length)
-        expr3 = ConceptSetExpression(
-            items=[ConceptSetItem(concept=c1), ConceptSetItem(concept=c3)]
-        )
+        expr3 = ConceptSetExpression(items=[ConceptSetItem(concept=c1), ConceptSetItem(concept=c3)])
         cs3 = ConceptSet(id=3, name="S3", expression=expr3)
         self.assertFalse(predicate(cs3))
 
@@ -300,9 +260,7 @@ class TestComparisonsCoverage(unittest.TestCase):
             c2 = cls(codeset_id=1)
             c3 = cls(codeset_id=2)
 
-            self.assertTrue(
-                Comparisons.compare_criteria(c1, c2), f"Failed for {cls.__name__} match"
-            )
+            self.assertTrue(Comparisons.compare_criteria(c1, c2), f"Failed for {cls.__name__} match")
             self.assertFalse(
                 Comparisons.compare_criteria(c1, c3),
                 f"Failed for {cls.__name__} mismatch",
@@ -312,6 +270,4 @@ class TestComparisonsCoverage(unittest.TestCase):
         class UnknownCriteria:
             pass
 
-        self.assertFalse(
-            Comparisons.compare_criteria(UnknownCriteria(), UnknownCriteria())
-        )
+        self.assertFalse(Comparisons.compare_criteria(UnknownCriteria(), UnknownCriteria()))

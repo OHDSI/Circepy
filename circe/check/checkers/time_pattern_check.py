@@ -83,7 +83,12 @@ class TimePatternCheck(BaseCorelatedCriteriaCheck):
         """
         return WarningSeverity.INFO
 
-    def _check_criteria(self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter) -> None:
+    def _check_criteria(
+        self,
+        criteria: "CorelatedCriteria",
+        group_name: str,
+        reporter: WarningReporter,
+    ) -> None:
         """Collect time window information.
 
         Args:
@@ -115,7 +120,11 @@ class TimePatternCheck(BaseCorelatedCriteriaCheck):
             # Find the most common pattern
             most_common_value = max(freq, key=freq.get)
             most_common_info = next(
-                (info for info in self._time_window_info_list if self._start_days(info.start) == most_common_value),
+                (
+                    info
+                    for info in self._time_window_info_list
+                    if self._start_days(info.start) == most_common_value
+                ),
                 None,
             )
 

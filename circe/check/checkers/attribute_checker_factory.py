@@ -65,7 +65,10 @@ class AttributeCheckerFactory(BaseCheckerFactory):
         """
         return lambda c: None  # Non-demographic criteria don't need attribute checks
 
-    def _get_check_demographic(self, criteria: "DemographicCriteria") -> Callable[["DemographicCriteria"], None]:
+    def _get_check_demographic(
+        self,
+        criteria: "DemographicCriteria",
+    ) -> Callable[["DemographicCriteria"], None]:
         """Get a checker function for demographic criteria.
 
         Args:

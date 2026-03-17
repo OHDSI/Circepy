@@ -108,7 +108,11 @@ class IbisExecutor:
         self._open_contexts.append(ctx)
         return events
 
-    def _build_with_context_native(self, cohort_expression: Any, cohort_id_override: int | None = None) -> Any:
+    def _build_with_context_native(
+        self,
+        cohort_expression: Any,
+        cohort_id_override: int | None = None,
+    ) -> Any:
         try:
             from .build_context import (
                 BuildContext,

@@ -76,7 +76,12 @@ class CriteriaContradictionsCheck(BaseCorelatedCriteriaCheck):
         """
         return WarningSeverity.WARNING
 
-    def _check_criteria(self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter) -> None:
+    def _check_criteria(
+        self,
+        criteria: "CorelatedCriteria",
+        group_name: str,
+        reporter: WarningReporter,
+    ) -> None:
         """Collect criteria information.
 
         Args:
@@ -99,9 +104,9 @@ class CriteriaContradictionsCheck(BaseCorelatedCriteriaCheck):
             for i in range(size - 1):
                 info = self._criteria_list[i]
                 for other_info in self._criteria_list[i + 1 :]:
-                    if Comparisons.compare_criteria(info.criteria.criteria, other_info.criteria.criteria) and self._check_contradiction(
-                        info.criteria.occurrence, other_info.criteria.occurrence
-                    ):
+                    if Comparisons.compare_criteria(
+                        info.criteria.criteria, other_info.criteria.criteria
+                    ) and self._check_contradiction(info.criteria.occurrence, other_info.criteria.occurrence):
                         reporter(self.WARNING, info.name, other_info.name)
 
     def _check_contradiction(self, o1: Optional["Occurrence"], o2: Optional["Occurrence"]) -> bool:

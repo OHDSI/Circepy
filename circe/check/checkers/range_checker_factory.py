@@ -566,7 +566,10 @@ class RangeCheckerFactory(BaseCheckerFactory):
 
             return default_check
 
-    def _get_check_demographic(self, criteria: "DemographicCriteria") -> Callable[["DemographicCriteria"], None]:
+    def _get_check_demographic(
+        self,
+        criteria: "DemographicCriteria",
+    ) -> Callable[["DemographicCriteria"], None]:
         """Get a checker function for demographic criteria.
 
         Args:
@@ -628,7 +631,11 @@ class RangeCheckerFactory(BaseCheckerFactory):
                 )
             )
             match_result.or_else(
-                lambda r: Operations.match(r).when(lambda x: x.value is None).then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
+                lambda r: (
+                    Operations.match(r)
+                    .when(lambda x: x.value is None)
+                    .then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
+                )
             )
         elif isinstance(range_val, NumericRange):
             # Numeric range checks
@@ -645,7 +652,11 @@ class RangeCheckerFactory(BaseCheckerFactory):
                 )
             )
             match_result.or_else(
-                lambda r: Operations.match(r).when(lambda x: x.value is None).then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
+                lambda r: (
+                    Operations.match(r)
+                    .when(lambda x: x.value is None)
+                    .then(lambda x: warning(self.WARNING_EMPTY_START_VALUE))
+                )
             )
 
     def check_range(self, period: Optional["Period"], criteria_name: str, attribute: str) -> None:
@@ -663,13 +674,15 @@ class RangeCheckerFactory(BaseCheckerFactory):
             self._reporter(template, self._group_name, criteria_name, attribute)
 
         match_result = Operations.match(period)
-        match_result.when(lambda x: x.start_date is not None and not Comparisons.is_date_valid(x.start_date)).then(
-            lambda x: warning(self.WARNING_DATE_IS_INVALID)
+        match_result.when(
+            lambda x: x.start_date is not None and not Comparisons.is_date_valid(x.start_date)
+        ).then(lambda x: warning(self.WARNING_DATE_IS_INVALID))
+        match_result.when(
+            lambda x: x.end_date is not None and not Comparisons.is_date_valid(x.end_date)
+        ).then(lambda x: warning(self.WARNING_DATE_IS_INVALID))
+        match_result.when(Comparisons.start_is_greater_than_end).then(
+            lambda x: warning(self.WARNING_START_GREATER_THAN_END)
         )
-        match_result.when(lambda x: x.end_date is not None and not Comparisons.is_date_valid(x.end_date)).then(
-            lambda x: warning(self.WARNING_DATE_IS_INVALID)
-        )
-        match_result.when(Comparisons.start_is_greater_than_end).then(lambda x: warning(self.WARNING_START_GREATER_THAN_END))
 
     def check(self, expression_or_criteria) -> None:
         """Check the cohort expression's censor window or individual criteria.

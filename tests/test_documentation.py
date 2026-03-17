@@ -77,9 +77,7 @@ class TestDocumentation:
 
             for pattern in incorrect_patterns:
                 matches = re.findall(pattern, content, re.IGNORECASE)
-                assert not matches, (
-                    f"Found incorrect repository URL in {file_path.name}: {matches}"
-                )
+                assert not matches, f"Found incorrect repository URL in {file_path.name}: {matches}"
 
             # Verify correct URL is present if any github.com link exists
             if "github.com" in content:
@@ -123,9 +121,7 @@ class TestDocumentation:
 
             # Check if file exists
             link_path = root / link_url
-            assert link_path.exists(), (
-                f"Broken link in README.md: [{link_text}]({link_url}) - file not found"
-            )
+            assert link_path.exists(), f"Broken link in README.md: [{link_text}]({link_url}) - file not found"
 
     def test_changelog_has_current_version(self):
         """Verify CHANGELOG.md includes the current version."""
@@ -138,9 +134,9 @@ class TestDocumentation:
 
         # Check CHANGELOG
         changelog = (root / "CHANGELOG.md").read_text()
-        assert (
-            f"[{current_version}]" in changelog or f"## {current_version}" in changelog
-        ), f"Current version {current_version} not found in CHANGELOG.md"
+        assert f"[{current_version}]" in changelog or f"## {current_version}" in changelog, (
+            f"Current version {current_version} not found in CHANGELOG.md"
+        )
 
     def test_readme_shields_badges(self):
         """Verify README has appropriate status badges."""
@@ -152,8 +148,7 @@ class TestDocumentation:
 
         # Should mention alpha/development status somewhere
         assert any(
-            marker in readme.lower()
-            for marker in ["alpha", "development", "under active", "testing"]
+            marker in readme.lower() for marker in ["alpha", "development", "under active", "testing"]
         ), "README should clearly indicate development status"
 
     def test_contributing_has_code_style_section(self):
@@ -200,9 +195,7 @@ class TestDocumentation:
                 if placeholder in ["TODO", "FIXME", "XXX"]:
                     # More lenient - just warn if found
                     if placeholder in content:
-                        print(
-                            f"Warning: Found {placeholder} in {file_path.name} - verify if intentional"
-                        )
+                        print(f"Warning: Found {placeholder} in {file_path.name} - verify if intentional")
                 else:
                     assert placeholder not in content, (
                         f"Found placeholder text '{placeholder}' in {file_path.name}"

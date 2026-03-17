@@ -73,7 +73,11 @@ def generate_sql_with_templates(cohort):
     primary_events_sql = builder.get_primary_events_query(cohort.primary_criteria)
 
     # Generate inclusion rules
-    inclusion_rules_sql = builder.get_inclusion_rule_table_sql(cohort) if cohort.inclusion_rules else "-- No inclusion rules defined"
+    inclusion_rules_sql = (
+        builder.get_inclusion_rule_table_sql(cohort)
+        if cohort.inclusion_rules
+        else "-- No inclusion rules defined"
+    )
 
     return {
         "codeset": codeset_sql,

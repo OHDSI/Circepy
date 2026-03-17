@@ -51,9 +51,7 @@ class DuckDBTestHelper:
             self.con.execute(f"CREATE TABLE IF NOT EXISTS {table} (person_id INTEGER)")
 
         # Create temp tables usually expected by OHDSI SQL
-        self.con.execute(
-            "CREATE TABLE IF NOT EXISTS Codesets (codeset_id INTEGER, concept_id INTEGER)"
-        )
+        self.con.execute("CREATE TABLE IF NOT EXISTS Codesets (codeset_id INTEGER, concept_id INTEGER)")
 
     def translate_sql(self, sql: str) -> str:
         """Translate OHDSI SQL (T-SQL) to DuckDB SQL."""

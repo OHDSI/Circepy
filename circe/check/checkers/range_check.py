@@ -51,7 +51,9 @@ class RangeCheck(BaseValueCheck):
                 "observation window",
             )
 
-        RangeCheckerFactory.get_factory(reporter, self.PRIMARY_CRITERIA).check_range(expression.censor_window, "cohort", "censor window")
+        RangeCheckerFactory.get_factory(reporter, self.PRIMARY_CRITERIA).check_range(
+            expression.censor_window, "cohort", "censor window"
+        )
 
     def _check_inclusion_rules(self, expression: "CohortExpression", reporter: WarningReporter) -> None:
         """Check inclusion rules for window issues.
@@ -71,8 +73,12 @@ class RangeCheck(BaseValueCheck):
                             start_window = criteria.get("startWindow") or criteria.get("start_window")
                             end_window = criteria.get("endWindow") or criteria.get("end_window")
                         else:
-                            start_window = getattr(criteria, "start_window", None) or getattr(criteria, "startWindow", None)
-                            end_window = getattr(criteria, "end_window", None) or getattr(criteria, "endWindow", None)
+                            start_window = getattr(criteria, "start_window", None) or getattr(
+                                criteria, "startWindow", None
+                            )
+                            end_window = getattr(criteria, "end_window", None) or getattr(
+                                criteria, "endWindow", None
+                            )
                         self._check_window(start_window, reporter, rule.name)
                         self._check_window(end_window, reporter, rule.name)
 
@@ -91,7 +97,9 @@ class RangeCheck(BaseValueCheck):
                 end = window.get("end") or window.get("End")
 
                 if start:
-                    start_days = start.get("days") if isinstance(start, dict) else getattr(start, "days", None)
+                    start_days = (
+                        start.get("days") if isinstance(start, dict) else getattr(start, "days", None)
+                    )
                     if start_days is not None and start_days < 0:
                         reporter(self.NEGATIVE_VALUE_ERROR, name, start_days, "start")
 

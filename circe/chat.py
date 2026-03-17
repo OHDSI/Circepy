@@ -231,7 +231,11 @@ def _process_response_content(content: str, output_base: Optional[str]):
 
             json_output = None
             if hasattr(cohort_obj, "json"):  # Pydantic v1/v2
-                json_output = cohort_obj.model_dump_json(indent=2) if hasattr(cohort_obj, "model_dump_json") else cohort_obj.json(indent=2)
+                json_output = (
+                    cohort_obj.model_dump_json(indent=2)
+                    if hasattr(cohort_obj, "model_dump_json")
+                    else cohort_obj.json(indent=2)
+                )
             elif hasattr(cohort_obj, "to_json"):
                 json_output = cohort_obj.to_json()
             else:

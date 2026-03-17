@@ -94,9 +94,7 @@ class TestWindow(unittest.TestCase):
         start_bound = WindowBound(coeff=1, days=30)
         end_bound = WindowBound(coeff=-1, days=7)
 
-        window = Window(
-            use_event_end=True, use_index_end=False, start=start_bound, end=end_bound
-        )
+        window = Window(use_event_end=True, use_index_end=False, start=start_bound, end=end_bound)
 
         self.assertTrue(window.use_event_end)
         self.assertFalse(window.use_index_end)
@@ -123,9 +121,7 @@ class TestWindow(unittest.TestCase):
 
     def test_window_use_event_end_false(self):
         """Test Window with use_event_end=False."""
-        window = Window(
-            use_event_end=False, start=WindowBound(coeff=-1), end=WindowBound(coeff=1)
-        )
+        window = Window(use_event_end=False, start=WindowBound(coeff=-1), end=WindowBound(coeff=1))
         self.assertFalse(window.use_event_end)
         self.assertEqual(window.start.coeff, -1)
         self.assertEqual(window.end.coeff, 1)
@@ -216,9 +212,7 @@ class TestDateOffsetStrategy(unittest.TestCase):
 
     def test_date_offset_strategy_camel_case_aliases(self):
         """Test that camelCase aliases work correctly."""
-        strategy = DateOffsetStrategy.model_validate(
-            {"offset": 30, "dateField": "start_date"}
-        )
+        strategy = DateOffsetStrategy.model_validate({"offset": 30, "dateField": "start_date"})
 
         self.assertEqual(strategy.offset, 30)
         self.assertEqual(strategy.date_field, "start_date")
@@ -270,9 +264,7 @@ class TestCustomEraStrategy(unittest.TestCase):
 
     def test_custom_era_strategy_camel_case_aliases(self):
         """Test that camelCase aliases work correctly."""
-        strategy = CustomEraStrategy.model_validate(
-            {"drugCodesetId": 12345, "gapDays": 30, "offset": 0}
-        )
+        strategy = CustomEraStrategy.model_validate({"drugCodesetId": 12345, "gapDays": 30, "offset": 0})
 
         self.assertEqual(strategy.drug_codeset_id, 12345)
         self.assertEqual(strategy.gap_days, 30)
@@ -301,9 +293,7 @@ class TestSupportingClassesIntegration(unittest.TestCase):
         start_bound = WindowBound(coeff=1, days=30)
         end_bound = WindowBound(coeff=-1, days=7)
 
-        window = Window(
-            use_event_end=True, start=start_bound, coeff=1, days=30, end=end_bound
-        )
+        window = Window(use_event_end=True, start=start_bound, coeff=1, days=30, end=end_bound)
 
         # Test that the bounds are properly integrated
         self.assertEqual(window.start.coeff, 1)
@@ -342,9 +332,7 @@ class TestSupportingClassesIntegration(unittest.TestCase):
 
         text_filter = TextFilter(text="completed", op="eq")
 
-        condition = ConditionOccurrence(
-            stop_reason=text_filter, first=True, condition_type_exclude=False
-        )
+        condition = ConditionOccurrence(stop_reason=text_filter, first=True, condition_type_exclude=False)
 
         # Test that the text filter is properly integrated
         self.assertEqual(condition.stop_reason.text, "completed")

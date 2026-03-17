@@ -399,7 +399,10 @@ class ConceptCheckerFactory(BaseCheckerFactory):
         else:
             return default_check
 
-    def _get_check_demographic(self, criteria: "DemographicCriteria") -> Callable[["DemographicCriteria"], None]:
+    def _get_check_demographic(
+        self,
+        criteria: "DemographicCriteria",
+    ) -> Callable[["DemographicCriteria"], None]:
         """Get a checker function for demographic criteria.
 
         Args:
@@ -436,4 +439,8 @@ class ConceptCheckerFactory(BaseCheckerFactory):
         def warning(template: str) -> None:
             self._reporter(template, self._group_name, criteria_name, attribute)
 
-        Operations.match(concepts).when(lambda c: c is not None and len(c) == 0).then(lambda c: warning(self.WARNING_EMPTY_VALUE))
+        (
+            Operations.match(concepts)
+            .when(lambda c: c is not None and len(c) == 0)
+            .then(lambda c: warning(self.WARNING_EMPTY_VALUE))
+        )

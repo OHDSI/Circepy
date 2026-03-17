@@ -152,7 +152,9 @@ CRITERIA_TYPE_MAP: dict[str, type[Criteria]] = {
     "VisitDetail": VisitDetail,
     "PayerPlanPeriod": PayerPlanPeriod,
 }
-CRITERIA_TYPE_MAP_CASEFOLD: dict[str, type[Criteria]] = {name.casefold(): model for name, model in CRITERIA_TYPE_MAP.items()}
+CRITERIA_TYPE_MAP_CASEFOLD: dict[str, type[Criteria]] = {
+    name.casefold(): model for name, model in CRITERIA_TYPE_MAP.items()
+}
 
 
 def parse_single_criteria(criteria_dict: Any) -> Criteria:

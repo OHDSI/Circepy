@@ -70,26 +70,86 @@ class ConceptSetCriteriaCheck(BaseCriteriaCheck):
             VisitOccurrence,
         )
 
-        Operations.match(criteria).is_a(ConditionEra).then(
-            lambda c: Operations.match(c).when(lambda ce: ce.codeset_id is None).then(add_warning)
-        ).is_a(ConditionOccurrence).then(
-            lambda c: Operations.match(c).when(lambda co: co.codeset_id is None and co.condition_source_concept is None).then(add_warning)
-        ).is_a(Death).then(lambda c: Operations.match(c).when(lambda d: d.codeset_id is None).then(add_warning)).is_a(DeviceExposure).then(
-            lambda c: Operations.match(c).when(lambda de: de.codeset_id is None and de.device_source_concept is None).then(add_warning)
-        ).is_a(DoseEra).then(lambda c: Operations.match(c).when(lambda de: de.codeset_id is None).then(add_warning)).is_a(DrugEra).then(
-            lambda c: Operations.match(c).when(lambda de: de.codeset_id is None).then(add_warning)
-        ).is_a(DrugExposure).then(
-            lambda c: Operations.match(c).when(lambda de: de.codeset_id is None and de.drug_source_concept is None).then(add_warning)
-        ).is_a(Measurement).then(
-            lambda c: Operations.match(c).when(lambda m: m.codeset_id is None and m.measurement_source_concept is None).then(add_warning)
-        ).is_a(Observation).then(
-            lambda c: Operations.match(c).when(lambda o: o.codeset_id is None and o.observation_source_concept is None).then(add_warning)
-        ).is_a(ProcedureOccurrence).then(
-            lambda c: Operations.match(c).when(lambda po: po.codeset_id is None and po.procedure_source_concept is None).then(add_warning)
-        ).is_a(Specimen).then(
-            lambda c: Operations.match(c).when(lambda s: s.codeset_id is None and s.specimen_source_concept is None).then(add_warning)
-        ).is_a(VisitOccurrence).then(
-            lambda c: Operations.match(c).when(lambda vo: vo.codeset_id is None and vo.visit_source_concept is None).then(add_warning)
-        ).is_a(VisitDetail).then(
-            lambda c: Operations.match(c).when(lambda vd: vd.codeset_id is None and vd.visit_detail_source_concept is None).then(add_warning)
+        (
+            Operations.match(criteria)
+            .is_a(ConditionEra)
+            .then(lambda c: Operations.match(c).when(lambda ce: ce.codeset_id is None).then(add_warning))
+            .is_a(ConditionOccurrence)
+            .then(
+                lambda c: (
+                    Operations.match(c)
+                    .when(lambda co: co.codeset_id is None and co.condition_source_concept is None)
+                    .then(add_warning)
+                )
+            )
+            .is_a(Death)
+            .then(lambda c: Operations.match(c).when(lambda d: d.codeset_id is None).then(add_warning))
+            .is_a(DeviceExposure)
+            .then(
+                lambda c: (
+                    Operations.match(c)
+                    .when(lambda de: de.codeset_id is None and de.device_source_concept is None)
+                    .then(add_warning)
+                )
+            )
+            .is_a(DoseEra)
+            .then(lambda c: Operations.match(c).when(lambda de: de.codeset_id is None).then(add_warning))
+            .is_a(DrugEra)
+            .then(lambda c: Operations.match(c).when(lambda de: de.codeset_id is None).then(add_warning))
+            .is_a(DrugExposure)
+            .then(
+                lambda c: (
+                    Operations.match(c)
+                    .when(lambda de: de.codeset_id is None and de.drug_source_concept is None)
+                    .then(add_warning)
+                )
+            )
+            .is_a(Measurement)
+            .then(
+                lambda c: (
+                    Operations.match(c)
+                    .when(lambda m: m.codeset_id is None and m.measurement_source_concept is None)
+                    .then(add_warning)
+                )
+            )
+            .is_a(Observation)
+            .then(
+                lambda c: (
+                    Operations.match(c)
+                    .when(lambda o: o.codeset_id is None and o.observation_source_concept is None)
+                    .then(add_warning)
+                )
+            )
+            .is_a(ProcedureOccurrence)
+            .then(
+                lambda c: (
+                    Operations.match(c)
+                    .when(lambda po: po.codeset_id is None and po.procedure_source_concept is None)
+                    .then(add_warning)
+                )
+            )
+            .is_a(Specimen)
+            .then(
+                lambda c: (
+                    Operations.match(c)
+                    .when(lambda s: s.codeset_id is None and s.specimen_source_concept is None)
+                    .then(add_warning)
+                )
+            )
+            .is_a(VisitOccurrence)
+            .then(
+                lambda c: (
+                    Operations.match(c)
+                    .when(lambda vo: vo.codeset_id is None and vo.visit_source_concept is None)
+                    .then(add_warning)
+                )
+            )
+            .is_a(VisitDetail)
+            .then(
+                lambda c: (
+                    Operations.match(c)
+                    .when(lambda vd: vd.codeset_id is None and vd.visit_detail_source_concept is None)
+                    .then(add_warning)
+                )
+            )
         )

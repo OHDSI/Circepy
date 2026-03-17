@@ -54,9 +54,7 @@ from circe.helper.cohort_modifiers import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
-EXAMPLE_JSON = (
-    Path(__file__).resolve().parent.parent / "examples" / "type2_diabetes_cohort.json"
-)
+EXAMPLE_JSON = Path(__file__).resolve().parent.parent / "examples" / "type2_diabetes_cohort.json"
 
 
 @pytest.fixture
@@ -231,9 +229,7 @@ class TestSetGenderCriteria:
         assert dc.gender[0].concept_name == "MALE"
 
     def test_multiple_genders(self, empty_cohort):
-        set_gender_criteria(
-            empty_cohort, [GENDER_MALE_CONCEPT_ID, GENDER_FEMALE_CONCEPT_ID]
-        )
+        set_gender_criteria(empty_cohort, [GENDER_MALE_CONCEPT_ID, GENDER_FEMALE_CONCEPT_ID])
         dc = empty_cohort.additional_criteria.demographic_criteria_list[0]
         assert len(dc.gender) == 2
 
@@ -262,9 +258,7 @@ class TestSetEndDateStrategy:
         assert result.end_strategy.date_field == "StartDate"
 
     def test_fixed_duration_end_date(self, empty_cohort):
-        set_end_date_strategy(
-            empty_cohort, "fixed_duration", days=90, date_field="EndDate"
-        )
+        set_end_date_strategy(empty_cohort, "fixed_duration", days=90, date_field="EndDate")
         assert empty_cohort.end_strategy.date_field == "EndDate"
 
     def test_fixed_duration_no_days_raises(self, empty_cohort):
@@ -343,11 +337,7 @@ class TestSetCleanWindow:
         result = set_clean_window(diabetes_cohort, 7)
         assert result is diabetes_cohort
         # Should have added exactly one inclusion rule
-        matching = [
-            r
-            for r in result.inclusion_rules
-            if getattr(r, "name", None) == "__clean_window__"
-        ]
+        matching = [r for r in result.inclusion_rules if getattr(r, "name", None) == "__clean_window__"]
         assert len(matching) == 1
 
     def test_single_criterion_defaults_to_any_mode(self, diabetes_cohort):
@@ -355,9 +345,7 @@ class TestSetCleanWindow:
         assert len(diabetes_cohort.primary_criteria.criteria_list) == 1
         set_clean_window(diabetes_cohort, 30)
         rule = next(
-            r
-            for r in diabetes_cohort.inclusion_rules
-            if getattr(r, "name", None) == "__clean_window__"
+            r for r in diabetes_cohort.inclusion_rules if getattr(r, "name", None) == "__clean_window__"
         )
         assert rule.description is not None
         assert "30" in rule.description
@@ -378,17 +366,13 @@ class TestSetCleanWindow:
         """With one criterion, 'any' and 'all' produce the same correlated list."""
         set_clean_window(diabetes_cohort, 7, criteria_mode="any")
         rule_any = next(
-            r
-            for r in diabetes_cohort.inclusion_rules
-            if getattr(r, "name", None) == "__clean_window__"
+            r for r in diabetes_cohort.inclusion_rules if getattr(r, "name", None) == "__clean_window__"
         )
         n_any = len(rule_any.expression.criteria_list)
 
         set_clean_window(diabetes_cohort, 7, criteria_mode="all")
         rule_all = next(
-            r
-            for r in diabetes_cohort.inclusion_rules
-            if getattr(r, "name", None) == "__clean_window__"
+            r for r in diabetes_cohort.inclusion_rules if getattr(r, "name", None) == "__clean_window__"
         )
         n_all = len(rule_all.expression.criteria_list)
 
@@ -416,11 +400,7 @@ class TestSetCleanWindow:
             }
         )
         set_clean_window(cohort, 7, criteria_mode="any")
-        rule = next(
-            r
-            for r in cohort.inclusion_rules
-            if getattr(r, "name", None) == "__clean_window__"
-        )
+        rule = next(r for r in cohort.inclusion_rules if getattr(r, "name", None) == "__clean_window__")
         group = rule.expression
         assert group.type == "ALL"
         assert len(group.criteria_list) == 2
@@ -452,11 +432,7 @@ class TestSetCleanWindow:
             }
         )
         set_clean_window(cohort, 7, criteria_mode="all")
-        rule = next(
-            r
-            for r in cohort.inclusion_rules
-            if getattr(r, "name", None) == "__clean_window__"
-        )
+        rule = next(r for r in cohort.inclusion_rules if getattr(r, "name", None) == "__clean_window__")
         group = rule.expression
         assert group.type == "ANY"
         assert len(group.criteria_list) == 2
@@ -478,11 +454,7 @@ class TestSetCleanWindow:
             }
         )
         set_clean_window(cohort, 14, criteria_mode="all")
-        rule = next(
-            r
-            for r in cohort.inclusion_rules
-            if getattr(r, "name", None) == "__clean_window__"
-        )
+        rule = next(r for r in cohort.inclusion_rules if getattr(r, "name", None) == "__clean_window__")
         assert rule.expression.type == "ANY"
         assert len(rule.expression.criteria_list) == 3
 
@@ -503,9 +475,7 @@ class TestSetCleanWindow:
         set_clean_window(diabetes_cohort, 7)
         set_clean_window(diabetes_cohort, 14)
         matching = [
-            r
-            for r in diabetes_cohort.inclusion_rules
-            if getattr(r, "name", None) == "__clean_window__"
+            r for r in diabetes_cohort.inclusion_rules if getattr(r, "name", None) == "__clean_window__"
         ]
         assert len(matching) == 1
         assert "14" in matching[0].description
@@ -514,17 +484,13 @@ class TestSetCleanWindow:
         """Replacing a clean window can switch from 'any' to 'all'."""
         set_clean_window(diabetes_cohort, 7, criteria_mode="any")
         rule = next(
-            r
-            for r in diabetes_cohort.inclusion_rules
-            if getattr(r, "name", None) == "__clean_window__"
+            r for r in diabetes_cohort.inclusion_rules if getattr(r, "name", None) == "__clean_window__"
         )
         assert rule.expression.type == "ALL"
 
         set_clean_window(diabetes_cohort, 7, criteria_mode="all")
         rule = next(
-            r
-            for r in diabetes_cohort.inclusion_rules
-            if getattr(r, "name", None) == "__clean_window__"
+            r for r in diabetes_cohort.inclusion_rules if getattr(r, "name", None) == "__clean_window__"
         )
         assert rule.expression.type == "ANY"
 
@@ -585,21 +551,13 @@ class TestSetCleanWindow:
             }
         )
         set_clean_window(cohort, 7)
-        rule = next(
-            r
-            for r in cohort.inclusion_rules
-            if getattr(r, "name", None) == "__clean_window__"
-        )
+        rule = next(r for r in cohort.inclusion_rules if getattr(r, "name", None) == "__clean_window__")
         assert len(rule.expression.criteria_list) == 1
 
         # Now add a second primary criterion and reset the clean window
         cohort.primary_criteria.criteria_list.append(DrugExposure(codeset_id=2))
         set_clean_window(cohort, 7)
-        rule = next(
-            r
-            for r in cohort.inclusion_rules
-            if getattr(r, "name", None) == "__clean_window__"
-        )
+        rule = next(r for r in cohort.inclusion_rules if getattr(r, "name", None) == "__clean_window__")
         assert len(rule.expression.criteria_list) == 2
 
 
@@ -610,17 +568,13 @@ class TestSetCleanWindow:
 
 class TestSetDateRange:
     def test_both_dates_string(self, empty_cohort):
-        result = set_date_range(
-            empty_cohort, start_date="2020-01-01", end_date="2022-12-31"
-        )
+        result = set_date_range(empty_cohort, start_date="2020-01-01", end_date="2022-12-31")
         assert result is empty_cohort
         assert result.censor_window.start_date == "2020-01-01"
         assert result.censor_window.end_date == "2022-12-31"
 
     def test_date_objects(self, empty_cohort):
-        set_date_range(
-            empty_cohort, start_date=date(2020, 1, 1), end_date=date(2022, 12, 31)
-        )
+        set_date_range(empty_cohort, start_date=date(2020, 1, 1), end_date=date(2022, 12, 31))
         assert empty_cohort.censor_window.start_date == "2020-01-01"
         assert empty_cohort.censor_window.end_date == "2022-12-31"
 
@@ -690,10 +644,7 @@ class TestResetFunctions:
         set_gender_criteria(empty_cohort, GENDER_FEMALE_CONCEPT_ID)
         reset_age_criteria(empty_cohort)
         assert len(empty_cohort.additional_criteria.demographic_criteria_list) == 1
-        assert (
-            empty_cohort.additional_criteria.demographic_criteria_list[0].gender
-            is not None
-        )
+        assert empty_cohort.additional_criteria.demographic_criteria_list[0].gender is not None
 
     def test_reset_gender_criteria(self, empty_cohort):
         set_gender_criteria(empty_cohort, GENDER_MALE_CONCEPT_ID)
@@ -705,10 +656,7 @@ class TestResetFunctions:
         set_gender_criteria(empty_cohort, GENDER_MALE_CONCEPT_ID)
         reset_gender_criteria(empty_cohort)
         assert len(empty_cohort.additional_criteria.demographic_criteria_list) == 1
-        assert (
-            empty_cohort.additional_criteria.demographic_criteria_list[0].age
-            is not None
-        )
+        assert empty_cohort.additional_criteria.demographic_criteria_list[0].age is not None
 
     def test_reset_end_strategy(self, empty_cohort):
         set_end_date_strategy(empty_cohort, "fixed_duration", days=30)
@@ -734,9 +682,7 @@ class TestResetFunctions:
 class TestChaining:
     def test_chain_multiple_modifiers(self, empty_cohort):
         result = set_prior_observation(
-            set_post_observation(
-                set_limit_to_first_event(set_cohort_era(empty_cohort, 0)), 30
-            ),
+            set_post_observation(set_limit_to_first_event(set_cohort_era(empty_cohort, 0)), 30),
             365,
         )
         assert result is empty_cohort

@@ -137,9 +137,7 @@ class TestDeathSqlBuilder(unittest.TestCase):
         builder = DeathSqlBuilder()
         criteria = Death(codeset_id=12345, first=True, death_type_exclude=False)
 
-        clause = builder.embed_codeset_clause(
-            "SELECT * FROM table @codesetClause", criteria
-        )
+        clause = builder.embed_codeset_clause("SELECT * FROM table @codesetClause", criteria)
         # Updated alias check
         self.assertIn("d.cause_concept_id", clause)
         self.assertIn("12345", clause)
@@ -149,9 +147,7 @@ class TestDeathSqlBuilder(unittest.TestCase):
         builder = DeathSqlBuilder()
         criteria = Death(first=True, death_type_exclude=False)
 
-        clause = builder.embed_codeset_clause(
-            "SELECT * FROM table @codesetClause", criteria
-        )
+        clause = builder.embed_codeset_clause("SELECT * FROM table @codesetClause", criteria)
         self.assertEqual(clause, "SELECT * FROM table ")
 
 
@@ -297,9 +293,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
         criteria = Observation(
             first=True,
             observation_type_exclude=False,
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=False
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=False),
         )
 
         sql = builder.get_criteria_sql(criteria)
@@ -318,9 +312,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
         criteria = Observation(
             first=True,
             observation_type_exclude=False,
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=True
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=True),
         )
 
         sql = builder.get_criteria_sql(criteria)
@@ -336,9 +328,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
     def test_get_criteria_sql_with_codeset_id(self):
         """Test get_criteria_sql with codeset ID."""
         builder = ObservationSqlBuilder()
-        criteria = Observation(
-            first=True, observation_type_exclude=False, codeset_id=12345
-        )
+        criteria = Observation(first=True, observation_type_exclude=False, codeset_id=12345)
 
         sql = builder.get_criteria_sql(criteria)
 
@@ -358,9 +348,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
             occurrence_end_date=DateRange(op="lt", extent="30", value="2023-01-01"),
             age=NumericRange(op="gte", value=18, extent=65),
             value_as_string=TextFilter(text="normal", op="eq"),
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=False
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=False),
             codeset_id=67890,
         )
 
@@ -369,21 +357,15 @@ class TestObservationSqlBuilder(unittest.TestCase):
         self.assertIn("select", sql.lower())
         self.assertIn("FROM @cdm_database_schema.OBSERVATION o", sql)
         self.assertIn("WHERE", sql)
-        self.assertIn(
-            "JOIN @cdm_database_schema.PERSON P", sql
-        )  # Age requires PERSON join
+        self.assertIn("JOIN @cdm_database_schema.PERSON P", sql)  # Age requires PERSON join
         self.assertIn("AND", sql)  # Should have multiple conditions joined with AND
 
     def test_embed_codeset_clause(self):
         """Test embed_codeset_clause method."""
         builder = ObservationSqlBuilder()
-        criteria = Observation(
-            codeset_id=12345, first=True, observation_type_exclude=False
-        )
+        criteria = Observation(codeset_id=12345, first=True, observation_type_exclude=False)
 
-        clause = builder.embed_codeset_clause(
-            "SELECT * FROM table @codesetClause", criteria
-        )
+        clause = builder.embed_codeset_clause("SELECT * FROM table @codesetClause", criteria)
         self.assertIn("o.observation_concept_id", clause)
         self.assertIn("12345", clause)
 
@@ -392,9 +374,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
         builder = ObservationSqlBuilder()
         criteria = Observation(first=True, observation_type_exclude=False)
 
-        clause = builder.embed_codeset_clause(
-            "SELECT * FROM table @codesetClause", criteria
-        )
+        clause = builder.embed_codeset_clause("SELECT * FROM table @codesetClause", criteria)
         self.assertEqual(clause, "SELECT * FROM table ")
 
     def test_resolve_select_clauses_basic(self):
@@ -440,23 +420,14 @@ class TestObservationSqlBuilder(unittest.TestCase):
         criteria = Observation(
             first=True,
             observation_type_exclude=False,
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=False
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=False),
         )
         options = BuilderOptions()
 
         join_clause = builder.resolve_join_clauses(criteria, options)
 
-        self.assertTrue(
-            any(
-                "JOIN @cdm_database_schema.PROVIDER PR" in clause
-                for clause in join_clause
-            )
-        )
-        self.assertTrue(
-            any("C.provider_id = PR.provider_id" in clause for clause in join_clause)
-        )
+        self.assertTrue(any("JOIN @cdm_database_schema.PROVIDER PR" in clause for clause in join_clause))
+        self.assertTrue(any("C.provider_id = PR.provider_id" in clause for clause in join_clause))
 
     def test_resolve_join_clauses_with_provider_specialty_no_codeset_id(self):
         """Test resolve_join_clauses with provider specialty but no codeset_id."""
@@ -464,9 +435,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
         criteria = Observation(
             first=True,
             observation_type_exclude=False,
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=None, is_exclusion=False
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=None, is_exclusion=False),
         )
         options = BuilderOptions()
 
@@ -497,12 +466,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
 
         where_clause = builder.resolve_where_clauses(criteria, options)
 
-        self.assertTrue(
-            any(
-                "C.start_date" in clause or "C.end_date" in clause
-                for clause in where_clause
-            )
-        )
+        self.assertTrue(any("C.start_date" in clause or "C.end_date" in clause for clause in where_clause))
         # Should have multiple conditions
         self.assertGreater(len(where_clause), 1)
 
@@ -519,10 +483,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
         where_clause = builder.resolve_where_clauses(criteria, options)
 
         self.assertTrue(
-            any(
-                "C.start_date" in clause and "P.year_of_birth" in clause
-                for clause in where_clause
-            )
+            any("C.start_date" in clause and "P.year_of_birth" in clause for clause in where_clause)
         )
 
     def test_resolve_where_clauses_with_value_as_string(self):
@@ -545,18 +506,14 @@ class TestObservationSqlBuilder(unittest.TestCase):
         criteria = Observation(
             first=True,
             observation_type_exclude=False,
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=False
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=False),
         )
         options = BuilderOptions()
 
         where_clause = builder.resolve_where_clauses(criteria, options)
 
         # ObservationSqlBuilder uses PR alias for PROVIDER (to avoid conflict with PERSON alias P)
-        self.assertTrue(
-            any("PR.specialty_concept_id" in clause for clause in where_clause)
-        )
+        self.assertTrue(any("PR.specialty_concept_id" in clause for clause in where_clause))
         self.assertTrue(any("12345" in clause for clause in where_clause))
 
     def test_resolve_where_clauses_with_provider_specialty_exclusion(self):
@@ -565,26 +522,20 @@ class TestObservationSqlBuilder(unittest.TestCase):
         criteria = Observation(
             first=True,
             observation_type_exclude=False,
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=True
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=True),
         )
         options = BuilderOptions()
 
         where_clause = builder.resolve_where_clauses(criteria, options)
 
         # ObservationSqlBuilder uses PR alias for PROVIDER (to avoid conflict with PERSON alias P)
-        self.assertTrue(
-            any("PR.specialty_concept_id" in clause for clause in where_clause)
-        )
+        self.assertTrue(any("PR.specialty_concept_id" in clause for clause in where_clause))
         self.assertTrue(any("not" in clause for clause in where_clause))
 
     def test_resolve_where_clauses_with_codeset_id(self):
         """Test resolve_where_clauses with codeset ID."""
         builder = ObservationSqlBuilder()
-        criteria = Observation(
-            first=True, observation_type_exclude=False, codeset_id=12345
-        )
+        criteria = Observation(first=True, observation_type_exclude=False, codeset_id=12345)
         options = BuilderOptions()
 
         where_clause = builder.resolve_where_clauses(criteria, options)
@@ -603,9 +554,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
             occurrence_end_date=DateRange(op="lt", extent="30", value="2023-01-01"),
             age=NumericRange(op="gte", value=18, extent=65),
             value_as_string=TextFilter(text="normal", op="eq"),
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=False
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=False),
             codeset_id=67890,
         )
         options = BuilderOptions()
@@ -613,20 +562,13 @@ class TestObservationSqlBuilder(unittest.TestCase):
         where_clause = builder.resolve_where_clauses(criteria, options)
 
         # Check for date conditions (uses C.start_date and C.end_date)
-        self.assertTrue(
-            any(
-                "C.start_date" in clause or "C.end_date" in clause
-                for clause in where_clause
-            )
-        )
+        self.assertTrue(any("C.start_date" in clause or "C.end_date" in clause for clause in where_clause))
         # Check for age condition (uses C.start_date and P.year_of_birth)
         self.assertTrue(any("P.year_of_birth" in clause for clause in where_clause))
         # Check for value_as_string
         self.assertTrue(any("C.value_as_string" in clause for clause in where_clause))
         # ObservationSqlBuilder uses PR alias for PROVIDER (to avoid conflict with PERSON alias P)
-        self.assertTrue(
-            any("PR.specialty_concept_id" in clause for clause in where_clause)
-        )
+        self.assertTrue(any("PR.specialty_concept_id" in clause for clause in where_clause))
         # Note: codeset_id is now handled via JOIN, not WHERE clause
         # Should have multiple conditions (where_clause is a list of strings)
         self.assertGreater(len(where_clause), 3)
@@ -675,9 +617,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
         self.assertIn("select", sql.lower())
         self.assertIn("FROM @cdm_database_schema.OBSERVATION o", sql)
         self.assertIn("C.ordinal = 1", sql)  # WHERE clause for first=True
-        self.assertNotIn(
-            "JOIN @cdm_database_schema.PERSON", sql
-        )  # No age condition, no PERSON join
+        self.assertNotIn("JOIN @cdm_database_schema.PERSON", sql)  # No age condition, no PERSON join
 
     def test_sql_generation_with_empty_concept_lists(self):
         """Test SQL generation with empty concept lists."""
@@ -703,9 +643,7 @@ class TestObservationSqlBuilder(unittest.TestCase):
             first=True,
             observation_type_exclude=False,
             occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01"),
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=False
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=False),
             codeset_id=67890,
         )
 
@@ -898,9 +836,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         criteria = Measurement(
             first=True,
             measurement_type_exclude=False,
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=False
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=False),
         )
 
         sql = builder.get_criteria_sql(criteria)
@@ -919,9 +855,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         criteria = Measurement(
             first=True,
             measurement_type_exclude=False,
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=True
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=True),
         )
 
         sql = builder.get_criteria_sql(criteria)
@@ -936,9 +870,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
     def test_get_criteria_sql_with_codeset_id(self):
         """Test get_criteria_sql with codeset ID."""
         builder = MeasurementSqlBuilder()
-        criteria = Measurement(
-            first=True, measurement_type_exclude=False, codeset_id=12345
-        )
+        criteria = Measurement(first=True, measurement_type_exclude=False, codeset_id=12345)
 
         sql = builder.get_criteria_sql(criteria)
 
@@ -962,9 +894,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
             value_as_string=TextFilter(text="normal", op="eq"),
             range_low=NumericRange(op="gte", value=50, extent=100),
             range_high=NumericRange(op="lt", value=200, extent=300),
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=False
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=False),
             codeset_id=67890,
         )
 
@@ -980,16 +910,10 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
     def test_embed_codeset_clause(self):
         """Test embed_codeset_clause method."""
         builder = MeasurementSqlBuilder()
-        criteria = Measurement(
-            codeset_id=12345, first=True, measurement_type_exclude=False
-        )
+        criteria = Measurement(codeset_id=12345, first=True, measurement_type_exclude=False)
 
-        clause = builder.embed_codeset_clause(
-            "SELECT * FROM table @codesetClause", criteria
-        )
-        self.assertIn(
-            "m.measurement_concept_id", clause
-        )  # Use m. prefix in inner query
+        clause = builder.embed_codeset_clause("SELECT * FROM table @codesetClause", criteria)
+        self.assertIn("m.measurement_concept_id", clause)  # Use m. prefix in inner query
         self.assertIn("12345", clause)
 
     def test_embed_codeset_clause_no_codeset(self):
@@ -997,9 +921,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         builder = MeasurementSqlBuilder()
         criteria = Measurement(first=True, measurement_type_exclude=False)
 
-        clause = builder.embed_codeset_clause(
-            "SELECT * FROM table @codesetClause", criteria
-        )
+        clause = builder.embed_codeset_clause("SELECT * FROM table @codesetClause", criteria)
         self.assertEqual(clause, "SELECT * FROM table ")
 
     def test_resolve_select_clauses_basic(self):
@@ -1011,9 +933,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         select_clause = builder.resolve_select_clauses(criteria, options)
 
         # Inner query uses m. prefix
-        self.assertTrue(
-            any("m.measurement_date as start_date" in col for col in select_clause)
-        )
+        self.assertTrue(any("m.measurement_date as start_date" in col for col in select_clause))
         self.assertIn("m.person_id", select_clause)
         self.assertIn("m.measurement_id", select_clause)
         self.assertIn("m.measurement_concept_id", select_clause)
@@ -1030,9 +950,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
 
         # resolve_select_clauses returns inner query columns (m. prefix)
         # Additional columns are handled elsewhere so check for standard columns
-        self.assertTrue(
-            any("m.measurement_date as start_date" in col for col in select_clause)
-        )
+        self.assertTrue(any("m.measurement_date as start_date" in col for col in select_clause))
         self.assertIn("m.measurement_concept_id", select_clause)
 
     def test_resolve_join_clauses_no_joins(self):
@@ -1051,24 +969,15 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         criteria = Measurement(
             first=True,
             measurement_type_exclude=False,
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=False
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=False),
         )
         options = BuilderOptions()
 
         join_clause = builder.resolve_join_clauses(criteria, options)
 
         # Provider now uses PR alias to avoid conflict with PERSON P
-        self.assertTrue(
-            any(
-                "JOIN @cdm_database_schema.PROVIDER PR" in clause
-                for clause in join_clause
-            )
-        )
-        self.assertTrue(
-            any("C.provider_id = PR.provider_id" in clause for clause in join_clause)
-        )
+        self.assertTrue(any("JOIN @cdm_database_schema.PROVIDER PR" in clause for clause in join_clause))
+        self.assertTrue(any("C.provider_id = PR.provider_id" in clause for clause in join_clause))
 
     def test_resolve_join_clauses_with_provider_specialty_no_codeset_id(self):
         """Test resolve_join_clauses with provider specialty but no codeset_id."""
@@ -1076,9 +985,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         criteria = Measurement(
             first=True,
             measurement_type_exclude=False,
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=None, is_exclusion=False
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=None, is_exclusion=False),
         )
         options = BuilderOptions()
 
@@ -1110,12 +1017,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         where_clause = builder.resolve_where_clauses(criteria, options)
 
         # Now uses C.start_date and C.end_date (from outer query)
-        self.assertTrue(
-            any(
-                "C.start_date" in clause or "C.end_date" in clause
-                for clause in where_clause
-            )
-        )
+        self.assertTrue(any("C.start_date" in clause or "C.end_date" in clause for clause in where_clause))
         # Should have multiple clauses for date ranges
         self.assertGreater(len(where_clause), 0)
 
@@ -1182,18 +1084,14 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         criteria = Measurement(
             first=True,
             measurement_type_exclude=False,
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=False
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=False),
         )
         options = BuilderOptions()
 
         where_clause = builder.resolve_where_clauses(criteria, options)
 
         # Provider now uses PR alias to avoid conflict with PERSON (P)
-        self.assertTrue(
-            any("PR.specialty_concept_id" in clause for clause in where_clause)
-        )
+        self.assertTrue(any("PR.specialty_concept_id" in clause for clause in where_clause))
         self.assertTrue(any("12345" in clause for clause in where_clause))
 
     def test_resolve_where_clauses_with_provider_specialty_exclusion(self):
@@ -1202,26 +1100,20 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         criteria = Measurement(
             first=True,
             measurement_type_exclude=False,
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=True
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=True),
         )
         options = BuilderOptions()
 
         where_clause = builder.resolve_where_clauses(criteria, options)
 
         # Provider now uses PR alias
-        self.assertTrue(
-            any("PR.specialty_concept_id" in clause for clause in where_clause)
-        )
+        self.assertTrue(any("PR.specialty_concept_id" in clause for clause in where_clause))
         self.assertTrue(any("not" in clause for clause in where_clause))
 
     def test_resolve_where_clauses_with_codeset_id(self):
         """Test resolve_where_clauses with codeset ID."""
         builder = MeasurementSqlBuilder()
-        criteria = Measurement(
-            first=True, measurement_type_exclude=False, codeset_id=12345
-        )
+        criteria = Measurement(first=True, measurement_type_exclude=False, codeset_id=12345)
         options = BuilderOptions()
 
         where_clause = builder.resolve_where_clauses(criteria, options)
@@ -1242,9 +1134,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
             value_as_string=TextFilter(text="normal", op="eq"),
             range_low=NumericRange(op="gte", value=50, extent=100),
             range_high=NumericRange(op="lt", value=200, extent=300),
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=False
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=False),
             codeset_id=67890,
         )
         options = BuilderOptions()
@@ -1252,21 +1142,14 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
         where_clause = builder.resolve_where_clauses(criteria, options)
 
         # Date conditions use C.start_date/C.end_date in outer query
-        self.assertTrue(
-            any(
-                "C.start_date" in clause or "C.end_date" in clause
-                for clause in where_clause
-            )
-        )
+        self.assertTrue(any("C.start_date" in clause or "C.end_date" in clause for clause in where_clause))
         # Age conditions use YEAR(C.start_date)
         self.assertTrue(any("YEAR(C.start_date)" in clause for clause in where_clause))
         self.assertTrue(any("C.value_as_number" in clause for clause in where_clause))
         self.assertTrue(any("C.range_low" in clause for clause in where_clause))
         self.assertTrue(any("C.range_high" in clause for clause in where_clause))
         # Provider now uses PR alias to avoid conflict with PERSON P
-        self.assertTrue(
-            any("PR.specialty_concept_id" in clause for clause in where_clause)
-        )
+        self.assertTrue(any("PR.specialty_concept_id" in clause for clause in where_clause))
         # codeset_id is now handled via JOIN in inner query, not WHERE clause
         # Should have multiple conditions
         self.assertGreater(len(where_clause), 5)
@@ -1349,9 +1232,7 @@ class TestMeasurementSqlBuilder(unittest.TestCase):
             first=True,
             measurement_type_exclude=False,
             occurrence_start_date=DateRange(op="gte", extent="0", value="2020-01-01"),
-            provider_specialty_cs=ConceptSetSelection(
-                codeset_id=12345, is_exclusion=False
-            ),
+            provider_specialty_cs=ConceptSetSelection(codeset_id=12345, is_exclusion=False),
             codeset_id=67890,
         )
 
@@ -1442,13 +1323,9 @@ class TestDeviceExposureSqlBuilder(unittest.TestCase):
     def test_embed_codeset_clause(self):
         """Test embed_codeset_clause method."""
         builder = DeviceExposureSqlBuilder()
-        criteria = DeviceExposure(
-            codeset_id=12345, first=True, device_type_exclude=False
-        )
+        criteria = DeviceExposure(codeset_id=12345, first=True, device_type_exclude=False)
 
-        clause = builder.embed_codeset_clause(
-            "SELECT * FROM table @codesetClause", criteria
-        )
+        clause = builder.embed_codeset_clause("SELECT * FROM table @codesetClause", criteria)
         self.assertIn("de.device_concept_id", clause)
         self.assertIn("12345", clause)
 
@@ -1528,9 +1405,7 @@ class TestSpecimenSqlBuilder(unittest.TestCase):
         builder = SpecimenSqlBuilder()
         criteria = Specimen(codeset_id=12345, first=True, specimen_type_exclude=False)
 
-        clause = builder.embed_codeset_clause(
-            "SELECT * FROM table @codesetClause", criteria
-        )
+        clause = builder.embed_codeset_clause("SELECT * FROM table @codesetClause", criteria)
         self.assertIn("s.specimen_concept_id", clause)
         self.assertIn("12345", clause)
 
@@ -1680,9 +1555,7 @@ class TestDoseEraSqlBuilder(unittest.TestCase):
             "C.unit_concept_id",
         )
         self.assertEqual(
-            builder.get_table_column_for_criteria_column(
-                CriteriaColumn.VALUE_AS_NUMBER
-            ),
+            builder.get_table_column_for_criteria_column(CriteriaColumn.VALUE_AS_NUMBER),
             "C.dose_value",
         )
 
@@ -1866,12 +1739,8 @@ class TestObservationPeriodSqlBuilder(unittest.TestCase):
         self.assertIn("op.person_id", select_clauses)
         self.assertIn("op.observation_period_id", select_clauses)
         self.assertIn("op.period_type_concept_id", select_clauses)
-        self.assertIn(
-            "op.observation_period_start_date as start_date", " ".join(select_clauses)
-        )
-        self.assertIn(
-            "op.observation_period_end_date as end_date", " ".join(select_clauses)
-        )
+        self.assertIn("op.observation_period_start_date as start_date", " ".join(select_clauses))
+        self.assertIn("op.observation_period_end_date as end_date", " ".join(select_clauses))
 
     def test_resolve_join_clauses(self):
         """Test join clauses resolution."""
@@ -1984,12 +1853,8 @@ class TestPayerPlanPeriodSqlBuilder(unittest.TestCase):
 
         self.assertIn("ppp.person_id", select_clauses)
         self.assertIn("ppp.payer_plan_period_id", select_clauses)
-        self.assertIn(
-            "ppp.payer_plan_period_start_date as start_date", " ".join(select_clauses)
-        )
-        self.assertIn(
-            "ppp.payer_plan_period_end_date as end_date", " ".join(select_clauses)
-        )
+        self.assertIn("ppp.payer_plan_period_start_date as start_date", " ".join(select_clauses))
+        self.assertIn("ppp.payer_plan_period_end_date as end_date", " ".join(select_clauses))
 
     def test_resolve_select_clauses_with_concepts(self):
         """Test select clauses resolution with concept fields."""
@@ -2047,9 +1912,7 @@ class TestPayerPlanPeriodSqlBuilder(unittest.TestCase):
 
         self.assertGreaterEqual(len(where_clauses), 2)
         self.assertTrue(any("C.start_date" in clause for clause in where_clauses))
-        self.assertTrue(
-            any("payer_source_concept_id" in clause for clause in where_clauses)
-        )
+        self.assertTrue(any("payer_source_concept_id" in clause for clause in where_clauses))
 
 
 class TestVisitDetailSqlBuilder(unittest.TestCase):
@@ -2093,9 +1956,7 @@ class TestVisitDetailSqlBuilder(unittest.TestCase):
             "DATEDIFF(d, C.start_date, C.end_date)",
         )
         self.assertEqual(
-            builder.get_table_column_for_criteria_column(
-                CriteriaColumn.VISIT_DETAIL_ID
-            ),
+            builder.get_table_column_for_criteria_column(CriteriaColumn.VISIT_DETAIL_ID),
             "C.visit_detail_id",
         )
 
@@ -2134,9 +1995,7 @@ class TestVisitDetailSqlBuilder(unittest.TestCase):
         self.assertIn("vd.visit_detail_id", select_clauses)
         self.assertIn("vd.visit_detail_concept_id", select_clauses)
         self.assertIn("vd.visit_occurrence_id", select_clauses)
-        self.assertIn(
-            "vd.visit_detail_start_date as start_date", " ".join(select_clauses)
-        )
+        self.assertIn("vd.visit_detail_start_date as start_date", " ".join(select_clauses))
         self.assertIn("vd.visit_detail_end_date as end_date", " ".join(select_clauses))
 
     def test_resolve_join_clauses(self):
@@ -2151,9 +2010,7 @@ class TestVisitDetailSqlBuilder(unittest.TestCase):
     def test_resolve_join_clauses_with_person(self):
         """Test join clauses resolution with person join."""
         builder = VisitDetailSqlBuilder()
-        criteria = VisitDetail(
-            visit_detail_type_exclude=False, age=NumericRange(op="gte", value=18)
-        )
+        criteria = VisitDetail(visit_detail_type_exclude=False, age=NumericRange(op="gte", value=18))
 
         join_clauses = builder.resolve_join_clauses(criteria)
 
@@ -2336,15 +2193,9 @@ class TestBuilderIntegration(unittest.TestCase):
             else:
                 mock_criteria = Mock()
 
-            self.assertIsInstance(
-                builder.resolve_select_clauses(mock_criteria, options), list
-            )
-            self.assertIsInstance(
-                builder.resolve_join_clauses(mock_criteria, options), list
-            )
-            self.assertIsInstance(
-                builder.resolve_where_clauses(mock_criteria, options), list
-            )
+            self.assertIsInstance(builder.resolve_select_clauses(mock_criteria, options), list)
+            self.assertIsInstance(builder.resolve_join_clauses(mock_criteria, options), list)
+            self.assertIsInstance(builder.resolve_where_clauses(mock_criteria, options), list)
 
 
 if __name__ == "__main__":
