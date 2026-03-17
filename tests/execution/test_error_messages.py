@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from circe.api import build_cohort_ibis
+from circe.api import build_cohort
 from circe.cohortdefinition import (
     CohortExpression,
     ConditionOccurrence,
@@ -62,7 +62,7 @@ def test_error_message_for_custom_era_end_strategy():
     )
 
     with pytest.raises(UnsupportedFeatureError, match="custom_era end strategy"):
-        _ = build_cohort_ibis(expression, backend=object(), cdm_schema="main")
+        _ = build_cohort(expression, backend=object(), cdm_schema="main")
 
 
 def test_error_message_for_unsupported_criterion_type():
@@ -102,7 +102,7 @@ def test_error_message_for_unsupported_numeric_op_during_compilation():
     )
 
     with pytest.raises(CompilationError, match="compilation error: unsupported numeric range op"):
-        _ = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+        _ = build_cohort(expression, backend=conn, cdm_schema="main").execute()
 
 
 def test_error_message_for_unsupported_demographic_numeric_op():
@@ -145,4 +145,4 @@ def test_error_message_for_unsupported_demographic_numeric_op():
         UnsupportedFeatureError,
         match="group evaluation error: unsupported demographic numeric range op",
     ):
-        _ = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+        _ = build_cohort(expression, backend=conn, cdm_schema="main").execute()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from circe.api import build_cohort_ibis
+from circe.api import build_cohort
 from circe.cohortdefinition import (
     CohortExpression,
     ConditionOccurrence,
@@ -120,7 +120,7 @@ def test_inclusion_rules_require_all_rules_to_match():
         ],
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert set(result.person_id) == {3}
 
 
@@ -151,5 +151,5 @@ def test_inclusion_rule_without_expression_is_noop():
         inclusion_rules=[InclusionRule(name="empty", expression=None)],
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert set(result.person_id) == {1, 2}

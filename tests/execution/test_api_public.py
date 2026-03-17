@@ -3,12 +3,7 @@ from __future__ import annotations
 import pytest
 
 import circe.api as api
-from circe.api import (
-    build_cohort,
-    build_cohort_ibis,
-    write_cohort,
-    write_cohort_ibis,
-)
+from circe.api import build_cohort, write_cohort
 from circe.cohortdefinition import CohortExpression, ConditionOccurrence, PrimaryCriteria
 from circe.execution.api import write_relation
 from circe.execution.errors import ExecutionError
@@ -68,17 +63,13 @@ def _seed_tables(conn, ibis):
     )
 
 
-def test_public_aliases_resolve_to_canonical_functions():
+def test_public_execution_functions_are_exported():
     assert hasattr(api, "build_cohort")
     assert hasattr(api, "write_cohort")
     assert hasattr(api, "build_cohort_query")
-    assert hasattr(api, "build_cohort_ibis")
-    assert hasattr(api, "write_cohort_ibis")
-    assert build_cohort_ibis is build_cohort
-    assert write_cohort_ibis is write_cohort
 
 
-def test_build_cohort_returns_relation_and_alias_works():
+def test_build_cohort_returns_relation():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -88,10 +79,9 @@ def test_build_cohort_returns_relation_and_alias_works():
     expression = _expression()
 
     relation = build_cohort(expression, backend=conn, cdm_schema="main")
-    alias_relation = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
 
     assert hasattr(relation, "execute")
-    assert len(relation.execute()) == len(alias_relation.execute())
+    assert len(relation.execute()) == 2
 
 
 def test_write_cohort_writes_result_table():
@@ -206,7 +196,7 @@ def test_write_cohort_if_exists_replace_overwrites():
     assert set(replaced_20.subject_id) == {1, 2}
 
 
-def test_write_cohort_respects_results_schema_and_alias():
+def test_write_cohort_respects_results_schema():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -223,19 +213,6 @@ def test_write_cohort_respects_results_schema_and_alias():
         if_exists="replace",
     )
     assert len(conn.table("cohort_schema", database="main").execute()) == 2
-
-    write_cohort_ibis(
-        _expression(),
-        backend=conn,
-        cdm_schema="main",
-        cohort_table="cohort_alias",
-        cohort_id=8,
-        if_exists="replace",
-        results_schema="main",
-    )
-    alias_result = conn.table("cohort_alias", database="main").execute()
-    assert len(alias_result) == 2
-    assert set(alias_result.cohort_definition_id) == {8}
 
 
 def test_expression_first_build_modify_then_write_relation():

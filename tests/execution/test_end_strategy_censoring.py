@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from circe.api import build_cohort_ibis
+from circe.api import build_cohort
 from circe.cohortdefinition import CohortExpression, ConditionOccurrence, PrimaryCriteria
 from circe.cohortdefinition.core import CollapseSettings, DateOffsetStrategy, Period
 from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
@@ -68,7 +68,7 @@ def test_date_offset_end_strategy_applies_to_end_date():
         end_strategy=DateOffsetStrategy(offset=30, date_field="start_date"),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert str(result.iloc[0]["end_date"])[:10] == "2020-01-31"
 
 
@@ -99,7 +99,7 @@ def test_censoring_criteria_clips_end_date():
         censoring_criteria=[ConditionOccurrence(codeset_id=2)],
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert str(result.iloc[0]["end_date"])[:10] == "2020-01-10"
 
 
@@ -131,7 +131,7 @@ def test_censor_window_clips_start_and_end_dates():
         censor_window=Period(start_date="2020-01-05", end_date="2020-01-20"),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert str(result.iloc[0]["start_date"])[:10] == "2020-01-05"
     assert str(result.iloc[0]["end_date"])[:10] == "2020-01-20"
 
@@ -164,7 +164,7 @@ def test_collapse_settings_era_merges_intervals():
         collapse_settings=CollapseSettings(era_pad=2),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert set(result.columns) == {"person_id", "start_date", "end_date"}
     assert len(result) == 1
     assert str(result.iloc[0]["start_date"])[:10] == "2020-01-01"

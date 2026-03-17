@@ -4,8 +4,7 @@ This package is intentionally parallel to the existing SQL builder path and does
 not modify cohortdefinition model semantics.
 """
 
-from .api import build_cohort, build_cohort_ibis, write_cohort, write_cohort_ibis
-from .compat import ExecutionOptions, IbisExecutor, build_ibis
+from .api import build_cohort, write_cohort
 from .databricks_compat import apply_databricks_post_connect_workaround
 from .errors import (
     CompilationError,
@@ -18,11 +17,6 @@ from .errors import (
 __all__ = [
     "build_cohort",
     "write_cohort",
-    "build_cohort_ibis",
-    "write_cohort_ibis",
-    "ExecutionOptions",
-    "IbisExecutor",
-    "build_ibis",
     "apply_databricks_post_connect_workaround",
     "ExecutionError",
     "ExecutionNormalizationError",

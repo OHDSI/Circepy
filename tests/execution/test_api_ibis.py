@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from circe.api import build_cohort_ibis
+from circe.api import build_cohort
 from circe.cohortdefinition import (
     CohortExpression,
     ConditionEra,
@@ -99,7 +99,7 @@ def _seed_vocabulary_tables(conn, ibis):
     )
 
 
-def test_build_cohort_ibis_condition_occurrence():
+def test_build_cohort_condition_occurrence():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -132,7 +132,7 @@ def test_build_cohort_ibis_condition_occurrence():
         ),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.columns) >= {
@@ -147,7 +147,7 @@ def test_build_cohort_ibis_condition_occurrence():
     assert len(result) == 1
 
 
-def test_build_cohort_ibis_condition_occurrence_with_race_and_ethnicity_filters():
+def test_build_cohort_condition_occurrence_with_race_and_ethnicity_filters():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -189,11 +189,11 @@ def test_build_cohort_ibis_condition_occurrence_with_race_and_ethnicity_filters(
         primary_criteria=PrimaryCriteria(criteria_list=[criteria]),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert set(result.person_id) == {1}
 
 
-def test_build_cohort_ibis_applies_criterion_local_correlated_criteria():
+def test_build_cohort_applies_criterion_local_correlated_criteria():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -232,11 +232,11 @@ def test_build_cohort_ibis_applies_criterion_local_correlated_criteria():
         primary_criteria=PrimaryCriteria(criteria_list=[criteria]),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert set(result.person_id) == {1}
 
 
-def test_build_cohort_ibis_concept_set_resolves_descendants_and_mapped():
+def test_build_cohort_concept_set_resolves_descendants_and_mapped():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -294,12 +294,12 @@ def test_build_cohort_ibis_concept_set_resolves_descendants_and_mapped():
         primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert set(result.person_id) == {1}
     assert set(result.concept_id) == {100, 200}
 
 
-def test_build_cohort_ibis_uses_vocabulary_schema_option_for_expansion():
+def test_build_cohort_uses_vocabulary_schema_option_for_expansion():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -362,7 +362,7 @@ def test_build_cohort_ibis_uses_vocabulary_schema_option_for_expansion():
         primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
     )
 
-    result = build_cohort_ibis(
+    result = build_cohort(
         expression,
         backend=conn,
         cdm_schema="main",
@@ -371,7 +371,7 @@ def test_build_cohort_ibis_uses_vocabulary_schema_option_for_expansion():
     assert set(result.concept_id) == {100, 101}
 
 
-def test_build_cohort_ibis_drug_exposure():
+def test_build_cohort_drug_exposure():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -396,14 +396,14 @@ def test_build_cohort_ibis_drug_exposure():
         primary_criteria=PrimaryCriteria(criteria_list=[DrugExposure(codeset_id=2)]),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {1}
     assert all(result.domain == "drug_exposure")
 
 
-def test_build_cohort_ibis_visit_occurrence():
+def test_build_cohort_visit_occurrence():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -428,14 +428,14 @@ def test_build_cohort_ibis_visit_occurrence():
         primary_criteria=PrimaryCriteria(criteria_list=[VisitOccurrence(codeset_id=3)]),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {1}
     assert all(result.domain == "visit_occurrence")
 
 
-def test_build_cohort_ibis_measurement():
+def test_build_cohort_measurement():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -460,14 +460,14 @@ def test_build_cohort_ibis_measurement():
         primary_criteria=PrimaryCriteria(criteria_list=[Measurement(codeset_id=4)]),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {1}
     assert all(result.domain == "measurement")
 
 
-def test_build_cohort_ibis_measurement_with_value_and_unit_filters():
+def test_build_cohort_measurement_with_value_and_unit_filters():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -504,14 +504,14 @@ def test_build_cohort_ibis_measurement_with_value_and_unit_filters():
         ),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {2}
     assert all(result.domain == "measurement")
 
 
-def test_build_cohort_ibis_procedure_occurrence():
+def test_build_cohort_procedure_occurrence():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -536,14 +536,14 @@ def test_build_cohort_ibis_procedure_occurrence():
         primary_criteria=PrimaryCriteria(criteria_list=[ProcedureOccurrence(codeset_id=5)]),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {1}
     assert all(result.domain == "procedure_occurrence")
 
 
-def test_build_cohort_ibis_procedure_occurrence_with_domain_filters():
+def test_build_cohort_procedure_occurrence_with_domain_filters():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -579,14 +579,14 @@ def test_build_cohort_ibis_procedure_occurrence_with_domain_filters():
         ),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {2}
     assert all(result.domain == "procedure_occurrence")
 
 
-def test_build_cohort_ibis_observation():
+def test_build_cohort_observation():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -611,14 +611,14 @@ def test_build_cohort_ibis_observation():
         primary_criteria=PrimaryCriteria(criteria_list=[Observation(codeset_id=6)]),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {1}
     assert all(result.domain == "observation")
 
 
-def test_build_cohort_ibis_observation_with_domain_filters():
+def test_build_cohort_observation_with_domain_filters():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -659,14 +659,14 @@ def test_build_cohort_ibis_observation_with_domain_filters():
         ),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {2}
     assert all(result.domain == "observation")
 
 
-def test_build_cohort_ibis_visit_detail():
+def test_build_cohort_visit_detail():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -692,14 +692,14 @@ def test_build_cohort_ibis_visit_detail():
         primary_criteria=PrimaryCriteria(criteria_list=[VisitDetail(codeset_id=7)]),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {1}
     assert all(result.domain == "visit_detail")
 
 
-def test_build_cohort_ibis_visit_detail_with_domain_filters():
+def test_build_cohort_visit_detail_with_domain_filters():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -735,14 +735,14 @@ def test_build_cohort_ibis_visit_detail_with_domain_filters():
         ),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {2}
     assert all(result.domain == "visit_detail")
 
 
-def test_build_cohort_ibis_device_exposure():
+def test_build_cohort_device_exposure():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -768,14 +768,14 @@ def test_build_cohort_ibis_device_exposure():
         primary_criteria=PrimaryCriteria(criteria_list=[DeviceExposure(codeset_id=8)]),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {1}
     assert all(result.domain == "device_exposure")
 
 
-def test_build_cohort_ibis_specimen():
+def test_build_cohort_specimen():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -800,14 +800,14 @@ def test_build_cohort_ibis_specimen():
         primary_criteria=PrimaryCriteria(criteria_list=[Specimen(codeset_id=9)]),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {1}
     assert all(result.domain == "specimen")
 
 
-def test_build_cohort_ibis_death():
+def test_build_cohort_death():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -831,14 +831,14 @@ def test_build_cohort_ibis_death():
         primary_criteria=PrimaryCriteria(criteria_list=[Death(codeset_id=10)]),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {1}
     assert all(result.domain == "death")
 
 
-def test_build_cohort_ibis_observation_period():
+def test_build_cohort_observation_period():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -849,14 +849,14 @@ def test_build_cohort_ibis_observation_period():
         primary_criteria=PrimaryCriteria(criteria_list=[ObservationPeriod()]),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {1, 2}
     assert all(result.domain == "observation_period")
 
 
-def test_build_cohort_ibis_payer_plan_period():
+def test_build_cohort_payer_plan_period():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -881,14 +881,14 @@ def test_build_cohort_ibis_payer_plan_period():
         primary_criteria=PrimaryCriteria(criteria_list=[PayerPlanPeriod()]),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {1}
     assert all(result.domain == "payer_plan_period")
 
 
-def test_build_cohort_ibis_condition_era():
+def test_build_cohort_condition_era():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -913,14 +913,14 @@ def test_build_cohort_ibis_condition_era():
         primary_criteria=PrimaryCriteria(criteria_list=[ConditionEra(codeset_id=11)]),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {1}
     assert all(result.domain == "condition_era")
 
 
-def test_build_cohort_ibis_drug_era():
+def test_build_cohort_drug_era():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -945,14 +945,14 @@ def test_build_cohort_ibis_drug_era():
         primary_criteria=PrimaryCriteria(criteria_list=[DrugEra(codeset_id=12)]),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {1}
     assert all(result.domain == "drug_era")
 
 
-def test_build_cohort_ibis_dose_era():
+def test_build_cohort_dose_era():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -977,14 +977,14 @@ def test_build_cohort_ibis_dose_era():
         primary_criteria=PrimaryCriteria(criteria_list=[DoseEra(codeset_id=13)]),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {1}
     assert all(result.domain == "dose_era")
 
 
-def test_build_cohort_ibis_location_region():
+def test_build_cohort_location_region():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -1019,14 +1019,14 @@ def test_build_cohort_ibis_location_region():
         primary_criteria=PrimaryCriteria(criteria_list=[LocationRegion(codeset_id=14)]),
     )
 
-    table = build_cohort_ibis(expression, backend=conn, cdm_schema="main")
+    table = build_cohort(expression, backend=conn, cdm_schema="main")
     result = table.execute()
 
     assert set(result.person_id) == {1}
     assert all(result.domain == "location_region")
 
 
-def test_build_cohort_ibis_location_region_keeps_repeated_location_history_rows():
+def test_build_cohort_location_region_keeps_repeated_location_history_rows():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
 
@@ -1061,17 +1061,17 @@ def test_build_cohort_ibis_location_region_keeps_repeated_location_history_rows(
         primary_criteria=PrimaryCriteria(criteria_list=[LocationRegion(codeset_id=14)]),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
 
     assert len(result) == 2
     assert set(result.person_id) == {1}
     assert sorted(result.start_date.astype(str).tolist()) == ["2020-01-01", "2020-02-01"]
 
 
-def test_build_cohort_ibis_rejects_unsupported_features():
+def test_build_cohort_rejects_unsupported_features():
     expression = CohortExpression(
         primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence()]),
         end_strategy=CustomEraStrategy(drug_codeset_id=1, gap_days=30, offset=0),
     )
     with pytest.raises(UnsupportedFeatureError, match="custom_era"):
-        _ = build_cohort_ibis(expression, backend=object(), cdm_schema="main")
+        _ = build_cohort(expression, backend=object(), cdm_schema="main")

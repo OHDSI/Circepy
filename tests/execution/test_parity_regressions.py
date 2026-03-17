@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from circe.api import build_cohort_ibis
+from circe.api import build_cohort
 from circe.cohortdefinition import (
     CohortExpression,
     ConditionOccurrence,
@@ -126,7 +126,7 @@ def test_parity_concept_set_expansion_with_exclusions():
         primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert set(result.person_id) == {1}
     assert set(result.concept_id) == {100, 200}
 
@@ -212,5 +212,5 @@ def test_parity_primary_correlated_and_demographic_group_combination():
         ),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert set(result.person_id) == {1}

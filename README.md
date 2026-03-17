@@ -148,11 +148,10 @@ An experimental backend-native execution API is available under
 `circe.execution`.
 
 ```python
-from circe.execution import ExecutionOptions, IbisExecutor
+from circe.execution import build_cohort
 
 # Requires optional extras, e.g. `pip install ohdsi-circe-python-alpha[ibis-duckdb]`
-executor = IbisExecutor(conn, ExecutionOptions(cdm_schema="main"))
-events = executor.build(cohort)  # lazy ibis relation
+events = build_cohort(cohort, backend=conn, cdm_schema="main")  # lazy ibis relation
 ```
 
 ## What's Included

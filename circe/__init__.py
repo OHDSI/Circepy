@@ -86,7 +86,6 @@ from .api import (
 )
 
 # Main exports
-from .execution import ExecutionOptions, IbisExecutor, build_ibis
 from .io import load_expression
 from .vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
@@ -212,7 +211,4 @@ __all__ = [
     "safe_model_rebuild",
     # I/O helpers
     "load_expression",
-    "ExecutionOptions",
-    "IbisExecutor",
-    "build_ibis",
 ]

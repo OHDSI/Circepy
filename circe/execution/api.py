@@ -10,6 +10,7 @@ from .ibis.context import make_execution_context
 from .ibis.materialize import project_to_ohdsi_cohort_table
 from .ibis.operations import (
     cohort_rows_exist,
+    create_table,
     exclude_cohort_rows,
     insert_relation,
     read_table,
@@ -68,15 +69,12 @@ def write_relation(
         write_kwargs["temp"] = True
 
     try:
-        if target_schema is not None:
-            backend.create_table(
-                target_table,
-                database=target_schema,
-                **write_kwargs,
-            )
-            return
-
-        backend.create_table(target_table, **write_kwargs)
+        create_table(
+            backend,
+            table_name=target_table,
+            schema=target_schema,
+            **write_kwargs,
+        )
     except Exception as exc:
         schema_label = target_schema if target_schema is not None else "<default>"
         raise ExecutionError(
@@ -163,8 +161,3 @@ def write_cohort(
         target_schema=results_schema,
         if_exists="replace",
     )
-
-
-# Compatibility aliases for transition period.
-build_cohort_ibis = build_cohort
-write_cohort_ibis = write_cohort

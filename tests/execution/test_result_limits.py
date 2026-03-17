@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from circe.api import build_cohort_ibis
+from circe.api import build_cohort
 from circe.cohortdefinition import (
     CohortExpression,
     ConditionOccurrence,
@@ -81,7 +81,7 @@ def test_primary_limit_last_keeps_latest_primary_event():
         ),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert len(result) == 1
     assert str(result.iloc[0]["start_date"])[:10] == "2020-02-01"
 
@@ -116,7 +116,7 @@ def test_expression_limit_last_keeps_latest_qualified_event():
         expression_limit=ResultLimit(type="LAST"),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert len(result) == 1
     assert str(result.iloc[0]["start_date"])[:10] == "2020-02-01"
 
@@ -171,7 +171,7 @@ def test_qualified_limit_last_applies_after_additional_criteria():
         qualified_limit=ResultLimit(type="LAST"),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert len(result) == 1
     assert str(result.iloc[0]["start_date"])[:10] == "2020-02-01"
 
@@ -301,5 +301,5 @@ def test_distinct_count_by_visit_detail_id_matches_sql_semantics():
         ),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert len(result) == 1

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from circe.api import build_cohort_ibis
+from circe.api import build_cohort
 from circe.cohortdefinition import CohortExpression, ConditionOccurrence, PrimaryCriteria
 from circe.execution.plan.schema import STANDARD_EVENT_COLUMNS
 from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
@@ -88,5 +88,5 @@ def test_standard_schema_contract_for_compiled_primary_events():
         primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert_standard_event_columns(result.columns)

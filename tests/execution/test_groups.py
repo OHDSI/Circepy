@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from circe.api import build_cohort_ibis
+from circe.api import build_cohort
 from circe.cohortdefinition import (
     CohortExpression,
     ConditionOccurrence,
@@ -86,7 +86,7 @@ def test_additional_criteria_all_filters_primary_events():
         ),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert set(result.person_id) == {1}
 
 
@@ -159,7 +159,7 @@ def test_additional_group_operators(group_type, count, expected_persons):
         ),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert set(result.person_id) == expected_persons
 
 
@@ -215,7 +215,7 @@ def test_correlated_criteria_respects_restrict_visit_and_start_window():
         ),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     # Person 1 matches (same visit, +5 days). Person 2 fails (different visit and +9 days).
     assert set(result.person_id) == {1}
 
@@ -271,5 +271,5 @@ def test_additional_demographic_criteria_groups_filter_primary_events():
         ),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert set(result.person_id) == {1}

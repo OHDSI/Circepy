@@ -221,10 +221,6 @@ def write_cohort(
     )
 
 
-build_cohort_ibis = build_cohort
-write_cohort_ibis = write_cohort
-
-
 def cohort_print_friendly(
     expression: CohortExpression,
     concept_sets: Optional[list[ConceptSet]] = None,

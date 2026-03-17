@@ -7,6 +7,15 @@ from ..errors import ExecutionError
 from ..typing import IbisBackendLike
 
 
+def _call_with_optional_database(method, *args, database: str | None, **kwargs):
+    if database is not None:
+        try:
+            return method(*args, database=database, **kwargs)
+        except TypeError:
+            pass
+    return method(*args, **kwargs)
+
+
 def table_exists(
     backend: IbisBackendLike,
     *,
@@ -37,9 +46,27 @@ def read_table(
     schema: str | None,
 ):
     """Read a backend table as an Ibis relation."""
-    if schema is not None:
-        return backend.table(table_name, database=schema)
-    return backend.table(table_name)
+    return _call_with_optional_database(
+        backend.table,
+        table_name,
+        database=schema,
+    )
+
+
+def create_table(
+    backend: IbisBackendLike,
+    *,
+    table_name: str,
+    schema: str | None,
+    **kwargs,
+) -> None:
+    """Create or overwrite a backend table with schema fallback."""
+    _call_with_optional_database(
+        backend.create_table,
+        table_name,
+        database=schema,
+        **kwargs,
+    )
 
 
 def cohort_rows_exist(
@@ -157,10 +184,16 @@ def insert_relation(
     if not callable(insert):
         raise ExecutionError(
             "Ibis executor write error: backend does not support insert for cohort-table writes."
-        )
+    )
 
     try:
-        insert(target_table, relation, database=target_schema, overwrite=False)
+        _call_with_optional_database(
+            insert,
+            target_table,
+            relation,
+            database=target_schema,
+            overwrite=False,
+        )
     except Exception as exc:
         schema_label = target_schema if target_schema is not None else "<default>"
         raise ExecutionError(

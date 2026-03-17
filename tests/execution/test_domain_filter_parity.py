@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from circe.api import build_cohort_ibis
+from circe.api import build_cohort
 from circe.cohortdefinition import (
     CohortExpression,
     ConditionOccurrence,
@@ -94,7 +94,7 @@ def test_condition_occurrence_applies_related_filters_and_date_adjustment():
         ),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert list(result.person_id) == [1]
     assert result.iloc[0].start_date.date().isoformat() == "2020-01-02"
 
@@ -167,7 +167,7 @@ def test_drug_exposure_applies_domain_filters_and_end_date_fallback():
         ),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert list(result.person_id) == [1]
 
 
@@ -243,7 +243,7 @@ def test_visit_occurrence_applies_care_site_provider_location_and_duration_filte
         ),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert list(result.person_id) == [1]
 
 
@@ -307,7 +307,7 @@ def test_device_exposure_applies_domain_filters_and_end_date_fallback():
         ),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert list(result.person_id) == [1]
 
 
@@ -354,7 +354,7 @@ def test_specimen_applies_domain_filters():
         ),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert list(result.person_id) == [1]
 
 
@@ -391,7 +391,7 @@ def test_death_applies_death_type_and_derived_end_date():
         ),
     )
 
-    result = build_cohort_ibis(expression, backend=conn, cdm_schema="main").execute()
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert list(result.person_id) == [1]
 
 
@@ -490,7 +490,7 @@ def test_measurement_and_visit_detail_apply_shared_related_filters():
             ]
         ),
     )
-    measurement_result = build_cohort_ibis(
+    measurement_result = build_cohort(
         measurement_expression,
         backend=conn,
         cdm_schema="main",
@@ -516,7 +516,7 @@ def test_measurement_and_visit_detail_apply_shared_related_filters():
             ]
         ),
     )
-    visit_detail_result = build_cohort_ibis(
+    visit_detail_result = build_cohort(
         visit_detail_expression,
         backend=conn,
         cdm_schema="main",
