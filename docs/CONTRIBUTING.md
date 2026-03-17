@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # Contributing to CIRCE Python Implementation
 
 Thank you for your interest in contributing to the CIRCE Python implementation! This document provides guidelines for contributing to the project.

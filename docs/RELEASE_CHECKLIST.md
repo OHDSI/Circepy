@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # Release Checklist
 
 This checklist ensures a smooth and error-free release process for publishing to PyPI.

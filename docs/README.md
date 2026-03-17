@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # CIRCE Python Documentation
 
 This directory contains the Sphinx documentation for CIRCE Python.
