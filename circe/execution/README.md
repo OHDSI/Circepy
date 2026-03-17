@@ -8,7 +8,6 @@ The `circe.execution` package is an experimental, table-first Ibis executor for
 - `build_cohort(...)` is the canonical expression-building entrypoint.
 - `write_cohort(...)` projects the built relation into OHDSI cohort-table shape,
   then writes or replaces rows for one `cohort_id` while preserving other cohorts.
-- `build_cohort_ibis` and `write_cohort_ibis` are transition aliases.
 
 ## Layered Architecture
 
