@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol, TypeAlias
+from typing import Any, Protocol
 
-if TYPE_CHECKING:
-    from ibis.expr.types import Table as IbisTable
+from typing_extensions import TypeAlias
 
-    Table: TypeAlias = IbisTable
-else:  # pragma: no cover - typing-only fallback when ibis is not installed
-    Table: TypeAlias = Any
+# Ibis does not currently ship usable type information for its table expressions.
+# Treat them as `Any` at the compatibility boundary rather than propagating
+# `import-untyped` errors through the executor.
+Table: TypeAlias = Any
 
 
 class IbisBackendLike(Protocol):

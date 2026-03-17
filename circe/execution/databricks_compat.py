@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import functools
 import inspect
+from collections.abc import Callable
+from typing import Any
 
 ISSUE_REFERENCE = "https://github.com/ibis-project/ibis/issues/11598"
 _PATCH_FLAG = "_circe_databricks_post_connect_patched"
 
 
-def _databricks_backend_class():
+def _databricks_backend_class() -> type[Any] | None:
     try:
         import ibis.backends.databricks as databricks_backend
     except Exception:
@@ -15,7 +17,7 @@ def _databricks_backend_class():
     return getattr(databricks_backend, "Backend", None)
 
 
-def _post_connect_needs_workaround(post_connect) -> bool:
+def _post_connect_needs_workaround(post_connect: Callable[..., Any]) -> bool:
     try:
         source = inspect.getsource(post_connect).lower()
     except (OSError, TypeError):
@@ -30,7 +32,7 @@ def _is_memtable_volume_error(exc: Exception) -> bool:
     return bool("memtable" in message and "volume" in message)
 
 
-def _backend_looks_like_databricks(backend) -> bool:
+def _backend_looks_like_databricks(backend: object) -> bool:
     backend_name = getattr(backend, "name", None)
     if isinstance(backend_name, str) and backend_name.lower() == "databricks":
         return True
@@ -38,7 +40,10 @@ def _backend_looks_like_databricks(backend) -> bool:
     return "databricks" in class_name
 
 
-def apply_databricks_post_connect_workaround(*, backend_cls=None) -> bool:
+def apply_databricks_post_connect_workaround(
+    *,
+    backend_cls: type[Any] | None = None,
+) -> bool:
     """
     Patch Databricks backend `_post_connect` for Ibis issue #11598.
 
@@ -66,7 +71,7 @@ def apply_databricks_post_connect_workaround(*, backend_cls=None) -> bool:
         return False
 
     @functools.wraps(post_connect)
-    def _patched_post_connect(self, *args, **kwargs):
+    def _patched_post_connect(self: Any, *args: Any, **kwargs: Any) -> Any:
         try:
             return post_connect(self, *args, **kwargs)
         except Exception as exc:
@@ -79,7 +84,7 @@ def apply_databricks_post_connect_workaround(*, backend_cls=None) -> bool:
     return True
 
 
-def maybe_apply_databricks_post_connect_workaround(backend) -> bool:
+def maybe_apply_databricks_post_connect_workaround(backend: object) -> bool:
     """Apply the workaround only for Databricks-like backends."""
     if not _backend_looks_like_databricks(backend):
         return False

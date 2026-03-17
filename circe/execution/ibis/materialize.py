@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from ..typing import Table
 
-def project_to_ohdsi_cohort_table(relation, *, cohort_id: int | None):
+
+def project_to_ohdsi_cohort_table(relation: Table, *, cohort_id: int | None) -> Table:
     """Project a generic cohort relation into OHDSI cohort-table shape."""
     import ibis
 

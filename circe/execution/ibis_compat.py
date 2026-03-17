@@ -14,12 +14,12 @@ def _is_nullish(value: Any) -> bool:
     if value is None:
         return True
     try:
-        return value != value
+        return bool(value != value)
     except Exception:
         return False
 
 
-def _typed_literal(value: Any, *, dtype: str):
+def _typed_literal(value: Any, *, dtype: str) -> Any:
     if _is_nullish(value):
         return ibis.null().cast(dtype)
     return ibis.literal(value).cast(dtype)

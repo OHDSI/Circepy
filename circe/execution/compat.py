@@ -45,6 +45,13 @@ def schema_to_str(schema: SchemaName | None) -> str | None:
     return schema
 
 
+def _require_cdm_schema(schema: SchemaName | None) -> str:
+    value = schema_to_str(schema)
+    if value is None:
+        raise ExecutionError("Ibis executor compatibility error: cdm_schema is required.")
+    return value
+
+
 class IbisExecutor:
     """Legacy object API preserved as a thin wrapper over the new executor."""
 
@@ -68,7 +75,7 @@ class IbisExecutor:
         return _build_cohort(
             cohort_expression,
             backend=self._conn,
-            cdm_schema=schema_to_str(self._options.cdm_schema),
+            cdm_schema=_require_cdm_schema(self._options.cdm_schema),
             vocabulary_schema=schema_to_str(self._options.vocabulary_schema),
             results_schema=schema_to_str(self._options.result_schema),
         )
@@ -105,7 +112,7 @@ class IbisExecutor:
         relation = _build_cohort(
             load_expression(expression),
             backend=self._conn,
-            cdm_schema=schema_to_str(self._options.cdm_schema),
+            cdm_schema=_require_cdm_schema(self._options.cdm_schema),
             vocabulary_schema=schema_to_str(self._options.vocabulary_schema),
             results_schema=target_schema,
         )
@@ -151,7 +158,7 @@ class IbisExecutor:
     def __enter__(self) -> IbisExecutor:
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
         self.close()
 
 

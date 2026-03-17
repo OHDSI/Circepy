@@ -7,8 +7,6 @@ from ..normalize.cohort import NormalizedConceptSet, NormalizedConceptSetItem
 from ..plan.schema import CONCEPT_ID
 from ..typing import Table
 
-TableGetter = Callable[[str, str | None], Table]
-
 
 class CachedConceptSetResolver:
     """Resolve concept sets to concrete concept IDs using vocabulary tables."""
@@ -16,7 +14,7 @@ class CachedConceptSetResolver:
     def __init__(
         self,
         *,
-        table_getter: TableGetter,
+        table_getter: Callable[[str, str | None], Table],
         vocabulary_schema: str | None,
         concept_sets: Mapping[int, NormalizedConceptSet],
     ) -> None:
@@ -57,7 +55,7 @@ class CachedConceptSetResolver:
             expanded.update(self._mapped_ids(base_ids))
         return expanded
 
-    def _vocabulary_table(self, table_name: str):
+    def _vocabulary_table(self, table_name: str) -> Table:
         try:
             return self._table_getter(table_name, self._vocabulary_schema)
         except Exception as exc:  # pragma: no cover - backend specific error types
@@ -97,7 +95,7 @@ class CachedConceptSetResolver:
         )
         return self._execute_concept_id_query(query)
 
-    def _execute_concept_id_query(self, query) -> set[int]:
+    def _execute_concept_id_query(self, query: Table) -> set[int]:
         try:
             rows = query.execute()
         except Exception as exc:  # pragma: no cover - backend specific error types
