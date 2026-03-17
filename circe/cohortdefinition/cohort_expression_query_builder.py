@@ -11,6 +11,8 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 import json
 from typing import Any, Optional, Union
 
+from circe.extensions import get_registry
+
 from .builders import (
     ConditionEraSqlBuilder,
     ConditionOccurrenceSqlBuilder,
@@ -28,14 +30,9 @@ from .builders import (
     SpecimenSqlBuilder,
     VisitDetailSqlBuilder,
     VisitOccurrenceSqlBuilder,
+    get_builder_for_criteria,
 )
 from .builders.utils import BuilderOptions, BuilderUtils, CriteriaColumn
-from .builders import (
-    ConditionOccurrenceSqlBuilder, DeathSqlBuilder, DeviceExposureSqlBuilder,
-    MeasurementSqlBuilder, ObservationSqlBuilder, SpecimenSqlBuilder,
-    VisitOccurrenceSqlBuilder, DrugExposureSqlBuilder, ProcedureOccurrenceSqlBuilder,
-    ConditionEraSqlBuilder,    DrugEraSqlBuilder, DoseEraSqlBuilder, ObservationPeriodSqlBuilder, PayerPlanPeriodSqlBuilder,
-    VisitDetailSqlBuilder, LocationRegionSqlBuilder, get_builder_for_criteria)
 from .cohort import CohortExpression
 from .concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
 from .core import CustomEraStrategy, DateOffsetStrategy, Period
@@ -62,7 +59,6 @@ from .criteria import (
     VisitDetail,
     VisitOccurrence,
 )
-from circe.extensions import get_registry
 from .interfaces import IGetCriteriaSqlDispatcher, IGetEndStrategySqlDispatcher
 
 
@@ -1434,12 +1430,12 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
                     try:
                         criteria_data = dict(criteria_data) if criteria_data else {}
                         # Add defaults if needed
-                        if 'first' not in criteria_data or criteria_data.get('first') is None:
-                            criteria_data['first'] = False
+                        if "first" not in criteria_data or criteria_data.get("first") is None:
+                            criteria_data["first"] = False
 
                         criteria = registry._criteria_classes[criteria_type].model_validate(criteria_data, strict=False)
                     except Exception as e:
-                        raise ValueError(f"Failed to deserialize extension criteria: {criteria_type} - {e}")
+                        raise ValueError(f"Failed to deserialize extension criteria: {criteria_type} - {e}") from e
 
                 elif criteria_type in criteria_class_map:
                     try:

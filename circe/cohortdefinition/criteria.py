@@ -8,13 +8,13 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from pydantic import BaseModel, Field, ConfigDict, model_serializer, AliasChoices, field_validator, BeforeValidator
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Annotated, Any, Optional, Union
 
 from pydantic import (
     AliasChoices,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
     field_validator,
@@ -250,7 +250,7 @@ class Criteria(CirceBaseModel):
     @model_serializer(mode="wrap")
     def _serialize_polymorphic(self, serializer, info):
         """Serialize with polymorphic type wrapper for Java compatibility."""
-        if self.__class__.__name__ == 'Criteria':
+        if self.__class__.__name__ == "Criteria":
             return serializer(self)
 
         # For subclasses (extensions), we want to ensure all fields are included
@@ -1362,12 +1362,14 @@ _CriteriaTypeUnion = Union[
     Criteria,  # catch-all for extension subclasses
 ]
 
+
 def _validate_criteria_extension(v: Any) -> Any:
     """Deserialize extension criteria from a single-key dict via the extensions registry."""
     if isinstance(v, dict) and len(v) == 1:
         key = next(iter(v))
         try:
             from circe.extensions import get_registry
+
             registry = get_registry()
             cls = registry.get_criteria_class(key)
             if cls:
@@ -1375,6 +1377,7 @@ def _validate_criteria_extension(v: Any) -> Any:
         except ImportError:
             pass
     return v
+
 
 CriteriaType = Annotated[_CriteriaTypeUnion, BeforeValidator(_validate_criteria_extension)]
 
