@@ -6,6 +6,10 @@ with only valid next methods, making it ideal for LLM agents.
 
 The state progression is:
     Cohort -> CohortWithEntry -> CohortWithCriteria -> CohortExpression
+
+Domain-specific methods (with_X, require_X, exclude_X, censor_on_X) are
+auto-generated from the domain registry at the bottom of this file.
+Use ``register_domain()`` from ``circe.extensions`` to add new domains.
 """
 
 from typing import Optional, List, Union, Dict, Any, TYPE_CHECKING
@@ -34,6 +38,8 @@ from circe.cohortdefinition.core import (
 )
 from circe.cohortdefinition.criteria import CriteriaGroup as CirceCriteriaGroup
 from circe.vocabulary import ConceptSet, Concept
+
+from circe.extensions import DomainSpec, _register_domain_spec
 
 
 @dataclass
@@ -64,6 +70,7 @@ class CohortBuilder:
     Starting point for building a cohort definition.
     
     This is the initial state - only entry event methods are available.
+    All ``with_X`` methods are auto-generated from the domain registry.
     
     Example:
         >>> cohort = CohortBuilder("My Cohort")
@@ -84,94 +91,8 @@ class CohortBuilder:
         """Add concept sets to the cohort."""
         self._concept_sets.extend(concept_sets)
         return self
-    
-    # Entry event methods - each returns CohortWithEntry
-    def with_condition(self, concept_set_id: int) -> 'CohortWithEntry':
-        query = ConditionQuery(concept_set_id, is_entry=True)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        return cohort
-    
-    def with_drug(self, concept_set_id: int) -> 'CohortWithEntry':
-        query = DrugQuery(concept_set_id, is_entry=True)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        return cohort
-    
-    def with_drug_era(self, concept_set_id: int) -> 'CohortWithEntry':
-        query = DrugEraQuery(concept_set_id, is_entry=True)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        return cohort
-    
-    def with_procedure(self, concept_set_id: int) -> 'CohortWithEntry':
-        query = ProcedureQuery(concept_set_id, is_entry=True)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        return cohort
-    
-    def with_measurement(self, concept_set_id: int) -> 'CohortWithEntry':
-        query = MeasurementQuery(concept_set_id, is_entry=True)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        return cohort
-    
-    def with_visit(self, concept_set_id: int) -> 'CohortWithEntry':
-        query = VisitQuery(concept_set_id, is_entry=True)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        return cohort
-    
-    def with_observation(self, concept_set_id: int) -> 'CohortWithEntry':
-        query = ObservationQuery(concept_set_id, is_entry=True)
-        cohort = CohortWithEntry(self, query)
-        query._parent = cohort
-        return cohort
-    
-    def with_condition_era(self, concept_set_id: int) -> 'CohortWithEntry':
-        """Set entry event to a condition era."""
-        query = ConditionEraQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
-    
-    def with_device_exposure(self, concept_set_id: int) -> 'CohortWithEntry':
-        """Set entry event to a device exposure."""
-        query = DeviceExposureQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
-    
-    def with_specimen(self, concept_set_id: int) -> 'CohortWithEntry':
-        """Set entry event to a specimen."""
-        query = SpecimenQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
-    
-    def with_death(self) -> 'CohortWithEntry':
-        """Set entry event to death."""
-        query = DeathQuery(is_entry=True)
-        return CohortWithEntry(self, query)
-    
-    def with_observation_period(self) -> 'CohortWithEntry':
-        """Set entry event to an observation period."""
-        query = ObservationPeriodQuery(is_entry=True)
-        return CohortWithEntry(self, query)
-    
-    def with_payer_plan_period(self, concept_set_id: int) -> 'CohortWithEntry':
-        """Set entry event to a payer plan period."""
-        query = PayerPlanPeriodQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
-    
-    def with_location_region(self, concept_set_id: int) -> 'CohortWithEntry':
-        """Set entry event to a location/region."""
-        query = LocationRegionQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
-    
-    def with_visit_detail(self, concept_set_id: int) -> 'CohortWithEntry':
-        """Set entry event to a visit detail."""
-        query = VisitDetailQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
-    
-    def with_dose_era(self, concept_set_id: int) -> 'CohortWithEntry':
-        """Set entry event to a dose era."""
-        query = DoseEraQuery(concept_set_id, is_entry=True)
-        return CohortWithEntry(self, query)
+
+    # Entry event methods (with_X) are generated by the domain registry below.
 
 
 class CohortWithEntry:
@@ -196,35 +117,7 @@ class CohortWithEntry:
         self._expression_limit = "All"
         self._settings = CohortSettings()
     
-    def or_with_condition(self, concept_set_id: int) -> 'CohortWithEntry':
-        """Add another alternative entry event (OR logic in Primary Criteria)."""
-        query = ConditionQuery(concept_set_id, is_entry=True, parent=self)
-        self._entry_queries.append(query)
-        return self
-
-    def or_with_drug(self, concept_set_id: int) -> 'CohortWithEntry':
-        """Add another alternative entry event (OR logic in Primary Criteria)."""
-        query = DrugQuery(concept_set_id, is_entry=True, parent=self)
-        self._entry_queries.append(query)
-        return self
-
-    def or_with_procedure(self, concept_set_id: int) -> 'CohortWithEntry':
-        """Add another alternative entry event (OR logic in Primary Criteria)."""
-        query = ProcedureQuery(concept_set_id, is_entry=True, parent=self)
-        self._entry_queries.append(query)
-        return self
-
-    def or_with_measurement(self, concept_set_id: int) -> 'CohortWithEntry':
-        """Add another alternative entry event (OR logic in Primary Criteria)."""
-        query = MeasurementQuery(concept_set_id, is_entry=True, parent=self)
-        self._entry_queries.append(query)
-        return self
-
-    def or_with_visit(self, concept_set_id: int) -> 'CohortWithEntry':
-        """Add another alternative entry event (OR logic in Primary Criteria)."""
-        query = VisitQuery(concept_set_id, is_entry=True, parent=self)
-        self._entry_queries.append(query)
-        return self
+    # or_with_X methods are generated by the domain registry below.
 
     def with_qualified_limit(self, limit: str) -> 'CohortWithEntry':
         """Set the qualified limit (First, Last, All)."""
@@ -342,104 +235,8 @@ class CohortWithEntry:
     def begin_rule(self, name: str) -> 'CohortWithCriteria':
         """Start a new named inclusion rule."""
         return self._to_criteria().begin_rule(name)
-    
-    # Transition to CohortWithCriteria
-    def require_condition(self, concept_set_id: int) -> ConditionQuery:
-        """Add an inclusion criteria for a condition."""
-        return self._to_criteria().require_condition(concept_set_id)
-    
-    def require_drug(self, concept_set_id: int) -> DrugQuery:
-        """Add an inclusion criteria for a drug."""
-        return self._to_criteria().require_drug(concept_set_id)
 
-    def censor_on_condition(self, concept_set_id: int) -> ConditionQuery:
-        """Censor if a condition occurs."""
-        return self._to_criteria().censor_on_condition(concept_set_id)
-
-    def censor_on_drug(self, concept_set_id: int) -> DrugQuery:
-        """Censor if a drug exposure occurs."""
-        return self._to_criteria().censor_on_drug(concept_set_id)
-
-    def censor_on_procedure(self, concept_set_id: int) -> ProcedureQuery:
-        """Censor if a procedure occurs."""
-        return self._to_criteria().censor_on_procedure(concept_set_id)
-
-    def censor_on_measurement(self, concept_set_id: int) -> MeasurementQuery:
-        """Censor if a measurement occurs."""
-        return self._to_criteria().censor_on_measurement(concept_set_id)
-
-    def censor_on_observation(self, concept_set_id: int) -> ObservationQuery:
-        """Censor if an observation occurs."""
-        return self._to_criteria().censor_on_observation(concept_set_id)
-
-    def censor_on_visit(self, concept_set_id: int) -> VisitQuery:
-        """Censor if a visit occurs."""
-        return self._to_criteria().censor_on_visit(concept_set_id)
-
-    def censor_on_death(self, concept_set_id: Optional[int] = None) -> DeathQuery:
-        """Censor on death."""
-        return self._to_criteria().censor_on_death(concept_set_id)
-    
-    def require_measurement(self, concept_set_id: int) -> MeasurementQuery:
-        """Add an inclusion criteria for a measurement."""
-        return self._to_criteria().require_measurement(concept_set_id)
-    
-    def exclude_condition(self, concept_set_id: int) -> ConditionQuery:
-        """Add an exclusion criteria for a condition."""
-        return self._to_criteria().exclude_condition(concept_set_id)
-    
-    def exclude_drug(self, concept_set_id: int) -> DrugQuery:
-        """Add an exclusion criteria for a drug."""
-        return self._to_criteria().exclude_drug(concept_set_id)
-    
-    # New domain transition methods
-    def require_condition_era(self, concept_set_id: int) -> ConditionEraQuery:
-        """Add an inclusion criteria for a condition era."""
-        return self._to_criteria().require_condition_era(concept_set_id)
-    
-    def require_device_exposure(self, concept_set_id: int) -> DeviceExposureQuery:
-        """Add an inclusion criteria for a device exposure."""
-        return self._to_criteria().require_device_exposure(concept_set_id)
-    
-    def require_specimen(self, concept_set_id: int) -> SpecimenQuery:
-        """Add an inclusion criteria for a specimen."""
-        return self._to_criteria().require_specimen(concept_set_id)
-    
-    def require_visit_detail(self, concept_set_id: int) -> VisitDetailQuery:
-        """Add an inclusion criteria for a visit detail."""
-        return self._to_criteria().require_visit_detail(concept_set_id)
-    
-    def require_dose_era(self, concept_set_id: int) -> DoseEraQuery:
-        """Add an inclusion criteria for a dose era."""
-        return self._to_criteria().require_dose_era(concept_set_id)
-    
-    def require_payer_plan_period(self, concept_set_id: int) -> PayerPlanPeriodQuery:
-        """Add an inclusion criteria for a payer plan period."""
-        return self._to_criteria().require_payer_plan_period(concept_set_id)
-    
-    def exclude_condition_era(self, concept_set_id: int) -> ConditionEraQuery:
-        """Add an exclusion criteria for a condition era."""
-        return self._to_criteria().exclude_condition_era(concept_set_id)
-    
-    def exclude_device_exposure(self, concept_set_id: int) -> DeviceExposureQuery:
-        """Add an exclusion criteria for a device exposure."""
-        return self._to_criteria().exclude_device_exposure(concept_set_id)
-    
-    def exclude_specimen(self, concept_set_id: int) -> SpecimenQuery:
-        """Add an exclusion criteria for a specimen."""
-        return self._to_criteria().exclude_specimen(concept_set_id)
-    
-    def exclude_visit_detail(self, concept_set_id: int) -> VisitDetailQuery:
-        """Add an exclusion criteria for a visit detail."""
-        return self._to_criteria().exclude_visit_detail(concept_set_id)
-    
-    def exclude_dose_era(self, concept_set_id: int) -> DoseEraQuery:
-        """Add an exclusion criteria for a dose era."""
-        return self._to_criteria().exclude_dose_era(concept_set_id)
-    
-    def exclude_payer_plan_period(self, concept_set_id: int) -> PayerPlanPeriodQuery:
-        """Add an exclusion criteria for a payer plan period."""
-        return self._to_criteria().exclude_payer_plan_period(concept_set_id)
+    # require_X, exclude_X, censor_on_X delegates are generated by the domain registry.
 
     # Exit strategies
     def exit_at_observation_end(self) -> 'CohortWithCriteria':
@@ -501,6 +298,49 @@ class CohortWithEntry:
         return self._to_criteria().build()
 
 
+# =============================================================================
+# COLLECTION METHOD HELPER
+# =============================================================================
+
+# Maps collection kwarg names to domain strings for the collection methods.
+_COLLECTION_DOMAIN_MAP = {
+    "condition_ids": "ConditionOccurrence",
+    "drug_ids": "DrugExposure",
+    "drug_era_ids": "DrugEra",
+    "procedure_ids": "ProcedureOccurrence",
+    "measurement_ids": "Measurement",
+    "observation_ids": "Observation",
+    "visit_ids": "VisitOccurrence",
+}
+
+
+def _build_group_from_kwargs(
+    group_type: str,
+    is_exclusion: bool,
+    count: Optional[int] = None,
+    **kwargs
+) -> Optional[GroupConfig]:
+    """Build a GroupConfig from keyword arguments mapping domain IDs.
+
+    This shared helper replaces the repeated 7-domain loop that was
+    copy-pasted across require_any_of, require_all_of, require_at_least_of,
+    and exclude_any_of.
+    """
+    group = GroupConfig(type=group_type, count=count)
+
+    for kwarg_name, domain in _COLLECTION_DOMAIN_MAP.items():
+        ids = kwargs.get(kwarg_name)
+        if ids:
+            for concept_id in ids:
+                config = QueryConfig(domain=domain, concept_set_id=concept_id)
+                config.time_window = TimeWindow(days_before=99999, days_after=99999)
+                group.criteria.append(CriteriaConfig(
+                    query_config=config, is_exclusion=is_exclusion
+                ))
+
+    return group if group.criteria else None
+
+
 class CohortWithCriteria:
     """
     Cohort state after criteria have been added.
@@ -510,8 +350,11 @@ class CohortWithCriteria:
     - exclude_*(): Add more exclusion criteria
     - exit_at_*(): Set cohort exit strategy
     - collapse_era(): Set era gap days
-    - censor_with_*(): Add censoring events
+    - censor_on_*(): Add censoring events
     - build(): Finalize and create CohortExpression
+    
+    All require_X / exclude_X / censor_on_X methods are auto-generated
+    from the domain registry.
     """
     
     def __init__(
@@ -576,23 +419,11 @@ class CohortWithCriteria:
         self._rules[-1]["group"].criteria.append(group)
         return CriteriaGroupBuilder(self, group)
     
-    # Collection methods for simplified group creation
-    def require_any_of(
-        self,
-        condition_ids: Optional[List[int]] = None,
-        drug_ids: Optional[List[int]] = None,
-        drug_era_ids: Optional[List[int]] = None,
-        procedure_ids: Optional[List[int]] = None,
-        measurement_ids: Optional[List[int]] = None,
-        observation_ids: Optional[List[int]] = None,
-        visit_ids: Optional[List[int]] = None
-    ) -> 'CohortWithCriteria':
+    # Collection methods using shared helper
+    def require_any_of(self, **kwargs) -> 'CohortWithCriteria':
         """
         Require ANY of the specified criteria (OR logic).
         
-        This is a shortcut for creating an ANY group with multiple criteria
-        without manually chaining .any_of()...end_group().
-        
         Args:
             condition_ids: List of condition concept set IDs
             drug_ids: List of drug concept set IDs
@@ -601,77 +432,18 @@ class CohortWithCriteria:
             measurement_ids: List of measurement concept set IDs
             observation_ids: List of observation concept set IDs
             visit_ids: List of visit concept set IDs
-        
-        Returns:
-            Self for continued chaining
         
         Example:
             >>> cohort.require_any_of(drug_ids=[1, 2, 3])
-            # Patient must have at least one of Drug 1, 2, or 3
         """
-        group = GroupConfig(type="ANY")
-        
-        if condition_ids:
-            for cid in condition_ids:
-                config = QueryConfig(domain="ConditionOccurrence", concept_set_id=cid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)  # Default: all time
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if drug_ids:
-            for did in drug_ids:
-                config = QueryConfig(domain="DrugExposure", concept_set_id=did)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if drug_era_ids:
-            for deid in drug_era_ids:
-                config = QueryConfig(domain="DrugEra", concept_set_id=deid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if procedure_ids:
-            for pid in procedure_ids:
-                config = QueryConfig(domain="ProcedureOccurrence", concept_set_id=pid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if measurement_ids:
-            for mid in measurement_ids:
-                config = QueryConfig(domain="Measurement", concept_set_id=mid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if observation_ids:
-            for oid in observation_ids:
-                config = QueryConfig(domain="Observation", concept_set_id=oid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if visit_ids:
-            for vid in visit_ids:
-                config = QueryConfig(domain="VisitOccurrence", concept_set_id=vid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if group.criteria:  # Only add if we have at least one criterion
+        group = _build_group_from_kwargs("ANY", is_exclusion=False, **kwargs)
+        if group:
             self._rules[-1]["group"].criteria.append(group)
-        
         return self
     
-    def require_all_of(
-        self,
-        condition_ids: Optional[List[int]] = None,
-        drug_ids: Optional[List[int]] = None,
-        drug_era_ids: Optional[List[int]] = None,
-        procedure_ids: Optional[List[int]] = None,
-        measurement_ids: Optional[List[int]] = None,
-        observation_ids: Optional[List[int]] = None,
-        visit_ids: Optional[List[int]] = None
-    ) -> 'CohortWithCriteria':
+    def require_all_of(self, **kwargs) -> 'CohortWithCriteria':
         """
         Require ALL of the specified criteria (AND logic).
-        
-        This is a shortcut for creating an ALL group with multiple criteria.
         
         Args:
             condition_ids: List of condition concept set IDs
@@ -682,77 +454,17 @@ class CohortWithCriteria:
             observation_ids: List of observation concept set IDs
             visit_ids: List of visit concept set IDs
         
-        Returns:
-            Self for continued chaining
-        
         Example:
             >>> cohort.require_all_of(drug_ids=[1, 2], procedure_ids=[10])
-            # Patient must have Drug 1 AND Drug 2 AND Procedure 10
         """
-        group = GroupConfig(type="ALL")
-        
-        if condition_ids:
-            for cid in condition_ids:
-                config = QueryConfig(domain="ConditionOccurrence", concept_set_id=cid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if drug_ids:
-            for did in drug_ids:
-                config = QueryConfig(domain="DrugExposure", concept_set_id=did)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if drug_era_ids:
-            for deid in drug_era_ids:
-                config = QueryConfig(domain="DrugEra", concept_set_id=deid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if procedure_ids:
-            for pid in procedure_ids:
-                config = QueryConfig(domain="ProcedureOccurrence", concept_set_id=pid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if measurement_ids:
-            for mid in measurement_ids:
-                config = QueryConfig(domain="Measurement", concept_set_id=mid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if observation_ids:
-            for oid in observation_ids:
-                config = QueryConfig(domain="Observation", concept_set_id=oid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if visit_ids:
-            for vid in visit_ids:
-                config = QueryConfig(domain="VisitOccurrence", concept_set_id=vid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if group.criteria:
+        group = _build_group_from_kwargs("ALL", is_exclusion=False, **kwargs)
+        if group:
             self._rules[-1]["group"].criteria.append(group)
-        
         return self
     
-    def require_at_least_of(
-        self,
-        count: int,
-        condition_ids: Optional[List[int]] = None,
-        drug_ids: Optional[List[int]] = None,
-        drug_era_ids: Optional[List[int]] = None,
-        procedure_ids: Optional[List[int]] = None,
-        measurement_ids: Optional[List[int]] = None,
-        observation_ids: Optional[List[int]] = None,
-        visit_ids: Optional[List[int]] = None
-    ) -> 'CohortWithCriteria':
+    def require_at_least_of(self, count: int, **kwargs) -> 'CohortWithCriteria':
         """
         Require at least N of the specified criteria.
-        
-        This is a shortcut for creating an AT_LEAST group.
         
         Args:
             count: Minimum number of criteria that must be met
@@ -764,76 +476,17 @@ class CohortWithCriteria:
             observation_ids: List of observation concept set IDs
             visit_ids: List of visit concept set IDs
         
-        Returns:
-            Self for continued chaining
-        
         Example:
             >>> cohort.require_at_least_of(2, procedure_ids=[10, 11, 12])
-            # Patient must have at least 2 of the 3 procedures
         """
-        group = GroupConfig(type="AT_LEAST", count=count)
-        
-        if condition_ids:
-            for cid in condition_ids:
-                config = QueryConfig(domain="ConditionOccurrence", concept_set_id=cid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if drug_ids:
-            for did in drug_ids:
-                config = QueryConfig(domain="DrugExposure", concept_set_id=did)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if drug_era_ids:
-            for deid in drug_era_ids:
-                config = QueryConfig(domain="DrugEra", concept_set_id=deid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if procedure_ids:
-            for pid in procedure_ids:
-                config = QueryConfig(domain="ProcedureOccurrence", concept_set_id=pid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if measurement_ids:
-            for mid in measurement_ids:
-                config = QueryConfig(domain="Measurement", concept_set_id=mid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if observation_ids:
-            for oid in observation_ids:
-                config = QueryConfig(domain="Observation", concept_set_id=oid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if visit_ids:
-            for vid in visit_ids:
-                config = QueryConfig(domain="VisitOccurrence", concept_set_id=vid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=False))
-        
-        if group.criteria:
+        group = _build_group_from_kwargs("AT_LEAST", is_exclusion=False, count=count, **kwargs)
+        if group:
             self._rules[-1]["group"].criteria.append(group)
-        
         return self
     
-    def exclude_any_of(
-        self,
-        condition_ids: Optional[List[int]] = None,
-        drug_ids: Optional[List[int]] = None,
-        drug_era_ids: Optional[List[int]] = None,
-        procedure_ids: Optional[List[int]] = None,
-        measurement_ids: Optional[List[int]] = None,
-        observation_ids: Optional[List[int]] = None,
-        visit_ids: Optional[List[int]] = None
-    ) -> 'CohortWithCriteria':
+    def exclude_any_of(self, **kwargs) -> 'CohortWithCriteria':
         """
         Exclude if ANY of the specified criteria are present.
-        
-        This creates exclusion criteria with OR logic.
         
         Args:
             condition_ids: List of condition concept set IDs to exclude
@@ -844,220 +497,16 @@ class CohortWithCriteria:
             observation_ids: List of observation concept set IDs to exclude
             visit_ids: List of visit concept set IDs to exclude
         
-        Returns:
-            Self for continued chaining
-        
         Example:
             >>> cohort.exclude_any_of(drug_ids=[3, 4])
-            # Exclude patients who have Drug 3 OR Drug 4
         """
-        group = GroupConfig(type="ANY")
-        
-        if condition_ids:
-            for cid in condition_ids:
-                config = QueryConfig(domain="ConditionOccurrence", concept_set_id=cid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=True))
-        
-        if drug_ids:
-            for did in drug_ids:
-                config = QueryConfig(domain="DrugExposure", concept_set_id=did)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=True))
-        
-        if drug_era_ids:
-            for deid in drug_era_ids:
-                config = QueryConfig(domain="DrugEra", concept_set_id=deid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=True))
-        
-        if procedure_ids:
-            for pid in procedure_ids:
-                config = QueryConfig(domain="ProcedureOccurrence", concept_set_id=pid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=True))
-        
-        if measurement_ids:
-            for mid in measurement_ids:
-                config = QueryConfig(domain="Measurement", concept_set_id=mid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=True))
-        
-        if observation_ids:
-            for oid in observation_ids:
-                config = QueryConfig(domain="Observation", concept_set_id=oid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=True))
-        
-        if visit_ids:
-            for vid in visit_ids:
-                config = QueryConfig(domain="VisitOccurrence", concept_set_id=vid)
-                config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=True))
-        
-        if group.criteria:
+        group = _build_group_from_kwargs("ANY", is_exclusion=True, **kwargs)
+        if group:
             self._rules[-1]["group"].criteria.append(group)
-        
         return self
-    
-    # Inclusion methods - return query builders with self as parent
-    def require_condition(self, concept_set_id: int) -> ConditionQuery:
-        """Add an inclusion criteria for a condition."""
-        return ConditionQuery(concept_set_id, parent=self, is_exclusion=False)
-    
-    def require_drug(self, concept_set_id: int) -> DrugQuery:
-        """Add an inclusion criteria for a drug."""
-        return DrugQuery(concept_set_id, parent=self, is_exclusion=False)
-    
-    def require_drug_era(self, concept_set_id: int) -> DrugEraQuery:
-        """Add an inclusion criteria for a drug era."""
-        return DrugEraQuery(concept_set_id, parent=self, is_exclusion=False)
-    
-    def require_measurement(self, concept_set_id: int) -> MeasurementQuery:
-        """Add an inclusion criteria for a measurement."""
-        return MeasurementQuery(concept_set_id, parent=self, is_exclusion=False)
-    
-    def require_procedure(self, concept_set_id: int) -> ProcedureQuery:
-        """Add an inclusion criteria for a procedure."""
-        return ProcedureQuery(concept_set_id, parent=self, is_exclusion=False)
-    
-    def require_visit(self, concept_set_id: int) -> VisitQuery:
-        """Add an inclusion criteria for a visit."""
-        return VisitQuery(concept_set_id, parent=self, is_exclusion=False)
-    
-    def require_observation(self, concept_set_id: int) -> 'ObservationQuery':
-        """Add an inclusion criteria for an observation."""
-        return ObservationQuery(concept_set_id, parent=self, is_exclusion=False)
 
-    def require_visit_detail(self, concept_set_id: int) -> 'VisitDetailQuery':
-        """Add an inclusion criteria for a visit detail."""
-        return VisitDetailQuery(concept_set_id, parent=self, is_exclusion=False)
-    
-    def require_death(self) -> DeathQuery:
-        """Add an inclusion criteria for death."""
-        return DeathQuery(parent=self, is_exclusion=False)
-
-    def require_device(self, concept_set_id: int) -> DeviceExposureQuery:
-        """Add an inclusion criteria for a device."""
-        return DeviceExposureQuery(concept_set_id, parent=self, is_exclusion=False)
-
-    def require_specimen(self, concept_set_id: int) -> SpecimenQuery:
-        """Add an inclusion criteria for a specimen."""
-        return SpecimenQuery(concept_set_id, parent=self, is_exclusion=False)
-
-    def require_drug_era(self, concept_set_id: int) -> DrugEraQuery:
-        """Add an inclusion criteria for a drug era."""
-        return DrugEraQuery(concept_set_id, parent=self, is_exclusion=False)
-
-    def require_condition_era(self, concept_set_id: int) -> ConditionEraQuery:
-        """Add an inclusion criteria for a condition era."""
-        return ConditionEraQuery(concept_set_id, parent=self, is_exclusion=False)
-
-    def require_dose_era(self, concept_set_id: int) -> DoseEraQuery:
-        """Add an inclusion criteria for a dose era."""
-        return DoseEraQuery(concept_set_id, parent=self, is_exclusion=False)
-    
-    # Exclusion methods
-    def exclude_condition(self, concept_set_id: int) -> ConditionQuery:
-        """Add an exclusion criteria for a condition."""
-        return ConditionQuery(concept_set_id, parent=self, is_exclusion=True)
-    
-    def exclude_drug(self, concept_set_id: int) -> DrugQuery:
-        """Add an exclusion criteria for a drug."""
-        return DrugQuery(concept_set_id, parent=self, is_exclusion=True)
-    
-    def exclude_drug_era(self, concept_set_id: int) -> DrugEraQuery:
-        """Add an exclusion criteria for a drug era."""
-        return DrugEraQuery(concept_set_id, parent=self, is_exclusion=True)
-    
-    def exclude_measurement(self, concept_set_id: int) -> MeasurementQuery:
-        """Add an exclusion criteria for a measurement."""
-        return MeasurementQuery(concept_set_id, parent=self, is_exclusion=True)
-    
-    def exclude_procedure(self, concept_set_id: int) -> ProcedureQuery:
-        """Add an exclusion criteria for a procedure."""
-        return ProcedureQuery(concept_set_id, parent=self, is_exclusion=True)
-    
-    # New domain methods
-    def require_condition_era(self, concept_set_id: int) -> ConditionEraQuery:
-        """Add an inclusion criteria for a condition era."""
-        return ConditionEraQuery(concept_set_id, parent=self, is_exclusion=False)
-    
-    def exclude_condition_era(self, concept_set_id: int) -> ConditionEraQuery:
-        """Add an exclusion criteria for a condition era."""
-        return ConditionEraQuery(concept_set_id, parent=self, is_exclusion=True)
-    
-    def require_device_exposure(self, concept_set_id: int) -> DeviceExposureQuery:
-        """Add an inclusion criteria for a device exposure."""
-        return DeviceExposureQuery(concept_set_id, parent=self, is_exclusion=False)
-    
-    def exclude_device_exposure(self, concept_set_id: int) -> DeviceExposureQuery:
-        """Add an exclusion criteria for a device exposure."""
-        return DeviceExposureQuery(concept_set_id, parent=self, is_exclusion=True)
-    
-    def require_specimen(self, concept_set_id: int) -> SpecimenQuery:
-        """Add an inclusion criteria for a specimen."""
-        return SpecimenQuery(concept_set_id, parent=self, is_exclusion=False)
-    
-    def exclude_specimen(self, concept_set_id: int) -> SpecimenQuery:
-        """Add an exclusion criteria for a specimen."""
-        return SpecimenQuery(concept_set_id, parent=self, is_exclusion=True)
-    
-    def require_observation_period(self) -> ObservationPeriodQuery:
-        """Add an inclusion criteria for an observation period."""
-        return ObservationPeriodQuery(parent=self, is_exclusion=False)
-    
-    def exclude_observation_period(self) -> ObservationPeriodQuery:
-        """Add an exclusion criteria for an observation period."""
-        return ObservationPeriodQuery(parent=self, is_exclusion=True)
-    
-    def require_payer_plan_period(self, concept_set_id: int) -> PayerPlanPeriodQuery:
-        """Add an inclusion criteria for a payer plan period."""
-        return PayerPlanPeriodQuery(concept_set_id, parent=self, is_exclusion=False)
-    
-    def exclude_payer_plan_period(self, concept_set_id: int) -> PayerPlanPeriodQuery:
-        """Add an exclusion criteria for a payer plan period."""
-        return PayerPlanPeriodQuery(concept_set_id, parent=self, is_exclusion=True)
-    
-    def require_visit_detail(self, concept_set_id: int) -> VisitDetailQuery:
-        """Require a visit detail."""
-        return VisitDetailQuery(concept_set_id, parent=self, is_exclusion=False)
-
-    def require_death(self) -> DeathQuery:
-        """Require death."""
-        return DeathQuery(parent=self, is_exclusion=False)
-
-    def require_device(self, concept_set_id: int) -> DeviceExposureQuery:
-        """Require a device."""
-        return DeviceExposureQuery(concept_set_id, parent=self, is_exclusion=False)
-
-    def require_specimen(self, concept_set_id: int) -> SpecimenQuery:
-        """Require a specimen."""
-        return SpecimenQuery(concept_set_id, parent=self, is_exclusion=False)
-
-    def require_drug_era(self, concept_set_id: int) -> DrugEraQuery:
-        """Require a drug era."""
-        return DrugEraQuery(concept_set_id, parent=self, is_exclusion=False)
-
-    def require_condition_era(self, concept_set_id: int) -> ConditionEraQuery:
-        """Require a condition era."""
-        return ConditionEraQuery(concept_set_id, parent=self, is_exclusion=False)
-
-    def require_dose_era(self, concept_set_id: int) -> DoseEraQuery:
-        """Require a dose era."""
-        return DoseEraQuery(concept_set_id, parent=self, is_exclusion=False)
-    
-    def exclude_visit_detail(self, concept_set_id: int) -> VisitDetailQuery:
-        """Add an exclusion criteria for a visit detail."""
-        return VisitDetailQuery(concept_set_id, parent=self, is_exclusion=True)
-    
-    def require_dose_era(self, concept_set_id: int) -> DoseEraQuery:
-        """Add an inclusion criteria for a dose era."""
-        return DoseEraQuery(concept_set_id, parent=self, is_exclusion=False)
-    
-    def exclude_dose_era(self, concept_set_id: int) -> DoseEraQuery:
-        """Add an exclusion criteria for a dose era."""
-        return DoseEraQuery(concept_set_id, parent=self, is_exclusion=True)
+    # require_X / exclude_X / censor_on_X methods are generated by the domain
+    # registry at the bottom of this file.
     
     # Settings methods
     def exit_at_observation_end(self) -> 'CohortWithCriteria':
@@ -1080,39 +529,6 @@ class CohortWithCriteria:
         self._settings.custom_era_offset = offset
         self._settings.custom_era_days_supply_override = supply_override
         return self
-
-    # Censoring methods
-    def censor_on_condition(self, concept_set_id: int) -> ConditionQuery:
-        """Censor if a condition occurs."""
-        return ConditionQuery(concept_set_id, parent=self, is_censor=True)
-
-    def censor_on_drug(self, concept_set_id: int) -> DrugQuery:
-        """Censor if a drug exposure occurs."""
-        return DrugQuery(concept_set_id, parent=self, is_censor=True)
-
-    def censor_on_procedure(self, concept_set_id: int) -> ProcedureQuery:
-        """Censor if a procedure occurs."""
-        return ProcedureQuery(concept_set_id, parent=self, is_censor=True)
-
-    def censor_on_measurement(self, concept_set_id: int) -> MeasurementQuery:
-        """Censor if a measurement occurs."""
-        return MeasurementQuery(concept_set_id, parent=self, is_censor=True)
-
-    def censor_on_observation(self, concept_set_id: int) -> ObservationQuery:
-        """Censor if an observation occurs."""
-        return ObservationQuery(concept_set_id, parent=self, is_censor=True)
-
-    def censor_on_visit(self, concept_set_id: int) -> VisitQuery:
-        """Censor if a visit occurs."""
-        return VisitQuery(concept_set_id, parent=self, is_censor=True)
-
-    def censor_on_death(self, concept_set_id: Optional[int] = None) -> DeathQuery:
-        """Censor on death."""
-        return DeathQuery(concept_set_id, parent=self, is_censor=True)
-
-    def censor_on_device_exposure(self, concept_set_id: int) -> DeviceExposureQuery:
-        """Censor if a device exposure occurs."""
-        return DeviceExposureQuery(concept_set_id, parent=self, is_censor=True)
     
     def collapse_era(self, days: int) -> 'CohortWithCriteria':
         """Set the number of gap days to collapse successive cohort entries."""
@@ -1279,24 +695,8 @@ def _build_cohort_expression(
 
 def _config_to_criteria(config: QueryConfig):
     """Convert a QueryConfig to a domain criteria object."""
-    domain_map = {
-        'ConditionOccurrence': ConditionOccurrence,
-        'ConditionEra': ConditionEra,
-        'DrugExposure': DrugExposure,
-        'DrugEra': DrugEra,
-        'DoseEra': DoseEra,
-        'ProcedureOccurrence': ProcedureOccurrence,
-        'Measurement': Measurement,
-        'Observation': Observation,
-        'VisitOccurrence': VisitOccurrence,
-        'VisitDetail': VisitDetail,
-        'DeviceExposure': DeviceExposure,
-        'Specimen': Specimen,
-        'ObservationPeriod': ObservationPeriod,
-        'PayerPlanPeriod': PayerPlanPeriod,
-        'LocationRegion': LocationRegion,
-        'Death': Death
-    }
+    from circe.extensions import get_criteria_class_map
+    domain_map = get_criteria_class_map()
     
     criteria_class = domain_map.get(config.domain)
     if not criteria_class:
@@ -1527,3 +927,39 @@ def _build_correlated_criteria(criteria_cfg: CriteriaConfig) -> CorelatedCriteri
         restrict_visit=config.restrict_visit,
         ignore_observation_period=config.ignore_observation_period
     )
+
+
+# =============================================================================
+# BUILT-IN DOMAIN REGISTRATION
+# =============================================================================
+# Register all 16 built-in OMOP domains. This auto-generates with_X,
+# require_X, exclude_X, censor_on_X, and or_with_X methods on all
+# builder classes (CohortBuilder, CohortWithEntry, CohortWithCriteria,
+# CriteriaGroupBuilder).
+
+_BUILTIN_DOMAINS = [
+    DomainSpec("condition", "ConditionOccurrence", ConditionOccurrence, ConditionQuery),
+    DomainSpec("drug", "DrugExposure", DrugExposure, DrugQuery),
+    DomainSpec("drug_era", "DrugEra", DrugEra, DrugEraQuery),
+    DomainSpec("procedure", "ProcedureOccurrence", ProcedureOccurrence, ProcedureQuery),
+    DomainSpec("measurement", "Measurement", Measurement, MeasurementQuery),
+    DomainSpec("visit", "VisitOccurrence", VisitOccurrence, VisitQuery),
+    DomainSpec("observation", "Observation", Observation, ObservationQuery),
+    DomainSpec("condition_era", "ConditionEra", ConditionEra, ConditionEraQuery),
+    DomainSpec("device_exposure", "DeviceExposure", DeviceExposure, DeviceExposureQuery),
+    DomainSpec("specimen", "Specimen", Specimen, SpecimenQuery),
+    DomainSpec("death", "Death", Death, DeathQuery, requires_concept=False),
+    DomainSpec("observation_period", "ObservationPeriod", ObservationPeriod, ObservationPeriodQuery, requires_concept=False),
+    DomainSpec("payer_plan_period", "PayerPlanPeriod", PayerPlanPeriod, PayerPlanPeriodQuery),
+    DomainSpec("location_region", "LocationRegion", LocationRegion, LocationRegionQuery),
+    DomainSpec("visit_detail", "VisitDetail", VisitDetail, VisitDetailQuery),
+    DomainSpec("dose_era", "DoseEra", DoseEra, DoseEraQuery),
+]
+
+for _spec in _BUILTIN_DOMAINS:
+    _register_domain_spec(_spec)
+
+# Also register aliases for backward compatibility
+# Some methods had slightly different names (e.g. require_device vs require_device_exposure)
+CohortWithCriteria.require_device = CohortWithCriteria.require_device_exposure
+CohortWithCriteria.exclude_device = CohortWithCriteria.exclude_device_exposure
