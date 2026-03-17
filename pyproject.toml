@@ -72,6 +72,9 @@ ibis-postgres = [
 ibis-databricks = [
     "ibis-framework[databricks]>=11.0.0; python_version >= '3.9'",
 ]
+waveform = [
+    "pydantic>=2.0.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/OHDSI/Circepy"
@@ -92,6 +95,7 @@ exclude = ["circe.tests*"]
 
 [tool.setuptools.package-data]
 circe = ["py.typed"]
+"circe.extensions.waveform" = ["templates/*.j2"]
 
 [tool.black]
 line-length = 88

@@ -36,28 +36,51 @@ class MarkdownRender:
         self,
         concept_sets: Optional[list[ConceptSet]] = None,
         include_concept_sets: bool = False,
+        template_paths: Optional[list[Path]] = None
     ):
         """Initialize the markdown renderer.
 
         Args:
             concept_sets: Optional list of concept sets for resolving codeset IDs to names
             include_concept_sets: Whether to include concept set tables in the output (default: False)
+            template_paths: Optional list of additional template directories to search
         """
         self._concept_sets = concept_sets or []
         self._include_concept_sets = include_concept_sets
 
-        # Initialize Jinja2 environment
-        template_dir = Path(__file__).parent / "templates"
+        # Initialize Jinja2 environment with multiple loaders
+        built_in_template_dir = Path(__file__).parent / 'templates'
+
+        # Start with built-in templates
+        loaders = [jinja2.FileSystemLoader(str(built_in_template_dir))]
+
+        # Add user provided paths
+        if template_paths:
+            for path in template_paths:
+                loaders.append(jinja2.FileSystemLoader(str(path)))
+
+        # Add registry paths
+        from circe.extensions import get_registry
+        registry = get_registry()
+        for path in registry.template_paths:
+            loaders.append(jinja2.FileSystemLoader(str(path)))
+
         self._env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(str(template_dir)),
+            loader=jinja2.ChoiceLoader(loaders),
             trim_blocks=True,
             lstrip_blocks=True,
             autoescape=False,  # We're generating markdown, not HTML
         )
 
         # Register custom filters (matching Java utils.ftl)
-        self._env.filters["format_date"] = self._format_date
-        self._env.filters["format_number"] = self._format_number
+        self._env.filters['format_date'] = self._format_date
+        self._env.filters['format_number'] = self._format_number
+
+        # Add extension helper to look up template name for a criteria instance
+        def get_template_for_criteria(criteria):
+            return registry.get_template(criteria)
+
+        self._env.globals['get_template_for_criteria'] = get_template_for_criteria
 
         # Register global functions
         self._env.globals["codeset_name"] = self._codeset_name
