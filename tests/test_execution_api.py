@@ -157,6 +157,9 @@ def test_has_end_strategy_handles_polymorphic_models():
     assert has_end_strategy(CustomEraStrategy(drug_codeset_id=123)) is True
 
 
+@pytest.mark.filterwarnings(
+    "ignore:fetch_arrow_table\\(\\) is deprecated, use to_arrow_table\\(\\) instead\\.:DeprecationWarning"
+)
 def test_ibis_executor_build_smoke_duckdb():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
