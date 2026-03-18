@@ -2,9 +2,9 @@ name: basic tests
 
 on:
   push:
-    branches: [ * ]   # Run on direct pushes to these branches
+    branches: [ develop, main ]   # Run on direct pushes to these branches
   pull_request:
-    branches: [ * ]   # Run on PRs targeting these branches
+    branches: [ develop, main ]   # Run on PRs targeting these branches
 
 jobs:
   test:
