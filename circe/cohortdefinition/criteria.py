@@ -257,7 +257,7 @@ class Criteria(CirceBaseModel):
         # even if serialized via a base class Union link.
         # We manually build the dict to avoid infinite recursion with model_dump()
         data = {}
-        for field_name, field_info in self.model_fields.items():
+        for field_name, field_info in type(self).model_fields.items():
             value = getattr(self, field_name)
             if value is not None:
                 # Use serialization_alias if it exists, otherwise use field name

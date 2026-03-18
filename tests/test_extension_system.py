@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import AliasChoices, Field
 
-from circe.cohortdefinition import CohortExpression, PrimaryCriteria
+from circe.cohortdefinition import CohortExpression, CriteriaGroup, PrimaryCriteria
 from circe.cohortdefinition.builders.base import CriteriaSqlBuilder
 from circe.cohortdefinition.builders.utils import BuilderOptions, CriteriaColumn
 from circe.cohortdefinition.cohort_expression_query_builder import (
@@ -39,7 +39,7 @@ class WeatherCondition(Criteria):
 
 
 # Important: Rebuild models to resolve forward references inherited from Criteria
-WeatherCondition.model_rebuild()
+WeatherCondition.model_rebuild(_types_namespace={"CriteriaGroup": CriteriaGroup})
 
 
 class WeatherConditionSqlBuilder(CriteriaSqlBuilder[WeatherCondition]):
