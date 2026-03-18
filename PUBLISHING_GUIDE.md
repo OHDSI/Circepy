@@ -63,15 +63,15 @@ Follow the detailed checklist in [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHEC
 
 3. **Run all tests**:
    ```bash
-   pytest
-   pytest --cov
+   uv run pytest
+   uv run pytest --cov
    ```
 
 4. **Format and lint**:
    ```bash
-   black circe/
-   isort circe/
-   flake8 circe/
+   uv run ruff check .
+   uv run ruff format .
+   uv run pre-commit run --all-files
    ```
 
 5. **Clean old builds**:
@@ -290,7 +290,7 @@ Then update the workflow to use trusted publishing:
 
 - [ ] Update version in `pyproject.toml` and `circe/__init__.py`
 - [ ] Update `CHANGELOG.md`
-- [ ] Run tests: `pytest --cov`
+- [ ] Run tests: `uv run pytest --cov`
 - [ ] Clean build: `rm -rf dist/ build/`
 - [ ] Build package: `python -m build`
 - [ ] Check package: `twine check dist/*`

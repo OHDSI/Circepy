@@ -111,9 +111,9 @@ Quick Example
 Support
 -------
 
-* **Repository**: https://github.com/OHDSI/circe-be-python
-* **Issues**: https://github.com/OHDSI/circe-be-python/issues
-* **PyPI**: https://pypi.org/project/ohdsi-circe/
+* **Repository**: https://github.com/OHDSI/Circepy
+* **Issues**: https://github.com/OHDSI/Circepy/issues
+* **PyPI**: https://pypi.org/project/ohdsi-circe-python-alpha/
 
 Indices and tables
 ==================
@@ -121,4 +121,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

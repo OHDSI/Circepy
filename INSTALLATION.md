@@ -7,11 +7,13 @@
 
 - **Python 3.9 or higher** (Python 3.9+ recommended)
 - **Git** for cloning the repository
-- **pip** package manager (usually included with Python)
+- **uv** for the recommended, lockfile-backed workflow
+- **pip** package manager for fallback installation paths
 
 ## Installation from Source (Current Method)
 
 Since this package is currently in private development, you'll need to install it directly from the GitHub repository.
+The recommended workflow uses `uv` and the checked-in `uv.lock` for a reproducible environment.
 
 ### Step 1: Clone the Repository
 
@@ -20,18 +22,21 @@ git clone https://github.com/OHDSI/Circepy.git
 cd Circepy
 ```
 
-### Step 2: Install in Development Mode
+### Step 2: Install with uv
 
-For development and testing, install the package in editable mode with all development dependencies:
+For development and testing, sync the project environment with the locked dependency set:
 
 ```bash
-pip install -e ".[dev]"
+uv sync --extra dev
+
+# Install Git hooks
+uv run pre-commit install
 ```
 
 This will install:
-- The `circe` package in editable mode (changes to source code are immediately available)
-- All development tools (pytest, black, mypy, etc.)
-- Optional dependencies for documentation and testing
+- The `circe` package in editable mode
+- The locked development toolchain (pytest, Ruff, pre-commit, etc.)
+- A project-local virtual environment managed by `uv`
 
 ### Step 3: Verify Installation
 
@@ -39,13 +44,13 @@ Test that the installation was successful:
 
 ```bash
 # Check the CLI is available
-circe --help
+uv run circe --help
 
 # Verify the version
-python -c "from circe import __version__; print(f'CIRCE Python version: {__version__}')"
+uv run python -c "from circe import __version__; print(f'CIRCE Python version: {__version__}')"
 
 # Run a quick test
-pytest tests/ -v --maxfail=5
+uv run pytest tests/ -v --maxfail=5
 ```
 
 ## Installation for Usage Only
@@ -53,53 +58,70 @@ pytest tests/ -v --maxfail=5
 If you only want to use the package without development tools:
 
 ```bash
-pip install -e .
+uv sync
 ```
 
-This installs only the core dependencies (`pydantic` and `typing-extensions`).
+This installs the project with its core dependencies into the `uv`-managed environment.
 
-## PyPI Installation (Coming Soon)
+## PyPI Installation
 
 > [!NOTE]
-> **PyPI package is not yet available.** Once the package reaches stable release, it will be published to PyPI and you'll be able to install it with:
+> The currently published alpha package is available as `ohdsi-circe-python-alpha`.
+> The long-term package name is expected to become `ohdsi-circepy` once that package name is available for takeover.
 > 
 > ```bash
-> # This will work in future releases
+> # Current alpha package
+> pip install ohdsi-circe-python-alpha
+>
+> # Planned future package name
 > pip install ohdsi-circepy
 > ```
 
 ## Installation Options
 
-### Virtual Environment (Recommended)
+### uv Extras
 
-It's recommended to use a virtual environment to avoid dependency conflicts:
+The project defines optional dependency groups that can be synced into the `uv` environment:
 
 ```bash
-# Create virtual environment
-python -m venv venv
+# Core package only
+uv sync
+
+# Development tools
+uv sync --extra dev
+
+# Documentation tools
+uv sync --extra docs
+
+# Development and documentation tools
+uv sync --extra dev --extra docs
+```
+
+### pip Fallback (Optional)
+
+If you are not using `uv`, use a virtual environment and install with `pip`. This path is supported, but the `uv` workflow above is the reproducible, maintainer-tested setup.
+
+```bash
+# Create a virtual environment
+python -m venv .venv
 
 # Activate on macOS/Linux
-source venv/bin/activate
+source .venv/bin/activate
 
 # Activate on Windows
-venv\Scripts\activate
+.venv\Scripts\activate
 
-# Install the package
+# Install the package with development tools
 pip install -e ".[dev]"
 ```
 
-### Install Specific Extras
-
-The package provides several optional dependency groups:
+You can also install specific extras with `pip`:
 
 ```bash
-# Development tools only
-pip install -e ".[dev]"
-
-# Documentation tools
+# Documentation tools only
 pip install -e ".[docs]"
 
-# All extras
+# Development and documentation tools
 pip install -e ".[dev,docs]"
 ```
 
@@ -108,7 +130,7 @@ pip install -e ".[dev,docs]"
 ### Check Installed Version
 
 ```bash
-circe --version
+uv run circe --version
 ```
 
 ### Run Example Scripts
@@ -117,8 +139,8 @@ Navigate to the examples directory and run sample scripts:
 
 ```bash
 cd examples
-python basic_cohort.py
-python validate_cohort.py
+uv run python basic_cohort.py
+uv run python validate_cohort.py
 ```
 
 ### Run the Test Suite
@@ -127,10 +149,10 @@ Ensure your installation is working correctly:
 
 ```bash
 # Run all tests
-pytest
+uv run pytest
 
 # Run with coverage report
-pytest --cov=circe --cov-report=html
+uv run pytest --cov=circe --cov-report=html
 
 # View coverage report
 open htmlcov/index.html  # macOS
@@ -144,10 +166,10 @@ start htmlcov/index.html  # Windows
 
 **Problem**: `ImportError: No module named 'circe'`
 
-**Solution**: Ensure you installed in editable mode from the repository root:
+**Solution**: Re-sync the environment from the repository root:
 ```bash
 cd Circepy
-pip install -e .
+uv sync --extra dev
 ```
 
 ### CLI Not Found
@@ -156,7 +178,7 @@ pip install -e .
 
 **Solution**: Ensure your Python scripts directory is in your PATH, or use:
 ```bash
-python -m circe --help
+uv run python -m circe --help
 ```
 
 ### Version Mismatch
@@ -165,18 +187,19 @@ python -m circe --help
 
 **Solution**: Reinstall the package:
 ```bash
-pip uninstall ohdsi-circepy circe
 cd Circepy
-pip install -e ".[dev]"
+uv sync --extra dev
 ```
 
 ### Permission Errors
 
 **Problem**: Permission denied during installation
 
-**Solution**: Use a virtual environment (recommended) or install with `--user` flag:
+**Solution**: Prefer the `uv` workflow, which manages a project-local environment. If you are using `pip`, use a virtual environment instead of `--user`:
 ```bash
-pip install -e . --user
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
 ```
 
 ### Pydantic Validation Errors
@@ -195,15 +218,21 @@ To get the latest changes from the repository:
 ```bash
 cd Circepy
 git pull origin main  # or git pull origin develop for latest development
-pip install -e ".[dev]"  # Reinstall if dependencies changed
+uv sync --extra dev
 ```
 
 ## Uninstalling
 
-To remove the package:
+If you are using `uv`, remove the project environment:
 
 ```bash
-pip uninstall ohdsi-circepy
+rm -rf .venv
+```
+
+If you installed with `pip`, remove the package with:
+
+```bash
+pip uninstall ohdsi-circe-python-alpha
 ```
 
 ## System Requirements
