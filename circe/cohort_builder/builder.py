@@ -2245,11 +2245,15 @@ def _config_to_criteria(config: QueryConfig):
     kwargs = {}
 
     # Only pass codeset_id if the criteria class has it
-    if hasattr(criteria_class, 'model_fields') and 'codeset_id' in criteria_class.model_fields:
+    if hasattr(criteria_class, "model_fields") and "codeset_id" in criteria_class.model_fields:
         kwargs["codeset_id"] = config.concept_set_id
 
     # Only pass first if the criteria class has it and the value is truthy
-    if config.first_occurrence and hasattr(criteria_class, 'model_fields') and 'first' in criteria_class.model_fields:
+    if (
+        config.first_occurrence
+        and hasattr(criteria_class, "model_fields")
+        and "first" in criteria_class.model_fields
+    ):
         kwargs["first"] = config.first_occurrence
 
     if config.age_min is not None or config.age_max is not None:

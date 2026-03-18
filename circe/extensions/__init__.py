@@ -245,11 +245,18 @@ def _wire_builder_methods(spec: DomainSpec) -> None:
             setattr(CohortWithEntry, method_name, _make_delegate(action, name))
 
     # Time-window kwargs that trigger auto-finalization
-    _TIME_WINDOW_PARAMS = frozenset([
-        "anytime_before", "anytime_after", "within_days_before",
-        "within_days_after", "within_days", "same_day",
-        "during_event", "before_event_end",
-    ])
+    _TIME_WINDOW_PARAMS = frozenset(
+        [
+            "anytime_before",
+            "anytime_after",
+            "within_days_before",
+            "within_days_after",
+            "within_days",
+            "same_day",
+            "during_event",
+            "before_event_end",
+        ]
+    )
 
     # --- CohortWithCriteria.require_{name} / exclude_{name} / censor_on_{name} ---
     for action, is_exclusion, is_censor in [
@@ -364,7 +371,11 @@ def _wire_builder_methods(spec: DomainSpec) -> None:
 
                             return method
 
-                setattr(CohortWithCriteria, method_name, _make_criteria(query_cls, domain, is_exclusion, _TIME_WINDOW_PARAMS))
+                setattr(
+                    CohortWithCriteria,
+                    method_name,
+                    _make_criteria(query_cls, domain, is_exclusion, _TIME_WINDOW_PARAMS),
+                )
 
     # --- CriteriaGroupBuilder.require_{name} / exclude_{name} ---
     for action, is_exclusion in [("require", False), ("exclude", True)]:
@@ -421,7 +432,11 @@ def _wire_builder_methods(spec: DomainSpec) -> None:
 
                         return method
 
-            setattr(CriteriaGroupBuilder, method_name, _make_group(query_cls, domain, is_exclusion, _TIME_WINDOW_PARAMS))
+            setattr(
+                CriteriaGroupBuilder,
+                method_name,
+                _make_group(query_cls, domain, is_exclusion, _TIME_WINDOW_PARAMS),
+            )
 
 
 # ---------------------------------------------------------------------------
