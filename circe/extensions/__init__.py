@@ -53,6 +53,9 @@ class ExtensionRegistry:
         # Maps criteria types to markdown template names
         self._markdown_templates: dict[type[Criteria], str] = {}
 
+        # Maps criteria names to ibis execution builders
+        self._ibis_builders: dict[str, Callable] = {}
+
         # List of paths to search for Jinja2 templates
         self._template_paths: list[Path] = []
 
