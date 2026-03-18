@@ -58,3 +58,8 @@ The resolver cache is local to an execution context run.
 ## Current Limitation
 
 - `custom_era` end strategy remains unsupported in this executor path.
+
+## Testing
+
+The execution test structure and expected test layers are documented in
+`circe/execution/TESTING.md`.
