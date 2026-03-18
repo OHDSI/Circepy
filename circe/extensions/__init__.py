@@ -3,14 +3,14 @@ Extension Registry for OMOP CDM.
 
 This module provides the central registry for managing extensions to circe-py,
 allowing external projects to register custom criteria classes, SQL builders,
-and markdown renderers.
+ibis execution builders, and markdown renderers.
 
 Decorator Usage
 ---------------
 Extension authors can use the provided decorator functions to register their
 classes automatically, rather than calling the registry methods directly::
 
-    from circe.extensions import criteria_class, sql_builder, markdown_template
+    from circe.extensions import criteria_class, sql_builder, markdown_template, ibis_builder
 
     @criteria_class("WaveformOccurrence")
     class WaveformOccurrence(Criteria):
@@ -22,6 +22,10 @@ classes automatically, rather than calling the registry methods directly::
 
     @markdown_template(WaveformOccurrence, "waveform_occurrence.j2")
     class WaveformOccurrenceMarkdownRenderer:
+        ...
+
+    @ibis_builder("WaveformOccurrence")
+    def build_waveform_occurrence(criteria, ctx):
         ...
 """
 
@@ -48,6 +52,9 @@ class ExtensionRegistry:
 
         # Maps criteria types to markdown template names
         self._markdown_templates: dict[type[Criteria], str] = {}
+
+        # Maps criteria names to ibis execution builders
+        self._ibis_builders: dict[str, Callable] = {}
 
         # List of paths to search for Jinja2 templates
         self._template_paths: list[Path] = []
@@ -82,6 +89,29 @@ class ExtensionRegistry:
             template_name: The name of the template file (e.g. "waveform_occurrence.j2")
         """
         self._markdown_templates[criteria_cls] = template_name
+
+    def register_ibis_builder(self, criteria_name: str, func: Callable) -> None:
+        """Register an ibis execution builder for a criteria type.
+
+        The callable must accept ``(criteria, build_context)`` and return an
+        ``ibis.expr.types.Table``.
+
+        Args:
+            criteria_name: The criteria class name (e.g. ``"WaveformOccurrence"``).
+            func: A callable ``(Criteria, BuildContext) -> ibis.Table``.
+        """
+        self._ibis_builders[criteria_name] = func
+
+    def get_ibis_builder(self, criteria_name: str) -> Optional[Callable]:
+        """Look up a registered ibis execution builder by criteria class name.
+
+        Args:
+            criteria_name: The criteria class name.
+
+        Returns:
+            The registered callable, or ``None`` if not found.
+        """
+        return self._ibis_builders.get(criteria_name)
 
     def add_template_path(self, path: Path) -> None:
         """Add a path to search for Jinja2 templates.
@@ -225,3 +255,41 @@ def template_path(path: Union[str, Path]) -> None:
         template_path(Path(__file__).parent / "templates")
     """
     _registry.add_template_path(Path(path))
+
+
+def ibis_builder(criteria_name: str) -> Callable:
+    """Function decorator that registers an ibis execution builder for a criteria type.
+
+    The decorated function must accept ``(criteria, build_context)`` and return
+    an ``ibis.expr.types.Table`` following the standard pipeline contract
+    (person_id, event_id, start_date, end_date, visit_occurrence_id).
+
+    This also inserts the builder into the low-level execution registry
+    (``circe.execution.builders.registry``) so that ``build_events`` can
+    discover it without any hard-coded imports.
+
+    Args:
+        criteria_name: The criteria class name (e.g. ``"WaveformOccurrence"``).
+
+    Example::
+
+        from circe.extensions import ibis_builder
+
+        @ibis_builder("WaveformOccurrence")
+        def build_waveform_occurrence(criteria, ctx):
+            ...
+    """
+
+    def decorator(func: Callable) -> Callable:
+        _registry.register_ibis_builder(criteria_name, func)
+        # Also push into the low-level execution registry so build_events
+        # can resolve the builder without the fallback path.
+        try:
+            from circe.execution.builders.registry import register as _register_exec
+
+            _register_exec(criteria_name)(func)
+        except ImportError:
+            pass
+        return func
+
+    return decorator

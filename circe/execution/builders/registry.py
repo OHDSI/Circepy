@@ -21,10 +21,25 @@ def register(criteria_name: str):
 
 def get_builder(criteria: Criteria):
     name = criteria.__class__.__name__
+    builder = _REGISTRY.get(name)
+    if builder is not None:
+        return builder
+
+    # Fall back to the global extension registry so that dynamically
+    # registered ibis builders (via circe.extensions.ibis_builder or
+    # ExtensionRegistry.register_ibis_builder) are discovered without
+    # any hard-coded imports of extension modules.
     try:
-        return _REGISTRY[name]
-    except KeyError as exc:
-        raise ValueError(f"No builder registered for criteria {name}") from exc
+        from ...extensions import get_registry
+
+        builder = get_registry().get_ibis_builder(name)
+    except ImportError:
+        builder = None
+
+    if builder is not None:
+        return builder
+
+    raise ValueError(f"No builder registered for criteria {name}")
 
 
 def build_events(criteria: Criteria, ctx: BuildContext) -> ir.Table:
