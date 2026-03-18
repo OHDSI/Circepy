@@ -184,7 +184,7 @@ def insert_relation(
     if not callable(insert):
         raise ExecutionError(
             "Ibis executor write error: backend does not support insert for cohort-table writes."
-    )
+        )
 
     try:
         _call_with_optional_database(
