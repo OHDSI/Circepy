@@ -1,4 +1,5 @@
 """Ibis execution builder for WaveformFeature criteria."""
+
 from __future__ import annotations
 
 from circe.execution.build_context import BuildContext
@@ -37,45 +38,27 @@ def build_waveform_feature(criteria: WaveformFeature, ctx: BuildContext):
     )
 
     # Parent link filters
-    table = apply_numeric_range(
-        table, "waveform_occurrence_id", criteria.waveform_occurrence_id
-    )
-    table = apply_numeric_range(
-        table, "waveform_registry_id", criteria.waveform_registry_id
-    )
-    table = apply_numeric_range(
-        table, "waveform_channel_metadata_id", criteria.waveform_channel_metadata_id
-    )
+    table = apply_numeric_range(table, "waveform_occurrence_id", criteria.waveform_occurrence_id)
+    table = apply_numeric_range(table, "waveform_registry_id", criteria.waveform_registry_id)
+    table = apply_numeric_range(table, "waveform_channel_metadata_id", criteria.waveform_channel_metadata_id)
 
     # Feature type (e.g., heart rate, SpO2, QRS)
     if criteria.feature_concept_id:
-        table = apply_concept_filters(
-            table, "feature_concept_id", criteria.feature_concept_id
-        )
+        table = apply_concept_filters(table, "feature_concept_id", criteria.feature_concept_id)
 
     # Algorithm used to derive feature
     if criteria.algorithm_concept_id:
-        table = apply_concept_filters(
-            table, "algorithm_concept_id", criteria.algorithm_concept_id
-        )
-    table = apply_text_filter(
-        table, "algorithm_source_value", criteria.algorithm_source_value
-    )
+        table = apply_concept_filters(table, "algorithm_concept_id", criteria.algorithm_concept_id)
+    table = apply_text_filter(table, "algorithm_source_value", criteria.algorithm_source_value)
 
     # Temporal window for feature
-    table = apply_date_range(
-        table, "waveform_feature_start_timestamp", criteria.feature_start_timestamp
-    )
-    table = apply_date_range(
-        table, "waveform_feature_end_timestamp", criteria.feature_end_timestamp
-    )
+    table = apply_date_range(table, "waveform_feature_start_timestamp", criteria.feature_start_timestamp)
+    table = apply_date_range(table, "waveform_feature_end_timestamp", criteria.feature_end_timestamp)
 
     # Feature values
     table = apply_numeric_range(table, "value_as_number", criteria.value_as_number)
     if criteria.value_as_concept_id:
-        table = apply_concept_filters(
-            table, "value_as_concept_id", criteria.value_as_concept_id
-        )
+        table = apply_concept_filters(table, "value_as_concept_id", criteria.value_as_concept_id)
 
     # Units
     if criteria.unit_concept_id:
@@ -92,4 +75,3 @@ def build_waveform_feature(criteria: WaveformFeature, ctx: BuildContext):
         end_column=criteria.get_end_date_column(),
     )
     return apply_criteria_group(events, criteria.correlated_criteria, ctx)
-

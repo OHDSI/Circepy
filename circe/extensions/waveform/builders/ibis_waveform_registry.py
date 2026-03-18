@@ -1,4 +1,5 @@
 """Ibis execution builder for WaveformRegistry criteria."""
+
 from __future__ import annotations
 
 from circe.execution.build_context import BuildContext
@@ -61,9 +62,7 @@ def build_waveform_registry(criteria: WaveformRegistry, ctx: BuildContext):
             "file_extension_concept_id",
             criteria.file_extension_concept_id,
         )
-    table = apply_text_filter(
-        table, "file_extension_source_value", criteria.file_extension_source_value
-    )
+    table = apply_text_filter(table, "file_extension_source_value", criteria.file_extension_source_value)
 
     # Visit context (denormalized)
     table = apply_numeric_range(table, "visit_occurrence_id", criteria.visit_occurrence_id)
@@ -76,4 +75,3 @@ def build_waveform_registry(criteria: WaveformRegistry, ctx: BuildContext):
         end_column=criteria.get_end_date_column(),
     )
     return apply_criteria_group(events, criteria.correlated_criteria, ctx)
-

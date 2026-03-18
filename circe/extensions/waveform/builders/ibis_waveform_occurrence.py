@@ -1,4 +1,5 @@
 """Ibis execution builder for WaveformOccurrence criteria."""
+
 from __future__ import annotations
 
 from circe.execution.build_context import BuildContext
@@ -72,4 +73,3 @@ def build_waveform_occurrence(criteria: WaveformOccurrence, ctx: BuildContext):
         end_column=criteria.get_end_date_column(),
     )
     return apply_criteria_group(events, criteria.correlated_criteria, ctx)
-
