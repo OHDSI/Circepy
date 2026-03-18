@@ -93,13 +93,14 @@ class TestDocumentation:
         readme = (root / "README.md").read_text()
         assert "## Installation" in readme
         assert "git clone" in readme.lower()
-        assert "pip install -e" in readme.lower()
+        assert "uv sync" in readme.lower()
 
         # INSTALLATION.md should exist and have comprehensive instructions
         installation = (root / "INSTALLATION.md").read_text()
         assert "git clone" in installation.lower()
         assert "troubleshooting" in installation.lower()
-        assert "pip install -e" in installation.lower()
+        assert "uv sync --extra dev" in installation.lower()
+        assert 'pip install -e ".[dev]"' in installation.lower()
 
         # CONTRIBUTING.md should have setup instructions
         contributing = (root / "CONTRIBUTING.md").read_text()
@@ -157,7 +158,7 @@ class TestDocumentation:
         contributing = (root / "CONTRIBUTING.md").read_text()
 
         assert "## Code Style" in contributing or "### Code Style" in contributing
-        assert "black" in contributing.lower()
+        assert "ruff" in contributing.lower()
         assert "pytest" in contributing.lower()
 
     def test_examples_readme_references_parent_docs(self):
