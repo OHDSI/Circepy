@@ -28,58 +28,59 @@ classes automatically, rather than calling the registry methods directly::
     def build_waveform_occurrence(criteria, ctx):
         ...
 """
-from typing import Callable, Dict, List, Optional, Type, Union
+
 from pathlib import Path
 
 # Forward references to avoid circular imports
 # Actual imports happen inside methods or with TYPE_CHECKING
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Optional, Union
 
 if TYPE_CHECKING:
-    from .cohortdefinition.criteria import Criteria
     from .cohortdefinition.builders.base import CriteriaSqlBuilder
+    from .cohortdefinition.criteria import Criteria
+
 
 class ExtensionRegistry:
     """Central registry for OMOP CDM extensions."""
-    
+
     def __init__(self):
         # Maps criteria names to criteria classes (for JSON deserialization)
-        self._criteria_classes: Dict[str, Type['Criteria']] = {}
-        
+        self._criteria_classes: dict[str, type[Criteria]] = {}
+
         # Maps criteria types to SQL builder classes
-        self._sql_builders: Dict[Type['Criteria'], Type['CriteriaSqlBuilder']] = {}
-        
+        self._sql_builders: dict[type[Criteria], type[CriteriaSqlBuilder]] = {}
+
         # Maps criteria types to markdown template names
-        self._markdown_templates: Dict[Type['Criteria'], str] = {}
-        
+        self._markdown_templates: dict[type[Criteria], str] = {}
+
         # List of paths to search for Jinja2 templates
-        self._template_paths: List[Path] = []
+        self._template_paths: list[Path] = []
 
-        # Maps criteria class names to ibis execution builder callables.
-        # Signature: (Criteria, BuildContext) -> ibis.expr.types.Table
-        self._ibis_builders: Dict[str, Callable] = {}
-
-    def register_criteria_class(self, name: str, cls: Type['Criteria']) -> None:
+    def register_criteria_class(self, name: str, cls: type["Criteria"]) -> None:
         """Register a new criteria class for JSON deserialization.
-        
+
         Args:
             name: The name of the criteria type (e.g. "WaveformOccurrence")
             cls: The Criteria subclass
         """
         self._criteria_classes[name] = cls
-    
-    def register_sql_builder(self, criteria_cls: Type['Criteria'], builder_cls: Type['CriteriaSqlBuilder']) -> None:
+
+    def register_sql_builder(
+        self,
+        criteria_cls: type["Criteria"],
+        builder_cls: type["CriteriaSqlBuilder"],
+    ) -> None:
         """Register a SQL builder for a criteria type.
-        
+
         Args:
             criteria_cls: The Criteria subclass
             builder_cls: The CriteriaSqlBuilder subclass
         """
         self._sql_builders[criteria_cls] = builder_cls
-    
-    def register_markdown_template(self, criteria_cls: Type['Criteria'], template_name: str) -> None:
+
+    def register_markdown_template(self, criteria_cls: type["Criteria"], template_name: str) -> None:
         """Register a Jinja2 template for markdown rendering.
-        
+
         Args:
             criteria_cls: The Criteria subclass
             template_name: The name of the template file (e.g. "waveform_occurrence.j2")
@@ -111,51 +112,52 @@ class ExtensionRegistry:
 
     def add_template_path(self, path: Path) -> None:
         """Add a path to search for Jinja2 templates.
-        
+
         Args:
             path: Path to a directory containing Jinja2 templates
         """
         if path not in self._template_paths:
             self._template_paths.append(path)
-    
-    def get_builder(self, criteria: 'Criteria') -> Optional['CriteriaSqlBuilder']:
+
+    def get_builder(self, criteria: "Criteria") -> Optional["CriteriaSqlBuilder"]:
         """Get the SQL builder for a criteria instance.
-        
+
         Args:
             criteria: The criteria instance
-            
+
         Returns:
             An instance of the registered SQL builder, or None if not found
         """
         builder_cls = self._sql_builders.get(type(criteria))
         return builder_cls() if builder_cls else None
-    
-    def get_template(self, criteria: 'Criteria') -> Optional[str]:
+
+    def get_template(self, criteria: "Criteria") -> Optional[str]:
         """Get the markdown template name for a criteria instance.
-        
+
         Args:
             criteria: The criteria instance
-            
+
         Returns:
             The template name, or None if not found
         """
         return self._markdown_templates.get(type(criteria))
-    
-    def get_criteria_class(self, name: str) -> Optional[Type['Criteria']]:
+
+    def get_criteria_class(self, name: str) -> Optional[type["Criteria"]]:
         """Get a registered criteria class by name.
-        
+
         Args:
             name: The name of the criteria type
-            
+
         Returns:
             The Criteria subclass, or None if not found
         """
         return self._criteria_classes.get(name)
 
     @property
-    def template_paths(self) -> List[Path]:
+    def template_paths(self) -> list[Path]:
         """Get all registered template paths."""
         return list(self._template_paths)
+
 
 # Global registry instance
 _registry = ExtensionRegistry()
@@ -170,7 +172,8 @@ def get_registry() -> ExtensionRegistry:
 # Decorator helpers
 # ---------------------------------------------------------------------------
 
-def criteria_class(name: str) -> "Callable[[Type['Criteria']], Type['Criteria']]":
+
+def criteria_class(name: str) -> "Callable[[type['Criteria']], type['Criteria']]":
     """Class decorator that registers a Criteria subclass for JSON deserialization.
 
     Args:
@@ -183,13 +186,17 @@ def criteria_class(name: str) -> "Callable[[Type['Criteria']], Type['Criteria']]
         class WaveformOccurrence(Criteria):
             ...
     """
-    def decorator(cls: "Type['Criteria']") -> "Type['Criteria']":
+
+    def decorator(cls: "type['Criteria']") -> "type['Criteria']":
         _registry.register_criteria_class(name, cls)  # type: ignore[arg-type]
         return cls
+
     return decorator  # type: ignore[return-value]
 
 
-def sql_builder(criteria_cls: "Type['Criteria']") -> "Callable[[Type['CriteriaSqlBuilder']], Type['CriteriaSqlBuilder']]":
+def sql_builder(
+    criteria_cls: "type['Criteria']",
+) -> "Callable[[type['CriteriaSqlBuilder']], type['CriteriaSqlBuilder']]":
     """Class decorator that registers a SQL builder for a given Criteria type.
 
     Args:
@@ -201,13 +208,15 @@ def sql_builder(criteria_cls: "Type['Criteria']") -> "Callable[[Type['CriteriaSq
         class WaveformOccurrenceSqlBuilder(CriteriaSqlBuilder):
             ...
     """
-    def decorator(builder_cls: "Type['CriteriaSqlBuilder']") -> "Type['CriteriaSqlBuilder']":
+
+    def decorator(builder_cls: "type['CriteriaSqlBuilder']") -> "type['CriteriaSqlBuilder']":
         _registry.register_sql_builder(criteria_cls, builder_cls)  # type: ignore[arg-type]
         return builder_cls
+
     return decorator  # type: ignore[return-value]
 
 
-def markdown_template(criteria_cls: "Type['Criteria']", template_name: str) -> "Callable[[Type], Type]":
+def markdown_template(criteria_cls: "type['Criteria']", template_name: str) -> "Callable[[type], type]":
     """Class decorator that registers a Jinja2 markdown template for a Criteria type.
 
     Args:
@@ -221,9 +230,11 @@ def markdown_template(criteria_cls: "Type['Criteria']", template_name: str) -> "
         class WaveformOccurrenceMarkdownRenderer:
             ...
     """
-    def decorator(cls: Type) -> Type:
+
+    def decorator(cls: type) -> type:
         _registry.register_markdown_template(criteria_cls, template_name)  # type: ignore[arg-type]
         return cls
+
     return decorator
 
 
@@ -265,16 +276,17 @@ def ibis_builder(criteria_name: str) -> Callable:
         def build_waveform_occurrence(criteria, ctx):
             ...
     """
+
     def decorator(func: Callable) -> Callable:
         _registry.register_ibis_builder(criteria_name, func)
         # Also push into the low-level execution registry so build_events
         # can resolve the builder without the fallback path.
         try:
             from circe.execution.builders.registry import register as _register_exec
+
             _register_exec(criteria_name)(func)
         except ImportError:
             pass
         return func
+
     return decorator
-
-

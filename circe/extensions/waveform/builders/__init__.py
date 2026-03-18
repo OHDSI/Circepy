@@ -6,13 +6,14 @@ for all four waveform criteria types.
 """
 
 # SQL / markdown builders — decorators fire on import
-from . import waveform_occurrence  # noqa: F401
-from . import waveform_registry  # noqa: F401
-from . import waveform_channel_metadata  # noqa: F401
-from . import waveform_feature  # noqa: F401
-
 # Ibis execution builders — @register decorators fire on import
-from . import ibis_waveform_occurrence  # noqa: F401
-from . import ibis_waveform_registry  # noqa: F401
-from . import ibis_waveform_channel_metadata  # noqa: F401
-from . import ibis_waveform_feature  # noqa: F401
+from . import (
+    ibis_waveform_channel_metadata,  # noqa: F401
+    ibis_waveform_feature,  # noqa: F401
+    ibis_waveform_occurrence,  # noqa: F401
+    ibis_waveform_registry,  # noqa: F401
+    waveform_channel_metadata,  # noqa: F401
+    waveform_feature,  # noqa: F401
+    waveform_occurrence,  # noqa: F401
+    waveform_registry,  # noqa: F401
+)

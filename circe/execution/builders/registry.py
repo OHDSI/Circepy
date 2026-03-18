@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import hashlib
 from collections.abc import Callable
-from typing import Dict
 
 import ibis.expr.types as ir
 
 from ...cohortdefinition.criteria import Criteria
 from ..build_context import BuildContext
 
-_REGISTRY: Dict[str, Callable[[Criteria, BuildContext], ir.Table]] = {}
+_REGISTRY: dict[str, Callable[[Criteria, BuildContext], ir.Table]] = {}
 
 
 def register(criteria_name: str):

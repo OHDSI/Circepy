@@ -1,12 +1,5 @@
-import textwrap
 from enum import Enum
-from typing import Any, List, Set, Type
-
-from pydantic import BaseModel
-
-from .cohort import CohortExpression, ConceptSet
-from .core import Period
-from .criteria import Criteria, CriteriaGroup
+from typing import Any
 
 
 def to_python_code(obj: Any) -> str:
@@ -14,20 +7,16 @@ def to_python_code(obj: Any) -> str:
     Converts a CohortExpression (or any circe model) into a human-readable Python code string
     that instantiates the object.
     """
-    imports: Set[str] = set()
+    imports: set[str] = set()
 
     def _collect_imports(o: Any):
-        if (
-            hasattr(o, "__module__")
-            and hasattr(o, "__name__")
-            and o.__module__.startswith("circe.")
-        ):
+        if hasattr(o, "__module__") and hasattr(o, "__name__") and o.__module__.startswith("circe."):
             # Try to import from the top level class map if possible, but for now specific modules
             imports.add(f"from {o.__module__} import {o.__class__.__name__}")
 
         if hasattr(o, "model_dump"):
             # Access model_fields from the class, not the instance
-            for name, field in o.__class__.model_fields.items():
+            for name, _field in o.__class__.model_fields.items():
                 val = getattr(o, name)
                 if val is not None:
                     if isinstance(val, list):
@@ -40,8 +29,6 @@ def to_python_code(obj: Any) -> str:
     # For a robust generator, we might want to just handle the traversal and printing,
     # and maybe return imports separately?
     # Let's do the string generation directly.
-
-    lines = []
 
     # We will build a set of required imports as we traverse
     required_classes = set()
@@ -65,10 +52,8 @@ def to_python_code(obj: Any) -> str:
                 # Pydantic V2 doesn't have a simple "is_set" for fields without model_dump(exclude_unset)
                 # But we want to preserve structure even if it matches default maybe?
                 # Let's stick to non-None for now as per plan
-                if val is not None:
-                    # Check if it equals default
-                    if val != field_info.get_default():
-                        fields[name] = val
+                if val is not None and val != field_info.get_default():
+                    fields[name] = val
 
             if not fields:
                 return f"{cls_name}()"
@@ -85,10 +70,7 @@ def to_python_code(obj: Any) -> str:
             inner_str = ", ".join(args)
             if len(inner_str) > 80 or "\n" in inner_str:
                 joiner = f",\n{indent}    "
-                field_strs = [
-                    f"{name}={_repr(val, indent_level + 1)}"
-                    for name, val in fields.items()
-                ]
+                field_strs = [f"{name}={_repr(val, indent_level + 1)}" for name, val in fields.items()]
                 return f"{cls_name}(\n{indent}    {joiner.join(field_strs)}\n{indent})"
             else:
                 return f"{cls_name}({inner_str})"

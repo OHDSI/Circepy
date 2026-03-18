@@ -1,8 +1,7 @@
-from typing import Set
-
 from circe.cohortdefinition.builders.base import CriteriaSqlBuilder
-from circe.cohortdefinition.builders.utils import CriteriaColumn, BuilderUtils, BuilderOptions
-from circe.extensions import sql_builder, markdown_template
+from circe.cohortdefinition.builders.utils import BuilderOptions, BuilderUtils, CriteriaColumn
+from circe.extensions import markdown_template, sql_builder
+
 from ..criteria import WaveformRegistry
 
 
@@ -11,11 +10,11 @@ from ..criteria import WaveformRegistry
 class WaveformRegistrySqlBuilder(CriteriaSqlBuilder[WaveformRegistry]):
     """
     SQL Builder for Waveform Registry criteria.
-    
+
     Maps to the waveform_registry table in the OHDSI Waveform Extension.
     Reference: https://ohdsi.github.io/WaveformWG/waveform-tables.html
     """
-    
+
     def get_query_template(self) -> str:
         return """
 SELECT C.person_id, C.waveform_registry_id as event_id,
@@ -28,14 +27,10 @@ FROM @cdm_database_schema.waveform_registry C
 @joinClause
 WHERE @whereClause
 """
-    
-    def get_default_columns(self) -> Set[CriteriaColumn]:
-        return {
-            CriteriaColumn.START_DATE,
-            CriteriaColumn.END_DATE,
-            CriteriaColumn.VISIT_ID
-        }
-    
+
+    def get_default_columns(self) -> set[CriteriaColumn]:
+        return {CriteriaColumn.START_DATE, CriteriaColumn.END_DATE, CriteriaColumn.VISIT_ID}
+
     def get_table_column_for_criteria_column(self, column: CriteriaColumn) -> str:
         if column == CriteriaColumn.START_DATE:
             return "C.waveform_file_start_datetime"
@@ -48,27 +43,33 @@ WHERE @whereClause
 
     def get_criteria_sql_with_options(self, criteria: WaveformRegistry, options: BuilderOptions) -> str:
         query = self.get_query_template()
-        
+
         where_clauses = []
         join_clauses = []
         codeset_clause = ""
-        
+
         # Link to parent occurrence
         if criteria.waveform_occurrence_id:
             where_clauses.append(
-                BuilderUtils.build_numeric_range_clause("C.waveform_occurrence_id", criteria.waveform_occurrence_id)
+                BuilderUtils.build_numeric_range_clause(
+                    "C.waveform_occurrence_id", criteria.waveform_occurrence_id
+                )
             )
-        
+
         # File temporal bounds
         if criteria.file_start_datetime:
             where_clauses.append(
-                BuilderUtils.build_date_range_clause("C.waveform_file_start_datetime", criteria.file_start_datetime)
+                BuilderUtils.build_date_range_clause(
+                    "C.waveform_file_start_datetime", criteria.file_start_datetime
+                )
             )
         if criteria.file_end_datetime:
             where_clauses.append(
-                BuilderUtils.build_date_range_clause("C.waveform_file_end_datetime", criteria.file_end_datetime)
+                BuilderUtils.build_date_range_clause(
+                    "C.waveform_file_end_datetime", criteria.file_end_datetime
+                )
             )
-        
+
         # File format
         if criteria.file_extension_concept_id:
             ids = [str(c.concept_id) for c in criteria.file_extension_concept_id if c.concept_id]
@@ -76,9 +77,11 @@ WHERE @whereClause
                 where_clauses.append(f"C.file_extension_concept_id IN ({','.join(ids)})")
         if criteria.file_extension_source_value:
             where_clauses.append(
-                BuilderUtils.build_text_filter_clause("C.file_extension_source_value", criteria.file_extension_source_value)
+                BuilderUtils.build_text_filter_clause(
+                    "C.file_extension_source_value", criteria.file_extension_source_value
+                )
             )
-        
+
         # Visit context
         if criteria.visit_occurrence_id:
             where_clauses.append(
@@ -88,11 +91,13 @@ WHERE @whereClause
             where_clauses.append(
                 BuilderUtils.build_numeric_range_clause("C.visit_detail_id", criteria.visit_detail_id)
             )
-        
+
         # Apply replacements
-        query = query.replace("@cdm_database_schema", options.cdm_database_schema if options else "@cdm_database_schema")
+        query = query.replace(
+            "@cdm_database_schema", options.cdm_database_schema if options else "@cdm_database_schema"
+        )
         query = query.replace("@codesetClause", codeset_clause)
         query = query.replace("@joinClause", "\n".join(join_clauses))
         query = query.replace("@whereClause", " AND ".join(where_clauses) if where_clauses else "1=1")
-        
+
         return query

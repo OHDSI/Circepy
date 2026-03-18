@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from ..io import ExpressionInput, load_expression
 from .options import ExecutionOptions, SchemaName, schema_to_str
 
 if TYPE_CHECKING:
-    import ibis.expr.types as ir
     import pandas as pd
     import polars as pl
 
@@ -23,10 +22,10 @@ class IbisExecutor:
     - Materialization happens in `to_polars()` / `to_pandas()` / `write()`.
     """
 
-    def __init__(self, conn: Any, options: Optional[ExecutionOptions] = None):
+    def __init__(self, conn: Any, options: ExecutionOptions | None = None):
         self._conn = conn
         self._options = options or ExecutionOptions()
-        self._open_contexts: List[Any] = []
+        self._open_contexts: list[Any] = []
 
     @property
     def conn(self) -> Any:
@@ -42,22 +41,18 @@ class IbisExecutor:
         self.close()
         return self._build_native(cohort_expression)
 
-    def to_polars(self, expression: ExpressionInput) -> "pl.DataFrame":
+    def to_polars(self, expression: ExpressionInput) -> pl.DataFrame:
         """Execute cohort expression and collect to Polars."""
         table = self.build(expression)
         if not hasattr(table, "to_polars"):
-            raise RuntimeError(
-                "The returned ibis table does not support to_polars() on this backend."
-            )
+            raise RuntimeError("The returned ibis table does not support to_polars() on this backend.")
         return table.to_polars()
 
-    def to_pandas(self, expression: ExpressionInput) -> "pd.DataFrame":
+    def to_pandas(self, expression: ExpressionInput) -> pd.DataFrame:
         """Execute cohort expression and collect to pandas."""
         table = self.build(expression)
         if not hasattr(table, "to_pandas"):
-            raise RuntimeError(
-                "The returned ibis table does not support to_pandas() on this backend."
-            )
+            raise RuntimeError("The returned ibis table does not support to_pandas() on this backend.")
         return table.to_pandas()
 
     def write(
@@ -65,34 +60,29 @@ class IbisExecutor:
         expression: ExpressionInput,
         *,
         table: str,
-        schema: Optional[SchemaName] = None,
+        schema: SchemaName | None = None,
         overwrite: bool = True,
         append: bool = False,
-        cohort_id: Optional[int] = None,
+        cohort_id: int | None = None,
     ) -> Any:
         """Persist cohort rows to a cohort table and return a backend table handle."""
         if append and overwrite:
-            raise ValueError(
-                "`append=True` and `overwrite=True` cannot be used together."
-            )
+            raise ValueError("`append=True` and `overwrite=True` cannot be used together.")
         cohort_expression = load_expression(expression)
         self.close()
-        events, ctx = self._build_with_context_native(
-            cohort_expression, cohort_id_override=cohort_id
-        )
+        events, ctx = self._build_with_context_native(cohort_expression, cohort_id_override=cohort_id)
         self._open_contexts.append(ctx)
         return ctx.write_cohort_table(
             events,
             table_name=table,
-            database=schema_to_str(schema)
-            or schema_to_str(self._options.result_schema),
+            database=schema_to_str(schema) or schema_to_str(self._options.result_schema),
             overwrite=overwrite,
             append=append,
         )
 
-    def captured_sql(self) -> List[tuple[str, str]]:
+    def captured_sql(self) -> list[tuple[str, str]]:
         """Return captured staged SQL snippets when capture_sql is enabled."""
-        captured: List[tuple[str, str]] = []
+        captured: list[tuple[str, str]] = []
         for ctx in self._open_contexts:
             if hasattr(ctx, "captured_sql"):
                 captured.extend(ctx.captured_sql())
@@ -107,7 +97,7 @@ class IbisExecutor:
             except Exception as exc:
                 print(f"Warning: failed to close execution context: {exc}")
 
-    def __enter__(self) -> "IbisExecutor":
+    def __enter__(self) -> IbisExecutor:
         return self
 
     def __exit__(self, exc_type, exc, tb) -> None:
@@ -119,7 +109,9 @@ class IbisExecutor:
         return events
 
     def _build_with_context_native(
-        self, cohort_expression: Any, cohort_id_override: Optional[int] = None
+        self,
+        cohort_expression: Any,
+        cohort_id_override: int | None = None,
     ) -> Any:
         try:
             from .build_context import (
@@ -140,11 +132,7 @@ class IbisExecutor:
             cdm_schema=schema_to_str(self._options.cdm_schema),
             vocabulary_schema=schema_to_str(self._options.vocabulary_schema),
             result_schema=schema_to_str(self._options.result_schema),
-            cohort_id=(
-                cohort_id_override
-                if cohort_id_override is not None
-                else self._options.cohort_id
-            ),
+            cohort_id=(cohort_id_override if cohort_id_override is not None else self._options.cohort_id),
             materialize_stages=self._options.materialize_stages,
             materialize_codesets=self._options.materialize_codesets,
             temp_emulation_schema=schema_to_str(self._options.temp_emulation_schema),
@@ -152,19 +140,15 @@ class IbisExecutor:
             capture_sql=self._options.capture_sql,
             backend=backend,
         )
-        resource = compile_codesets(
-            self._conn, cohort_expression.concept_sets or [], options
-        )
+        resource = compile_codesets(self._conn, cohort_expression.concept_sets or [], options)
         ctx = BuildContext(self._conn, options, resource)
         events = build_primary_events(cohort_expression, ctx)
         if events is None:
-            raise RuntimeError(
-                "No primary events were generated for the supplied cohort expression."
-            )
+            raise RuntimeError("No primary events were generated for the supplied cohort expression.")
         return events, ctx
 
     @staticmethod
-    def _infer_backend_name(conn: Any) -> Optional[str]:
+    def _infer_backend_name(conn: Any) -> str | None:
         backend_name = getattr(conn, "name", None)
         if isinstance(backend_name, str) and backend_name:
             return backend_name.lower()
@@ -181,7 +165,7 @@ class IbisExecutor:
 def build_ibis(
     expression: ExpressionInput,
     conn: Any,
-    options: Optional[ExecutionOptions] = None,
+    options: ExecutionOptions | None = None,
 ) -> Any:
     """Convenience wrapper for IbisExecutor.build()."""
     with IbisExecutor(conn, options) as executor:
@@ -191,8 +175,8 @@ def build_ibis(
 def to_polars(
     expression: ExpressionInput,
     conn: Any,
-    options: Optional[ExecutionOptions] = None,
-) -> "pl.DataFrame":
+    options: ExecutionOptions | None = None,
+) -> pl.DataFrame:
     """Convenience wrapper for IbisExecutor.to_polars()."""
     with IbisExecutor(conn, options) as executor:
         return executor.to_polars(expression)
@@ -203,11 +187,11 @@ def write_cohort(
     conn: Any,
     *,
     table: str,
-    schema: Optional[SchemaName] = None,
+    schema: SchemaName | None = None,
     overwrite: bool = True,
     append: bool = False,
-    cohort_id: Optional[int] = None,
-    options: Optional[ExecutionOptions] = None,
+    cohort_id: int | None = None,
+    options: ExecutionOptions | None = None,
 ) -> Any:
     """Convenience wrapper for IbisExecutor.write()."""
     effective_options = options

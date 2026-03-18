@@ -9,12 +9,10 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from abc import ABC, abstractmethod
-from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Optional
 
 from ...vocabulary.concept import Concept
-from ..core import ConceptSetSelection, DateAdjustment, DateRange, NumericRange
+from ..core import DateAdjustment, DateRange, NumericRange
 from ..criteria import CriteriaColumn
 
 
@@ -25,7 +23,7 @@ class BuilderOptions:
     """
 
     def __init__(self):
-        self.additional_columns: List[CriteriaColumn] = []
+        self.additional_columns: list[CriteriaColumn] = []
 
 
 class BuilderUtils:
@@ -35,25 +33,21 @@ class BuilderUtils:
     """
 
     # SQL templates - equivalent to Java constants
-    CODESET_JOIN_TEMPLATE = (
-        "JOIN #Codesets {} on ({} = {}.concept_id and {}.codeset_id = {})"
-    )
-    CODESET_IN_TEMPLATE = (
-        "{} {} in (select concept_id from #Codesets where codeset_id = {})"
-    )
+    CODESET_JOIN_TEMPLATE = "JOIN #Codesets {} on ({} = {}.concept_id and {}.codeset_id = {})"
+    CODESET_IN_TEMPLATE = "{} {} in (select concept_id from #Codesets where codeset_id = {})"
     CODESET_NULL_TEMPLATE = "{} is {} null"
 
     # Date adjustment template - equivalent to Java ResourceHelper.GetResourceAsString
-    DATE_ADJUSTMENT_TEMPLATE = (
-        "DATEADD(day,{}, {}) as start_date, DATEADD(day,{}, {}) as end_date"
-    )
+    DATE_ADJUSTMENT_TEMPLATE = "DATEADD(day,{}, {}) as start_date, DATEADD(day,{}, {}) as end_date"
 
     STANDARD_ALIAS = "cs"
     NON_STANDARD_ALIAS = "cns"
 
     @staticmethod
     def get_date_adjustment_expression(
-        date_adjustment: DateAdjustment, start_column: str, end_column: str
+        date_adjustment: DateAdjustment,
+        start_column: str,
+        end_column: str,
     ) -> str:
         """Get date adjustment expression for SQL.
 
@@ -104,27 +98,21 @@ class BuilderUtils:
         return " ".join(codeset_clauses)
 
     @staticmethod
-    def get_codeset_in_expression(
-        codeset_id: int, column_name: str, is_exclusion: bool = False
-    ) -> str:
+    def get_codeset_in_expression(codeset_id: int, column_name: str, is_exclusion: bool = False) -> str:
         """Get codeset IN expression for SQL.
 
         Java equivalent: BuilderUtils.getCodesetInExpression()
         """
         operator = "not" if is_exclusion else ""
-        return BuilderUtils.CODESET_IN_TEMPLATE.format(
-            operator, column_name, codeset_id
-        )
+        return BuilderUtils.CODESET_IN_TEMPLATE.format(operator, column_name, codeset_id)
 
     @staticmethod
-    def get_concept_ids_from_concepts(concepts: List[Concept]) -> List[int]:
+    def get_concept_ids_from_concepts(concepts: list[Concept]) -> list[int]:
         """Get concept IDs from concept list.
 
         Java equivalent: BuilderUtils.getConceptIdsFromConcepts()
         """
-        return [
-            concept.concept_id for concept in concepts if concept.concept_id is not None
-        ]
+        return [concept.concept_id for concept in concepts if concept.concept_id is not None]
 
     @staticmethod
     def get_operator(op: str) -> str:
@@ -145,9 +133,7 @@ class BuilderUtils:
         raise RuntimeError(f"Unknown operator type: {op}")
 
     @staticmethod
-    def build_date_range_clause(
-        sql_expression: str, date_range: Optional[DateRange]
-    ) -> Optional[str]:
+    def build_date_range_clause(sql_expression: str, date_range: Optional[DateRange]) -> Optional[str]:
         """Build date range clause for SQL.
 
         Java equivalent: BuilderUtils.buildDateRangeClause(String sqlExpression, DateRange range)
@@ -207,9 +193,7 @@ class BuilderUtils:
                 return f"{sql_expression} {BuilderUtils.get_operator(op)} {int(numeric_range.value)}"
 
     @staticmethod
-    def build_text_filter_clause(
-        text_filter: Optional[Any], column_name: str
-    ) -> Optional[str]:
+    def build_text_filter_clause(text_filter: Optional[Any], column_name: str) -> Optional[str]:
         """Build text filter clause for SQL.
 
         Java equivalent: BuilderUtils.buildTextFilterClause()
@@ -232,26 +216,21 @@ class BuilderUtils:
         # Escape single quotes in text
         text = text.replace("'", "''")
 
-        if op == "eq":
-            return f"{column_name} = '{text}'"
-        elif op == "!eq":
-            return f"{column_name} <> '{text}'"
-        elif op == "startsWith":
-            return f"{column_name} LIKE '{text}%'"
-        elif op == "endsWith":
-            return f"{column_name} LIKE '%{text}'"
-        elif op == "contains":
-            return f"{column_name} LIKE '%{text}%'"
-        elif op == "!contains":
-            return f"{column_name} NOT LIKE '%{text}%'"
-        else:
-            # Default to exact match
-            return f"{column_name} = '{text}'"
+        # Map operators to SQL templates
+        operator_templates = {
+            "eq": f"{column_name} = '{text}'",
+            "!eq": f"{column_name} <> '{text}'",
+            "startsWith": f"{column_name} LIKE '{text}%'",
+            "endsWith": f"{column_name} LIKE '%{text}'",
+            "contains": f"{column_name} LIKE '%{text}%'",
+            "!contains": f"{column_name} NOT LIKE '%{text}%'",
+        }
+
+        # Return template for operator, default to exact match
+        return operator_templates.get(op, f"{column_name} = '{text}'")
 
     @staticmethod
-    def split_in_clause(
-        column_name: str, values: List[int], max_length: int = 1000
-    ) -> str:
+    def split_in_clause(column_name: str, values: list[int], max_length: int = 1000) -> str:
         """Split IN clause for large value lists.
 
         Java equivalent: BuilderUtils.splitInClause()
@@ -277,7 +256,5 @@ class BuilderUtils:
         """
         parts = date_string.split("-")
         if len(parts) != 3:
-            raise ValueError(
-                f"Invalid date format: {date_string}. Expected YYYY-MM-DD."
-            )
+            raise ValueError(f"Invalid date format: {date_string}. Expected YYYY-MM-DD.")
         return f"DATEFROMPARTS({int(parts[0])}, {int(parts[1])}, {int(parts[2])})"

@@ -8,11 +8,11 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Any, List, Optional, Set
+from typing import Optional
 
 from ..criteria import LocationRegion
 from .base import CriteriaSqlBuilder
-from .utils import BuilderOptions, BuilderUtils, CriteriaColumn
+from .utils import BuilderOptions, CriteriaColumn
 
 
 class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
@@ -51,13 +51,11 @@ class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
         @additionalColumns
         """
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for location region criteria."""
         return self.DEFAULT_COLUMNS
 
-    def get_table_column_for_criteria_column(
-        self, criteria_column: CriteriaColumn
-    ) -> str:
+    def get_table_column_for_criteria_column(self, criteria_column: CriteriaColumn) -> str:
         """Get table column for criteria column."""
         column_mapping = {
             CriteriaColumn.DOMAIN_CONCEPT: "C.region_concept_id",
@@ -75,15 +73,15 @@ class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
             codeset_clause = f"AND l.region_concept_id in (SELECT concept_id from #Codesets where codeset_id = {criteria.codeset_id})"
         return query.replace("@codesetClause", codeset_clause)
 
-    def embed_ordinal_expression(
-        self, query: str, criteria: LocationRegion, where_clauses: List[str]
-    ) -> str:
+    def embed_ordinal_expression(self, query: str, criteria: LocationRegion, where_clauses: list[str]) -> str:
         """Embed ordinal expression in query."""
         return query.replace("@ordinalExpression", "")
 
     def resolve_select_clauses(
-        self, criteria: LocationRegion, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+        self,
+        criteria: LocationRegion,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve select clauses for location region criteria."""
         # Default select columns that are always returned
         select_cols = ["C.person_id", "C.location_id", "C.region_concept_id"]
@@ -101,13 +99,17 @@ class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
         return select_cols
 
     def resolve_join_clauses(
-        self, criteria: LocationRegion, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+        self,
+        criteria: LocationRegion,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve join clauses for location region criteria."""
         return []
 
     def resolve_where_clauses(
-        self, criteria: LocationRegion, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+        self,
+        criteria: LocationRegion,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve where clauses for location region criteria."""
         return []

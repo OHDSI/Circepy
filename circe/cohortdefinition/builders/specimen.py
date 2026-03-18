@@ -8,9 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Any, List, Optional, Set
-
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Optional
 
 from ..criteria import Specimen
 from .base import CriteriaSqlBuilder
@@ -39,7 +37,7 @@ FROM
 -- End Specimen Criteria
 """
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for specimen criteria."""
         return {
             CriteriaColumn.START_DATE,
@@ -47,9 +45,7 @@ FROM
             CriteriaColumn.VISIT_ID,
         }
 
-    def get_table_column_for_criteria_column(
-        self, criteria_column: CriteriaColumn
-    ) -> str:
+    def get_table_column_for_criteria_column(self, criteria_column: CriteriaColumn) -> str:
         """Get table column for criteria column."""
         column_mapping = {
             CriteriaColumn.DOMAIN_CONCEPT: "C.specimen_concept_id",
@@ -74,9 +70,7 @@ FROM
             ),
         )
 
-    def embed_ordinal_expression(
-        self, query: str, criteria: Specimen, where_clauses: List[str]
-    ) -> str:
+    def embed_ordinal_expression(self, query: str, criteria: Specimen, where_clauses: list[str]) -> str:
         """Embed ordinal expression in query."""
         if criteria.first:
             where_clauses.append("C.ordinal = 1")
@@ -88,9 +82,7 @@ FROM
             query = query.replace("@ordinalExpression", "")
         return query
 
-    def resolve_join_clauses(
-        self, criteria: Specimen, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    def resolve_join_clauses(self, criteria: Specimen, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve join clauses for specimen criteria."""
         joins = []
 
@@ -100,15 +92,15 @@ FROM
             or (criteria.gender and len(criteria.gender) > 0)
             or (criteria.gender_cs and criteria.gender_cs.codeset_id)
         ):
-            joins.append(
-                "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id"
-            )
+            joins.append("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id")
 
         return joins
 
     def resolve_where_clauses(
-        self, criteria: Specimen, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+        self,
+        criteria: Specimen,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve where clauses for specimen criteria."""
         where_clauses = []
 
@@ -122,13 +114,9 @@ FROM
 
         # specimenType
         if criteria.specimen_type and len(criteria.specimen_type) > 0:
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.specimen_type
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.specimen_type)
             op = "not in" if criteria.specimen_type_exclude else "in"
-            where_clauses.append(
-                f"C.specimen_type_concept_id {op} ({','.join(map(str, concept_ids))})"
-            )
+            where_clauses.append(f"C.specimen_type_concept_id {op} ({','.join(map(str, concept_ids))})")
 
         # specimenTypeCS
         if criteria.specimen_type_cs and criteria.specimen_type_cs.codeset_id:
@@ -141,34 +129,24 @@ FROM
         # quantity
         if criteria.quantity:
             where_clauses.append(
-                BuilderUtils.build_numeric_range_clause(
-                    "C.quantity", criteria.quantity, ".4f"
-                )
+                BuilderUtils.build_numeric_range_clause("C.quantity", criteria.quantity, ".4f")
             )
 
         # unit
         if criteria.unit and len(criteria.unit) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.unit)
-            where_clauses.append(
-                f"C.unit_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            where_clauses.append(f"C.unit_concept_id in ({','.join(map(str, concept_ids))})")
 
         # unitCS
         if criteria.unit_cs and criteria.unit_cs.codeset_id:
             where_clauses.append(
-                BuilderUtils.get_codeset_in_expression(
-                    criteria.unit_cs.codeset_id, "C.unit_concept_id"
-                )
+                BuilderUtils.get_codeset_in_expression(criteria.unit_cs.codeset_id, "C.unit_concept_id")
             )
 
         # anatomicSite
         if criteria.anatomic_site and len(criteria.anatomic_site) > 0:
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.anatomic_site
-            )
-            where_clauses.append(
-                f"C.anatomic_site_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.anatomic_site)
+            where_clauses.append(f"C.anatomic_site_concept_id in ({','.join(map(str, concept_ids))})")
 
         # anatomicSiteCS
         if criteria.anatomic_site_cs and criteria.anatomic_site_cs.codeset_id:
@@ -180,12 +158,8 @@ FROM
 
         # diseaseStatus
         if criteria.disease_status and len(criteria.disease_status) > 0:
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.disease_status
-            )
-            where_clauses.append(
-                f"C.disease_status_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.disease_status)
+            where_clauses.append(f"C.disease_status_concept_id in ({','.join(map(str, concept_ids))})")
 
         # diseaseStatusCS
         if criteria.disease_status_cs and criteria.disease_status_cs.codeset_id:
@@ -198,9 +172,7 @@ FROM
         # sourceId
         if criteria.source_id:
             where_clauses.append(
-                BuilderUtils.build_text_filter_clause(
-                    criteria.source_id, "C.specimen_source_id"
-                )
+                BuilderUtils.build_text_filter_clause(criteria.source_id, "C.specimen_source_id")
             )
 
         # age
@@ -214,16 +186,12 @@ FROM
         # gender
         if criteria.gender and len(criteria.gender) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.gender)
-            where_clauses.append(
-                f"P.gender_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            where_clauses.append(f"P.gender_concept_id in ({','.join(map(str, concept_ids))})")
 
         # genderCS
         if criteria.gender_cs and criteria.gender_cs.codeset_id:
             where_clauses.append(
-                BuilderUtils.get_codeset_in_expression(
-                    criteria.gender_cs.codeset_id, "P.gender_concept_id"
-                )
+                BuilderUtils.get_codeset_in_expression(criteria.gender_cs.codeset_id, "P.gender_concept_id")
             )
 
         return where_clauses

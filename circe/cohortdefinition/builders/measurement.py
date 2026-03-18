@@ -8,9 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Any, List, Optional, Set
-
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Optional
 
 from ..criteria import Measurement
 from .base import CriteriaSqlBuilder
@@ -39,7 +37,7 @@ from
 -- End Measurement Criteria
 """
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for measurement criteria."""
         return {
             CriteriaColumn.START_DATE,
@@ -48,9 +46,7 @@ from
             CriteriaColumn.VISIT_ID,
         }
 
-    def get_table_column_for_criteria_column(
-        self, criteria_column: CriteriaColumn
-    ) -> str:
+    def get_table_column_for_criteria_column(self, criteria_column: CriteriaColumn) -> str:
         """Get table column for criteria column."""
         column_mapping = {
             CriteriaColumn.START_DATE: "C.start_date",
@@ -61,9 +57,7 @@ from
         }
         return column_mapping.get(criteria_column, "NULL")
 
-    def embed_ordinal_expression(
-        self, query: str, criteria: Measurement, where_clauses: List[str]
-    ) -> str:
+    def embed_ordinal_expression(self, query: str, criteria: Measurement, where_clauses: list[str]) -> str:
         """Embed ordinal expression in query.
 
         Java equivalent: MeasurementSqlBuilder.embedOrdinalExpression()
@@ -93,8 +87,10 @@ from
         )
 
     def resolve_select_clauses(
-        self, criteria: Measurement, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+        self,
+        criteria: Measurement,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve select clauses for measurement criteria.
 
         Java equivalent: MeasurementSqlBuilder.resolveSelectClauses()
@@ -111,9 +107,7 @@ from
         ]
 
         # measurementType
-        if (
-            criteria.measurement_type and len(criteria.measurement_type) > 0
-        ) or criteria.measurement_type_cs:
+        if (criteria.measurement_type and len(criteria.measurement_type) > 0) or criteria.measurement_type_cs:
             select_cols.append("m.measurement_type_concept_id")
 
         # operator
@@ -121,9 +115,7 @@ from
             select_cols.append("m.operator_concept_id")
 
         # valueAsConcept
-        if (
-            criteria.value_as_concept and len(criteria.value_as_concept) > 0
-        ) or criteria.value_as_concept_cs:
+        if (criteria.value_as_concept and len(criteria.value_as_concept) > 0) or criteria.value_as_concept_cs:
             select_cols.append("m.value_as_concept_id")
 
         # unit
@@ -161,8 +153,10 @@ from
         return select_cols
 
     def resolve_join_clauses(
-        self, criteria: Measurement, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+        self,
+        criteria: Measurement,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve join clauses for measurement criteria.
 
         Java equivalent: MeasurementSqlBuilder.resolveJoinClauses()
@@ -175,9 +169,7 @@ from
             or (criteria.gender and len(criteria.gender) > 0)
             or (criteria.gender_cs and criteria.gender_cs.codeset_id)
         ):
-            join_clauses.append(
-                "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id"
-            )
+            join_clauses.append("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id")
 
         # Join to VISIT_OCCURRENCE
         if (criteria.visit_type and len(criteria.visit_type) > 0) or (
@@ -199,7 +191,9 @@ from
         return join_clauses
 
     def resolve_ordinal_expression(
-        self, criteria: Measurement, options: Optional[BuilderOptions] = None
+        self,
+        criteria: Measurement,
+        options: Optional[BuilderOptions] = None,
     ) -> str:
         """Resolve ordinal expression for measurement criteria."""
         if criteria.first:
@@ -207,8 +201,10 @@ from
         return ""
 
     def resolve_where_clauses(
-        self, criteria: Measurement, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+        self,
+        criteria: Measurement,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve where clauses for measurement criteria.
 
         Java equivalent: MeasurementSqlBuilder.resolveWhereClauses()
@@ -219,17 +215,13 @@ from
 
         # Add occurrence start date condition
         if criteria.occurrence_start_date:
-            date_clause = BuilderUtils.build_date_range_clause(
-                "C.start_date", criteria.occurrence_start_date
-            )
+            date_clause = BuilderUtils.build_date_range_clause("C.start_date", criteria.occurrence_start_date)
             if date_clause:
                 where_clauses.append(date_clause)
 
         # measurementType
         if criteria.measurement_type and len(criteria.measurement_type) > 0:
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.measurement_type
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.measurement_type)
             operator = "not in" if criteria.measurement_type_exclude else "in"
             where_clauses.append(
                 f"C.measurement_type_concept_id {operator} ({','.join(map(str, concept_ids))})"
@@ -247,9 +239,7 @@ from
         # operator
         if criteria.operator and len(criteria.operator) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.operator)
-            where_clauses.append(
-                f"C.operator_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            where_clauses.append(f"C.operator_concept_id in ({','.join(map(str, concept_ids))})")
 
         # operatorCS
         if criteria.operator_cs:
@@ -263,19 +253,13 @@ from
         if criteria.value_as_number:
             # Java uses .4f
             where_clauses.append(
-                BuilderUtils.build_numeric_range_clause(
-                    "C.value_as_number", criteria.value_as_number, ".4f"
-                )
+                BuilderUtils.build_numeric_range_clause("C.value_as_number", criteria.value_as_number, ".4f")
             )
 
         # valueAsConcept
         if criteria.value_as_concept and len(criteria.value_as_concept) > 0:
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.value_as_concept
-            )
-            where_clauses.append(
-                f"C.value_as_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.value_as_concept)
+            where_clauses.append(f"C.value_as_concept_id in ({','.join(map(str, concept_ids))})")
 
         # valueAsConceptCS
         if criteria.value_as_concept_cs:
@@ -288,32 +272,24 @@ from
         # unit
         if criteria.unit and len(criteria.unit) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.unit)
-            where_clauses.append(
-                f"C.unit_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            where_clauses.append(f"C.unit_concept_id in ({','.join(map(str, concept_ids))})")
 
         # unitCS
         if criteria.unit_cs:
             where_clauses.append(
-                BuilderUtils.get_codeset_in_expression(
-                    criteria.unit_cs.codeset_id, "C.unit_concept_id"
-                )
+                BuilderUtils.get_codeset_in_expression(criteria.unit_cs.codeset_id, "C.unit_concept_id")
             )
 
         # rangeLow
         if criteria.range_low:
             where_clauses.append(
-                BuilderUtils.build_numeric_range_clause(
-                    "C.range_low", criteria.range_low, ".4f"
-                )
+                BuilderUtils.build_numeric_range_clause("C.range_low", criteria.range_low, ".4f")
             )
 
         # rangeHigh
         if criteria.range_high:
             where_clauses.append(
-                BuilderUtils.build_numeric_range_clause(
-                    "C.range_high", criteria.range_high, ".4f"
-                )
+                BuilderUtils.build_numeric_range_clause("C.range_high", criteria.range_high, ".4f")
             )
 
         # rangeLowRatio
@@ -345,17 +321,13 @@ from
         # age
         if criteria.age:
             where_clauses.append(
-                BuilderUtils.build_numeric_range_clause(
-                    "YEAR(C.start_date) - P.year_of_birth", criteria.age
-                )
+                BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age)
             )
 
         # gender
         if criteria.gender and len(criteria.gender) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.gender)
-            where_clauses.append(
-                f"P.gender_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            where_clauses.append(f"P.gender_concept_id in ({','.join(map(str, concept_ids))})")
 
         if criteria.gender_cs:
             where_clauses.append(
@@ -368,12 +340,8 @@ from
 
         # providerSpecialty
         if criteria.provider_specialty and len(criteria.provider_specialty) > 0:
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.provider_specialty
-            )
-            where_clauses.append(
-                f"PR.specialty_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.provider_specialty)
+            where_clauses.append(f"PR.specialty_concept_id in ({','.join(map(str, concept_ids))})")
 
         # providerSpecialtyCS
         if criteria.provider_specialty_cs:
@@ -387,12 +355,8 @@ from
 
         # visitType
         if criteria.visit_type and len(criteria.visit_type) > 0:
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.visit_type
-            )
-            where_clauses.append(
-                f"V.visit_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.visit_type)
+            where_clauses.append(f"V.visit_concept_id in ({','.join(map(str, concept_ids))})")
 
         # visitTypeCS
         if criteria.visit_type_cs:
@@ -404,14 +368,11 @@ from
 
         return where_clauses
 
-    def get_additional_columns(self, columns: List[CriteriaColumn]) -> str:
+    def get_additional_columns(self, columns: list[CriteriaColumn]) -> str:
         """Get additional columns string with proper aliases.
 
         Java equivalent: MeasurementSqlBuilder.getAdditionalColumns()
         """
         return ", ".join(
-            [
-                f"{self.get_table_column_for_criteria_column(col)} as {col.value}"
-                for col in columns
-            ]
+            [f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns]
         )

@@ -49,9 +49,7 @@ class ConceptSetSelectionCheckerFactory(BaseCheckerFactory):
         super().__init__(reporter, group_name)
 
     @staticmethod
-    def get_factory(
-        reporter: WarningReporter, group_name: str
-    ) -> "ConceptSetSelectionCheckerFactory":
+    def get_factory(reporter: WarningReporter, group_name: str) -> "ConceptSetSelectionCheckerFactory":
         """Get a factory instance.
 
         Args:
@@ -101,12 +99,11 @@ class ConceptSetSelectionCheckerFactory(BaseCheckerFactory):
 
             return check
         else:
-            return (
-                lambda c: None
-            )  # No ConceptSetSelection checks for other criteria types
+            return lambda c: None  # No ConceptSetSelection checks for other criteria types
 
     def _get_check_demographic(
-        self, criteria: "DemographicCriteria"
+        self,
+        criteria: "DemographicCriteria",
     ) -> Callable[["DemographicCriteria"], None]:
         """Get a checker function for demographic criteria.
 
@@ -135,6 +132,8 @@ class ConceptSetSelectionCheckerFactory(BaseCheckerFactory):
         def warning(template: str) -> None:
             self._reporter(template, self._group_name, criteria_name, attribute)
 
-        Operations.match(concept_set_selection).when(
-            lambda css: css is not None and css.codeset_id is None
-        ).then(lambda css: warning(self.WARNING_EMPTY_VALUE))
+        (
+            Operations.match(concept_set_selection)
+            .when(lambda css: css is not None and css.codeset_id is None)
+            .then(lambda css: warning(self.WARNING_EMPTY_VALUE))
+        )

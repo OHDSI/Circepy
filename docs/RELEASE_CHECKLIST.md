@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # Release Checklist
 
 This checklist ensures a smooth and error-free release process for publishing to PyPI.
@@ -6,11 +10,11 @@ This checklist ensures a smooth and error-free release process for publishing to
 
 ### Code Quality
 
-- [ ] All tests passing: `pytest`
-- [ ] Code coverage meets minimum (71%+): `pytest --cov`
-- [ ] No linting errors: `flake8 circe/`
-- [ ] Code formatted: `black circe/` and `isort circe/`
-- [ ] Type checking passes: `mypy circe/` (or acceptable errors documented)
+- [ ] All tests passing: `uv run pytest`
+- [ ] Code coverage meets minimum (71%+): `uv run pytest --cov`
+- [ ] No linting errors: `uv run ruff check .`
+- [ ] Code formatted: `uv run ruff format .`
+- [ ] Pre-commit hooks pass: `uv run pre-commit run --all-files`
 - [ ] No security vulnerabilities in dependencies: `pip-audit` (if installed)
 
 ### Documentation
@@ -37,7 +41,6 @@ This checklist ensures a smooth and error-free release process for publishing to
 ```bash
 # Remove old build artifacts
 rm -rf build/ dist/ *.egg-info/
-rm -rf circe.egg-info/ ohdsi-circepy.egg-info/
 
 # Clear Python cache
 find . -type d -name __pycache__ -exec rm -r {} + 2>/dev/null || true
@@ -58,8 +61,8 @@ python -m build
 
 - [ ] Build completed successfully
 - [ ] Generated files in `dist/`:
-  - [ ] `ohdsi-circepy-X.Y.Z.tar.gz` (source distribution)
-  - [ ] `ohdsi-circepy-X.Y.Z-py3-none-any.whl` (wheel)
+  - [ ] `ohdsi-circe-python-alpha-X.Y.Z.tar.gz` (source distribution)
+  - [ ] `ohdsi-circe-python-alpha-X.Y.Z-py3-none-any.whl` (wheel)
 
 ### 3. Check Package
 
@@ -81,7 +84,7 @@ python -m venv test_env
 source test_env/bin/activate  # On Windows: test_env\Scripts\activate
 
 # Install from wheel
-pip install dist/ohdsi-circepy-X.Y.Z-py3-none-any.whl
+pip install dist/ohdsi-circe-python-alpha-X.Y.Z-py3-none-any.whl
 
 # Test imports
 python -c "from circe import CohortExpression; print('✓ Import successful')"
@@ -116,7 +119,7 @@ twine upload --repository testpypi dist/*
 ```
 
 - [ ] Uploaded to TestPyPI successfully
-- [ ] TestPyPI page loads: https://test.pypi.org/project/ohdsi-circepy/
+- [ ] TestPyPI page loads: https://test.pypi.org/project/ohdsi-circe-python-alpha/
 
 ### 6. Test Installation from TestPyPI
 
@@ -126,7 +129,7 @@ python -m venv testpypi_env
 source testpypi_env/bin/activate
 
 # Install from TestPyPI
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ ohdsi-circepy
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ ohdsi-circe-python-alpha
 
 # Test the installation
 python -c "from circe import CohortExpression; print('✓ TestPyPI installation works')"
@@ -167,7 +170,7 @@ twine upload dist/*
 ```
 
 - [ ] Uploaded to PyPI successfully
-- [ ] PyPI page loads: https://pypi.org/project/ohdsi-circepy/
+- [ ] PyPI page loads: https://pypi.org/project/ohdsi-circe-python-alpha/
 
 ### 9. Verify Production Installation
 
@@ -177,7 +180,7 @@ python -m venv prod_test_env
 source prod_test_env/bin/activate
 
 # Install from PyPI
-pip install ohdsi-circepy
+pip install ohdsi-circe-python-alpha
 
 # Verify installation
 python -c "from circe import __version__; print(f'Installed version: {__version__}')"
@@ -248,7 +251,7 @@ rm -rf prod_test_env
 
 1. Create account at https://pypi.org/
 2. Go to Account Settings → API tokens
-3. Generate token with scope for "ohdsi-circepy" project
+3. Generate token with scope for "ohdsi-circe-python-alpha" project
 4. Store securely (use `keyring` or `.pypirc`)
 
 ### TestPyPI API Token
@@ -287,4 +290,3 @@ If a critical issue is discovered after release:
 - **Always test on TestPyPI** first for major releases
 - **Keep credentials secure** and rotate regularly
 - **Document any manual steps** needed for release
-

@@ -7,7 +7,7 @@ This module provides a simple R CirceR-style API for working with cohort definit
 - cohort_print_friendly(): Generate Markdown from cohort expression
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from .cohortdefinition import (
     BuildExpressionQueryOptions,
@@ -73,7 +73,8 @@ def cohort_expression_from_json(json_str: str) -> CohortExpression:
 
 
 def build_cohort_query(
-    expression: CohortExpression, options: Optional[BuildExpressionQueryOptions] = None
+    expression: CohortExpression,
+    options: Optional[BuildExpressionQueryOptions] = None,
 ) -> str:
     """Generate SQL query from a cohort expression.
 
@@ -103,7 +104,7 @@ def build_cohort_query(
 
 def cohort_print_friendly(
     expression: CohortExpression,
-    concept_sets: Optional[List[ConceptSet]] = None,
+    concept_sets: Optional[list[ConceptSet]] = None,
     title: Optional[str] = None,
     include_concept_sets: bool = False,
 ) -> str:
@@ -128,7 +129,5 @@ def cohort_print_friendly(
     if concept_sets is None:
         concept_sets = expression.concept_sets or []
 
-    renderer = MarkdownRender(
-        concept_sets=concept_sets, include_concept_sets=include_concept_sets
-    )
+    renderer = MarkdownRender(concept_sets=concept_sets, include_concept_sets=include_concept_sets)
     return renderer.render_cohort_expression(expression, title=title)

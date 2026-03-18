@@ -29,9 +29,7 @@ class NoExitCriteriaCheck(BaseCheck):
     Java equivalent: org.ohdsi.circe.check.checkers.NoExitCriteriaCheck
     """
 
-    NO_EXIT_CRITERIA_WARNING = (
-        ' "all events" are selected and cohort exit criteria has not been specified'
-    )
+    NO_EXIT_CRITERIA_WARNING = ' "all events" are selected and cohort exit criteria has not been specified'
 
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.

@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Any, List
+from typing import Any
 
 from ..check import Check
 from ..warning import Warning
@@ -39,7 +39,7 @@ class BaseCheck(Check):
     ADDITIONAL_RULE = "additional rule"
     INITIAL_EVENT = "initial event"
 
-    def check(self, expression: "CohortExpression") -> List[Warning]:
+    def check(self, expression: "CohortExpression") -> list[Warning]:
         """Check a cohort expression and return warnings.
 
         This is the main entry point that sets up the warning reporter
@@ -51,7 +51,7 @@ class BaseCheck(Check):
         Returns:
             A list of warnings found during validation
         """
-        warnings: List[Warning] = []
+        warnings: list[Warning] = []
         self._check(expression, self._define_reporter(warnings))
         return warnings
 
@@ -72,7 +72,7 @@ class BaseCheck(Check):
         """
         return WarningSeverity.CRITICAL
 
-    def _define_reporter(self, warnings: List[Warning]) -> WarningReporter:
+    def _define_reporter(self, warnings: list[Warning]) -> WarningReporter:
         """Define the warning reporter for this check.
 
         Args:
@@ -83,9 +83,7 @@ class BaseCheck(Check):
         """
         return self._get_reporter(self._define_severity(), warnings)
 
-    def _get_reporter(
-        self, severity: WarningSeverity, warnings: List[Warning]
-    ) -> WarningReporter:
+    def _get_reporter(self, severity: WarningSeverity, warnings: list[Warning]) -> WarningReporter:
         """Get a warning reporter for the given severity level.
 
         Args:

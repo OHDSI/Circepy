@@ -10,7 +10,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, List, Optional, Set, TypeVar
+from typing import Generic, Optional, TypeVar
 
 from ..criteria import Criteria
 from .utils import BuilderOptions, CriteriaColumn
@@ -24,18 +24,14 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
     Java equivalent: org.ohdsi.circe.cohortdefinition.builders.CriteriaSqlBuilder
     """
 
-    def get_criteria_sql(
-        self, criteria: T, options: Optional[BuilderOptions] = None
-    ) -> str:
+    def get_criteria_sql(self, criteria: T, options: Optional[BuilderOptions] = None) -> str:
         """Get SQL query for criteria.
 
         Java equivalent: CriteriaSqlBuilder.getCriteriaSql(T criteria)
         """
         return self.get_criteria_sql_with_options(criteria, options)
 
-    def get_criteria_sql_with_options(
-        self, criteria: T, options: Optional[BuilderOptions]
-    ) -> str:
+    def get_criteria_sql_with_options(self, criteria: T, options: Optional[BuilderOptions]) -> str:
         """Get SQL query for criteria with builder options.
 
         Java equivalent: CriteriaSqlBuilder.getCriteriaSql(T criteria, BuilderOptions options)
@@ -59,9 +55,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
 
         if options is not None:
             filtered_columns = [
-                column
-                for column in options.additional_columns
-                if column not in self.get_default_columns()
+                column for column in options.additional_columns if column not in self.get_default_columns()
             ]
             if filtered_columns:
                 query = query.replace(
@@ -92,7 +86,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for this builder.
 
         Java equivalent: CriteriaSqlBuilder.getDefaultColumns()
@@ -107,9 +101,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return query.replace("@codesetClause", "")
 
-    def resolve_select_clauses(
-        self, criteria: T, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    def resolve_select_clauses(self, criteria: T, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve select clauses for criteria.
 
         Java equivalent: CriteriaSqlBuilder.resolveSelectClauses()
@@ -117,9 +109,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return []
 
-    def resolve_join_clauses(
-        self, criteria: T, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    def resolve_join_clauses(self, criteria: T, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve join clauses for criteria.
 
         Java equivalent: CriteriaSqlBuilder.resolveJoinClauses()
@@ -127,9 +117,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return []
 
-    def resolve_where_clauses(
-        self, criteria: T, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    def resolve_where_clauses(self, criteria: T, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve where clauses for criteria.
 
         Java equivalent: CriteriaSqlBuilder.resolveWhereClauses()
@@ -137,9 +125,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return []
 
-    def embed_ordinal_expression(
-        self, query: str, criteria: T, where_clauses: List[str]
-    ) -> str:
+    def embed_ordinal_expression(self, query: str, criteria: T, where_clauses: list[str]) -> str:
         """Embed ordinal expression in query.
 
         Java equivalent: CriteriaSqlBuilder.embedOrdinalExpression()
@@ -147,7 +133,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return query.replace("@ordinalExpression", "")
 
-    def embed_select_clauses(self, query: str, select_clauses: List[str]) -> str:
+    def embed_select_clauses(self, query: str, select_clauses: list[str]) -> str:
         """Embed select clauses in query.
 
         Java equivalent: CriteriaSqlBuilder.embedSelectClauses()
@@ -156,7 +142,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         select_clause = ",".join(select_clauses) if select_clauses else ""
         return query.replace("@selectClause", select_clause)
 
-    def embed_join_clauses(self, query: str, join_clauses: List[str]) -> str:
+    def embed_join_clauses(self, query: str, join_clauses: list[str]) -> str:
         """Embed join clauses in query.
 
         Java equivalent: CriteriaSqlBuilder.embedJoinClauses()
@@ -164,7 +150,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         join_clause = " ".join(join_clauses) if join_clauses else ""
         return query.replace("@joinClause", join_clause)
 
-    def embed_where_clauses(self, query: str, where_clauses: List[str]) -> str:
+    def embed_where_clauses(self, query: str, where_clauses: list[str]) -> str:
         """Embed where clauses in query.
 
         Java equivalent: CriteriaSqlBuilder.embedWhereClauses()
@@ -174,14 +160,11 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
             where_clause = "WHERE " + " AND ".join(where_clauses)
         return query.replace("@whereClause", where_clause)
 
-    def get_additional_columns(self, columns: List[CriteriaColumn]) -> str:
+    def get_additional_columns(self, columns: list[CriteriaColumn]) -> str:
         """Get additional columns string.
 
         Java equivalent: CriteriaSqlBuilder.getAdditionalColumns()
         """
         return ", ".join(
-            [
-                f"{self.get_table_column_for_criteria_column(col)} as {col.value}"
-                for col in columns
-            ]
+            [f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns]
         )

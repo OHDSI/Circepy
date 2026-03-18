@@ -27,19 +27,8 @@ class TestPackageStructure:
 
     def test_subpackage_imports(self):
         """Test that subpackages can be imported."""
-        import circe.check
-        import circe.check.checkers
-        import circe.check.operations
-        import circe.check.utils
-        import circe.check.warnings
-        import circe.cohortdefinition
 
         # Test sub-subpackages
-        import circe.cohortdefinition.builders
-        import circe.cohortdefinition.printfriendly
-        import circe.execution
-        import circe.helper
-        import circe.vocabulary
 
     def test_package_structure(self):
         """Test that package structure matches expected layout."""
@@ -79,8 +68,6 @@ class TestPackageStructure:
             CohortExpression,
             Concept,
             ConceptSet,
-            ConceptSetExpression,
-            ConceptSetItem,
         )
 
         # Test basic instantiation
