@@ -9,12 +9,12 @@ Verifies that:
    in the module-level _REGISTRY.
 4. No hardcoding of waveform or other extension types is required.
 """
+
 import pytest
 
 from circe.cohortdefinition.criteria import Criteria
+from circe.execution.builders.registry import _REGISTRY, get_builder
 from circe.extensions import get_registry, ibis_builder
-from circe.execution.builders.registry import get_builder, _REGISTRY
-
 
 # ---------------------------------------------------------------------------
 # Decorator-based registration
@@ -121,38 +121,46 @@ class TestWaveformIbisBuilders:
     def _import_waveform(self):
         import circe.extensions.waveform  # noqa: F401
 
-    @pytest.mark.parametrize("name", [
-        "WaveformOccurrence",
-        "WaveformRegistry",
-        "WaveformChannelMetadata",
-        "WaveformFeature",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "WaveformOccurrence",
+            "WaveformRegistry",
+            "WaveformChannelMetadata",
+            "WaveformFeature",
+        ],
+    )
     def test_registered_in_extension_registry(self, name):
         reg = get_registry()
         builder = reg.get_ibis_builder(name)
         assert builder is not None
         assert callable(builder)
 
-    @pytest.mark.parametrize("name", [
-        "WaveformOccurrence",
-        "WaveformRegistry",
-        "WaveformChannelMetadata",
-        "WaveformFeature",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "WaveformOccurrence",
+            "WaveformRegistry",
+            "WaveformChannelMetadata",
+            "WaveformFeature",
+        ],
+    )
     def test_registered_in_execution_registry(self, name):
         assert name in _REGISTRY
         assert callable(_REGISTRY[name])
 
-    @pytest.mark.parametrize("criteria_cls_name", [
-        "WaveformOccurrence",
-        "WaveformRegistry",
-        "WaveformChannelMetadata",
-        "WaveformFeature",
-    ])
+    @pytest.mark.parametrize(
+        "criteria_cls_name",
+        [
+            "WaveformOccurrence",
+            "WaveformRegistry",
+            "WaveformChannelMetadata",
+            "WaveformFeature",
+        ],
+    )
     def test_get_builder_resolves(self, criteria_cls_name):
         from circe.extensions.waveform import criteria as wf_criteria
 
         cls = getattr(wf_criteria, criteria_cls_name)
         builder = get_builder(cls())
         assert callable(builder)
-

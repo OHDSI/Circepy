@@ -1,7 +1,6 @@
 """Ibis execution builder for WaveformChannelMetadata criteria."""
-from __future__ import annotations
 
-import ibis
+from __future__ import annotations
 
 from circe.execution.build_context import BuildContext
 from circe.execution.builders.common import (
@@ -54,28 +53,18 @@ def build_waveform_channel_metadata(criteria: WaveformChannelMetadata, ctx: Buil
 
     # Channel identification
     if criteria.channel_concept_id:
-        table = apply_concept_filters(
-            table, "channel_concept_id", criteria.channel_concept_id
-        )
-    table = apply_text_filter(
-        table, "waveform_channel_source_value", criteria.waveform_channel_source_value
-    )
+        table = apply_concept_filters(table, "channel_concept_id", criteria.channel_concept_id)
+    table = apply_text_filter(table, "waveform_channel_source_value", criteria.waveform_channel_source_value)
 
     # Metadata type
     if criteria.metadata_concept_id:
-        table = apply_concept_filters(
-            table, "metadata_concept_id", criteria.metadata_concept_id
-        )
-    table = apply_text_filter(
-        table, "metadata_source_value", criteria.metadata_source_value
-    )
+        table = apply_concept_filters(table, "metadata_concept_id", criteria.metadata_concept_id)
+    table = apply_text_filter(table, "metadata_source_value", criteria.metadata_source_value)
 
     # Metadata values
     table = apply_numeric_range(table, "value_as_number", criteria.value_as_number)
     if criteria.value_as_concept_id:
-        table = apply_concept_filters(
-            table, "value_as_concept_id", criteria.value_as_concept_id
-        )
+        table = apply_concept_filters(table, "value_as_concept_id", criteria.value_as_concept_id)
 
     # Units
     if criteria.unit_concept_id:
@@ -83,9 +72,7 @@ def build_waveform_channel_metadata(criteria: WaveformChannelMetadata, ctx: Buil
 
     # Device / procedure linkage
     table = apply_numeric_range(table, "device_exposure_id", criteria.device_exposure_id)
-    table = apply_numeric_range(
-        table, "procedure_occurrence_id", criteria.procedure_occurrence_id
-    )
+    table = apply_numeric_range(table, "procedure_occurrence_id", criteria.procedure_occurrence_id)
 
     events = standardize_output(
         table,
@@ -94,4 +81,3 @@ def build_waveform_channel_metadata(criteria: WaveformChannelMetadata, ctx: Buil
         end_column=criteria.get_end_date_column(),
     )
     return apply_criteria_group(events, criteria.correlated_criteria, ctx)
-
