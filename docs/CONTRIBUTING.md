@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # Contributing to CIRCE Python Implementation
 
 Thank you for your interest in contributing to the CIRCE Python implementation! This document provides guidelines for contributing to the project.
@@ -10,28 +14,36 @@ This project follows the [OHDSI Code of Conduct](https://www.ohdsi.org/web/wiki/
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.9 or higher
 - Git
 - Basic understanding of the OMOP Common Data Model
 - Familiarity with the Java CIRCE-BE implementation (recommended)
 
 ### Development Setup
 
+> [!NOTE]
+> The recommended contributor workflow uses `uv` and the checked-in `uv.lock` for a reproducible environment.
+
 1. Fork the repository on GitHub
 2. Clone your fork locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/circe-be-python.git
-   cd circe-be-python
+   git clone https://github.com/YOUR_USERNAME/Circepy.git
+   cd Circepy
    ```
 
-3. Install the package in development mode:
+3. Create the development environment:
    ```bash
-   pip install -e ".[dev]"
+   uv sync --extra dev
    ```
 
-4. Run tests to ensure everything is working:
+4. Install Git hooks:
    ```bash
-   pytest
+   uv run pre-commit install
+   ```
+
+5. Run tests to ensure everything is working:
+   ```bash
+   uv run pytest
    ```
 
 ## Development Guidelines
@@ -40,18 +52,15 @@ This project follows the [OHDSI Code of Conduct](https://www.ohdsi.org/web/wiki/
 
 We use the following tools to maintain code quality:
 
-- **Black** for code formatting
-- **isort** for import sorting
-- **flake8** for linting
-- **mypy** for type checking
+- **Ruff** for linting and formatting
+- **pre-commit** for running repository hooks before commit
 
 Run these tools before committing:
 
 ```bash
-black circe/
-isort circe/
-flake8 circe/
-mypy circe/
+uv run ruff check .
+uv run ruff format .
+uv run pre-commit run --all-files
 ```
 
 ### Type Hints
@@ -215,8 +224,8 @@ We follow [Semantic Versioning](https://semver.org/):
    - Update version in `pyproject.toml`
    - Update version in `circe/__init__.py`
    - Update `CHANGELOG.md` with release notes
-   - Ensure all tests pass: `pytest`
-   - Verify coverage is adequate: `pytest --cov`
+   - Ensure all tests pass: `uv run pytest`
+   - Verify coverage is adequate: `uv run pytest --cov`
 
 2. **Build the Package**
    ```bash
@@ -236,7 +245,7 @@ We follow [Semantic Versioning](https://semver.org/):
    twine upload --repository testpypi dist/*
    
    # Test installation
-   pip install --index-url https://test.pypi.org/simple/ ohdsi-circepy
+   pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ ohdsi-circe-python-alpha
    ```
 
 4. **Create Git Tag**

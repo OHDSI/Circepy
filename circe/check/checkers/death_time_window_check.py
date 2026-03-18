@@ -33,7 +33,9 @@ class DeathTimeWindowCheck(BaseCorelatedCriteriaCheck):
     Java equivalent: org.ohdsi.circe.check.checkers.DeathTimeWindowCheck
     """
 
-    MESSAGE = "%s attempts to identify death event prior to index event. Events post-death may not be available"
+    MESSAGE = (
+        "%s attempts to identify death event prior to index event. Events post-death may not be available"
+    )
 
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.
@@ -43,9 +45,7 @@ class DeathTimeWindowCheck(BaseCorelatedCriteriaCheck):
         """
         return WarningSeverity.WARNING
 
-    def _internal_check(
-        self, expression: "CohortExpression", reporter: WarningReporter
-    ) -> None:
+    def _internal_check(self, expression: "CohortExpression", reporter: WarningReporter) -> None:
         """Check death criteria in inclusion rules and other locations.
 
         Args:
@@ -64,13 +64,9 @@ class DeathTimeWindowCheck(BaseCorelatedCriteriaCheck):
 
         # Check primary criteria
         if expression.primary_criteria and expression.primary_criteria.criteria_list:
-            self._check_criteria_list(
-                expression.primary_criteria.criteria_list, self.INITIAL_EVENT, reporter
-            )
+            self._check_criteria_list(expression.primary_criteria.criteria_list, self.INITIAL_EVENT, reporter)
 
-    def _check_criteria_list(
-        self, criteria_list, group_name: str, reporter: WarningReporter
-    ) -> None:
+    def _check_criteria_list(self, criteria_list, group_name: str, reporter: WarningReporter) -> None:
         """Check a list of criteria.
 
         Args:
@@ -92,9 +88,7 @@ class DeathTimeWindowCheck(BaseCorelatedCriteriaCheck):
             if criteria:
                 self._check_criteria_group(criteria, group_name, reporter)
 
-    def _check_criteria_group(
-        self, criteria: "Criteria", group_name: str, reporter: WarningReporter
-    ) -> None:
+    def _check_criteria_group(self, criteria: "Criteria", group_name: str, reporter: WarningReporter) -> None:
         """Check a criteria and its correlated criteria.
 
         Args:
@@ -111,12 +105,13 @@ class DeathTimeWindowCheck(BaseCorelatedCriteriaCheck):
                 for group in correlated.groups:
                     if hasattr(group, "criteria_list") and group.criteria_list:
                         for corelated_criteria in group.criteria_list:
-                            self._check_criteria(
-                                corelated_criteria, group_name, reporter
-                            )
+                            self._check_criteria(corelated_criteria, group_name, reporter)
 
     def _check_criteria(
-        self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter
+        self,
+        criteria: "CorelatedCriteria",
+        group_name: str,
+        reporter: WarningReporter,
     ) -> None:
         """Check a corelated criteria for death time window issues.
 
@@ -130,7 +125,9 @@ class DeathTimeWindowCheck(BaseCorelatedCriteriaCheck):
         match_result = Operations.match(criteria.criteria)
         match_result.is_a(Death)
         match_result.then(
-            lambda death: Operations.match(criteria)
-            .when(lambda c: Comparisons.is_before(c.start_window))
-            .then(lambda c: reporter(self.MESSAGE, name))
+            lambda death: (
+                Operations.match(criteria)
+                .when(lambda c: Comparisons.is_before(c.start_window))
+                .then(lambda c: reporter(self.MESSAGE, name))
+            )
         )

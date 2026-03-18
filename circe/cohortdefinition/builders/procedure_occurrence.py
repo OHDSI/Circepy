@@ -9,7 +9,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Set
+from typing import Optional
 
 from ..criteria import Criteria
 from .base import CriteriaSqlBuilder
@@ -56,7 +56,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         "po.quantity",
     ]
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for this builder.
 
         Java equivalent: ProcedureOccurrenceSqlBuilder.getDefaultColumns()
@@ -90,9 +90,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         else:
             return f"C.{column.value}"
 
-    def embed_ordinal_expression(
-        self, query: str, criteria: Criteria, where_clauses: List[str]
-    ) -> str:
+    def embed_ordinal_expression(self, query: str, criteria: Criteria, where_clauses: list[str]) -> str:
         """Embed ordinal expression in query.
 
         Java equivalent: ProcedureOccurrenceSqlBuilder.embedOrdinalExpression()
@@ -129,8 +127,10 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         )
 
     def resolve_select_clauses(
-        self, criteria: Criteria, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+        self,
+        criteria: Criteria,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve select clauses for criteria.
 
         Java equivalent: ProcedureOccurrenceSqlBuilder.resolveSelectClauses()
@@ -142,18 +142,13 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
             hasattr(criteria, "procedure_type")
             and criteria.procedure_type
             and len(criteria.procedure_type) > 0
-        ) or (
-            hasattr(criteria, "procedure_type_cs")
-            and criteria.procedure_type_cs is not None
-        ):
+        ) or (hasattr(criteria, "procedure_type_cs") and criteria.procedure_type_cs is not None):
             select_cols.append("po.procedure_type_concept_id")
 
         # modifier
-        if (
-            hasattr(criteria, "modifier")
-            and criteria.modifier
-            and len(criteria.modifier) > 0
-        ) or (hasattr(criteria, "modifier_cs") and criteria.modifier_cs is not None):
+        if (hasattr(criteria, "modifier") and criteria.modifier and len(criteria.modifier) > 0) or (
+            hasattr(criteria, "modifier_cs") and criteria.modifier_cs is not None
+        ):
             select_cols.append("po.modifier_concept_id")
 
         # providerSpecialty
@@ -161,10 +156,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
             hasattr(criteria, "provider_specialty")
             and criteria.provider_specialty
             and len(criteria.provider_specialty) > 0
-        ) or (
-            hasattr(criteria, "provider_specialty_cs")
-            and criteria.provider_specialty_cs is not None
-        ):
+        ) or (hasattr(criteria, "provider_specialty_cs") and criteria.provider_specialty_cs is not None):
             select_cols.append("po.provider_id")
 
         # dateAdjustment or default start/end dates
@@ -191,9 +183,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
 
         return select_cols
 
-    def resolve_join_clauses(
-        self, criteria: Criteria, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    def resolve_join_clauses(self, criteria: Criteria, options: Optional[BuilderOptions] = None) -> list[str]:
         """Resolve join clauses for criteria.
 
         Java equivalent: ProcedureOccurrenceSqlBuilder.resolveJoinClauses()
@@ -203,23 +193,13 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         # join to PERSON
         if (
             (hasattr(criteria, "age") and criteria.age)
-            or (
-                hasattr(criteria, "gender")
-                and criteria.gender
-                and len(criteria.gender) > 0
-            )
+            or (hasattr(criteria, "gender") and criteria.gender and len(criteria.gender) > 0)
             or (hasattr(criteria, "gender_cs") and criteria.gender_cs is not None)
         ):
-            join_clauses.append(
-                "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id"
-            )
+            join_clauses.append("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id")
 
         # visitType
-        if (
-            hasattr(criteria, "visit_type")
-            and criteria.visit_type
-            and len(criteria.visit_type) > 0
-        ) or (
+        if (hasattr(criteria, "visit_type") and criteria.visit_type and len(criteria.visit_type) > 0) or (
             hasattr(criteria, "visit_type_cs") and criteria.visit_type_cs is not None
         ):
             join_clauses.append(
@@ -231,10 +211,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
             hasattr(criteria, "provider_specialty")
             and criteria.provider_specialty
             and len(criteria.provider_specialty) > 0
-        ) or (
-            hasattr(criteria, "provider_specialty_cs")
-            and criteria.provider_specialty_cs is not None
-        ):
+        ) or (hasattr(criteria, "provider_specialty_cs") and criteria.provider_specialty_cs is not None):
             join_clauses.append(
                 "LEFT JOIN @cdm_database_schema.PROVIDER PR on C.provider_id = PR.provider_id"
             )
@@ -242,8 +219,10 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         return join_clauses
 
     def resolve_where_clauses(
-        self, criteria: Criteria, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+        self,
+        criteria: Criteria,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve where clauses for criteria.
 
         Java equivalent: ProcedureOccurrenceSqlBuilder.resolveWhereClauses()
@@ -251,14 +230,9 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
         where_clauses = list(super().resolve_where_clauses(criteria, options))
 
         # occurrenceStartDate
-        if (
-            hasattr(criteria, "occurrence_start_date")
-            and criteria.occurrence_start_date
-        ):
+        if hasattr(criteria, "occurrence_start_date") and criteria.occurrence_start_date:
             where_clauses.append(
-                BuilderUtils.build_date_range_clause(
-                    "C.start_date", criteria.occurrence_start_date
-                )
+                BuilderUtils.build_date_range_clause("C.start_date", criteria.occurrence_start_date)
             )
 
         # procedureType
@@ -267,13 +241,10 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
             and criteria.procedure_type
             and len(criteria.procedure_type) > 0
         ):
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.procedure_type
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.procedure_type)
             exclude = (
                 "not "
-                if hasattr(criteria, "procedure_type_exclude")
-                and criteria.procedure_type_exclude
+                if hasattr(criteria, "procedure_type_exclude") and criteria.procedure_type_exclude
                 else ""
             )
             where_clauses.append(
@@ -281,10 +252,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
             )
 
         # procedureTypeCS
-        if (
-            hasattr(criteria, "procedure_type_cs")
-            and criteria.procedure_type_cs is not None
-        ):
+        if hasattr(criteria, "procedure_type_cs") and criteria.procedure_type_cs is not None:
             where_clauses.append(
                 BuilderUtils.get_codeset_in_expression(
                     criteria.procedure_type_cs.codeset_id, "C.procedure_type_concept_id"
@@ -292,15 +260,9 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
             )
 
         # modifier
-        if (
-            hasattr(criteria, "modifier")
-            and criteria.modifier
-            and len(criteria.modifier) > 0
-        ):
+        if hasattr(criteria, "modifier") and criteria.modifier and len(criteria.modifier) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.modifier)
-            where_clauses.append(
-                f"C.modifier_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            where_clauses.append(f"C.modifier_concept_id in ({','.join(map(str, concept_ids))})")
 
         # modifierCS
         if hasattr(criteria, "modifier_cs") and criteria.modifier_cs is not None:
@@ -312,31 +274,23 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
 
         # quantity
         if hasattr(criteria, "quantity") and criteria.quantity:
-            where_clauses.append(
-                BuilderUtils.build_numeric_range_clause("C.quantity", criteria.quantity)
-            )
+            where_clauses.append(BuilderUtils.build_numeric_range_clause("C.quantity", criteria.quantity))
 
         # age
         if hasattr(criteria, "age") and criteria.age:
             where_clauses.append(
-                BuilderUtils.build_numeric_range_clause(
-                    "YEAR(C.start_date) - P.year_of_birth", criteria.age
-                )
+                BuilderUtils.build_numeric_range_clause("YEAR(C.start_date) - P.year_of_birth", criteria.age)
             )
 
         # gender
         if hasattr(criteria, "gender") and criteria.gender and len(criteria.gender) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.gender)
-            where_clauses.append(
-                f"P.gender_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            where_clauses.append(f"P.gender_concept_id in ({','.join(map(str, concept_ids))})")
 
         # genderCS
         if hasattr(criteria, "gender_cs") and criteria.gender_cs is not None:
             where_clauses.append(
-                BuilderUtils.get_codeset_in_expression(
-                    criteria.gender_cs.codeset_id, "P.gender_concept_id"
-                )
+                BuilderUtils.get_codeset_in_expression(criteria.gender_cs.codeset_id, "P.gender_concept_id")
             )
 
         # providerSpecialty
@@ -345,18 +299,11 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
             and criteria.provider_specialty
             and len(criteria.provider_specialty) > 0
         ):
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.provider_specialty
-            )
-            where_clauses.append(
-                f"PR.specialty_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.provider_specialty)
+            where_clauses.append(f"PR.specialty_concept_id in ({','.join(map(str, concept_ids))})")
 
         # providerSpecialtyCS
-        if (
-            hasattr(criteria, "provider_specialty_cs")
-            and criteria.provider_specialty_cs is not None
-        ):
+        if hasattr(criteria, "provider_specialty_cs") and criteria.provider_specialty_cs is not None:
             where_clauses.append(
                 BuilderUtils.get_codeset_in_expression(
                     criteria.provider_specialty_cs.codeset_id, "PR.specialty_concept_id"
@@ -364,17 +311,9 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
             )
 
         # visitType
-        if (
-            hasattr(criteria, "visit_type")
-            and criteria.visit_type
-            and len(criteria.visit_type) > 0
-        ):
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.visit_type
-            )
-            where_clauses.append(
-                f"V.visit_concept_id in ({','.join(map(str, concept_ids))})"
-            )
+        if hasattr(criteria, "visit_type") and criteria.visit_type and len(criteria.visit_type) > 0:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.visit_type)
+            where_clauses.append(f"V.visit_concept_id in ({','.join(map(str, concept_ids))})")
 
         # visitTypeCS
         if hasattr(criteria, "visit_type_cs") and criteria.visit_type_cs is not None:

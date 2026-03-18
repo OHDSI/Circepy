@@ -9,51 +9,14 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+from contextlib import suppress
+
 from ..constants import Constants
 from ..operations.operations import Operations
 
 # Import at runtime to avoid circular dependencies
-try:
-    from ...cohortdefinition.criteria import (
-        ConditionEra,
-        ConditionOccurrence,
-        Death,
-        DeviceExposure,
-        DoseEra,
-        DrugEra,
-        DrugExposure,
-        LocationRegion,
-        Measurement,
-        Observation,
-        ObservationPeriod,
-        PayerPlanPeriod,
-        ProcedureOccurrence,
-        Specimen,
-        VisitDetail,
-        VisitOccurrence,
-    )
-except ImportError:
-    from typing import TYPE_CHECKING
-
-    if TYPE_CHECKING:
-        from ...cohortdefinition.criteria import (
-            ConditionEra,
-            ConditionOccurrence,
-            Death,
-            DeviceExposure,
-            DoseEra,
-            DrugEra,
-            DrugExposure,
-            LocationRegion,
-            Measurement,
-            Observation,
-            ObservationPeriod,
-            PayerPlanPeriod,
-            ProcedureOccurrence,
-            Specimen,
-            VisitDetail,
-            VisitOccurrence,
-        )
+with suppress(ImportError):
+    pass
 
 
 class CriteriaNameHelper:
@@ -84,7 +47,6 @@ class CriteriaNameHelper:
             DoseEra,
             DrugEra,
             DrugExposure,
-            LocationRegion,
             Measurement,
             Observation,
             ObservationPeriod,

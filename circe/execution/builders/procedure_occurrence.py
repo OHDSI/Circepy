@@ -25,16 +25,10 @@ def build_procedure_occurrence(criteria: ProcedureOccurrence, ctx: BuildContext)
     concept_column = criteria.get_concept_id_column()
     table = apply_codeset_filter(table, concept_column, criteria.codeset_id, ctx)
     if criteria.first:
-        table = apply_first_event(
-            table, criteria.get_start_date_column(), criteria.get_primary_key_column()
-        )
+        table = apply_first_event(table, criteria.get_start_date_column(), criteria.get_primary_key_column())
 
-    table = apply_date_range(
-        table, criteria.get_start_date_column(), criteria.occurrence_start_date
-    )
-    table = apply_date_range(
-        table, criteria.get_end_date_column(), criteria.occurrence_end_date
-    )
+    table = apply_date_range(table, criteria.get_start_date_column(), criteria.occurrence_start_date)
+    table = apply_date_range(table, criteria.get_end_date_column(), criteria.occurrence_end_date)
 
     table = apply_concept_criteria(
         table,
@@ -56,9 +50,7 @@ def build_procedure_occurrence(criteria: ProcedureOccurrence, ctx: BuildContext)
     table = apply_numeric_range(table, "quantity", criteria.quantity)
 
     if criteria.age:
-        table = apply_age_filter(
-            table, criteria.age, ctx, criteria.get_start_date_column()
-        )
+        table = apply_age_filter(table, criteria.age, ctx, criteria.get_start_date_column())
     table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
     table = apply_provider_specialty_filter(
         table,
@@ -67,9 +59,7 @@ def build_procedure_occurrence(criteria: ProcedureOccurrence, ctx: BuildContext)
         ctx,
         provider_column="provider_id",
     )
-    table = apply_visit_concept_filters(
-        table, criteria.visit_type, criteria.visit_type_cs, ctx
-    )
+    table = apply_visit_concept_filters(table, criteria.visit_type, criteria.visit_type_cs, ctx)
 
     if criteria.procedure_source_concept is not None:
         table = apply_codeset_filter(

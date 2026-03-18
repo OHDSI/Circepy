@@ -40,7 +40,10 @@ class DrugEraCheck(BaseCorelatedCriteriaCheck):
         return WarningSeverity.INFO
 
     def _check_criteria(
-        self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter
+        self,
+        criteria: "CorelatedCriteria",
+        group_name: str,
+        reporter: WarningReporter,
     ) -> None:
         """Check drug era criteria for missing days supply information.
 
@@ -61,13 +64,15 @@ class DrugEraCheck(BaseCorelatedCriteriaCheck):
         match_result = Operations.match(criteria.criteria)
         match_result.is_a(DrugEra)
         match_result.then(
-            lambda c: Operations.match(criteria)
-            .when(
-                lambda de: (
-                    (not criteria.start_window or not criteria.start_window.start)
-                    and (not criteria.start_window or not criteria.start_window.end)
-                    and (not criteria.end_window or not criteria.end_window.start)
+            lambda c: (
+                Operations.match(criteria)
+                .when(
+                    lambda de: (
+                        (not criteria.start_window or not criteria.start_window.start)
+                        and (not criteria.start_window or not criteria.start_window.end)
+                        and (not criteria.end_window or not criteria.end_window.start)
+                    )
                 )
+                .then(lambda de: reporter(self.MISSING_DAYS_INFO, group_name))
             )
-            .then(lambda de: reporter(self.MISSING_DAYS_INFO, group_name))
         )

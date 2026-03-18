@@ -153,12 +153,13 @@ def test_has_end_strategy_handles_polymorphic_models():
     from circe.execution.builders.common import has_end_strategy
 
     assert has_end_strategy(None) is False
-    assert (
-        has_end_strategy(DateOffsetStrategy(offset=7, date_field="StartDate")) is True
-    )
+    assert has_end_strategy(DateOffsetStrategy(offset=7, date_field="StartDate")) is True
     assert has_end_strategy(CustomEraStrategy(drug_codeset_id=123)) is True
 
 
+@pytest.mark.filterwarnings(
+    "ignore:fetch_arrow_table\\(\\) is deprecated, use to_arrow_table\\(\\) instead\\.:DeprecationWarning"
+)
 def test_ibis_executor_build_smoke_duckdb():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
@@ -215,9 +216,7 @@ def test_ibis_executor_build_smoke_duckdb():
         concept_sets=[
             ConceptSet(
                 id=1,
-                expression=ConceptSetExpression(
-                    items=[ConceptSetItem(concept=Concept(conceptId=111))]
-                ),
+                expression=ConceptSetExpression(items=[ConceptSetItem(concept=Concept(conceptId=111))]),
             )
         ],
         primary_criteria=PrimaryCriteria(

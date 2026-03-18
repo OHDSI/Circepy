@@ -1,6 +1,6 @@
 # CIRCE Python Implementation
 
-[![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
 [![Tests](https://img.shields.io/badge/tests-3400%2B%20passed-brightgreen)](tests/)
 [![codecov](https://codecov.io/gh/OHDSI/Circepy/graph/badge.svg?token=CODECOV_TOKEN)](https://codecov.io/gh/OHDSI/Circepy)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
@@ -30,34 +30,40 @@ CIRCE Python provides a comprehensive toolkit for working with OMOP CDM cohort d
 - **Version**: 0.1.0 (Alpha)
 - **Tests**: 3,400+ passing
 - **Coverage**: 34% (Core logic focus)
-- **Python**: 3.8+
+- **Python**: 3.9+
 - **License**: Apache 2.0
 
 ## Installation
 
 > [!NOTE]
 > This package is currently in private development. Install from source using Git.
+> The recommended workflow uses `uv` and the checked-in `uv.lock` for a reproducible environment.
 
 ### From Source (Current Method)
 
 ```bash
 # Clone the repository
-git clone https://github.com/OHDSI/ohdsi-circepy.git
+git clone https://github.com/OHDSI/Circepy.git
 cd Circepy
 
-# Install in development mode with all dependencies
-pip install -e ".[dev]"
+# Create a reproducible environment from uv.lock
+uv sync
 
 # Verify installation
-circe --help
+uv run circe --help
 ```
 
 See [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions, troubleshooting, and setup options.
 
-### From PyPI (Coming Soon)
+If you are not using `uv`, see [INSTALLATION.md](INSTALLATION.md) for alternative setup options. The `uv` workflow is the recommended development path.
+
+### From PyPI
 
 > ```bash
-> # Coming in future release
+> # Current alpha package
+> pip install ohdsi-circe-python-alpha
+>
+> # Planned future package name
 > pip install ohdsi-circepy
 > ```
 
@@ -350,33 +356,31 @@ circe process my_cohort.json --validate --sql my_cohort.sql --markdown my_cohort
 git clone https://github.com/OHDSI/Circepy.git
 cd Circepy
 
-# Install with development dependencies
-pip install -e ".[dev]"
+# Install project and development dependencies from uv.lock
+uv sync --extra dev
+
+# Install Git hooks
+uv run pre-commit install
 
 # Verify installation
-pytest --version
-circe --help
+uv run pytest --version
+uv run circe --help
 ```
 
 ### Running Tests
 
 ```bash
-pytest
+uv run pytest
 ```
 
 All 3,400+ tests should pass.
 
-### Code Formatting
+### Linting and Formatting
 
 ```bash
-black circe/
-isort circe/
-```
-
-### Type Checking
-
-```bash
-mypy circe/
+uv run ruff check .
+uv run ruff format .
+uv run pre-commit run --all-files
 ```
 
 ## Compatibility Notes
@@ -395,7 +399,7 @@ This implementation is designed to be compatible with OHDSI CIRCE-BE Java versio
 If you encounter import errors, ensure the package is properly installed:
 
 ```bash
-pip install --upgrade ohdsi-circepy
+uv sync
 ```
 
 ### SQL Generation Issues
@@ -451,11 +455,11 @@ Special thanks to:
 
 ## Support
 
-- **Repository**: https://github.com/OHDSI/circepy
-- **Issues**: https://github.com/OHDSI/circepy/issues
+- **Repository**: https://github.com/OHDSI/Circepy
+- **Issues**: https://github.com/OHDSI/Circepy/issues
 - **Installation Guide**: [INSTALLATION.md](INSTALLATION.md)
-- **PyPI**: https://pypi.org/project/circepy/ (coming soon)
-- **Documentation**: https://ohdsi-circepy.readthedocs.io/ (coming soon)
+- **PyPI**: https://pypi.org/project/ohdsi-circe-python-alpha/
+- **Documentation**: https://ohdsi-circe-python-alpha.readthedocs.io/
 
 ## Related Projects
 

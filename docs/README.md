@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # CIRCE Python Documentation
 
 This directory contains the Sphinx documentation for CIRCE Python.
@@ -7,20 +11,19 @@ This directory contains the Sphinx documentation for CIRCE Python.
 ### Install Dependencies
 
 ```bash
-pip install -e ".[docs]"
+uv sync --extra docs
 ```
 
-Or install documentation requirements directly:
+Or, if you are not using `uv`:
 
 ```bash
-pip install -r docs/requirements.txt
+pip install -e ".[docs]"
 ```
 
 ### Build HTML Documentation
 
 ```bash
-cd docs
-make html
+uv run make -C docs html
 ```
 
 The generated HTML will be in `docs/_build/html/`. Open `docs/_build/html/index.html` in your browser.
@@ -28,15 +31,13 @@ The generated HTML will be in `docs/_build/html/`. Open `docs/_build/html/index.
 ### Build PDF Documentation
 
 ```bash
-cd docs
-make latexpdf
+uv run make -C docs latexpdf
 ```
 
 ### Clean Build Files
 
 ```bash
-cd docs
-make clean
+uv run make -C docs clean
 ```
 
 ## Documentation Structure
@@ -50,7 +51,7 @@ make clean
 ## Live Documentation
 
 Once published, documentation will be available at:
-https://ohdsi-circepy.readthedocs.io/
+https://ohdsi-circe-python-alpha.readthedocs.io/
 
 ## Contributing to Documentation
 
@@ -65,4 +66,3 @@ https://ohdsi-circepy.readthedocs.io/
 * Link between pages using `:doc:` role
 * Auto-generate API docs with autodoc directives
 * Keep examples up-to-date with package changes
-

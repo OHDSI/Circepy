@@ -32,7 +32,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     "pydantic>=2.0.0",
     "typing-extensions>=4.0.0",
@@ -43,16 +43,20 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
-    "black>=22.0.0",
-    "isort>=5.0.0",
-    "flake8>=5.0.0",
     "mypy>=1.0.0",
+    "pre-commit>=4.0.0",
+    "ruff>=0.1.0",
     "sqlglot>=23.0.0",
     "duckdb>=0.9.0",
+    "ibis-framework[duckdb]>=11.0.0",
+    "polars>=0.20.0",
+    "deepdiff>=8.6.0",
+    "javalang>=0.13.0",
 ]
 docs = [
     "sphinx>=5.0.0",
     "sphinx-rtd-theme>=1.0.0",
+    "myst-parser>=0.18.0",
 ]
 ibis = [
     "ibis-framework>=11.0.0; python_version >= '3.9'",
@@ -91,30 +95,6 @@ exclude = ["circe.tests*"]
 [tool.setuptools.package-data]
 circe = ["py.typed"]
 "circe.extensions.waveform" = ["templates/*.j2"]
-
-[tool.black]
-line-length = 88
-target-version = ['py38']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-line_length = 88
-known_first_party = ["circe"]
 
 [tool.mypy]
 python_version = "3.9"
@@ -172,3 +152,48 @@ markers = [
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
 ]
+
+[tool.ruff]
+# Allow longer lines for code and docstrings.
+line-length = 110
+
+# Exclude directories
+extend-exclude = [
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".tox",
+    ".venv",
+    "build",
+    "dist",
+    "circe-be",
+]
+
+[tool.ruff.lint]
+# Enable pycodestyle (`E`), Pyflakes (`F`), isort (`I`), and other useful rules
+select = [
+    "E",   # pycodestyle errors
+    "F",   # Pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # Line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["circe"]
+
+[tool.ruff.format]
+# Use double quotes for strings.
+quote-style = "double"
+# Indent with spaces, rather than tabs.
+indent-style = "space"
+# Respect magic trailing commas.
+skip-magic-trailing-comma = false
+# Automatically detect the appropriate line ending.
+line-ending = "auto"

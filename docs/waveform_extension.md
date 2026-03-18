@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # OHDSI Waveform Extension for circe_py
 
 This extension implements the full [OHDSI Waveform Extension specification](https://ohdsi.github.io/WaveformWG/waveform-tables.html) for cohort definition and SQL generation in circe_py.
@@ -101,4 +105,3 @@ cd /path/to/circe_py
 export PYTHONPATH=.
 python3 examples/waveform_extension.py
 ```
-

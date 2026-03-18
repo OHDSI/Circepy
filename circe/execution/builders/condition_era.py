@@ -20,26 +20,18 @@ from .registry import register
 def build_condition_era(criteria: ConditionEra, ctx: BuildContext):
     table = ctx.table("condition_era")
 
-    table = apply_codeset_filter(
-        table, "condition_concept_id", criteria.codeset_id, ctx
-    )
+    table = apply_codeset_filter(table, "condition_concept_id", criteria.codeset_id, ctx)
     table = apply_date_range(table, "condition_era_start_date", criteria.era_start_date)
     table = apply_date_range(table, "condition_era_end_date", criteria.era_end_date)
-    table = apply_numeric_range(
-        table, "condition_occurrence_count", criteria.occurrence_count
-    )
+    table = apply_numeric_range(table, "condition_occurrence_count", criteria.occurrence_count)
     table = apply_interval_range(
         table, "condition_era_start_date", "condition_era_end_date", criteria.era_length
     )
 
     if criteria.age_at_start:
-        table = apply_age_filter(
-            table, criteria.age_at_start, ctx, "condition_era_start_date"
-        )
+        table = apply_age_filter(table, criteria.age_at_start, ctx, "condition_era_start_date")
     if criteria.age_at_end:
-        table = apply_age_filter(
-            table, criteria.age_at_end, ctx, "condition_era_end_date"
-        )
+        table = apply_age_filter(table, criteria.age_at_end, ctx, "condition_era_end_date")
 
     table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
 

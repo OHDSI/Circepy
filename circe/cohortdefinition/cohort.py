@@ -8,12 +8,12 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+import contextlib
 import json
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pydantic import (
     AliasChoices,
-    BaseModel,
     ConfigDict,
     Field,
     field_validator,
@@ -26,7 +26,6 @@ from .core import (
     CustomEraStrategy,
     DateOffsetStrategy,
     EndStrategy,
-    ObservationFilter,
     Period,
     ResultLimit,
 )
@@ -38,10 +37,8 @@ if TYPE_CHECKING:
     from .criteria import InclusionRule
 else:
     # Import at runtime to avoid circular dependencies
-    try:
+    with contextlib.suppress(ImportError):
         from ..check.warning import Warning
-    except ImportError:
-        pass
     # Import ConceptSet at runtime to avoid circular dependencies
     try:
         from ..vocabulary.concept import ConceptSet
@@ -60,7 +57,7 @@ class CohortExpression(CirceBaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.CohortExpression
     """
 
-    concept_sets: List[ConceptSet] = Field(
+    concept_sets: list[ConceptSet] = Field(
         default_factory=list,
         validation_alias=AliasChoices("ConceptSets", "conceptSets"),
         serialization_alias="ConceptSets",
@@ -75,9 +72,7 @@ class CohortExpression(CirceBaseModel):
         validation_alias=AliasChoices("AdditionalCriteria", "additionalCriteria"),
         serialization_alias="AdditionalCriteria",
     )
-    end_strategy: Optional[
-        Union[EndStrategy, DateOffsetStrategy, CustomEraStrategy]
-    ] = Field(
+    end_strategy: Optional[Union[EndStrategy, DateOffsetStrategy, CustomEraStrategy]] = Field(
         default=None,
         validation_alias=AliasChoices("EndStrategy", "endStrategy"),
         serialization_alias="EndStrategy",
@@ -103,7 +98,7 @@ class CohortExpression(CirceBaseModel):
         validation_alias=AliasChoices("Title", "title"),
         serialization_alias="Title",
     )
-    inclusion_rules: List[InclusionRule] = Field(
+    inclusion_rules: list[InclusionRule] = Field(
         default_factory=list,
         validation_alias=AliasChoices("InclusionRules", "inclusionRules"),
         serialization_alias="InclusionRules",
@@ -113,11 +108,9 @@ class CohortExpression(CirceBaseModel):
         validation_alias=AliasChoices("CensorWindow", "censorWindow"),
         serialization_alias="CensorWindow",
     )
-    censoring_criteria: List[CriteriaType] = Field(
+    censoring_criteria: list[CriteriaType] = Field(
         default_factory=list,
-        validation_alias=AliasChoices(
-            "CensoringCriteria", "censoring_criteria", "censoringCriteria"
-        ),
+        validation_alias=AliasChoices("CensoringCriteria", "censoring_criteria", "censoringCriteria"),
         serialization_alias="CensoringCriteria",
     )
 
@@ -225,7 +218,7 @@ class CohortExpression(CirceBaseModel):
             # JSON format: {"ConditionOccurrence": {...}} - unwrap and deserialize
             criteria_type = None
             criteria_data = None
-            for key in item.keys():
+            for key in item:
                 if key in criteria_class_map:
                     criteria_type = key
                     criteria_data = item[key]
@@ -254,9 +247,7 @@ class CohortExpression(CirceBaseModel):
                 ):
                     data_copy["ConditionTypeExclude"] = False
 
-                criteria_obj = criteria_class_map[criteria_type].model_validate(
-                    data_copy, strict=False
-                )
+                criteria_obj = criteria_class_map[criteria_type].model_validate(data_copy, strict=False)
                 deserialized.append(criteria_obj)
             else:
                 deserialized.append(item)
@@ -270,11 +261,9 @@ class CohortExpression(CirceBaseModel):
 
         Handles empty objects and other normalization needs.
         """
-        if isinstance(data, dict):
-            # No longer dropping cdmVersionRange string since we now expect Optional[str]
-            if "censorWindow" in data and data["censorWindow"] == {}:
-                data = dict(data)
-                data.pop("censorWindow")
+        if isinstance(data, dict) and "censorWindow" in data and data["censorWindow"] == {}:
+            data = dict(data)
+            data.pop("censorWindow")
 
         return data
 
@@ -306,9 +295,7 @@ class CohortExpression(CirceBaseModel):
         Removes an inclusion rule by its name
         """
         if self.inclusion_rules:
-            self.inclusion_rules = [
-                r for r in self.inclusion_rules if getattr(r, "name", None) != name
-            ]
+            self.inclusion_rules = [r for r in self.inclusion_rules if getattr(r, "name", None) != name]
 
     def add_censoring_criteria(self, criteria: Criteria) -> None:
         """
@@ -324,9 +311,7 @@ class CohortExpression(CirceBaseModel):
         """
         if self.censoring_criteria:
             self.censoring_criteria = [
-                c
-                for c in self.censoring_criteria
-                if c.__class__.__name__ != criteria_type
+                c for c in self.censoring_criteria if c.__class__.__name__ != criteria_type
             ]
 
     def validate_expression(self) -> bool:
@@ -342,13 +327,13 @@ class CohortExpression(CirceBaseModel):
 
         return True
 
-    def get_concept_set_ids(self) -> List[int]:
+    def get_concept_set_ids(self) -> list[int]:
         """Get all concept set IDs used in this expression."""
         if not self.concept_sets:
             return []
         return [cs.id for cs in self.concept_sets if cs.id is not None]
 
-    def check(self) -> List["Warning"]:
+    def check(self) -> list["Warning"]:
         """Run validation checks on this cohort expression.
 
         This method runs all validation checks defined in the check module
@@ -402,35 +387,33 @@ class CohortExpression(CirceBaseModel):
         """
         if isinstance(data, dict):
             # Handle ConceptSet Expression Items
-            if "items" in data and isinstance(data["items"], list):
-                # Check if these look like ConceptSetItems (have 'concept')
-                if (
-                    data["items"]
-                    and isinstance(data["items"][0], dict)
-                    and "concept" in data["items"][0]
-                ):
-                    normalized_items = []
-                    seen_items = set()
+            if (
+                "items" in data
+                and isinstance(data["items"], list)
+                and (data["items"] and isinstance(data["items"][0], dict) and "concept" in data["items"][0])
+            ):
+                normalized_items = []
+                seen_items = set()
 
-                    for item in data["items"]:
-                        # Normalize the item first
-                        norm_item = self._normalize_for_checksum(item)
+                for item in data["items"]:
+                    # Normalize the item first
+                    norm_item = self._normalize_for_checksum(item)
 
-                        # Create a sortable/hashable representation for deduplication
-                        # We need to sort keys to ensure tuple order is consistent
-                        item_json = json.dumps(norm_item, sort_keys=True)
+                    # Create a sortable/hashable representation for deduplication
+                    # We need to sort keys to ensure tuple order is consistent
+                    item_json = json.dumps(norm_item, sort_keys=True)
 
-                        if item_json not in seen_items:
-                            seen_items.add(item_json)
-                            normalized_items.append(norm_item)
+                    if item_json not in seen_items:
+                        seen_items.add(item_json)
+                        normalized_items.append(norm_item)
 
-                    # Sort items to ensure list order doesn't affect hash
-                    # Sort by the JSON string representation
-                    normalized_items.sort(key=lambda x: json.dumps(x, sort_keys=True))
+                # Sort items to ensure list order doesn't affect hash
+                # Sort by the JSON string representation
+                normalized_items.sort(key=lambda x: json.dumps(x, sort_keys=True))
 
-                    new_data = data.copy()
-                    new_data["items"] = normalized_items
-                    return new_data
+                new_data = data.copy()
+                new_data["items"] = normalized_items
+                return new_data
 
             # Handle Concept Objects (heuristically by fields)
             if "CONCEPT_ID" in data:
@@ -500,11 +483,7 @@ class CohortExpression(CirceBaseModel):
         if not self.inclusion_rules:
             return False
 
-        for rule in self.inclusion_rules:
-            if getattr(rule, "name", None) == name:
-                return True
-
-        return False
+        return any(getattr(rule, "name", None) == name for rule in self.inclusion_rules)
 
     def has_censoring_criteria(self) -> bool:
         """Check if cohort has censoring criteria.
@@ -514,7 +493,7 @@ class CohortExpression(CirceBaseModel):
         """
         return bool(self.censoring_criteria and len(self.censoring_criteria) > 0)
 
-    def get_censoring_criteria_types(self) -> List[str]:
+    def get_censoring_criteria_types(self) -> list[str]:
         """Get list of censoring criteria class names.
 
         Returns:
@@ -562,7 +541,7 @@ class CohortExpression(CirceBaseModel):
         else:
             return class_name
 
-    def get_primary_criteria_types(self) -> List[str]:
+    def get_primary_criteria_types(self) -> list[str]:
         """Get list of primary criteria class names.
 
         Returns:
@@ -571,10 +550,7 @@ class CohortExpression(CirceBaseModel):
         if not self.primary_criteria or not self.primary_criteria.criteria_list:
             return []
 
-        return [
-            criteria.__class__.__name__
-            for criteria in self.primary_criteria.criteria_list
-        ]
+        return [criteria.__class__.__name__ for criteria in self.primary_criteria.criteria_list]
 
     def has_observation_window(self) -> bool:
         """Check if observation window is defined in primary criteria.
