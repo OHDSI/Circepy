@@ -7,7 +7,7 @@ cohort construction step by step.
 
 Example:
     >>> from circe.cohort_builder import Cohort
-    >>> 
+    >>>
     >>> cohort = (
     ...     Cohort("T2DM Patients")
     ...     .with_condition(concept_set_id=1)
@@ -21,10 +21,6 @@ Example:
     ... )
 """
 
-from circe.cohort_builder.builder import CohortBuilder, CohortWithEntry, CohortWithCriteria
+from circe.cohort_builder.builder import CohortBuilder, CohortWithCriteria, CohortWithEntry
 
-__all__ = [
-    "CohortBuilder",
-    "CohortWithEntry",
-    "CohortWithCriteria"
-]
+__all__ = ["CohortBuilder", "CohortWithEntry", "CohortWithCriteria"]

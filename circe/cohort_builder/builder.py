@@ -12,66 +12,105 @@ auto-generated from the domain registry at the bottom of this file.
 Use ``register_domain()`` from ``circe.extensions`` to add new domains.
 """
 
-from typing import Optional, List, Union, Dict, Any, TYPE_CHECKING
-from dataclasses import dataclass, field
 import copy
+from contextlib import suppress
+from dataclasses import dataclass, field
+from typing import Any, Optional, Union
 
 from circe.cohort_builder.query_builder import (
-    QueryConfig, TimeWindow, BaseQuery,
-    ConditionQuery, DrugQuery, DrugEraQuery, MeasurementQuery, 
-    ProcedureQuery, VisitQuery, ObservationQuery, DeathQuery,
-    ConditionEraQuery, DeviceExposureQuery, SpecimenQuery,
-    ObservationPeriodQuery, PayerPlanPeriodQuery, LocationRegionQuery,
-    VisitDetailQuery, DoseEraQuery, CriteriaConfig, GroupConfig, CriteriaGroupBuilder
+    BaseQuery,
+    ConditionEraQuery,
+    ConditionQuery,
+    CriteriaConfig,
+    CriteriaGroupBuilder,
+    DeathQuery,
+    DeviceExposureQuery,
+    DoseEraQuery,
+    DrugEraQuery,
+    DrugQuery,
+    GroupConfig,
+    LocationRegionQuery,
+    MeasurementQuery,
+    ObservationPeriodQuery,
+    ObservationQuery,
+    PayerPlanPeriodQuery,
+    ProcedureQuery,
+    QueryConfig,
+    SpecimenQuery,
+    TimeWindow,
+    VisitDetailQuery,
+    VisitQuery,
 )
 
 # Import circe models for conversion
 from circe.cohortdefinition import (
-    CohortExpression, PrimaryCriteria, InclusionRule,
-    CorelatedCriteria, Occurrence, ConditionOccurrence, ConditionEra, DrugExposure,
-    ProcedureOccurrence, Measurement, Observation, VisitOccurrence, VisitDetail,
-    DeviceExposure, Death, DrugEra, DoseEra, Specimen, ObservationPeriod,
-    PayerPlanPeriod, LocationRegion, DemographicCriteria
+    CohortExpression,
+    ConditionEra,
+    ConditionOccurrence,
+    CorelatedCriteria,
+    Death,
+    DemographicCriteria,
+    DeviceExposure,
+    DoseEra,
+    DrugEra,
+    DrugExposure,
+    InclusionRule,
+    LocationRegion,
+    Measurement,
+    Observation,
+    ObservationPeriod,
+    Occurrence,
+    PayerPlanPeriod,
+    PrimaryCriteria,
+    ProcedureOccurrence,
+    Specimen,
+    VisitDetail,
+    VisitOccurrence,
 )
 from circe.cohortdefinition.core import (
-    ObservationFilter, ResultLimit, Window, WindowBound,
-    NumericRange, DateAdjustment
+    DateAdjustment,
+    NumericRange,
+    ObservationFilter,
+    ResultLimit,
+    Window,
+    WindowBound,
 )
 from circe.cohortdefinition.criteria import CriteriaGroup as CirceCriteriaGroup
-from circe.vocabulary import ConceptSet, Concept
-
 from circe.extensions import DomainSpec, _register_domain_spec
+from circe.vocabulary import Concept, ConceptSet
 
 
 @dataclass
 class CohortSettings:
     """Stores cohort-wide settings like exit strategy and era logic."""
+
     exit_strategy_type: str = "observation"  # observation, date_offset
     exit_offset_days: int = 0
     exit_offset_field: str = "startDate"
     era_days: int = 0
-    censor_queries: List[QueryConfig] = field(default_factory=list)
-    
+    censor_queries: list[QueryConfig] = field(default_factory=list)
+
     # Custom Era Strategy
     custom_era_drug_codeset_id: Optional[int] = None
     custom_era_gap_days: int = 30
     custom_era_offset: int = 0
     custom_era_days_supply_override: Optional[int] = None
-    
+
     # Demographics
-    gender_concepts: List[int] = field(default_factory=list)
-    race_concepts: List[int] = field(default_factory=list)
-    ethnicity_concepts: List[int] = field(default_factory=list)
+    gender_concepts: list[int] = field(default_factory=list)
+    race_concepts: list[int] = field(default_factory=list)
+    ethnicity_concepts: list[int] = field(default_factory=list)
     age_min: Optional[int] = None
     age_max: Optional[int] = None
+
 
 class CohortBuilder:
     """
     Starting point for building a cohort definition.
-    
+
     This is the initial state - only entry event methods are available.
     All ``with_X`` methods are auto-generated from the domain registry.
-    
+
     Context Manager Example (Recommended):
         >>> with CohortBuilder("My Cohort") as cohort:
         ...     cohort.with_condition(1)
@@ -84,18 +123,18 @@ class CohortBuilder:
         ...     .require_drug(2, within_days_before=30)
         ...     .build())
     """
-    
+
     def __init__(self, title: str = "Untitled Cohort"):
         """
         Create a new cohort builder.
-        
+
         Args:
             title: Human-readable title for the cohort
         """
         self._title = title
-        self._concept_sets: List[ConceptSet] = []
+        self._concept_sets: list[ConceptSet] = []
         # Context manager state
-        self._state: Optional['CohortWithEntry'] = None
+        self._state: Optional[CohortWithEntry] = None
         self._expression: Optional[CohortExpression] = None
         self._in_context: bool = False
 
@@ -103,7 +142,7 @@ class CohortBuilder:
     # CONTEXT MANAGER PROTOCOL
     # =========================================================================
 
-    def __enter__(self) -> 'CohortBuilder':
+    def __enter__(self) -> "CohortBuilder":
         """Enter context manager mode."""
         self._in_context = True
         return self
@@ -137,15 +176,13 @@ class CohortBuilder:
             )
         return self._expression
 
-    def _ensure_state(self) -> Union['CohortWithEntry', 'CohortWithCriteria']:
+    def _ensure_state(self) -> Union["CohortWithEntry", "CohortWithCriteria"]:
         """Get or create the current state for method chaining within context."""
         if self._state is None:
-            raise RuntimeError(
-                "No entry event defined. Call with_condition(), with_drug(), etc. first."
-            )
+            raise RuntimeError("No entry event defined. Call with_condition(), with_drug(), etc. first.")
         return self._state
 
-    def _update_state(self, new_state: Union['CohortWithEntry', 'CohortWithCriteria', None]) -> None:
+    def _update_state(self, new_state: Union["CohortWithEntry", "CohortWithCriteria", None]) -> None:
         """Update internal state after a method that may change state."""
         if new_state is not None:
             self._state = new_state
@@ -154,112 +191,112 @@ class CohortBuilder:
     # CONTEXT MANAGER DELEGATION METHODS
     # =========================================================================
 
-    def first_occurrence(self) -> 'CohortBuilder':
+    def first_occurrence(self) -> "CohortBuilder":
         """Only use the first occurrence per person for entry events."""
         self._ensure_state().first_occurrence()
         return self
 
-    def all_occurrences(self) -> 'CohortBuilder':
+    def all_occurrences(self) -> "CohortBuilder":
         """Use all occurrences per person."""
         self._ensure_state().all_occurrences()
         return self
 
-    def with_observation_window(self, prior_days: int = 0, post_days: int = 0) -> 'CohortBuilder':
+    def with_observation_window(self, prior_days: int = 0, post_days: int = 0) -> "CohortBuilder":
         """Set continuous observation requirements."""
         self._ensure_state().with_observation(prior_days=prior_days, post_days=post_days)
         return self
 
-    def min_age(self, age: int) -> 'CohortBuilder':
+    def min_age(self, age: int) -> "CohortBuilder":
         """Require minimum age at entry."""
         self._ensure_state().min_age(age)
         return self
 
-    def max_age(self, age: int) -> 'CohortBuilder':
+    def max_age(self, age: int) -> "CohortBuilder":
         """Require maximum age at entry."""
         self._ensure_state().max_age(age)
         return self
 
-    def require_gender(self, *concept_ids: int) -> 'CohortBuilder':
+    def require_gender(self, *concept_ids: int) -> "CohortBuilder":
         """Require specific gender concept IDs."""
         self._ensure_state().require_gender(*concept_ids)
         return self
 
-    def require_race(self, *concept_ids: int) -> 'CohortBuilder':
+    def require_race(self, *concept_ids: int) -> "CohortBuilder":
         """Require specific race concept IDs."""
         self._ensure_state().require_race(*concept_ids)
         return self
 
-    def require_ethnicity(self, *concept_ids: int) -> 'CohortBuilder':
+    def require_ethnicity(self, *concept_ids: int) -> "CohortBuilder":
         """Require specific ethnicity concept IDs."""
         self._ensure_state().require_ethnicity(*concept_ids)
         return self
 
-    def require_age(self, min_age: Optional[int] = None, max_age: Optional[int] = None) -> 'CohortBuilder':
+    def require_age(self, min_age: Optional[int] = None, max_age: Optional[int] = None) -> "CohortBuilder":
         """Require specific age range."""
         self._ensure_state().require_age(min_age, max_age)
         return self
 
-    def require_condition(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+    def require_condition(self, concept_set_id: int, **kwargs) -> "CohortBuilder":
         """Add a required condition occurrence."""
         result = self._ensure_state().require_condition(concept_set_id, **kwargs)
         self._update_state(result)
         return self
 
-    def require_drug(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+    def require_drug(self, concept_set_id: int, **kwargs) -> "CohortBuilder":
         """Add a required drug exposure."""
         result = self._ensure_state().require_drug(concept_set_id, **kwargs)
         self._update_state(result)
         return self
 
-    def require_procedure(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+    def require_procedure(self, concept_set_id: int, **kwargs) -> "CohortBuilder":
         """Add a required procedure occurrence."""
         result = self._ensure_state().require_procedure(concept_set_id, **kwargs)
         self._update_state(result)
         return self
 
-    def require_measurement(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+    def require_measurement(self, concept_set_id: int, **kwargs) -> "CohortBuilder":
         """Add a required measurement."""
         result = self._ensure_state().require_measurement(concept_set_id, **kwargs)
         self._update_state(result)
         return self
 
-    def require_observation(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+    def require_observation(self, concept_set_id: int, **kwargs) -> "CohortBuilder":
         """Add a required observation."""
         result = self._ensure_state().require_observation(concept_set_id, **kwargs)
         self._update_state(result)
         return self
 
-    def require_visit(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+    def require_visit(self, concept_set_id: int, **kwargs) -> "CohortBuilder":
         """Add a required visit occurrence."""
         result = self._ensure_state().require_visit(concept_set_id, **kwargs)
         self._update_state(result)
         return self
 
-    def exclude_condition(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+    def exclude_condition(self, concept_set_id: int, **kwargs) -> "CohortBuilder":
         """Exclude patients with a condition occurrence."""
         result = self._ensure_state().exclude_condition(concept_set_id, **kwargs)
         self._update_state(result)
         return self
 
-    def exclude_drug(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+    def exclude_drug(self, concept_set_id: int, **kwargs) -> "CohortBuilder":
         """Exclude patients with a drug exposure."""
         result = self._ensure_state().exclude_drug(concept_set_id, **kwargs)
         self._update_state(result)
         return self
 
-    def exclude_procedure(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+    def exclude_procedure(self, concept_set_id: int, **kwargs) -> "CohortBuilder":
         """Exclude patients with a procedure occurrence."""
         result = self._ensure_state().exclude_procedure(concept_set_id, **kwargs)
         self._update_state(result)
         return self
 
-    def exclude_measurement(self, concept_set_id: int, **kwargs) -> 'CohortBuilder':
+    def exclude_measurement(self, concept_set_id: int, **kwargs) -> "CohortBuilder":
         """Exclude patients with a measurement."""
         result = self._ensure_state().exclude_measurement(concept_set_id, **kwargs)
         self._update_state(result)
         return self
 
-    def include_rule(self, name: str) -> 'InclusionRuleContext':
+    def include_rule(self, name: str) -> "InclusionRuleContext":
         """
         Create a named inclusion rule context.
 
@@ -273,17 +310,17 @@ class CohortBuilder:
         """
         return InclusionRuleContext(self, name)
 
-    def exit_at_observation_end(self) -> 'CohortBuilder':
+    def exit_at_observation_end(self) -> "CohortBuilder":
         """Exit cohort at the end of the observation period."""
         self._ensure_state().exit_at_observation_end()
         return self
 
-    def exit_after_days(self, days: int, from_field: str = "startDate") -> 'CohortBuilder':
+    def exit_after_days(self, days: int, from_field: str = "startDate") -> "CohortBuilder":
         """Exit cohort N days after index start/end."""
         self._ensure_state().exit_after_days(days, from_field)
         return self
 
-    def collapse_era(self, days: int) -> 'CohortBuilder':
+    def collapse_era(self, days: int) -> "CohortBuilder":
         """Set the number of gap days to collapse successive cohort entries."""
         self._ensure_state()._to_criteria().collapse_era(days)
         return self
@@ -292,7 +329,7 @@ class CohortBuilder:
     # CONCEPT SET MANAGEMENT
     # =========================================================================
 
-    def with_concept_sets(self, *concept_sets: ConceptSet) -> 'CohortBuilder':
+    def with_concept_sets(self, *concept_sets: ConceptSet) -> "CohortBuilder":
         """Add concept sets to the cohort."""
         self._concept_sets.extend(concept_sets)
         return self
@@ -304,7 +341,7 @@ class CohortBuilder:
     # =========================================================================
 
     @classmethod
-    def from_expression(cls, expression: CohortExpression, title: Optional[str] = None) -> 'CohortBuilder':
+    def from_expression(cls, expression: CohortExpression, title: Optional[str] = None) -> "CohortBuilder":
         """
         Create a builder from an existing CohortExpression for modification.
 
@@ -346,7 +383,7 @@ class CohortBuilder:
 
         return builder
 
-    def remove_inclusion_rule(self, name: str) -> 'CohortBuilder':
+    def remove_inclusion_rule(self, name: str) -> "CohortBuilder":
         """
         Remove an inclusion rule by name.
 
@@ -365,7 +402,7 @@ class CohortBuilder:
             ...     cohort.remove_inclusion_rule("Prior Treatment")
         """
         state = self._ensure_state()
-        criteria_state = state._to_criteria() if hasattr(state, '_to_criteria') else state
+        criteria_state = state._to_criteria() if hasattr(state, "_to_criteria") else state
 
         # Find and remove the rule
         found = False
@@ -381,10 +418,12 @@ class CohortBuilder:
         self._update_state(criteria_state)
         return self
 
-    def remove_censoring_criteria(self,
-                                  criteria_type: Optional[str] = None,
-                                  concept_set_id: Optional[int] = None,
-                                  index: Optional[int] = None) -> 'CohortBuilder':
+    def remove_censoring_criteria(
+        self,
+        criteria_type: Optional[str] = None,
+        concept_set_id: Optional[int] = None,
+        index: Optional[int] = None,
+    ) -> "CohortBuilder":
         """
         Remove censoring criteria by type, concept set ID, or index.
 
@@ -413,7 +452,7 @@ class CohortBuilder:
             >>> cohort.remove_censoring_criteria(index=0)
         """
         state = self._ensure_state()
-        criteria_state = state._to_criteria() if hasattr(state, '_to_criteria') else state
+        criteria_state = state._to_criteria() if hasattr(state, "_to_criteria") else state
 
         # Validate arguments
         args_provided = sum([criteria_type is not None, concept_set_id is not None, index is not None])
@@ -427,7 +466,7 @@ class CohortBuilder:
         # Remove by index
         if index is not None:
             if index < 0 or index >= len(censor_queries):
-                raise ValueError(f"Index {index} out of range (0-{len(censor_queries)-1})")
+                raise ValueError(f"Index {index} out of range (0-{len(censor_queries) - 1})")
             censor_queries.pop(index)
             self._update_state(criteria_state)
             return self
@@ -452,10 +491,12 @@ class CohortBuilder:
         self._update_state(criteria_state)
         return self
 
-    def remove_entry_event(self,
-                          criteria_type: Optional[str] = None,
-                          concept_set_id: Optional[int] = None,
-                          index: Optional[int] = None) -> 'CohortBuilder':
+    def remove_entry_event(
+        self,
+        criteria_type: Optional[str] = None,
+        concept_set_id: Optional[int] = None,
+        index: Optional[int] = None,
+    ) -> "CohortBuilder":
         """
         Remove an entry event from primary criteria.
 
@@ -482,7 +523,7 @@ class CohortBuilder:
             >>> cohort.remove_entry_event(criteria_type="DrugExposure")
         """
         state = self._ensure_state()
-        criteria_state = state._to_criteria() if hasattr(state, '_to_criteria') else state
+        criteria_state = state._to_criteria() if hasattr(state, "_to_criteria") else state
 
         # Validate arguments
         args_provided = sum([criteria_type is not None, concept_set_id is not None, index is not None])
@@ -500,7 +541,7 @@ class CohortBuilder:
         # Remove by index
         if index is not None:
             if index < 0 or index >= len(entry_configs):
-                raise ValueError(f"Index {index} out of range (0-{len(entry_configs)-1})")
+                raise ValueError(f"Index {index} out of range (0-{len(entry_configs) - 1})")
             entry_configs.pop(index)
             self._update_state(criteria_state)
             return self
@@ -525,7 +566,7 @@ class CohortBuilder:
         self._update_state(criteria_state)
         return self
 
-    def remove_concept_set(self, concept_set_id: int) -> 'CohortBuilder':
+    def remove_concept_set(self, concept_set_id: int) -> "CohortBuilder":
         """
         Remove a concept set by ID.
 
@@ -556,7 +597,7 @@ class CohortBuilder:
         self._concept_sets.pop(found_idx)
         return self
 
-    def remove_all_references(self, concept_set_id: int) -> 'CohortBuilder':
+    def remove_all_references(self, concept_set_id: int) -> "CohortBuilder":
         """
         Remove a concept set and all criteria that reference it.
 
@@ -577,14 +618,13 @@ class CohortBuilder:
             >>> cohort.remove_all_references(concept_set_id=3)
         """
         # Remove concept set
-        try:
+        with suppress(KeyError):
             self.remove_concept_set(concept_set_id)
-        except KeyError:
-            pass  # Concept set doesn't exist, continue with cleanup
-
         # Remove from entry events (if possible)
         if self._state:
-            criteria_state = self._state._to_criteria() if hasattr(self._state, '_to_criteria') else self._state
+            criteria_state = (
+                self._state._to_criteria() if hasattr(self._state, "_to_criteria") else self._state
+            )
 
             # Remove entry events with this concept set (keep at least one)
             entry_configs = criteria_state._entry_configs
@@ -594,8 +634,7 @@ class CohortBuilder:
 
             # Remove censoring criteria with this concept set
             criteria_state._settings.censor_queries = [
-                q for q in criteria_state._settings.censor_queries
-                if q.concept_set_id != concept_set_id
+                q for q in criteria_state._settings.censor_queries if q.concept_set_id != concept_set_id
             ]
 
             # Remove inclusion/exclusion criteria with this concept set
@@ -608,9 +647,9 @@ class CohortBuilder:
 
     def _remove_criteria_with_concept_set(self, group, concept_set_id: int):
         """Recursively remove criteria referencing a concept set from a group."""
-        from circe.cohort_builder.query_builder import GroupConfig, CriteriaConfig
+        from circe.cohort_builder.query_builder import CriteriaConfig, GroupConfig
 
-        if not hasattr(group, 'criteria'):
+        if not hasattr(group, "criteria"):
             return
 
         filtered_criteria = []
@@ -631,7 +670,7 @@ class CohortBuilder:
 
         group.criteria = filtered_criteria
 
-    def clear_inclusion_rules(self) -> 'CohortBuilder':
+    def clear_inclusion_rules(self) -> "CohortBuilder":
         """
         Remove all inclusion rules.
 
@@ -639,12 +678,12 @@ class CohortBuilder:
             Self for chaining
         """
         state = self._ensure_state()
-        criteria_state = state._to_criteria() if hasattr(state, '_to_criteria') else state
+        criteria_state = state._to_criteria() if hasattr(state, "_to_criteria") else state
         criteria_state._rules = [{"name": "Inclusion Criteria", "group": GroupConfig(type="ALL")}]
         self._update_state(criteria_state)
         return self
 
-    def clear_censoring_criteria(self) -> 'CohortBuilder':
+    def clear_censoring_criteria(self) -> "CohortBuilder":
         """
         Remove all censoring criteria.
 
@@ -652,12 +691,12 @@ class CohortBuilder:
             Self for chaining
         """
         state = self._ensure_state()
-        criteria_state = state._to_criteria() if hasattr(state, '_to_criteria') else state
+        criteria_state = state._to_criteria() if hasattr(state, "_to_criteria") else state
         criteria_state._settings.censor_queries = []
         self._update_state(criteria_state)
         return self
 
-    def clear_demographic_criteria(self) -> 'CohortBuilder':
+    def clear_demographic_criteria(self) -> "CohortBuilder":
         """
         Clear all demographic restrictions (age, gender, race, ethnicity).
 
@@ -665,7 +704,7 @@ class CohortBuilder:
             Self for chaining
         """
         state = self._ensure_state()
-        criteria_state = state._to_criteria() if hasattr(state, '_to_criteria') else state
+        criteria_state = state._to_criteria() if hasattr(state, "_to_criteria") else state
         criteria_state._settings.gender_concepts = []
         criteria_state._settings.race_concepts = []
         criteria_state._settings.ethnicity_concepts = []
@@ -675,8 +714,9 @@ class CohortBuilder:
         return self
 
     @staticmethod
-    def _reconstruct_state_from_expression(builder: 'CohortBuilder',
-                                          expression: CohortExpression) -> 'CohortWithCriteria':
+    def _reconstruct_state_from_expression(
+        builder: "CohortBuilder", expression: CohortExpression
+    ) -> "CohortWithCriteria":
         """
         Reconstruct builder state from a CohortExpression.
 
@@ -689,8 +729,7 @@ class CohortBuilder:
         Returns:
             CohortWithCriteria state ready for modifications
         """
-        import copy
-        from circe.cohort_builder.query_builder import GroupConfig, CriteriaConfig
+        from circe.cohort_builder.query_builder import GroupConfig
 
         # Extract entry events from primary criteria
         entry_configs = []
@@ -730,7 +769,7 @@ class CohortBuilder:
             limit=limit,
             qualified_limit=qualified_limit,
             expression_limit=expression_limit,
-            settings=settings
+            settings=settings,
         )
 
         # Reconstruct inclusion rules
@@ -768,24 +807,20 @@ class CohortBuilder:
         domain = criteria.__class__.__name__
 
         # Extract concept set ID
-        concept_set_id = getattr(criteria, 'codeset_id', None)
+        concept_set_id = getattr(criteria, "codeset_id", None)
 
         # Create basic config
-        config = QueryConfig(
-            domain=domain,
-            concept_set_id=concept_set_id,
-            time_window=TimeWindow()
-        )
+        config = QueryConfig(domain=domain, concept_set_id=concept_set_id, time_window=TimeWindow())
 
         # Extract first occurrence flag
-        if hasattr(criteria, 'first') and criteria.first:
+        if hasattr(criteria, "first") and criteria.first:
             config.first_occurrence = True
 
         # Extract age constraints
-        if hasattr(criteria, 'age') and criteria.age:
-            if hasattr(criteria.age, 'value'):
+        if hasattr(criteria, "age") and criteria.age:
+            if hasattr(criteria.age, "value"):
                 config.age_min = criteria.age.value
-            if hasattr(criteria.age, 'extent'):
+            if hasattr(criteria.age, "extent"):
                 config.age_max = criteria.age.extent
 
         # Note: More complex criteria attributes (date ranges, correlated criteria, etc.)
@@ -804,7 +839,7 @@ class CohortBuilder:
         - Censoring criteria
         - Demographic criteria
         """
-        from circe.cohortdefinition.core import DateOffsetStrategy, CustomEraStrategy
+        from circe.cohortdefinition.core import CustomEraStrategy, DateOffsetStrategy
 
         settings = CohortSettings()
 
@@ -834,19 +869,22 @@ class CohortBuilder:
         # Extract demographic criteria from inclusion rules
         if expression.inclusion_rules:
             for rule in expression.inclusion_rules:
-                if rule.name == "Demographic Criteria" and rule.expression:
-                    if rule.expression.demographic_criteria_list:
-                        demo = rule.expression.demographic_criteria_list[0]
+                if (
+                    rule.name == "Demographic Criteria"
+                    and rule.expression
+                    and rule.expression.demographic_criteria_list
+                ):
+                    demo = rule.expression.demographic_criteria_list[0]
 
-                        if demo.gender:
-                            settings.gender_concepts = [c.concept_id for c in demo.gender]
-                        if demo.race:
-                            settings.race_concepts = [c.concept_id for c in demo.race]
-                        if demo.ethnicity:
-                            settings.ethnicity_concepts = [c.concept_id for c in demo.ethnicity]
-                        if demo.age:
-                            settings.age_min = demo.age.value
-                            settings.age_max = demo.age.extent
+                    if demo.gender:
+                        settings.gender_concepts = [c.concept_id for c in demo.gender]
+                    if demo.race:
+                        settings.race_concepts = [c.concept_id for c in demo.race]
+                    if demo.ethnicity:
+                        settings.ethnicity_concepts = [c.concept_id for c in demo.ethnicity]
+                    if demo.age:
+                        settings.age_min = demo.age.value
+                        settings.age_max = demo.age.extent
 
         return settings
 
@@ -858,44 +896,43 @@ class CohortBuilder:
         This is a simplified reconstruction that handles common cases.
         Complex nested groups and correlated criteria may not be fully supported.
         """
-        from circe.cohort_builder.query_builder import GroupConfig, CriteriaConfig
+        from circe.cohort_builder.query_builder import CriteriaConfig, GroupConfig
 
         # Set group type
         if circe_group.type:
             builder_group.type = circe_group.type
 
         # Reconstruct count for AT_LEAST groups
-        if hasattr(circe_group, 'count') and circe_group.count:
+        if hasattr(circe_group, "count") and circe_group.count:
             builder_group.count = circe_group.count
 
         # Reconstruct criteria list
-        if hasattr(circe_group, 'criteria_list') and circe_group.criteria_list:
+        if hasattr(circe_group, "criteria_list") and circe_group.criteria_list:
             for item in circe_group.criteria_list:
                 # Check if it's a windowed criteria (has criteria field)
-                if hasattr(item, 'criteria'):
+                if hasattr(item, "criteria"):
                     # This is a windowed criteria
                     config = CohortBuilder._criteria_to_query_config(item.criteria)
 
                     # Determine if it's an exclusion based on occurrence count
                     is_exclusion = False
-                    if hasattr(item, 'occurrence') and item.occurrence:
+                    if hasattr(item, "occurrence") and item.occurrence:
                         # Count = 0 typically means exclusion
                         is_exclusion = item.occurrence.count == 0
 
-                    builder_group.criteria.append(CriteriaConfig(
-                        query_config=config,
-                        is_exclusion=is_exclusion
-                    ))
-                elif hasattr(item, 'type'):
+                    builder_group.criteria.append(
+                        CriteriaConfig(query_config=config, is_exclusion=is_exclusion)
+                    )
+                elif hasattr(item, "type"):
                     # This is a nested group
                     nested_group = GroupConfig(type=item.type)
                     CohortBuilder._reconstruct_criteria_group(item, nested_group)
                     builder_group.criteria.append(nested_group)
 
         # Handle groups (nested criteria groups)
-        if hasattr(circe_group, 'groups') and circe_group.groups:
+        if hasattr(circe_group, "groups") and circe_group.groups:
             for nested in circe_group.groups:
-                nested_group = GroupConfig(type=nested.type if hasattr(nested, 'type') else "ALL")
+                nested_group = GroupConfig(type=nested.type if hasattr(nested, "type") else "ALL")
                 CohortBuilder._reconstruct_criteria_group(nested, nested_group)
                 builder_group.criteria.append(nested_group)
 
@@ -904,11 +941,8 @@ class CohortBuilder:
     # =========================================================================
 
     def _create_entry_event(
-        self,
-        query_class: type,
-        concept_set_id: Optional[int] = None,
-        **kwargs
-    ) -> Union['CohortBuilder', 'CohortWithEntry']:
+        self, query_class: type, concept_set_id: Optional[int] = None, **kwargs
+    ) -> Union["CohortBuilder", "CohortWithEntry"]:
         """
         Helper method to create entry events with consistent logic.
 
@@ -939,69 +973,74 @@ class CohortBuilder:
             return self
         return cohort
 
-    def with_condition(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_condition(self, concept_set_id: int, **kwargs) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to a condition occurrence."""
         return self._create_entry_event(ConditionQuery, concept_set_id, **kwargs)
 
-    def with_drug(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_drug(self, concept_set_id: int, **kwargs) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to a drug exposure."""
         return self._create_entry_event(DrugQuery, concept_set_id, **kwargs)
 
-    def with_drug_era(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_drug_era(self, concept_set_id: int, **kwargs) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to a drug era."""
         return self._create_entry_event(DrugEraQuery, concept_set_id, **kwargs)
 
-    def with_procedure(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_procedure(self, concept_set_id: int, **kwargs) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to a procedure occurrence."""
         return self._create_entry_event(ProcedureQuery, concept_set_id, **kwargs)
 
-    def with_measurement(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_measurement(self, concept_set_id: int, **kwargs) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to a measurement."""
         return self._create_entry_event(MeasurementQuery, concept_set_id, **kwargs)
 
-    def with_visit(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_visit(self, concept_set_id: int, **kwargs) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to a visit occurrence."""
         return self._create_entry_event(VisitQuery, concept_set_id, **kwargs)
 
-    def with_observation(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_observation(self, concept_set_id: int, **kwargs) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to an observation (with concept set)."""
         return self._create_entry_event(ObservationQuery, concept_set_id, **kwargs)
 
-    def with_condition_era(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_condition_era(self, concept_set_id: int, **kwargs) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to a condition era."""
         return self._create_entry_event(ConditionEraQuery, concept_set_id, **kwargs)
 
-    def with_device_exposure(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_device_exposure(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to a device exposure."""
         return self._create_entry_event(DeviceExposureQuery, concept_set_id, **kwargs)
 
-    def with_specimen(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_specimen(self, concept_set_id: int, **kwargs) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to a specimen."""
         return self._create_entry_event(SpecimenQuery, concept_set_id, **kwargs)
 
-    def with_death(self) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_death(self) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to death."""
         return self._create_entry_event(DeathQuery)
 
-    def with_observation_period(self) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_observation_period(self) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to an observation period."""
         return self._create_entry_event(ObservationPeriodQuery)
 
-    def with_payer_plan_period(self, concept_set_id: int, **kwargs) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_payer_plan_period(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to a payer plan period."""
         return self._create_entry_event(PayerPlanPeriodQuery, concept_set_id, **kwargs)
 
-    def with_location_region(self, concept_set_id: int) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_location_region(self, concept_set_id: int) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to a location/region."""
         return self._create_entry_event(LocationRegionQuery, concept_set_id)
 
-    def with_visit_detail(self, concept_set_id: int) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_visit_detail(self, concept_set_id: int) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to a visit detail."""
         return self._create_entry_event(VisitDetailQuery, concept_set_id)
 
-    def with_dose_era(self, concept_set_id: int) -> Union['CohortBuilder', 'CohortWithEntry']:
+    def with_dose_era(self, concept_set_id: int) -> Union["CohortBuilder", "CohortWithEntry"]:
         """Set entry event to a dose era."""
         return self._create_entry_event(DoseEraQuery, concept_set_id)
+
 
 class InclusionRuleContext:
     """
@@ -1014,7 +1053,7 @@ class InclusionRuleContext:
         self._builder = builder
         self._name = name
 
-    def __enter__(self) -> 'InclusionRuleContext':
+    def __enter__(self) -> "InclusionRuleContext":
         """Enter the inclusion rule context."""
         state = self._builder._ensure_state()
         new_state = state.begin_rule(self._name)
@@ -1028,78 +1067,79 @@ class InclusionRuleContext:
         self._builder._update_state(new_state)
         return False
 
-    def require_condition(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+    def require_condition(self, concept_set_id: int, **kwargs) -> "InclusionRuleContext":
         """Add a required condition occurrence to this rule."""
         result = self._builder._ensure_state().require_condition(concept_set_id, **kwargs)
         self._builder._update_state(result)
         return self
 
-    def require_drug(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+    def require_drug(self, concept_set_id: int, **kwargs) -> "InclusionRuleContext":
         """Add a required drug exposure to this rule."""
         result = self._builder._ensure_state().require_drug(concept_set_id, **kwargs)
         self._builder._update_state(result)
         return self
 
-    def require_procedure(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+    def require_procedure(self, concept_set_id: int, **kwargs) -> "InclusionRuleContext":
         """Add a required procedure occurrence to this rule."""
         result = self._builder._ensure_state().require_procedure(concept_set_id, **kwargs)
         self._builder._update_state(result)
         return self
 
-    def require_measurement(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+    def require_measurement(self, concept_set_id: int, **kwargs) -> "InclusionRuleContext":
         """Add a required measurement to this rule."""
         result = self._builder._ensure_state().require_measurement(concept_set_id, **kwargs)
         self._builder._update_state(result)
         return self
 
-    def require_observation(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+    def require_observation(self, concept_set_id: int, **kwargs) -> "InclusionRuleContext":
         """Add a required observation to this rule."""
         result = self._builder._ensure_state().require_observation(concept_set_id, **kwargs)
         self._builder._update_state(result)
         return self
 
-    def require_visit(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+    def require_visit(self, concept_set_id: int, **kwargs) -> "InclusionRuleContext":
         """Add a required visit occurrence to this rule."""
         result = self._builder._ensure_state().require_visit(concept_set_id, **kwargs)
         self._builder._update_state(result)
         return self
 
-    def exclude_condition(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+    def exclude_condition(self, concept_set_id: int, **kwargs) -> "InclusionRuleContext":
         """Exclude patients with a condition occurrence."""
         result = self._builder._ensure_state().exclude_condition(concept_set_id, **kwargs)
         self._builder._update_state(result)
         return self
 
-    def exclude_drug(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+    def exclude_drug(self, concept_set_id: int, **kwargs) -> "InclusionRuleContext":
         """Exclude patients with a drug exposure."""
         result = self._builder._ensure_state().exclude_drug(concept_set_id, **kwargs)
         self._builder._update_state(result)
         return self
 
-    def exclude_procedure(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+    def exclude_procedure(self, concept_set_id: int, **kwargs) -> "InclusionRuleContext":
         """Exclude patients with a procedure occurrence."""
         result = self._builder._ensure_state().exclude_procedure(concept_set_id, **kwargs)
         self._builder._update_state(result)
         return self
 
-    def exclude_measurement(self, concept_set_id: int, **kwargs) -> 'InclusionRuleContext':
+    def exclude_measurement(self, concept_set_id: int, **kwargs) -> "InclusionRuleContext":
         """Exclude patients with a measurement."""
         result = self._builder._ensure_state().exclude_measurement(concept_set_id, **kwargs)
         self._builder._update_state(result)
         return self
 
+
 class CohortWithEntry:
     """
     Cohort state after entry event is defined.
-    
+
     Available methods:
     - first_occurrence(): Only use first occurrence per person
     - with_observation(): Set observation window
     - require_*(): Add inclusion criteria
-    - exclude_*(): Add exclusion criteria  
+    - exclude_*(): Add exclusion criteria
     - build(): Finalize and create CohortExpression
     """
-    
+
     def __init__(self, parent: CohortBuilder, entry_query: BaseQuery):
         self._parent = parent
         self._entry_queries = [entry_query]
@@ -1109,171 +1149,247 @@ class CohortWithEntry:
         self._qualified_limit = "First"
         self._expression_limit = "All"
         self._settings = CohortSettings()
-    
+
     # or_with_X methods are generated by the domain registry below.
 
-    def or_with_drug(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+    def or_with_drug(self, concept_set_id: int, **kwargs) -> "CohortWithEntry":
         """Add an alternative drug exposure as entry event (OR logic)."""
         return self._add_or_entry(DrugQuery, concept_set_id, **kwargs)
 
-    def or_with_procedure(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+    def or_with_procedure(self, concept_set_id: int, **kwargs) -> "CohortWithEntry":
         """Add an alternative procedure occurrence as entry event (OR logic)."""
         return self._add_or_entry(ProcedureQuery, concept_set_id, **kwargs)
 
-    def or_with_measurement(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+    def or_with_measurement(self, concept_set_id: int, **kwargs) -> "CohortWithEntry":
         """Add an alternative measurement as entry event (OR logic)."""
         return self._add_or_entry(MeasurementQuery, concept_set_id, **kwargs)
 
-    def or_with_visit(self, concept_set_id: int, **kwargs) -> 'CohortWithEntry':
+    def or_with_visit(self, concept_set_id: int, **kwargs) -> "CohortWithEntry":
         """Add an alternative visit occurrence as entry event (OR logic)."""
         return self._add_or_entry(VisitQuery, concept_set_id, **kwargs)
 
-    def with_qualified_limit(self, limit: str) -> 'CohortWithEntry':
+    def with_qualified_limit(self, limit: str) -> "CohortWithEntry":
         """Set the qualified limit (First, Last, All)."""
         self._qualified_limit = limit
         return self
 
-    def with_expression_limit(self, limit: str) -> 'CohortWithEntry':
+    def with_expression_limit(self, limit: str) -> "CohortWithEntry":
         """Set the expression limit (First, Last, All)."""
         self._expression_limit = limit
         return self
 
     # Entry query filters (delegate to the last added query)
 
-    def with_all(self) -> 'CriteriaGroupBuilder':
+    def with_all(self) -> "CriteriaGroupBuilder":
         """Start a correlated criteria group for the last added entry."""
         return self._entry_queries[-1].with_all()
 
-    def with_any(self) -> 'CriteriaGroupBuilder':
+    def with_any(self) -> "CriteriaGroupBuilder":
         """Start a correlated criteria group for the last added entry."""
         return self._entry_queries[-1].with_any()
 
-    def first_occurrence(self) -> 'CohortWithEntry':
+    def first_occurrence(self) -> "CohortWithEntry":
         """Only use the first occurrence per person for entry events."""
         for q in self._entry_queries:
             q._get_config().first_occurrence = True
         self._limit = "First"
         return self
-    
-    def all_occurrences(self) -> 'CohortWithEntry':
+
+    def all_occurrences(self) -> "CohortWithEntry":
         """Use all occurrences per person."""
         self._limit = "All"
         for q in self._entry_queries:
             q._get_config().first_occurrence = False
         return self
-    
-    def with_observation(
-        self, 
-        prior_days: int = 0, 
-        post_days: int = 0
-    ) -> 'CohortWithEntry':
+
+    def with_observation(self, prior_days: int = 0, post_days: int = 0) -> "CohortWithEntry":
         """
         Set continuous observation requirements.
-        
+
         Args:
             prior_days: Days of observation required before index
             post_days: Days of observation required after index
-            
+
         Returns:
             Self for chaining
         """
         self._prior_observation_days = prior_days
         self._post_observation_days = post_days
         return self
-    
-    def min_age(self, age: int) -> 'CohortWithEntry':
+
+    def min_age(self, age: int) -> "CohortWithEntry":
         """Require minimum age at entry for all entry events."""
         for q in self._entry_queries:
             q._get_config().age_min = age
         return self
-    
-    def max_age(self, age: int) -> 'CohortWithEntry':
+
+    def max_age(self, age: int) -> "CohortWithEntry":
         """Require maximum age at entry for all entry events."""
         for q in self._entry_queries:
             q._get_config().age_max = age
         return self
-    
-    def require_gender(self, *concept_ids: int) -> 'CohortWithEntry':
+
+    def require_gender(self, *concept_ids: int) -> "CohortWithEntry":
         """Require specific gender concept IDs."""
         self._settings.gender_concepts.extend(concept_ids)
         return self
-    
-    def require_race(self, *concept_ids: int) -> 'CohortWithEntry':
+
+    def require_race(self, *concept_ids: int) -> "CohortWithEntry":
         """Require specific race concept IDs."""
         self._settings.race_concepts.extend(concept_ids)
         return self
-    
-    def require_ethnicity(self, *concept_ids: int) -> 'CohortWithEntry':
+
+    def require_ethnicity(self, *concept_ids: int) -> "CohortWithEntry":
         """Require specific ethnicity concept IDs."""
         self._settings.ethnicity_concepts.extend(concept_ids)
         return self
-    
-    def require_age(self, min_age: Optional[int] = None, max_age: Optional[int] = None) -> 'CohortWithEntry':
+
+    def require_age(self, min_age: Optional[int] = None, max_age: Optional[int] = None) -> "CohortWithEntry":
         """Require specific age range."""
         self._settings.age_min = min_age
         self._settings.age_max = max_age
         return self
-    
-    def begin_rule(self, name: str) -> 'CohortWithCriteria':
+
+    def begin_rule(self, name: str) -> "CohortWithCriteria":
         """Start a new named inclusion rule."""
         return self._to_criteria().begin_rule(name)
 
-    def end_rule(self) -> 'CohortWithCriteria':
+    def end_rule(self) -> "CohortWithCriteria":
         """Finish the current inclusion rule."""
         return self._to_criteria().end_rule()
 
     # Transition to CohortWithCriteria
-    def require_condition(self, concept_set_id: int, **kwargs) -> Union['ConditionQuery', 'CohortWithCriteria']:
+    def require_condition(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["ConditionQuery", "CohortWithCriteria"]:
         """require_condition (Supports both chaining and parameter-based API)"""
         query = ConditionQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def require_drug(self, concept_set_id: int, **kwargs) -> Union['DrugQuery', 'CohortWithCriteria']:
+    def require_drug(self, concept_set_id: int, **kwargs) -> Union["DrugQuery", "CohortWithCriteria"]:
         """require_drug (Supports both chaining and parameter-based API)"""
         query = DrugQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def censor_on_condition(self, concept_set_id: int, **kwargs) -> Union['ConditionQuery', 'CohortWithCriteria']:
+    def censor_on_condition(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["ConditionQuery", "CohortWithCriteria"]:
         """censor_on_condition (Supports both chaining and parameter-based API)"""
         query = ConditionQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=True)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def censor_on_drug(self, concept_set_id: int, **kwargs) -> Union['DrugQuery', 'CohortWithCriteria']:
+    def censor_on_drug(self, concept_set_id: int, **kwargs) -> Union["DrugQuery", "CohortWithCriteria"]:
         """censor_on_drug (Supports both chaining and parameter-based API)"""
         query = DrugQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=True)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def censor_on_procedure(self, concept_set_id: int, **kwargs) -> Union['ProcedureQuery', 'CohortWithCriteria']:
+    def censor_on_procedure(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["ProcedureQuery", "CohortWithCriteria"]:
         """censor_on_procedure (Supports both chaining and parameter-based API)"""
         query = ProcedureQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=True)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def censor_on_measurement(self, concept_set_id: int, **kwargs) -> Union['MeasurementQuery', 'CohortWithCriteria']:
+    def censor_on_measurement(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["MeasurementQuery", "CohortWithCriteria"]:
         """censor_on_measurement (Supports both chaining and parameter-based API)"""
         query = MeasurementQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=True)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
@@ -1289,186 +1405,388 @@ class CohortWithEntry:
         """Censor on death."""
         return self._to_criteria().censor_on_death(concept_set_id)
 
-    def require_measurement(self, concept_set_id: int, **kwargs) -> Union['MeasurementQuery', 'CohortWithCriteria']:
+    def require_measurement(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["MeasurementQuery", "CohortWithCriteria"]:
         """require_measurement (Supports both chaining and parameter-based API)"""
         query = MeasurementQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def exclude_condition(self, concept_set_id: int, **kwargs) -> Union['ConditionQuery', 'CohortWithCriteria']:
+    def exclude_condition(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["ConditionQuery", "CohortWithCriteria"]:
         """exclude_condition (Supports both chaining and parameter-based API)"""
         query = ConditionQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def exclude_drug(self, concept_set_id: int, **kwargs) -> Union['DrugQuery', 'CohortWithCriteria']:
+    def exclude_drug(self, concept_set_id: int, **kwargs) -> Union["DrugQuery", "CohortWithCriteria"]:
         """exclude_drug (Supports both chaining and parameter-based API)"""
         query = DrugQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def require_condition_era(self, concept_set_id: int, **kwargs) -> Union['ConditionEraQuery', 'CohortWithCriteria']:
+    def require_condition_era(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["ConditionEraQuery", "CohortWithCriteria"]:
         """require_condition_era (Supports both chaining and parameter-based API)"""
         query = ConditionEraQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def require_device_exposure(self, concept_set_id: int, **kwargs) -> Union['DeviceExposureQuery', 'CohortWithCriteria']:
+    def require_device_exposure(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["DeviceExposureQuery", "CohortWithCriteria"]:
         """require_device_exposure (Supports both chaining and parameter-based API)"""
         query = DeviceExposureQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def require_specimen(self, concept_set_id: int, **kwargs) -> Union['SpecimenQuery', 'CohortWithCriteria']:
+    def require_specimen(self, concept_set_id: int, **kwargs) -> Union["SpecimenQuery", "CohortWithCriteria"]:
         """require_specimen (Supports both chaining and parameter-based API)"""
         query = SpecimenQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def require_visit_detail(self, concept_set_id: int, **kwargs) -> Union['VisitDetailQuery', 'CohortWithCriteria']:
+    def require_visit_detail(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["VisitDetailQuery", "CohortWithCriteria"]:
         """require_visit_detail (Supports both chaining and parameter-based API)"""
         query = VisitDetailQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def require_dose_era(self, concept_set_id: int, **kwargs) -> Union['DoseEraQuery', 'CohortWithCriteria']:
+    def require_dose_era(self, concept_set_id: int, **kwargs) -> Union["DoseEraQuery", "CohortWithCriteria"]:
         """require_dose_era (Supports both chaining and parameter-based API)"""
         query = DoseEraQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def require_payer_plan_period(self, concept_set_id: int, **kwargs) -> Union['PayerPlanPeriodQuery', 'CohortWithCriteria']:
+    def require_payer_plan_period(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["PayerPlanPeriodQuery", "CohortWithCriteria"]:
         """require_payer_plan_period (Supports both chaining and parameter-based API)"""
         query = PayerPlanPeriodQuery(concept_set_id, parent=self, is_exclusion=False, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def exclude_condition_era(self, concept_set_id: int, **kwargs) -> Union['ConditionEraQuery', 'CohortWithCriteria']:
+    def exclude_condition_era(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["ConditionEraQuery", "CohortWithCriteria"]:
         """exclude_condition_era (Supports both chaining and parameter-based API)"""
         query = ConditionEraQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def exclude_device_exposure(self, concept_set_id: int, **kwargs) -> Union['DeviceExposureQuery', 'CohortWithCriteria']:
+    def exclude_device_exposure(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["DeviceExposureQuery", "CohortWithCriteria"]:
         """exclude_device_exposure (Supports both chaining and parameter-based API)"""
         query = DeviceExposureQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def exclude_specimen(self, concept_set_id: int, **kwargs) -> Union['SpecimenQuery', 'CohortWithCriteria']:
+    def exclude_specimen(self, concept_set_id: int, **kwargs) -> Union["SpecimenQuery", "CohortWithCriteria"]:
         """exclude_specimen (Supports both chaining and parameter-based API)"""
         query = SpecimenQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def exclude_visit_detail(self, concept_set_id: int, **kwargs) -> Union['VisitDetailQuery', 'CohortWithCriteria']:
+    def exclude_visit_detail(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["VisitDetailQuery", "CohortWithCriteria"]:
         """exclude_visit_detail (Supports both chaining and parameter-based API)"""
         query = VisitDetailQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def exclude_dose_era(self, concept_set_id: int, **kwargs) -> Union['DoseEraQuery', 'CohortWithCriteria']:
+    def exclude_dose_era(self, concept_set_id: int, **kwargs) -> Union["DoseEraQuery", "CohortWithCriteria"]:
         """exclude_dose_era (Supports both chaining and parameter-based API)"""
         query = DoseEraQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
-    def exclude_payer_plan_period(self, concept_set_id: int, **kwargs) -> Union['PayerPlanPeriodQuery', 'CohortWithCriteria']:
+    def exclude_payer_plan_period(
+        self, concept_set_id: int, **kwargs
+    ) -> Union["PayerPlanPeriodQuery", "CohortWithCriteria"]:
         """exclude_payer_plan_period (Supports both chaining and parameter-based API)"""
         query = PayerPlanPeriodQuery(concept_set_id, parent=self, is_exclusion=True, is_censor=False)
         if kwargs:
             query.apply_params(**kwargs)
-            if any(p in kwargs for p in ['anytime_before', 'anytime_after', 'within_days_before', 'within_days_after', 'within_days', 'same_day', 'during_event', 'before_event_end']):
+            if any(
+                p in kwargs
+                for p in [
+                    "anytime_before",
+                    "anytime_after",
+                    "within_days_before",
+                    "within_days_after",
+                    "within_days",
+                    "same_day",
+                    "during_event",
+                    "before_event_end",
+                ]
+            ):
                 return query._finalize()
         return query
 
     # require_X, exclude_X, censor_on_X delegates are generated by the domain registry.
 
     # Exit strategies
-    def exit_at_observation_end(self) -> 'CohortWithCriteria':
+    def exit_at_observation_end(self) -> "CohortWithCriteria":
         """Exit cohort at the end of the observation period."""
         return self._to_criteria().exit_at_observation_end()
 
-    def exit_after_days(self, days: int, from_field: str = "startDate") -> 'CohortWithCriteria':
+    def exit_after_days(self, days: int, from_field: str = "startDate") -> "CohortWithCriteria":
         """Exit cohort N days after index start/end."""
         return self._to_criteria().exit_after_days(days, from_field)
 
-    def exit_at_era_end(self, concept_set_id: int, gap_days: int = 30, offset: int = 0, supply_override: Optional[int] = None) -> 'CohortWithCriteria':
+    def exit_at_era_end(
+        self, concept_set_id: int, gap_days: int = 30, offset: int = 0, supply_override: Optional[int] = None
+    ) -> "CohortWithCriteria":
         """Exit cohort at the end of a drug era."""
         return self._to_criteria().exit_at_era_end(concept_set_id, gap_days, offset, supply_override)
 
-    def any_of(self) -> 'CriteriaGroupBuilder':
+    def any_of(self) -> "CriteriaGroupBuilder":
         """Start an 'Any Of' group in the current rule."""
         return self._to_criteria().any_of()
 
-    def all_of(self) -> 'CriteriaGroupBuilder':
+    def all_of(self) -> "CriteriaGroupBuilder":
         """Start an 'All Of' group in the current rule."""
         return self._to_criteria().all_of()
 
-    def at_least_of(self, count: int) -> 'CriteriaGroupBuilder':
+    def at_least_of(self, count: int) -> "CriteriaGroupBuilder":
         """Start an 'At Least N Of' group in the current rule."""
         return self._to_criteria().at_least_of(count)
-    
+
     # Collection method delegates
-    def require_any_of(self, **kwargs) -> 'CohortWithCriteria':
+    def require_any_of(self, **kwargs) -> "CohortWithCriteria":
         """Delegate to CohortWithCriteria. See CohortWithCriteria.require_any_of for documentation."""
         return self._to_criteria().require_any_of(**kwargs)
-    
-    def require_all_of(self, **kwargs) -> 'CohortWithCriteria':
+
+    def require_all_of(self, **kwargs) -> "CohortWithCriteria":
         """Delegate to CohortWithCriteria. See CohortWithCriteria.require_all_of for documentation."""
         return self._to_criteria().require_all_of(**kwargs)
-    
-    def require_at_least_of(self, count: int, **kwargs) -> 'CohortWithCriteria':
+
+    def require_at_least_of(self, count: int, **kwargs) -> "CohortWithCriteria":
         """Delegate to CohortWithCriteria. See CohortWithCriteria.require_at_least_of for documentation."""
         return self._to_criteria().require_at_least_of(count, **kwargs)
-    
-    def exclude_any_of(self, **kwargs) -> 'CohortWithCriteria':
+
+    def exclude_any_of(self, **kwargs) -> "CohortWithCriteria":
         """Delegate to CohortWithCriteria. See CohortWithCriteria.exclude_any_of for documentation."""
         return self._to_criteria().exclude_any_of(**kwargs)
-    
-    def _to_criteria(self) -> 'CohortWithCriteria':
+
+    def _to_criteria(self) -> "CohortWithCriteria":
         """Transition to criteria state."""
         return CohortWithCriteria(
             parent=self._parent,
@@ -1478,9 +1796,9 @@ class CohortWithEntry:
             limit=self._limit,
             qualified_limit=self._qualified_limit,
             expression_limit=self._expression_limit,
-            settings=self._settings
+            settings=self._settings,
         )
-    
+
     def build(self) -> CohortExpression:
         """Build the final CohortExpression."""
         return self._to_criteria().build()
@@ -1503,10 +1821,7 @@ _COLLECTION_DOMAIN_MAP = {
 
 
 def _build_group_from_kwargs(
-    group_type: str,
-    is_exclusion: bool,
-    count: Optional[int] = None,
-    **kwargs
+    group_type: str, is_exclusion: bool, count: Optional[int] = None, **kwargs
 ) -> Optional[GroupConfig]:
     """Build a GroupConfig from keyword arguments mapping domain IDs.
 
@@ -1522,9 +1837,7 @@ def _build_group_from_kwargs(
             for concept_id in ids:
                 config = QueryConfig(domain=domain, concept_set_id=concept_id)
                 config.time_window = TimeWindow(days_before=99999, days_after=99999)
-                group.criteria.append(CriteriaConfig(
-                    query_config=config, is_exclusion=is_exclusion
-                ))
+                group.criteria.append(CriteriaConfig(query_config=config, is_exclusion=is_exclusion))
 
     return group if group.criteria else None
 
@@ -1532,9 +1845,9 @@ def _build_group_from_kwargs(
 class CohortWithCriteria:
     """
     Cohort state after criteria have been added.
-    
+
     Available methods:
-    - require_*(): Add more inclusion criteria  
+    - require_*(): Add more inclusion criteria
     - exclude_*(): Add more exclusion criteria
     - exit_at_*(): Set cohort exit strategy
     - collapse_era(): Set era gap days
@@ -1544,17 +1857,17 @@ class CohortWithCriteria:
     All require_X / exclude_X / censor_on_X methods are auto-generated
     from the domain registry.
     """
-    
+
     def __init__(
         self,
         parent: CohortBuilder,
-        entry_configs: List[QueryConfig],
+        entry_configs: list[QueryConfig],
         prior_observation: int = 0,
         post_observation: int = 0,
         limit: str = "All",
         qualified_limit: str = "First",
         expression_limit: str = "All",
-        settings: Optional[CohortSettings] = None
+        settings: Optional[CohortSettings] = None,
     ):
         self._parent = parent
         self._entry_configs = entry_configs
@@ -1565,18 +1878,18 @@ class CohortWithCriteria:
         self._expression_limit = expression_limit
         self._rules = [{"name": "Inclusion Criteria", "group": GroupConfig(type="ALL")}]
         self._settings = settings or CohortSettings()
-    
-    def begin_rule(self, name: str) -> 'CohortWithCriteria':
+
+    def begin_rule(self, name: str) -> "CohortWithCriteria":
         """
         Start a new named inclusion rule.
-        
-        Subsequent criteria will be added to this rule until build() or 
+
+        Subsequent criteria will be added to this rule until build() or
         another begin_rule() is called. This is useful for attrition tracking.
         """
         self._rules.append({"name": name, "group": GroupConfig(type="ALL")})
         return self
 
-    def end_rule(self) -> 'CohortWithCriteria':
+    def end_rule(self) -> "CohortWithCriteria":
         """
         Finish the current inclusion rule.
 
@@ -1584,39 +1897,38 @@ class CohortWithCriteria:
         """
         return self
 
-    def _add_query(self, config: QueryConfig, is_exclusion: bool = False) -> 'CohortWithCriteria':
+    def _add_query(self, config: QueryConfig, is_exclusion: bool = False) -> "CohortWithCriteria":
         """Add a configured query to the current rule's criteria list."""
-        self._rules[-1]["group"].criteria.append(CriteriaConfig(
-            query_config=config,
-            is_exclusion=is_exclusion
-        ))
+        self._rules[-1]["group"].criteria.append(
+            CriteriaConfig(query_config=config, is_exclusion=is_exclusion)
+        )
         return self
 
-    def _add_censor_query(self, config: QueryConfig) -> 'CohortWithCriteria':
+    def _add_censor_query(self, config: QueryConfig) -> "CohortWithCriteria":
         """Add a configured query to the censoring criteria list."""
         self._settings.censor_queries.append(config)
         return self
 
-    def any_of(self) -> 'CriteriaGroupBuilder':
+    def any_of(self) -> "CriteriaGroupBuilder":
         """Start an 'Any Of' group in the current rule."""
         group = GroupConfig(type="ANY")
         self._rules[-1]["group"].criteria.append(group)
         return CriteriaGroupBuilder(self, group)
 
-    def all_of(self) -> 'CriteriaGroupBuilder':
+    def all_of(self) -> "CriteriaGroupBuilder":
         """Start an 'All Of' group in the current rule."""
         group = GroupConfig(type="ALL")
         self._rules[-1]["group"].criteria.append(group)
         return CriteriaGroupBuilder(self, group)
 
-    def at_least_of(self, count: int) -> 'CriteriaGroupBuilder':
+    def at_least_of(self, count: int) -> "CriteriaGroupBuilder":
         """Start an 'At Least N Of' group in the current rule."""
         group = GroupConfig(type="AT_LEAST", count=count)
         self._rules[-1]["group"].criteria.append(group)
         return CriteriaGroupBuilder(self, group)
-    
+
     # Collection methods using shared helper
-    def require_any_of(self, **kwargs) -> 'CohortWithCriteria':
+    def require_any_of(self, **kwargs) -> "CohortWithCriteria":
         """
         Require ANY of the specified criteria (OR logic).
 
@@ -1636,8 +1948,8 @@ class CohortWithCriteria:
         if group:
             self._rules[-1]["group"].criteria.append(group)
         return self
-    
-    def require_all_of(self, **kwargs) -> 'CohortWithCriteria':
+
+    def require_all_of(self, **kwargs) -> "CohortWithCriteria":
         """
         Require ALL of the specified criteria (AND logic).
 
@@ -1657,8 +1969,8 @@ class CohortWithCriteria:
         if group:
             self._rules[-1]["group"].criteria.append(group)
         return self
-    
-    def require_at_least_of(self, count: int, **kwargs) -> 'CohortWithCriteria':
+
+    def require_at_least_of(self, count: int, **kwargs) -> "CohortWithCriteria":
         """
         Require at least N of the specified criteria.
 
@@ -1679,8 +1991,8 @@ class CohortWithCriteria:
         if group:
             self._rules[-1]["group"].criteria.append(group)
         return self
-    
-    def exclude_any_of(self, **kwargs) -> 'CohortWithCriteria':
+
+    def exclude_any_of(self, **kwargs) -> "CohortWithCriteria":
         """
         Exclude if ANY of the specified criteria are present.
 
@@ -1703,21 +2015,23 @@ class CohortWithCriteria:
 
     # require_X / exclude_X / censor_on_X methods are generated by the domain
     # registry at the bottom of this file.
-    
+
     # Settings methods
-    def exit_at_observation_end(self) -> 'CohortWithCriteria':
+    def exit_at_observation_end(self) -> "CohortWithCriteria":
         """Exit cohort at the end of the observation period."""
         self._settings.exit_strategy_type = "observation"
         return self
-    
-    def exit_after_days(self, days: int, from_field: str = "startDate") -> 'CohortWithCriteria':
+
+    def exit_after_days(self, days: int, from_field: str = "startDate") -> "CohortWithCriteria":
         """Exit cohort N days after index start/end."""
         self._settings.exit_strategy_type = "date_offset"
         self._settings.exit_offset_days = days
         self._settings.exit_offset_field = from_field
         return self
 
-    def exit_at_era_end(self, concept_set_id: int, gap_days: int = 30, offset: int = 0, supply_override: Optional[int] = None) -> 'CohortWithCriteria':
+    def exit_at_era_end(
+        self, concept_set_id: int, gap_days: int = 30, offset: int = 0, supply_override: Optional[int] = None
+    ) -> "CohortWithCriteria":
         """Exit cohort at the end of a drug era."""
         self._settings.exit_strategy_type = "custom_era"
         self._settings.custom_era_drug_codeset_id = concept_set_id
@@ -1725,37 +2039,39 @@ class CohortWithCriteria:
         self._settings.custom_era_offset = offset
         self._settings.custom_era_days_supply_override = supply_override
         return self
-    
-    def collapse_era(self, days: int) -> 'CohortWithCriteria':
+
+    def collapse_era(self, days: int) -> "CohortWithCriteria":
         """Set the number of gap days to collapse successive cohort entries."""
         self._settings.era_days = days
         return self
 
-    def require_gender(self, *concept_ids: int) -> 'CohortWithCriteria':
+    def require_gender(self, *concept_ids: int) -> "CohortWithCriteria":
         """Require specific gender concept IDs."""
         self._settings.gender_concepts.extend(concept_ids)
         return self
-    
-    def require_race(self, *concept_ids: int) -> 'CohortWithCriteria':
+
+    def require_race(self, *concept_ids: int) -> "CohortWithCriteria":
         """Require specific race concept IDs."""
         self._settings.race_concepts.extend(concept_ids)
         return self
-    
-    def require_ethnicity(self, *concept_ids: int) -> 'CohortWithCriteria':
+
+    def require_ethnicity(self, *concept_ids: int) -> "CohortWithCriteria":
         """Require specific ethnicity concept IDs."""
         self._settings.ethnicity_concepts.extend(concept_ids)
         return self
-    
-    def require_age(self, min_age: Optional[int] = None, max_age: Optional[int] = None) -> 'CohortWithCriteria':
+
+    def require_age(
+        self, min_age: Optional[int] = None, max_age: Optional[int] = None
+    ) -> "CohortWithCriteria":
         """Require specific age range."""
         self._settings.age_min = min_age
         self._settings.age_max = max_age
         return self
-    
+
     def build(self) -> CohortExpression:
         """
         Build the final CohortExpression.
-        
+
         Returns:
             CohortExpression ready for SQL generation
         """
@@ -1769,107 +2085,117 @@ class CohortWithCriteria:
             qualified_limit=self._qualified_limit,
             expression_limit=self._expression_limit,
             rules=self._rules,
-            settings=self._settings
+            settings=self._settings,
         )
+
 
 # =============================================================================
 # CONVERSION FUNCTIONS
 # =============================================================================
 
+
 def _build_cohort_expression(
     title: str,
-    concept_sets: List[ConceptSet],
-    entry_configs: List[QueryConfig],
+    concept_sets: list[ConceptSet],
+    entry_configs: list[QueryConfig],
     prior_observation: int,
     post_observation: int,
     limit: str,
     qualified_limit: str,
     expression_limit: str,
-    rules: List[Dict[str, Any]],
-    settings: CohortSettings
+    rules: list[dict[str, Any]],
+    settings: CohortSettings,
 ) -> CohortExpression:
     """Build a CohortExpression from the builder state."""
-    
+
     # Build primary criteria
     entry_criteria_list = [_config_to_criteria(cfg) for cfg in entry_configs]
     primary_criteria = PrimaryCriteria(
         criteria_list=entry_criteria_list,
-        observation_window=ObservationFilter(
-            prior_days=prior_observation,
-            post_days=post_observation
-        ),
-        primary_criteria_limit=ResultLimit(type=limit)
+        observation_window=ObservationFilter(prior_days=prior_observation, post_days=post_observation),
+        primary_criteria_limit=ResultLimit(type=limit),
     )
-    
+
     # Build inclusion rules from rules
     inclusion_rules = []
-    
+
     # Build demographic rule FIRST if needed
-    if settings.gender_concepts or settings.race_concepts or settings.ethnicity_concepts or settings.age_min is not None or settings.age_max is not None:
+    if (
+        settings.gender_concepts
+        or settings.race_concepts
+        or settings.ethnicity_concepts
+        or settings.age_min is not None
+        or settings.age_max is not None
+    ):
         demographic = DemographicCriteria()
         if settings.gender_concepts:
-            demographic.gender = [Concept(concept_id=c, concept_name="Gender") for c in settings.gender_concepts]
+            demographic.gender = [
+                Concept(concept_id=c, concept_name="Gender") for c in settings.gender_concepts
+            ]
         if settings.race_concepts:
             demographic.race = [Concept(concept_id=c, concept_name="Race") for c in settings.race_concepts]
         if settings.ethnicity_concepts:
-            demographic.ethnicity = [Concept(concept_id=c, concept_name="Ethnicity") for c in settings.ethnicity_concepts]
-        
+            demographic.ethnicity = [
+                Concept(concept_id=c, concept_name="Ethnicity") for c in settings.ethnicity_concepts
+            ]
+
         if settings.age_min is not None or settings.age_max is not None:
-            op = 'bt' if (settings.age_min is not None and settings.age_max is not None) else ('gte' if settings.age_min is not None else 'lte')
+            op = (
+                "bt"
+                if (settings.age_min is not None and settings.age_max is not None)
+                else ("gte" if settings.age_min is not None else "lte")
+            )
             demographic.age = NumericRange(value=settings.age_min, extent=settings.age_max, op=op)
 
-        inclusion_rules.append(InclusionRule(
-            name="Demographic Criteria",
-            expression=CirceCriteriaGroup(
-                type="ALL",
-                demographic_criteria_list=[demographic]
+        inclusion_rules.append(
+            InclusionRule(
+                name="Demographic Criteria",
+                expression=CirceCriteriaGroup(type="ALL", demographic_criteria_list=[demographic]),
             )
-        ))
-    
+        )
+
     # Then add named rules from builder
     for rule_data in rules:
         rule_name = rule_data["name"]
         root_group = rule_data["group"]
-        
+
         if not root_group.criteria:
             continue
-        
+
         # If the root group has exactly ONE child and that child is a group (not a criteria),
         # unwrap it and use it directly as the expression
-        if (len(root_group.criteria) == 1 and 
-            isinstance(root_group.criteria[0], GroupConfig)):
+        if len(root_group.criteria) == 1 and isinstance(root_group.criteria[0], GroupConfig):
             # Use the nested group directly
             expression = _build_criteria_group(root_group.criteria[0])
         else:
             # Use the root group as-is
             expression = _build_criteria_group(root_group)
-            
-        inclusion_rules.append(InclusionRule(
-            name=rule_name,
-            expression=expression
-        ))
-    
+
+        inclusion_rules.append(InclusionRule(name=rule_name, expression=expression))
+
     # Build end strategy
     end_strategy = None
     if settings.exit_strategy_type == "date_offset":
         from circe.cohortdefinition.core import DateOffsetStrategy
+
         end_strategy = DateOffsetStrategy(
-            date_field=settings.exit_offset_field,
-            offset=settings.exit_offset_days
+            date_field=settings.exit_offset_field, offset=settings.exit_offset_days
         )
     elif settings.exit_strategy_type == "custom_era":
         from circe.cohortdefinition.core import CustomEraStrategy
+
         end_strategy = CustomEraStrategy(
             drug_codeset_id=settings.custom_era_drug_codeset_id,
             gap_days=settings.custom_era_gap_days,
             offset=settings.custom_era_offset,
-            days_supply_override=settings.custom_era_days_supply_override
+            days_supply_override=settings.custom_era_days_supply_override,
         )
-    
+
     # Build collapse settings
     from circe.cohortdefinition.core import CollapseSettings
+
     collapse_settings = CollapseSettings(era_pad=settings.era_days)
-    
+
     # Build censoring criteria
     censoring_criteria = []
     for cq in settings.censor_queries:
@@ -1884,223 +2210,327 @@ def _build_cohort_expression(
         collapse_settings=collapse_settings,
         censoring_criteria=censoring_criteria,
         qualified_limit=ResultLimit(type=qualified_limit),
-        expression_limit=ResultLimit(type=expression_limit)
+        expression_limit=ResultLimit(type=expression_limit),
     )
+
 
 def _config_to_criteria(config: QueryConfig):
     """Convert a QueryConfig to a domain criteria object."""
     from circe.extensions import get_criteria_class_map
+
     domain_map = get_criteria_class_map()
-    
+
     criteria_class = domain_map.get(config.domain)
     if not criteria_class:
         raise ValueError(f"Unknown domain: {config.domain}")
-    
+
     kwargs = {
-        'codeset_id': config.concept_set_id,
-        'first': config.first_occurrence if config.first_occurrence else None
+        "codeset_id": config.concept_set_id,
+        "first": config.first_occurrence if config.first_occurrence else None,
     }
-    
+
     if config.age_min is not None or config.age_max is not None:
-        op = 'bt' if (config.age_min is not None and config.age_max is not None) else ('gte' if config.age_min is not None else 'lte')
-        kwargs['age'] = NumericRange(value=config.age_min, extent=config.age_max, op=op)
+        op = (
+            "bt"
+            if (config.age_min is not None and config.age_max is not None)
+            else ("gte" if config.age_min is not None else "lte")
+        )
+        kwargs["age"] = NumericRange(value=config.age_min, extent=config.age_max, op=op)
 
     # Map domain-specific filters
-    if config.domain == 'Measurement':
+    if config.domain == "Measurement":
         if config.value_min is not None or config.value_max is not None:
-            op = 'bt' if (config.value_min is not None and config.value_max is not None) else ('gte' if config.value_min is not None else 'lte')
-            kwargs['value_as_number'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
+            op = (
+                "bt"
+                if (config.value_min is not None and config.value_max is not None)
+                else ("gte" if config.value_min is not None else "lte")
+            )
+            kwargs["value_as_number"] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
         # Phase 2: Measurement-specific modifiers
         if config.measurement_operator_concepts:
-            kwargs['operator'] = [Concept(concept_id=c, concept_name="Operator") for c in config.measurement_operator_concepts]
+            kwargs["operator"] = [
+                Concept(concept_id=c, concept_name="Operator") for c in config.measurement_operator_concepts
+            ]
         if config.range_low_ratio_min is not None or config.range_low_ratio_max is not None:
-            op = 'bt' if (config.range_low_ratio_min and config.range_low_ratio_max) else ('gte' if config.range_low_ratio_min else 'lte')
-            kwargs['range_low_ratio'] = NumericRange(value=config.range_low_ratio_min, extent=config.range_low_ratio_max, op=op)
+            op = (
+                "bt"
+                if (config.range_low_ratio_min and config.range_low_ratio_max)
+                else ("gte" if config.range_low_ratio_min else "lte")
+            )
+            kwargs["range_low_ratio"] = NumericRange(
+                value=config.range_low_ratio_min, extent=config.range_low_ratio_max, op=op
+            )
         if config.range_high_ratio_min is not None or config.range_high_ratio_max is not None:
-            op = 'bt' if (config.range_high_ratio_min and config.range_high_ratio_max) else ('gte' if config.range_high_ratio_min else 'lte')
-            kwargs['range_high_ratio'] = NumericRange(value=config.range_high_ratio_min, extent=config.range_high_ratio_max, op=op)
-    
-    if config.domain == 'DrugExposure':
+            op = (
+                "bt"
+                if (config.range_high_ratio_min and config.range_high_ratio_max)
+                else ("gte" if config.range_high_ratio_min else "lte")
+            )
+            kwargs["range_high_ratio"] = NumericRange(
+                value=config.range_high_ratio_min, extent=config.range_high_ratio_max, op=op
+            )
+
+    if config.domain == "DrugExposure":
         if config.days_supply_min is not None or config.days_supply_max is not None:
-            op = 'bt' if (config.days_supply_min is not None and config.days_supply_max is not None) else ('gte' if config.days_supply_min is not None else 'lte')
-            kwargs['days_supply'] = NumericRange(value=config.days_supply_min, extent=config.days_supply_max, op=op)
+            op = (
+                "bt"
+                if (config.days_supply_min is not None and config.days_supply_max is not None)
+                else ("gte" if config.days_supply_min is not None else "lte")
+            )
+            kwargs["days_supply"] = NumericRange(
+                value=config.days_supply_min, extent=config.days_supply_max, op=op
+            )
         if config.quantity_min is not None or config.quantity_max is not None:
-            op = 'bt' if (config.quantity_min is not None and config.quantity_max is not None) else ('gte' if config.quantity_min is not None else 'lte')
-            kwargs['quantity'] = NumericRange(value=config.quantity_min, extent=config.quantity_max, op=op)
+            op = (
+                "bt"
+                if (config.quantity_min is not None and config.quantity_max is not None)
+                else ("gte" if config.quantity_min is not None else "lte")
+            )
+            kwargs["quantity"] = NumericRange(value=config.quantity_min, extent=config.quantity_max, op=op)
         # Phase 2: Drug-specific modifiers
         if config.drug_route_concepts:
-            kwargs['route_concept'] = [Concept(concept_id=c, concept_name="Route") for c in config.drug_route_concepts]
+            kwargs["route_concept"] = [
+                Concept(concept_id=c, concept_name="Route") for c in config.drug_route_concepts
+            ]
         if config.refills_min is not None or config.refills_max is not None:
-            op = 'bt' if (config.refills_min and config.refills_max) else ('gte' if config.refills_min else 'lte')
-            kwargs['refills'] = NumericRange(value=config.refills_min, extent=config.refills_max, op=op)
+            op = (
+                "bt"
+                if (config.refills_min and config.refills_max)
+                else ("gte" if config.refills_min else "lte")
+            )
+            kwargs["refills"] = NumericRange(value=config.refills_min, extent=config.refills_max, op=op)
         if config.dose_min is not None or config.dose_max is not None:
-            op = 'bt' if (config.dose_min and config.dose_max) else ('gte' if config.dose_min else 'lte')
-            kwargs['effective_drug_dose'] = NumericRange(value=config.dose_min, extent=config.dose_max, op=op)
-            
-    if config.domain == 'Measurement':
+            op = "bt" if (config.dose_min and config.dose_max) else ("gte" if config.dose_min else "lte")
+            kwargs["effective_drug_dose"] = NumericRange(value=config.dose_min, extent=config.dose_max, op=op)
+
+    if config.domain == "Measurement":
         if config.unit_concepts:
-            kwargs['unit'] = [Concept(concept_id=c, concept_name="Unit") for c in config.unit_concepts]
+            kwargs["unit"] = [Concept(concept_id=c, concept_name="Unit") for c in config.unit_concepts]
         if config.abnormal is not None:
-            kwargs['abnormal'] = config.abnormal
+            kwargs["abnormal"] = config.abnormal
         if config.range_low_min is not None or config.range_low_max is not None:
-            op = 'bt' if (config.range_low_min is not None and config.range_low_max is not None) else ('gte' if config.range_low_min is not None else 'lte')
-            kwargs['range_low'] = NumericRange(value=config.range_low_min, extent=config.range_low_max, op=op)
+            op = (
+                "bt"
+                if (config.range_low_min is not None and config.range_low_max is not None)
+                else ("gte" if config.range_low_min is not None else "lte")
+            )
+            kwargs["range_low"] = NumericRange(value=config.range_low_min, extent=config.range_low_max, op=op)
         if config.range_high_min is not None or config.range_high_max is not None:
-            op = 'bt' if (config.range_high_min is not None and config.range_high_max is not None) else ('gte' if config.range_high_min is not None else 'lte')
-            kwargs['range_high'] = NumericRange(value=config.range_high_min, extent=config.range_high_max, op=op)
+            op = (
+                "bt"
+                if (config.range_high_min is not None and config.range_high_max is not None)
+                else ("gte" if config.range_high_min is not None else "lte")
+            )
+            kwargs["range_high"] = NumericRange(
+                value=config.range_high_min, extent=config.range_high_max, op=op
+            )
         if config.value_as_concept_concepts:
-            kwargs['value_as_concept'] = [Concept(concept_id=c, concept_name="Value") for c in config.value_as_concept_concepts]
+            kwargs["value_as_concept"] = [
+                Concept(concept_id=c, concept_name="Value") for c in config.value_as_concept_concepts
+            ]
 
-    if config.domain in ['DrugEra', 'ConditionEra']:
+    if config.domain in ["DrugEra", "ConditionEra"]:
         if config.era_length_min is not None or config.era_length_max is not None:
-            op = 'bt' if (config.era_length_min is not None and config.era_length_max is not None) else ('gte' if config.era_length_min is not None else 'lte')
-            kwargs['era_length'] = NumericRange(value=config.era_length_min, extent=config.era_length_max, op=op)
+            op = (
+                "bt"
+                if (config.era_length_min is not None and config.era_length_max is not None)
+                else ("gte" if config.era_length_min is not None else "lte")
+            )
+            kwargs["era_length"] = NumericRange(
+                value=config.era_length_min, extent=config.era_length_max, op=op
+            )
         if config.value_min is not None or config.value_max is not None:
-            op = 'bt' if (config.value_min is not None and config.value_max is not None) else ('gte' if config.value_min is not None else 'lte')
-            kwargs['occurrence_count'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
-        if config.domain == 'DrugEra' and (config.extent_min is not None or config.extent_max is not None):
-            op = 'bt' if (config.extent_min is not None and config.extent_max is not None) else ('gte' if config.extent_min is not None else 'lte')
-            kwargs['gap_days'] = NumericRange(value=config.extent_min, extent=config.extent_max, op=op)
+            op = (
+                "bt"
+                if (config.value_min is not None and config.value_max is not None)
+                else ("gte" if config.value_min is not None else "lte")
+            )
+            kwargs["occurrence_count"] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
+        if config.domain == "DrugEra" and (config.extent_min is not None or config.extent_max is not None):
+            op = (
+                "bt"
+                if (config.extent_min is not None and config.extent_max is not None)
+                else ("gte" if config.extent_min is not None else "lte")
+            )
+            kwargs["gap_days"] = NumericRange(value=config.extent_min, extent=config.extent_max, op=op)
 
-    if config.domain == 'DoseEra':
+    if config.domain == "DoseEra":
         if config.dose_min is not None or config.dose_max is not None:
-            op = 'bt' if (config.dose_min is not None and config.dose_max is not None) else ('gte' if config.dose_min is not None else 'lte')
-            kwargs['dose_value'] = NumericRange(value=config.dose_min, extent=config.dose_max, op=op)
+            op = (
+                "bt"
+                if (config.dose_min is not None and config.dose_max is not None)
+                else ("gte" if config.dose_min is not None else "lte")
+            )
+            kwargs["dose_value"] = NumericRange(value=config.dose_min, extent=config.dose_max, op=op)
         if config.era_length_min is not None or config.era_length_max is not None:
-            op = 'bt' if (config.era_length_min is not None and config.era_length_max is not None) else ('gte' if config.era_length_min is not None else 'lte')
-            kwargs['era_length'] = NumericRange(value=config.era_length_min, extent=config.era_length_max, op=op)
+            op = (
+                "bt"
+                if (config.era_length_min is not None and config.era_length_max is not None)
+                else ("gte" if config.era_length_min is not None else "lte")
+            )
+            kwargs["era_length"] = NumericRange(
+                value=config.era_length_min, extent=config.era_length_max, op=op
+            )
 
     # Phase 2: Procedure-specific modifiers
-    if config.domain == 'ProcedureOccurrence':
+    if config.domain == "ProcedureOccurrence":
         if config.procedure_modifier_concepts:
-            kwargs['modifier'] = [Concept(concept_id=c, concept_name="Modifier") for c in config.procedure_modifier_concepts]
+            kwargs["modifier"] = [
+                Concept(concept_id=c, concept_name="Modifier") for c in config.procedure_modifier_concepts
+            ]
         if config.quantity_min is not None or config.quantity_max is not None:
-            op = 'bt' if (config.quantity_min and config.quantity_max) else ('gte' if config.quantity_min else 'lte')
-            kwargs['quantity'] = NumericRange(value=config.quantity_min, extent=config.quantity_max, op=op)
-    
-    if config.domain in ['VisitOccurrence', 'VisitDetail', 'ObservationPeriod']:
+            op = (
+                "bt"
+                if (config.quantity_min and config.quantity_max)
+                else ("gte" if config.quantity_min else "lte")
+            )
+            kwargs["quantity"] = NumericRange(value=config.quantity_min, extent=config.quantity_max, op=op)
+
+    if config.domain in ["VisitOccurrence", "VisitDetail", "ObservationPeriod"]:
         if config.value_min is not None or config.value_max is not None:
-            op = 'bt' if (config.value_min is not None and config.value_max is not None) else ('gte' if config.value_min is not None else 'lte')
-            if config.domain == 'VisitOccurrence':
-                kwargs['visit_length'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
-            elif config.domain == 'VisitDetail':
-                kwargs['visit_detail_length'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
-            elif config.domain == 'ObservationPeriod':
-                kwargs['period_length'] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
-        
+            op = (
+                "bt"
+                if (config.value_min is not None and config.value_max is not None)
+                else ("gte" if config.value_min is not None else "lte")
+            )
+            if config.domain == "VisitOccurrence":
+                kwargs["visit_length"] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
+            elif config.domain == "VisitDetail":
+                kwargs["visit_detail_length"] = NumericRange(
+                    value=config.value_min, extent=config.value_max, op=op
+                )
+            elif config.domain == "ObservationPeriod":
+                kwargs["period_length"] = NumericRange(value=config.value_min, extent=config.value_max, op=op)
+
         # Phase 2: Visit-specific modifiers (outside value range check)
-        if config.domain == 'VisitOccurrence':
-            if config.place_of_service_concepts:
-                kwargs['place_of_service'] = [Concept(concept_id=c, concept_name="Place of Service") for c in config.place_of_service_concepts]
+        if config.domain == "VisitOccurrence" and config.place_of_service_concepts:
+            kwargs["place_of_service"] = [
+                Concept(concept_id=c, concept_name="Place of Service")
+                for c in config.place_of_service_concepts
+            ]
 
     # Phase 2: Observation-specific modifiers
-    if config.domain == 'Observation':
+    if config.domain == "Observation":
         if config.qualifier_concepts:
-            kwargs['qualifier'] = [Concept(concept_id=c, concept_name="Qualifier") for c in config.qualifier_concepts]
+            kwargs["qualifier"] = [
+                Concept(concept_id=c, concept_name="Qualifier") for c in config.qualifier_concepts
+            ]
         if config.value_as_string:
-            kwargs['value_as_string'] = config.value_as_string
+            kwargs["value_as_string"] = config.value_as_string
 
     # Map common filters
     if config.gender_concepts:
-        kwargs['gender'] = [Concept(concept_id=c, concept_name="Gender") for c in config.gender_concepts]
-    
+        kwargs["gender"] = [Concept(concept_id=c, concept_name="Gender") for c in config.gender_concepts]
+
     if config.visit_type_concepts:
-        kwargs['visit_type'] = [Concept(concept_id=c, concept_name="Visit Type") for c in config.visit_type_concepts]
+        kwargs["visit_type"] = [
+            Concept(concept_id=c, concept_name="Visit Type") for c in config.visit_type_concepts
+        ]
 
     if config.condition_type_concepts:
-        kwargs['condition_type'] = [Concept(concept_id=c, concept_name="Condition Type") for c in config.condition_type_concepts]
+        kwargs["condition_type"] = [
+            Concept(concept_id=c, concept_name="Condition Type") for c in config.condition_type_concepts
+        ]
 
     if config.drug_type_concepts:
-        kwargs['drug_type'] = [Concept(concept_id=c, concept_name="Drug Type") for c in config.drug_type_concepts]
+        kwargs["drug_type"] = [
+            Concept(concept_id=c, concept_name="Drug Type") for c in config.drug_type_concepts
+        ]
 
     if config.procedure_type_concepts:
-        kwargs['procedure_type'] = [Concept(concept_id=c, concept_name="Procedure Type") for c in config.procedure_type_concepts]
+        kwargs["procedure_type"] = [
+            Concept(concept_id=c, concept_name="Procedure Type") for c in config.procedure_type_concepts
+        ]
 
     if config.measurement_type_concepts:
-        kwargs['measurement_type'] = [Concept(concept_id=c, concept_name="Measurement Type") for c in config.measurement_type_concepts]
+        kwargs["measurement_type"] = [
+            Concept(concept_id=c, concept_name="Measurement Type") for c in config.measurement_type_concepts
+        ]
 
     if config.observation_type_concepts:
-        kwargs['observation_type'] = [Concept(concept_id=c, concept_name="Observation Type") for c in config.observation_type_concepts]
+        kwargs["observation_type"] = [
+            Concept(concept_id=c, concept_name="Observation Type") for c in config.observation_type_concepts
+        ]
 
     if config.device_type_concepts:
-        kwargs['device_type'] = [Concept(concept_id=c, concept_name="Device Type") for c in config.device_type_concepts]
+        kwargs["device_type"] = [
+            Concept(concept_id=c, concept_name="Device Type") for c in config.device_type_concepts
+        ]
 
     if config.provider_specialty_concepts:
-        kwargs['provider_specialty'] = [Concept(concept_id=c, concept_name="Provider Specialty") for c in config.provider_specialty_concepts]
+        kwargs["provider_specialty"] = [
+            Concept(concept_id=c, concept_name="Provider Specialty")
+            for c in config.provider_specialty_concepts
+        ]
 
     if config.source_concept_set_id is not None:
         source_field_map = {
-            'ConditionOccurrence': 'condition_source_concept',
-            'DrugExposure': 'drug_source_concept',
-            'ProcedureOccurrence': 'procedure_source_concept',
-            'Measurement': 'measurement_source_concept',
-            'Observation': 'observation_source_concept',
-            'DeviceExposure': 'device_source_concept',
-            'Specimen': 'specimen_source_concept',
-            'Death': 'death_source_concept',
-            'VisitOccurrence': 'visit_source_concept',
-            'VisitDetail': 'visit_detail_source_concept'
+            "ConditionOccurrence": "condition_source_concept",
+            "DrugExposure": "drug_source_concept",
+            "ProcedureOccurrence": "procedure_source_concept",
+            "Measurement": "measurement_source_concept",
+            "Observation": "observation_source_concept",
+            "DeviceExposure": "device_source_concept",
+            "Specimen": "specimen_source_concept",
+            "Death": "death_source_concept",
+            "VisitOccurrence": "visit_source_concept",
+            "VisitDetail": "visit_detail_source_concept",
         }
         source_field = source_field_map.get(config.domain)
         if source_field:
             kwargs[source_field] = config.source_concept_set_id
-    
+
     # Filter out None values
     kwargs = {k: v for k, v in kwargs.items() if v is not None}
-    
+
     criteria_obj = criteria_class(**kwargs)
-    
+
     # Add correlated criteria if present
     if config.correlated_criteria:
         criteria_obj.correlated_criteria = _build_criteria_group(config.correlated_criteria)
-        
+
     # Add date adjustment if present
     if config.start_date_offset != 0 or config.end_date_offset != 0:
         criteria_obj.date_adjustment = DateAdjustment(
             start_offset=config.start_date_offset,
             end_offset=config.end_date_offset,
             start_with=config.start_date_with,
-            end_with=config.end_date_with
+            end_with=config.end_date_with,
         )
-        
+
     return criteria_obj
+
 
 def _build_criteria_group(group_cfg: GroupConfig) -> CirceCriteriaGroup:
     """Recursively build a CirceCriteriaGroup from GroupConfig."""
     criteria_list = []
     groups = []
-    
+
     for item in group_cfg.criteria:
         if isinstance(item, CriteriaConfig):
             cc = _build_correlated_criteria(item)
             criteria_list.append(cc)
         elif isinstance(item, GroupConfig):
             groups.append(_build_criteria_group(item))
-            
+
     return CirceCriteriaGroup(
-        type=group_cfg.type,
-        count=group_cfg.count,
-        criteria_list=criteria_list,
-        groups=groups
+        type=group_cfg.type, count=group_cfg.count, criteria_list=criteria_list, groups=groups
     )
+
 
 def _build_correlated_criteria(criteria_cfg: CriteriaConfig) -> CorelatedCriteria:
     """Convert a CriteriaConfig to a CorelatedCriteria."""
     config = criteria_cfg.query_config
     query_criteria = _config_to_criteria(config)
-    
+
     # Build occurrence
     if criteria_cfg.is_exclusion:
         occurrence = Occurrence(type=0, count=0, is_distinct=False)  # exactly 0
     else:
         type_map = {"exactly": 0, "atMost": 1, "atLeast": 2}
         occ_type = type_map.get(config.occurrence_type, 2)
-        occurrence = Occurrence(
-            type=occ_type, 
-            count=config.occurrence_count,
-            is_distinct=config.is_distinct
-        )
-    
+        occurrence = Occurrence(type=occ_type, count=config.occurrence_count, is_distinct=config.is_distinct)
+
     # Build window
     start_window = None
     if config.time_window:
@@ -2109,15 +2539,15 @@ def _build_correlated_criteria(criteria_cfg: CriteriaConfig) -> CorelatedCriteri
             use_index_end=tw.use_index_end,
             use_event_end=tw.use_event_end,
             start=WindowBound(coeff=-1, days=tw.days_before),
-            end=WindowBound(coeff=1, days=tw.days_after)
+            end=WindowBound(coeff=1, days=tw.days_after),
         )
-    
+
     return CorelatedCriteria(
         criteria=query_criteria,
         start_window=start_window,
         occurrence=occurrence,
         restrict_visit=config.restrict_visit,
-        ignore_observation_period=config.ignore_observation_period
+        ignore_observation_period=config.ignore_observation_period,
     )
 
 
@@ -2141,7 +2571,13 @@ _BUILTIN_DOMAINS = [
     DomainSpec("device_exposure", "DeviceExposure", DeviceExposure, DeviceExposureQuery),
     DomainSpec("specimen", "Specimen", Specimen, SpecimenQuery),
     DomainSpec("death", "Death", Death, DeathQuery, requires_concept=False),
-    DomainSpec("observation_period", "ObservationPeriod", ObservationPeriod, ObservationPeriodQuery, requires_concept=False),
+    DomainSpec(
+        "observation_period",
+        "ObservationPeriod",
+        ObservationPeriod,
+        ObservationPeriodQuery,
+        requires_concept=False,
+    ),
     DomainSpec("payer_plan_period", "PayerPlanPeriod", PayerPlanPeriod, PayerPlanPeriodQuery),
     DomainSpec("location_region", "LocationRegion", LocationRegion, LocationRegionQuery),
     DomainSpec("visit_detail", "VisitDetail", VisitDetail, VisitDetailQuery),

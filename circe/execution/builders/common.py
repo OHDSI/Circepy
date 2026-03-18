@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, Sequence, cast
+from collections.abc import Sequence
+from typing import Any, Callable, cast
 
 import ibis
 import ibis.expr.types as ir
@@ -52,9 +53,7 @@ def standardize_output(
         end_expr = start_expr
         needs_offset = ibis.literal(True)
     one_day = ibis.interval(days=1)
-    end_expr = ibis.ifelse(needs_offset, cast(Any, end_expr) + one_day, end_expr).cast(
-        "timestamp"
-    )
+    end_expr = ibis.ifelse(needs_offset, cast(Any, end_expr) + one_day, end_expr).cast("timestamp")
     visit_expr = (
         table.visit_occurrence_id.cast("int64")
         if "visit_occurrence_id" in table.columns
@@ -78,33 +77,25 @@ def project_event_columns(
     include_visit_occurrence: bool = False,
 ) -> ir.Table:
     keep = ["person_id", primary_key, start_column]
-    if end_column in table.columns:
-        keep.append(end_column)
-    elif include_visit_occurrence and start_column != end_column:
+    if end_column in table.columns or include_visit_occurrence and start_column != end_column:
         keep.append(end_column)
     if include_visit_occurrence and "visit_occurrence_id" in table.columns:
         keep.append("visit_occurrence_id")
-    unique_keep = [
-        col
-        for i, col in enumerate(keep)
-        if col in table.columns and col not in keep[:i]
-    ]
+    unique_keep = [col for i, col in enumerate(keep) if col in table.columns and col not in keep[:i]]
     return table.select(*(table[col] for col in unique_keep))
 
 
 def apply_codeset_filter(
     table: ir.Table,
     concept_column: str,
-    codeset_id: Optional[int],
+    codeset_id: int | None,
     ctx: BuildContext,
 ) -> ir.Table:
     if codeset_id is None:
         return table
     base_columns = table.columns
     left = table.view()
-    concepts = ctx.codesets.filter(
-        ctx.codesets["codeset_id"] == ibis.literal(codeset_id)
-    ).view()
+    concepts = ctx.codesets.filter(ctx.codesets["codeset_id"] == ibis.literal(codeset_id)).view()
     joined = left.join(concepts, [left[concept_column] == concepts["concept_id"]])
     return _project_columns(joined, base_columns)
 
@@ -112,7 +103,7 @@ def apply_codeset_filter(
 def apply_concept_set_selection(
     table: ir.Table,
     column: str,
-    selection: Optional[ConceptSetSelection],
+    selection: ConceptSetSelection | None,
     ctx: BuildContext,
 ) -> ir.Table:
     if selection is None or selection.codeset_id is None:
@@ -130,7 +121,7 @@ def apply_concept_set_selection(
 
 def coerce_concept_set_selection(
     value: object | None,
-) -> Optional[ConceptSetSelection]:
+) -> ConceptSetSelection | None:
     if value is None:
         return None
     if isinstance(value, ConceptSetSelection):
@@ -148,7 +139,7 @@ def apply_concept_criteria(
     *,
     column: str,
     concepts: Sequence[Concept] | None,
-    selection: Optional[ConceptSetSelection],
+    selection: ConceptSetSelection | None,
     ctx: BuildContext,
     exclude: bool = False,
 ) -> ir.Table:
@@ -156,9 +147,7 @@ def apply_concept_criteria(
     return apply_concept_set_selection(table, column, selection, ctx)
 
 
-def apply_date_range(
-    table: ir.Table, column: str, date_range: Optional[DateRange]
-) -> ir.Table:
+def apply_date_range(table: ir.Table, column: str, date_range: DateRange | None) -> ir.Table:
     if not date_range:
         return table
     expr = table[column]
@@ -175,9 +164,7 @@ def apply_date_range(
     return table.filter(predicate)
 
 
-def apply_numeric_range(
-    table: ir.Table, column, numeric_range: Optional[NumericRange]
-) -> ir.Table:
+def apply_numeric_range(table: ir.Table, column, numeric_range: NumericRange | None) -> ir.Table:
     if not numeric_range or numeric_range.value is None:
         return table
     op = numeric_range.op or "eq"
@@ -196,9 +183,7 @@ def apply_numeric_range(
     return table.filter(predicate)
 
 
-def apply_text_filter(
-    table: ir.Table, column: str, text_filter: Optional[TextFilter]
-) -> ir.Table:
+def apply_text_filter(table: ir.Table, column: str, text_filter: TextFilter | None) -> ir.Table:
     if not text_filter or not text_filter.text:
         return table
     op = text_filter.op or "contains"
@@ -219,7 +204,7 @@ def apply_interval_range(
     table: ir.Table,
     start_column: str,
     end_column: str,
-    interval_range: Optional[NumericRange],
+    interval_range: NumericRange | None,
 ) -> ir.Table:
     if not interval_range or interval_range.value is None:
         return table
@@ -294,7 +279,7 @@ def apply_concept_filters(
 
 def apply_age_filter(
     table: ir.Table,
-    age_range: Optional[NumericRange],
+    age_range: NumericRange | None,
     ctx: BuildContext,
     start_column: str,
 ) -> ir.Table:
@@ -314,7 +299,7 @@ def apply_age_filter(
 def apply_gender_filter(
     table: ir.Table,
     genders: list[Concept] | None,
-    gender_selection: Optional[ConceptSetSelection],
+    gender_selection: ConceptSetSelection | None,
     ctx: BuildContext,
 ) -> ir.Table:
     return _apply_person_concept_filter(
@@ -329,7 +314,7 @@ def apply_gender_filter(
 def apply_race_filter(
     table: ir.Table,
     races: list[Concept] | None,
-    race_selection: Optional[ConceptSetSelection],
+    race_selection: ConceptSetSelection | None,
     ctx: BuildContext,
 ) -> ir.Table:
     return _apply_person_concept_filter(
@@ -344,7 +329,7 @@ def apply_race_filter(
 def apply_ethnicity_filter(
     table: ir.Table,
     ethnicities: list[Concept] | None,
-    ethnicity_selection: Optional[ConceptSetSelection],
+    ethnicity_selection: ConceptSetSelection | None,
     ctx: BuildContext,
 ) -> ir.Table:
     return _apply_person_concept_filter(
@@ -361,7 +346,7 @@ def _apply_person_concept_filter(
     *,
     person_column: str,
     concepts: Sequence[Concept] | None,
-    selection: Optional[ConceptSetSelection],
+    selection: ConceptSetSelection | None,
     ctx: BuildContext,
 ) -> ir.Table:
     if not concepts and not selection:
@@ -398,9 +383,7 @@ def apply_observation_window(
     end_col = _ensure_timestamp(joined.observation_period_end_date)
     start_bound = start_col + cast(Any, prior_days)
     end_bound = end_col - cast(Any, post_days)
-    filtered = joined.filter(
-        (joined.start_date >= start_bound) & (joined.start_date <= end_bound)
-    )
+    filtered = joined.filter((joined.start_date >= start_bound) & (joined.start_date <= end_bound))
     base_projection = [filtered[col] for col in events.columns]
     base_projection.extend(
         filtered[col]
@@ -427,7 +410,7 @@ def apply_first_event(table: ir.Table, start_column: str, primary_key: str) -> i
 def apply_visit_concept_filters(
     table: ir.Table,
     visit_types: list[Concept] | None,
-    visit_selection: Optional[ConceptSetSelection],
+    visit_selection: ConceptSetSelection | None,
     ctx: BuildContext,
 ) -> ir.Table:
     return apply_concept_criteria(
@@ -442,7 +425,7 @@ def apply_visit_concept_filters(
 def apply_provider_specialty_filter(
     table: ir.Table,
     provider_specialties: list[Concept] | None,
-    provider_specialty_selection: Optional[ConceptSetSelection],
+    provider_specialty_selection: ConceptSetSelection | None,
     ctx: BuildContext,
     provider_column: str = "provider_id",
 ) -> ir.Table:
@@ -462,7 +445,7 @@ def apply_provider_specialty_filter(
 
 def apply_care_site_filter(
     table: ir.Table,
-    place_of_service_selection: Optional[ConceptSetSelection],
+    place_of_service_selection: ConceptSetSelection | None,
     ctx: BuildContext,
     care_site_column: str = "care_site_id",
 ) -> ir.Table:
@@ -480,7 +463,7 @@ def apply_location_region_filter(
     table: ir.Table,
     *,
     care_site_column: str,
-    location_codeset_id: Optional[int],
+    location_codeset_id: int | None,
     start_column: str,
     end_column: str,
     ctx: BuildContext,
@@ -499,16 +482,11 @@ def apply_location_region_filter(
         (joined[care_site_column] == lh.entity_id)
         & (lh.domain_id == ibis.literal("CARE_SITE"))
         & (start_expr >= lh.start_date)
-        & (
-            end_expr
-            <= ibis.coalesce(lh.end_date, ibis.literal("2099-12-31").cast("date"))
-        )
+        & (end_expr <= ibis.coalesce(lh.end_date, ibis.literal("2099-12-31").cast("date")))
     )
     joined = joined.join(lh, [lh_condition])
     joined = joined.join(location, [joined.location_id == location.location_id])
-    codeset = ctx.codesets.filter(
-        ctx.codesets.codeset_id == ibis.literal(location_codeset_id)
-    )
+    codeset = ctx.codesets.filter(ctx.codesets.codeset_id == ibis.literal(location_codeset_id))
     filtered = joined.join(codeset, [location.region_concept_id == codeset.concept_id])
     return _project_columns(filtered, base_columns)
 
@@ -583,15 +561,13 @@ def _project_columns(table: ir.Table, column_names: Sequence[str]) -> ir.Table:
 
 def apply_end_strategy(
     events: ir.Table,
-    strategy: Optional[EndStrategy | DateOffsetStrategy | CustomEraStrategy],
+    strategy: EndStrategy | DateOffsetStrategy | CustomEraStrategy | None,
     ctx: BuildContext,
 ) -> ir.Table:
     date_offset, custom_era = _resolve_end_strategy_parts(strategy)
     if not date_offset and not custom_era:
         if "observation_period_end_date" in events.columns:
-            op_end = _cast_like(
-                _ensure_timestamp(events.observation_period_end_date), events.end_date
-            )
+            op_end = _cast_like(_ensure_timestamp(events.observation_period_end_date), events.end_date)
             return events.mutate(end_date=op_end)
         return events
     result = events
@@ -616,15 +592,15 @@ def apply_end_strategy(
 
 
 def has_end_strategy(
-    strategy: Optional[EndStrategy | DateOffsetStrategy | CustomEraStrategy],
+    strategy: EndStrategy | DateOffsetStrategy | CustomEraStrategy | None,
 ) -> bool:
     date_offset, custom_era = _resolve_end_strategy_parts(strategy)
     return bool(date_offset or custom_era)
 
 
 def _resolve_end_strategy_parts(
-    strategy: Optional[EndStrategy | DateOffsetStrategy | CustomEraStrategy],
-) -> tuple[Optional[DateOffsetStrategy], Optional[CustomEraStrategy]]:
+    strategy: EndStrategy | DateOffsetStrategy | CustomEraStrategy | None,
+) -> tuple[DateOffsetStrategy | None, CustomEraStrategy | None]:
     if strategy is None:
         return None, None
 
@@ -684,18 +660,14 @@ def collapse_events(events: ir.Table, settings: CollapseSettings | None) -> ir.T
         end_date=(max_end - pad_interval),
         visit_occurrence_id=grouped.visit_occurrence_id.max(),
     )
-    final_window = ibis.window(
-        order_by=[collapsed.person_id, collapsed.start_date, collapsed.end_date]
+    final_window = ibis.window(order_by=[collapsed.person_id, collapsed.start_date, collapsed.end_date])
+    collapsed = collapsed.mutate(event_id=(ibis.row_number().over(final_window) + 1)).select(
+        "person_id", "event_id", "start_date", "end_date", "visit_occurrence_id"
     )
-    collapsed = collapsed.mutate(
-        event_id=(ibis.row_number().over(final_window) + 1)
-    ).select("person_id", "event_id", "start_date", "end_date", "visit_occurrence_id")
     return collapsed
 
 
-def _apply_custom_era_strategy(
-    events: ir.Table, strategy: CustomEraStrategy, ctx: BuildContext
-) -> ir.Table:
+def _apply_custom_era_strategy(events: ir.Table, strategy: CustomEraStrategy, ctx: BuildContext) -> ir.Table:
     if strategy.drug_codeset_id is None:
         raise ValueError("Custom era strategy requires a drug codeset id.")
 
@@ -710,9 +682,7 @@ def _apply_custom_era_strategy(
             .select(
                 drug_exposure.person_id,
                 drug_exposure.drug_exposure_start_date.name("drug_exposure_start_date"),
-                _drug_exposure_end(drug_exposure, strategy).name(
-                    "drug_exposure_end_date"
-                ),
+                _drug_exposure_end(drug_exposure, strategy).name("drug_exposure_end_date"),
             )
         )
 
@@ -736,13 +706,9 @@ def _apply_custom_era_strategy(
         preceding=(None, 1),
     )
     prev_running_max = dt.extended_end.max().over(prev_max_window)
-    is_start = ibis.ifelse(
-        prev_running_max.notnull() & (prev_running_max >= dt.start_date), 0, 1
-    )
+    is_start = ibis.ifelse(prev_running_max.notnull() & (prev_running_max >= dt.start_date), 0, 1)
     staged = dt.mutate(is_start=is_start).view()
-    cumsum_window = ibis.window(
-        group_by=staged.person_id, order_by=[staged.start_date, staged.extended_end]
-    )
+    cumsum_window = ibis.window(group_by=staged.person_id, order_by=[staged.start_date, staged.extended_end])
     group_idx = staged.is_start.cumsum().over(cumsum_window)
     annotated = staged.mutate(group_idx=group_idx)
 
@@ -774,9 +740,7 @@ def _apply_custom_era_strategy(
     )
 
 
-def _drug_exposure_end(
-    drug_exposure: ir.Table, strategy: CustomEraStrategy
-) -> ir.Value:
+def _drug_exposure_end(drug_exposure: ir.Table, strategy: CustomEraStrategy) -> ir.Value:
     start = drug_exposure.drug_exposure_start_date
     if strategy.days_supply_override is not None:
         return start + ibis.interval(days=int(strategy.days_supply_override))

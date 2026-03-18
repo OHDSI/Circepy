@@ -25,14 +25,10 @@ def build_drug_era(criteria: DrugEra, ctx: BuildContext):
     table = apply_date_range(table, "drug_era_end_date", criteria.era_end_date)
     table = apply_numeric_range(table, "drug_exposure_count", criteria.occurrence_count)
     table = apply_numeric_range(table, "gap_days", criteria.gap_days)
-    table = apply_interval_range(
-        table, "drug_era_start_date", "drug_era_end_date", criteria.era_length
-    )
+    table = apply_interval_range(table, "drug_era_start_date", "drug_era_end_date", criteria.era_length)
 
     if criteria.age_at_start:
-        table = apply_age_filter(
-            table, criteria.age_at_start, ctx, "drug_era_start_date"
-        )
+        table = apply_age_filter(table, criteria.age_at_start, ctx, "drug_era_start_date")
     if criteria.age_at_end:
         table = apply_age_filter(table, criteria.age_at_end, ctx, "drug_era_end_date")
 

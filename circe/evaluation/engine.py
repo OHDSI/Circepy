@@ -3,6 +3,7 @@ SQL Generation Engine for the Phenotype Evaluation Framework.
 """
 
 from typing import Optional
+
 from circe.cohortdefinition.cohort_expression_query_builder import CohortExpressionQueryBuilder
 from circe.evaluation.models import EvaluationRubric
 
@@ -15,7 +16,9 @@ class EvaluationQueryBuilder:
     def __init__(self):
         self._cohort_builder = CohortExpressionQueryBuilder()
 
-    def get_ddl(self, results_schema: str = "@results_database_schema", target_table: str = "cohort_rubric") -> str:
+    def get_ddl(
+        self, results_schema: str = "@results_database_schema", target_table: str = "cohort_rubric"
+    ) -> str:
         """
         Generates T-SQL for creating the cohort_rubric table.
         Uses a DROP IF EXISTS then CREATE approach for better SqlRender compatibility.
@@ -35,11 +38,10 @@ CREATE TABLE {table_full_name} (
 );
 """
 
-
     def build_query(
-        self, 
-        rubric: EvaluationRubric, 
-        ruleset_id: int, 
+        self,
+        rubric: EvaluationRubric,
+        ruleset_id: int,
         index_event_table: str = "#evaluation_index_events",
         cdm_schema: str = "@cdm_database_schema",
         vocabulary_schema: str = "@vocabulary_database_schema",
@@ -53,7 +55,7 @@ CREATE TABLE {table_full_name} (
     ) -> str:
         """
         Generates T-SQL to produce a normalized evaluation results table.
-        
+
         The results are inserted into the target table (default: cohort_rubric).
         The output columns are: ruleset_id, cohort_definition_id, subject_id, index_date, rule_id, score.
 
@@ -77,11 +79,11 @@ CREATE TABLE {table_full_name} (
         # 1. Generate Codesets
         codeset_sql = self._cohort_builder.get_codeset_query(rubric.concept_sets)
         codeset_sql = codeset_sql.replace("@vocabulary_database_schema", vocabulary_schema)
-        
+
         # 2. Define the Index Event Table Expression for CIRCE
         # CIRCE WindowedCriteria/CorrelatedCriteria expect a table 'P' with:
         # person_id, event_id, start_date, end_date, op_start_date, op_end_date
-        
+
         where_clauses = []
         if cohort_id is not None and include_cohort_id:
             where_clauses.append(f"E.{cohort_id_field} = {cohort_id}")
@@ -104,7 +106,6 @@ CREATE TABLE {table_full_name} (
           {where_stmt}
         )"""
 
-
         rule_queries = []
         for rule in rubric.rules:
             # Generate the Criteria Group SQL
@@ -113,10 +114,12 @@ CREATE TABLE {table_full_name} (
             cg_sql = self._cohort_builder.get_criteria_group_query(rule.expression, index_event_subquery)
             cg_sql = cg_sql.replace("@indexId", str(rule.rule_id))
             cg_sql = cg_sql.replace("@cdm_database_schema", cdm_schema)
-            
+
             # The Criteria Group query returns (index_id, person_id, event_id) for matched events.
             # We need to join back to the index events to get the start_date for proper matching.
-            rule_comment = f"-- Rule {rule.rule_id}: {rule.name} (weight: {rule.weight}, polarity: {rule.polarity})"
+            rule_comment = (
+                f"-- Rule {rule.rule_id}: {rule.name} (weight: {rule.weight}, polarity: {rule.polarity})"
+            )
             if rule.category:
                 rule_comment += f" [Category: {rule.category}]"
 
@@ -153,7 +156,7 @@ CREATE TABLE {table_full_name} (
             rule_queries.append(rule_query)
 
         final_union = "\nUNION ALL\n".join(rule_queries)
-        
+
         # Wrap everything in an INSERT INTO statement
         target_full_name = f"{results_schema}.{target_table}"
 
@@ -174,11 +177,10 @@ CREATE TABLE {table_full_name} (
         INSERT INTO {target_full_name} ({insert_columns})
         {final_union};
 """
-        
+
         # Strip T-SQL specific bits that might not be handled by all translators
         sql = sql.replace("UPDATE STATISTICS #Codesets;", "")
         if sql.strip() and not sql.strip().endswith(";"):
             sql = sql.strip() + ";"
-        
-        return sql
 
+        return sql

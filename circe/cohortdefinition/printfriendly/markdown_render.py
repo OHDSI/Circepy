@@ -14,7 +14,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import jinja2
 
@@ -31,8 +31,13 @@ class MarkdownRender:
     FreeMarker template implementation. Templates are located in the templates/
     subdirectory and mirror the structure of Java's .ftl files.
     """
-    
-    def __init__(self, concept_sets: Optional[List[ConceptSet]] = None, include_concept_sets: bool = False, template_paths: Optional[List[Path]] = None):
+
+    def __init__(
+        self,
+        concept_sets: Optional[list[ConceptSet]] = None,
+        include_concept_sets: bool = False,
+        template_paths: Optional[list[Path]] = None,
+    ):
         """Initialize the markdown renderer.
 
         Args:
@@ -42,9 +47,9 @@ class MarkdownRender:
         """
         self._concept_sets = concept_sets or []
         self._include_concept_sets = include_concept_sets
-        
+
         # Initialize Jinja2 environment with multiple loaders
-        built_in_template_dir = Path(__file__).parent / 'templates'
+        built_in_template_dir = Path(__file__).parent / "templates"
 
         # Start with built-in templates
         loaders = [jinja2.FileSystemLoader(str(built_in_template_dir))]
@@ -56,6 +61,7 @@ class MarkdownRender:
 
         # Add registry paths
         from circe.extensions import get_registry
+
         registry = get_registry()
         for path in registry.template_paths:
             loaders.append(jinja2.FileSystemLoader(str(path)))
@@ -68,15 +74,14 @@ class MarkdownRender:
         )
 
         # Register custom filters (matching Java utils.ftl)
-        self._env.filters['format_date'] = self._format_date
-        self._env.filters['format_number'] = self._format_number
-        
+        self._env.filters["format_date"] = self._format_date
+        self._env.filters["format_number"] = self._format_number
+
         # Add extension helper to look up template name for a criteria instance
         def get_template_for_criteria(criteria):
             return registry.get_template(criteria)
 
-        self._env.globals['get_template_for_criteria'] = get_template_for_criteria
-
+        self._env.globals["get_template_for_criteria"] = get_template_for_criteria
         # Register global functions
         self._env.globals["codeset_name"] = self._codeset_name
         self._env.globals["format_date"] = self._format_date
@@ -114,9 +119,7 @@ class MarkdownRender:
 
         # Determine whether to include concept sets
         should_include = (
-            include_concept_sets
-            if include_concept_sets is not None
-            else self._include_concept_sets
+            include_concept_sets if include_concept_sets is not None else self._include_concept_sets
         )
 
         # Load and render the main template
@@ -129,9 +132,7 @@ class MarkdownRender:
             include_concept_sets=should_include,
         )
 
-    def render_concept_set_list(
-        self, concept_sets: Union[List[ConceptSet], str]
-    ) -> str:
+    def render_concept_set_list(self, concept_sets: Union[list[ConceptSet], str]) -> str:
         """Render a list of concept sets to markdown format.
 
         Java equivalent: renderConceptSetList(ConceptSet[])
@@ -145,10 +146,11 @@ class MarkdownRender:
         # Handle JSON string input
         if isinstance(concept_sets, str):
             data = json.loads(concept_sets)
-            if isinstance(data, list):
-                concept_sets = [ConceptSet.model_validate(item) for item in data]
-            else:
-                concept_sets = [ConceptSet.model_validate(data)]
+            concept_sets = (
+                [ConceptSet.model_validate(item) for item in data]
+                if isinstance(data, list)
+                else [ConceptSet.model_validate(data)]
+            )
 
         if not concept_sets:
             return "No concept sets specified.\n"
@@ -183,9 +185,7 @@ class MarkdownRender:
     # Custom Filters and Functions (matching Java utils.ftl)
     # =========================================================================
 
-    def _codeset_name(
-        self, codeset_id: Optional[int], default_name: str = "any"
-    ) -> str:
+    def _codeset_name(self, codeset_id: Optional[int], default_name: str = "any") -> str:
         """Get concept set name from codeset ID, or return default.
 
         Java equivalent: utils.codesetName()

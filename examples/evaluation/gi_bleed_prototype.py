@@ -9,7 +9,7 @@ from circe.evaluation.models import EvaluationRubric, IndividualEvaluation, Rule
 def create_gi_bleed_rubric() -> EvaluationRubric:
     """
     Creates a GI Bleed evaluation rubric using Eunomia concept IDs.
-    
+
     All rules are time-dependent and evaluated within 30 days before the index date
     of the suspected GI bleed event, representing a clinically relevant acute window.
 
@@ -43,30 +43,36 @@ def create_gi_bleed_rubric() -> EvaluationRubric:
         # All rules use a 30-day window before index date to capture acute GI bleed events
 
         # Primary evidence: GI hemorrhage diagnosis within 30 days before index
-        ev.add_rule("GI Hemorrhage", weight=10.0, category="Primary") \
-            .condition(gi_hemorrhage).at_least(1).within_days_before(30)
+        ev.add_rule("GI Hemorrhage", weight=10.0, category="Primary").condition(gi_hemorrhage).at_least(
+            1
+        ).within_days_before(30)
 
         # Validation evidence: EGD procedure within 30 days before index
-        ev.add_rule("EGD procedure", weight=5.5, category="Validation") \
-            .procedure(egd_procedure).at_least(1).within_days(30)
+        ev.add_rule("EGD procedure", weight=5.5, category="Validation").procedure(egd_procedure).at_least(
+            1
+        ).within_days(30)
 
         # Laboratory evidence: Hemoglobin measurement within 30 days before index
-        ev.add_rule("Hemoglobin measurement", weight=2.0, category="Laboratory") \
-            .measurement(hemoglobin).at_least(1).within_days(30)
+        ev.add_rule("Hemoglobin measurement", weight=2.0, category="Laboratory").measurement(
+            hemoglobin
+        ).at_least(1).within_days(30)
 
         # Laboratory evidence: Low hemoglobin indicating anemia from GI bleed
         # Hemoglobin < 10 g/dL within 30 days is clinically significant for acute blood loss
-        ev.add_rule("Low Hemoglobin (< 10 g/dL)", weight=8.0, category="Laboratory") \
-            .measurement(hemoglobin).with_value(lt=10.0).at_least(1).within_days(30)
+        ev.add_rule("Low Hemoglobin (< 10 g/dL)", weight=8.0, category="Laboratory").measurement(
+            hemoglobin
+        ).with_value(lt=10.0).at_least(1).within_days(30)
 
         # Supporting evidence: Anemia diagnosis within 30 days before index
-        ev.add_rule("Anemia diagnosis", weight=6.0, category="Primary") \
-            .condition(anemia).at_least(1).within_days(30)
+        ev.add_rule("Anemia diagnosis", weight=6.0, category="Primary").condition(anemia).at_least(
+            1
+        ).within_days(30)
 
         # Clinical observation: Blood in stool within 30 days before index
         # Strong indicator of lower GI bleeding
-        ev.add_rule("Blood in stool", weight=7.0, category="Clinical") \
-            .observation(blood_in_stool).at_least(1).within_days_before(30)
+        ev.add_rule("Blood in stool", weight=7.0, category="Clinical").observation(blood_in_stool).at_least(
+            1
+        ).within_days_before(30)
 
     return ev.rubric
 
@@ -83,49 +89,21 @@ def get_sample_eunomia_report() -> IndividualEvaluation:
         ruleset_id=1,
         total_score=36.5,  # GI Hemorrhage (10.0) + EGD (5.5) + Low Hgb (8.0) + Anemia (6.0) + Blood in stool (7.0)
         rules=[
+            RuleResult(rule_id=1, rule_name="GI Hemorrhage", score=10.0, matched=True, category="Primary"),
+            RuleResult(rule_id=2, rule_name="EGD procedure", score=5.5, matched=True, category="Validation"),
             RuleResult(
-                rule_id=1,
-                rule_name="GI Hemorrhage",
-                score=10.0,
-                matched=True,
-                category="Primary"
-            ),
-            RuleResult(
-                rule_id=2,
-                rule_name="EGD procedure",
-                score=5.5,
-                matched=True,
-                category="Validation"
-            ),
-            RuleResult(
-                rule_id=3,
-                rule_name="Hemoglobin measurement",
-                score=0.0,
-                matched=False,
-                category="Laboratory"
+                rule_id=3, rule_name="Hemoglobin measurement", score=0.0, matched=False, category="Laboratory"
             ),
             RuleResult(
                 rule_id=4,
                 rule_name="Low Hemoglobin (< 10 g/dL)",
                 score=8.0,
                 matched=True,
-                category="Laboratory"
+                category="Laboratory",
             ),
-            RuleResult(
-                rule_id=5,
-                rule_name="Anemia diagnosis",
-                score=6.0,
-                matched=True,
-                category="Primary"
-            ),
-            RuleResult(
-                rule_id=6,
-                rule_name="Blood in stool",
-                score=7.0,
-                matched=True,
-                category="Clinical"
-            )
-        ]
+            RuleResult(rule_id=5, rule_name="Anemia diagnosis", score=6.0, matched=True, category="Primary"),
+            RuleResult(rule_id=6, rule_name="Blood in stool", score=7.0, matched=True, category="Clinical"),
+        ],
     )
 
 
@@ -135,10 +113,10 @@ if __name__ == "__main__":
     rubric = create_gi_bleed_rubric()
     builder = EvaluationQueryBuilder()
     sql = builder.build_query(rubric, ruleset_id=1)
-    
+
     print("--- GI Bleed Evaluation SQL ---")
     print(sql)
-    
+
     print("\n--- Sample Eunomia Evaluation Report (JSON) ---")
     report = get_sample_eunomia_report()
     # Use by_alias=True to match PascalCase if that's what's expected in the final report

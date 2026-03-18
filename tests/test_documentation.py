@@ -7,10 +7,12 @@ links are valid, and version numbers match.
 
 import re
 from pathlib import Path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # Python <3.11 fallback
     import tomli as tomllib
+
 
 class TestDocumentation:
     """Test suite for documentation validation."""
@@ -44,9 +46,9 @@ class TestDocumentation:
         docs_version = release_match.group(1)
 
         # Assert all versions match
-        assert (
-            pyproject_version == init_version == docs_version
-        ), f"Version mismatch: pyproject.toml={pyproject_version}, __init__.py={init_version}, docs/conf.py={docs_version}"
+        assert pyproject_version == init_version == docs_version, (
+            f"Version mismatch: pyproject.toml={pyproject_version}, __init__.py={init_version}, docs/conf.py={docs_version}"
+        )
 
     def test_repository_urls_consistent(self):
         """Verify repository URLs are consistent across documentation."""
@@ -75,15 +77,13 @@ class TestDocumentation:
 
             for pattern in incorrect_patterns:
                 matches = re.findall(pattern, content, re.IGNORECASE)
-                assert (
-                    not matches
-                ), f"Found incorrect repository URL in {file_path.name}: {matches}"
+                assert not matches, f"Found incorrect repository URL in {file_path.name}: {matches}"
 
             # Verify correct URL is present if any github.com link exists
             if "github.com" in content:
-                assert (
-                    expected_repo in content
-                ), f"Expected repository URL '{expected_repo}' not found in {file_path.name}"
+                assert expected_repo in content, (
+                    f"Expected repository URL '{expected_repo}' not found in {file_path.name}"
+                )
 
     def test_installation_instructions_present(self):
         """Verify installation instructions are present in key files."""
@@ -93,52 +93,19 @@ class TestDocumentation:
         readme = (root / "README.md").read_text()
         assert "## Installation" in readme
         assert "git clone" in readme.lower()
-        assert "pip install -e" in readme.lower()
+        assert "uv sync" in readme.lower()
 
         # INSTALLATION.md should exist and have comprehensive instructions
         installation = (root / "INSTALLATION.md").read_text()
         assert "git clone" in installation.lower()
         assert "troubleshooting" in installation.lower()
-        assert "pip install -e" in installation.lower()
+        assert "uv sync --extra dev" in installation.lower()
+        assert 'pip install -e ".[dev]"' in installation.lower()
 
         # CONTRIBUTING.md should have setup instructions
         contributing = (root / "CONTRIBUTING.md").read_text()
         assert "git clone" in contributing.lower()
         assert "pip install" in contributing.lower()
-
-    def test_pypi_marked_as_coming_soon(self):
-        """Verify PyPI installation is marked as coming soon, not as primary method."""
-        root = self.get_project_root()
-
-        files_to_check = [
-            root / "README.md",
-            root / "INSTALLATION.md",
-            root / "examples" / "README.md",
-        ]
-
-        for file_path in files_to_check:
-            if not file_path.exists():
-                continue
-
-            content = file_path.read_text()
-
-            # If PyPI is mentioned, it should be marked as coming soon
-            if "pip install ohdsi-circe-python-alpha" in content:
-                # Find context around pip install ohdsi-circe-python-alpha
-                lines = content.split("\n")
-                for i, line in enumerate(lines):
-                    if "pip install ohdsi-circe-python-alpha" in line:
-                        # Check surrounding lines for "coming soon" or similar
-                        context = "\n".join(lines[max(0, i - 5) : i + 5])
-                        assert any(
-                            marker in context.lower()
-                            for marker in [
-                                "coming soon",
-                                "not yet available",
-                                "future release",
-                                "[!note]",
-                            ]
-                        ), f"PyPI installation in {file_path.name} not clearly marked as coming soon (line {i+1})"
 
     def test_internal_links_valid(self):
         """Verify internal documentation links are valid."""
@@ -155,9 +122,7 @@ class TestDocumentation:
 
             # Check if file exists
             link_path = root / link_url
-            assert (
-                link_path.exists()
-            ), f"Broken link in README.md: [{link_text}]({link_url}) - file not found"
+            assert link_path.exists(), f"Broken link in README.md: [{link_text}]({link_url}) - file not found"
 
     def test_changelog_has_current_version(self):
         """Verify CHANGELOG.md includes the current version."""
@@ -170,10 +135,9 @@ class TestDocumentation:
 
         # Check CHANGELOG
         changelog = (root / "CHANGELOG.md").read_text()
-        assert (
-            f"[{current_version}]" in changelog
-            or f"## {current_version}" in changelog
-        ), f"Current version {current_version} not found in CHANGELOG.md"
+        assert f"[{current_version}]" in changelog or f"## {current_version}" in changelog, (
+            f"Current version {current_version} not found in CHANGELOG.md"
+        )
 
     def test_readme_shields_badges(self):
         """Verify README has appropriate status badges."""
@@ -185,8 +149,7 @@ class TestDocumentation:
 
         # Should mention alpha/development status somewhere
         assert any(
-            marker in readme.lower()
-            for marker in ["alpha", "development", "under active", "testing"]
+            marker in readme.lower() for marker in ["alpha", "development", "under active", "testing"]
         ), "README should clearly indicate development status"
 
     def test_contributing_has_code_style_section(self):
@@ -195,7 +158,7 @@ class TestDocumentation:
         contributing = (root / "CONTRIBUTING.md").read_text()
 
         assert "## Code Style" in contributing or "### Code Style" in contributing
-        assert "black" in contributing.lower()
+        assert "ruff" in contributing.lower()
         assert "pytest" in contributing.lower()
 
     def test_examples_readme_references_parent_docs(self):
@@ -233,10 +196,8 @@ class TestDocumentation:
                 if placeholder in ["TODO", "FIXME", "XXX"]:
                     # More lenient - just warn if found
                     if placeholder in content:
-                        print(
-                            f"Warning: Found {placeholder} in {file_path.name} - verify if intentional"
-                        )
+                        print(f"Warning: Found {placeholder} in {file_path.name} - verify if intentional")
                 else:
-                    assert (
-                        placeholder not in content
-                    ), f"Found placeholder text '{placeholder}' in {file_path.name}"
+                    assert placeholder not in content, (
+                        f"Found placeholder text '{placeholder}' in {file_path.name}"
+                    )

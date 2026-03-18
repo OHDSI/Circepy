@@ -8,9 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional
-
-from ..vocabulary.concept import Concept, ConceptSetExpression, ConceptSetItem
+from ..vocabulary.concept import Concept, ConceptSetExpression
 from .builders.utils import BuilderUtils
 
 
@@ -22,7 +20,9 @@ class ConceptSetExpressionQueryBuilder:
 
     # SQL templates - equivalent to Java ResourceHelper.GetResourceAsString
     # IMPORTANT: Must use @vocabulary_database_schema (not @cdm_database_schema) for concept lookups
-    CONCEPT_SET_QUERY_TEMPLATE = "select concept_id from @vocabulary_database_schema.CONCEPT where @conceptIdIn\n"
+    CONCEPT_SET_QUERY_TEMPLATE = (
+        "select concept_id from @vocabulary_database_schema.CONCEPT where @conceptIdIn\n"
+    )
 
     CONCEPT_SET_DESCENDANTS_TEMPLATE = """  select c.concept_id
   from @vocabulary_database_schema.CONCEPT c
@@ -54,18 +54,14 @@ WHERE E.concept_id is null
 
     MAX_IN_LENGTH = 1000  # Oracle limitation
 
-    def get_concept_ids(self, concepts: List[Concept]) -> List[int]:
+    def get_concept_ids(self, concepts: list[Concept]) -> list[int]:
         """Get concept IDs from concept list.
 
         Java equivalent: getConceptIds()
         """
-        return [
-            concept.concept_id for concept in concepts if concept.concept_id is not None
-        ]
+        return [concept.concept_id for concept in concepts if concept.concept_id is not None]
 
-    def build_concept_set_sub_query(
-        self, concepts: List[Concept], descendant_concepts: List[Concept]
-    ) -> str:
+    def build_concept_set_sub_query(self, concepts: list[Concept], descendant_concepts: list[Concept]) -> str:
         """Build concept set sub-query.
 
         Java equivalent: buildConceptSetSubQuery()
@@ -74,12 +70,8 @@ WHERE E.concept_id is null
 
         if concepts:
             concept_ids = self.get_concept_ids(concepts)
-            concept_id_in = BuilderUtils.split_in_clause(
-                "concept_id", concept_ids, self.MAX_IN_LENGTH
-            )
-            query = self.CONCEPT_SET_QUERY_TEMPLATE.replace(
-                "@conceptIdIn", concept_id_in
-            )
+            concept_id_in = BuilderUtils.split_in_clause("concept_id", concept_ids, self.MAX_IN_LENGTH)
+            query = self.CONCEPT_SET_QUERY_TEMPLATE.replace("@conceptIdIn", concept_id_in)
             queries.append(query)
 
         if descendant_concepts:
@@ -87,51 +79,41 @@ WHERE E.concept_id is null
             concept_id_in = BuilderUtils.split_in_clause(
                 "ca.ancestor_concept_id", descendant_ids, self.MAX_IN_LENGTH
             )
-            query = self.CONCEPT_SET_DESCENDANTS_TEMPLATE.replace(
-                "@conceptIdIn", concept_id_in
-            )
+            query = self.CONCEPT_SET_DESCENDANTS_TEMPLATE.replace("@conceptIdIn", concept_id_in)
             queries.append(query)
 
         return "\nUNION  ".join(queries)
 
     def build_concept_set_mapped_query(
-        self, mapped_concepts: List[Concept], mapped_descendant_concepts: List[Concept]
+        self,
+        mapped_concepts: list[Concept],
+        mapped_descendant_concepts: list[Concept],
     ) -> str:
         """Build concept set mapped query.
 
         Java equivalent: buildConceptSetMappedQuery()
         """
-        concept_set_query = self.build_concept_set_sub_query(
-            mapped_concepts, mapped_descendant_concepts
-        )
-        return self.CONCEPT_SET_MAPPED_TEMPLATE.replace(
-            "@conceptsetQuery", concept_set_query
-        )
+        concept_set_query = self.build_concept_set_sub_query(mapped_concepts, mapped_descendant_concepts)
+        return self.CONCEPT_SET_MAPPED_TEMPLATE.replace("@conceptsetQuery", concept_set_query)
 
     def build_concept_set_query(
         self,
-        concepts: List[Concept],
-        descendant_concepts: List[Concept],
-        mapped_concepts: List[Concept],
-        mapped_descendant_concepts: List[Concept],
+        concepts: list[Concept],
+        descendant_concepts: list[Concept],
+        mapped_concepts: list[Concept],
+        mapped_descendant_concepts: list[Concept],
     ) -> str:
         """Build concept set query.
 
         Java equivalent: buildConceptSetQuery()
         """
         if not concepts:
-            return (
-                "select concept_id from @vocabulary_database_schema.CONCEPT where 0=1"
-            )
+            return "select concept_id from @vocabulary_database_schema.CONCEPT where 0=1"
 
-        concept_set_query = self.build_concept_set_sub_query(
-            concepts, descendant_concepts
-        )
+        concept_set_query = self.build_concept_set_sub_query(concepts, descendant_concepts)
 
         if mapped_concepts or mapped_descendant_concepts:
-            mapped_query = self.build_concept_set_mapped_query(
-                mapped_concepts, mapped_descendant_concepts
-            )
+            mapped_query = self.build_concept_set_mapped_query(mapped_concepts, mapped_descendant_concepts)
             concept_set_query += " UNION " + mapped_query
 
         return concept_set_query

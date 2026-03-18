@@ -42,7 +42,7 @@ class TimeWindowCheck(BaseCorelatedCriteriaCheck):
     def __init__(self):
         """Initialize the time window check."""
         super().__init__()
-        self._observation_filter: Optional["ObservationFilter"] = None
+        self._observation_filter: Optional[ObservationFilter] = None
 
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.
@@ -52,9 +52,7 @@ class TimeWindowCheck(BaseCorelatedCriteriaCheck):
         """
         return WarningSeverity.INFO
 
-    def _before_check(
-        self, reporter: WarningReporter, expression: "CohortExpression"
-    ) -> None:
+    def _before_check(self, reporter: WarningReporter, expression: "CohortExpression") -> None:
         """Store the observation filter before checking.
 
         Args:
@@ -65,7 +63,10 @@ class TimeWindowCheck(BaseCorelatedCriteriaCheck):
             self._observation_filter = expression.primary_criteria.observation_window
 
     def _check_criteria(
-        self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter
+        self,
+        criteria: "CorelatedCriteria",
+        group_name: str,
+        reporter: WarningReporter,
     ) -> None:
         """Check criteria for time window issues.
 
@@ -78,8 +79,10 @@ class TimeWindowCheck(BaseCorelatedCriteriaCheck):
 
         match_result = Operations.match(criteria)
         match_result.when(
-            lambda c: c.start_window is not None
-            and self._observation_filter is not None
-            and Comparisons.compare_to(self._observation_filter, c.start_window) < 0
+            lambda c: (
+                c.start_window is not None
+                and self._observation_filter is not None
+                and Comparisons.compare_to(self._observation_filter, c.start_window) < 0
+            )
         )
         match_result.then(lambda c: reporter(self.WARNING, name))

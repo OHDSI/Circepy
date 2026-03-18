@@ -7,21 +7,6 @@ import polars as pl
 
 from ...cohortdefinition import CohortExpression
 from ..build_context import BuildContext
-from . import condition_era  # noqa: F401
-from . import condition_occurrence  # noqa: F401
-from . import death  # noqa: F401
-from . import device_exposure  # noqa: F401
-from . import dose_era  # noqa: F401
-from . import drug_era  # noqa: F401
-from . import drug_exposure  # noqa: F401
-from . import measurement  # noqa: F401
-from . import observation  # noqa: F401
-from . import observation_period  # noqa: F401
-from . import payer_plan_period  # noqa: F401
-from . import procedure_occurrence  # noqa: F401
-from . import specimen  # noqa: F401
-from . import visit_detail  # noqa: F401
-from . import visit_occurrence  # noqa: F401
 from .common import (
     apply_end_strategy,
     apply_observation_window,
@@ -59,9 +44,7 @@ def build_primary_events(expression: CohortExpression, ctx: BuildContext):
     if ctx.should_materialize_stages():
         materialized: list[ir.Table] = []
         for idx, table in enumerate(event_tables, start=1):
-            materialized.append(
-                ctx.maybe_materialize(table, label=f"primary_src_{idx}", analyze=True)
-            )
+            materialized.append(ctx.maybe_materialize(table, label=f"primary_src_{idx}", analyze=True))
         event_tables = materialized
     events = event_tables[0]
     for table in event_tables[1:]:
@@ -86,9 +69,7 @@ def build_primary_events(expression: CohortExpression, ctx: BuildContext):
 
     events = apply_criteria_group(events, expression.additional_criteria, ctx)
     if expression.additional_criteria:
-        events = ctx.maybe_materialize(
-            events, label="additional_criteria", analyze=True
-        )
+        events = ctx.maybe_materialize(events, label="additional_criteria", analyze=True)
 
     events = apply_inclusion_rules(events, expression.inclusion_rules, ctx)
     if expression.inclusion_rules:
@@ -112,9 +93,7 @@ def build_primary_events(expression: CohortExpression, ctx: BuildContext):
     return events
 
 
-def build_primary_events_polars(
-    expression: CohortExpression, ctx: BuildContext
-) -> pl.DataFrame:
+def build_primary_events_polars(expression: CohortExpression, ctx: BuildContext) -> pl.DataFrame:
     events = build_primary_events(expression, ctx)
     if events is None:
         return pl.DataFrame(schema=OUTPUT_SCHEMA)

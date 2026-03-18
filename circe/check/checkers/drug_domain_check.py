@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from ..operations.operations import Operations
 from ..warning_severity import WarningSeverity
@@ -54,19 +54,13 @@ class DrugDomainCheck(BaseCheck):
             expression: The cohort expression to check
             reporter: The warning reporter to use
         """
-        if (
-            not expression.primary_criteria
-            or not expression.primary_criteria.criteria_list
-        ):
+        if not expression.primary_criteria or not expression.primary_criteria.criteria_list:
             return
 
-        concept_sets: List["ConceptSet"] = []
+        concept_sets: list[ConceptSet] = []
 
         # Map criteria to codeset IDs
-        codeset_ids = [
-            self._map_criteria(criteria)
-            for criteria in expression.primary_criteria.criteria_list
-        ]
+        codeset_ids = [self._map_criteria(criteria) for criteria in expression.primary_criteria.criteria_list]
 
         # Filter to only drug domain concept sets
         for codeset_id in codeset_ids:
@@ -77,11 +71,7 @@ class DrugDomainCheck(BaseCheck):
 
         # Filter out concept sets used in exit strategy
         if isinstance(expression.end_strategy, CustomEraStrategy):
-            concept_sets = [
-                cs
-                for cs in concept_sets
-                if cs.id != expression.end_strategy.drug_codeset_id
-            ]
+            concept_sets = [cs for cs in concept_sets if cs.id != expression.end_strategy.drug_codeset_id]
 
         if concept_sets:
             names = ", ".join(cs.name for cs in concept_sets)
@@ -145,9 +135,7 @@ class DrugDomainCheck(BaseCheck):
             .value()
         )
 
-    def _is_concept_in_drug_domain(
-        self, expression: "CohortExpression", codeset_id: int
-    ) -> bool:
+    def _is_concept_in_drug_domain(self, expression: "CohortExpression", codeset_id: int) -> bool:
         """Check if a concept set contains drug domain concepts.
 
         Args:
@@ -160,26 +148,16 @@ class DrugDomainCheck(BaseCheck):
         if not expression.concept_sets:
             return False
 
-        concept_set = next(
-            (cs for cs in expression.concept_sets if cs.id == codeset_id), None
-        )
-        if (
-            not concept_set
-            or not concept_set.expression
-            or not concept_set.expression.items
-        ):
+        concept_set = next((cs for cs in expression.concept_sets if cs.id == codeset_id), None)
+        if not concept_set or not concept_set.expression or not concept_set.expression.items:
             return False
 
         return any(
-            item.concept
-            and item.concept.domain_id
-            and item.concept.domain_id.upper() == "DRUG"
+            item.concept and item.concept.domain_id and item.concept.domain_id.upper() == "DRUG"
             for item in concept_set.expression.items
         )
 
-    def _map_concept_set(
-        self, expression: "CohortExpression", codeset_id: int
-    ) -> Optional["ConceptSet"]:
+    def _map_concept_set(self, expression: "CohortExpression", codeset_id: int) -> Optional["ConceptSet"]:
         """Map a codeset ID to a concept set.
 
         Args:

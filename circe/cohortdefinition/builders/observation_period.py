@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Any, List, Optional, Set
+from typing import Optional
 
 from ..criteria import ObservationPeriod
 from .base import CriteriaSqlBuilder
@@ -54,13 +54,11 @@ from
 -- End Observation Period Criteria
 """
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for observation period criteria."""
         return self.DEFAULT_COLUMNS
 
-    def get_table_column_for_criteria_column(
-        self, criteria_column: CriteriaColumn
-    ) -> str:
+    def get_table_column_for_criteria_column(self, criteria_column: CriteriaColumn) -> str:
         """Get table column for criteria column."""
         column_mapping = {
             CriteriaColumn.DOMAIN_CONCEPT: "C.period_type_concept_id",
@@ -73,7 +71,9 @@ from
         return column_mapping.get(criteria_column, "NULL")
 
     def get_criteria_sql_with_options(
-        self, criteria: ObservationPeriod, options: Optional[BuilderOptions]
+        self,
+        criteria: ObservationPeriod,
+        options: Optional[BuilderOptions],
     ) -> str:
         """Get SQL query for criteria with builder options."""
         query = super().get_criteria_sql_with_options(criteria, options)
@@ -89,8 +89,7 @@ from
 
         end_date_expression = (
             BuilderUtils.date_string_to_sql(criteria.user_defined_period.end_date)
-            if criteria.user_defined_period is not None
-            and criteria.user_defined_period.end_date is not None
+            if criteria.user_defined_period is not None and criteria.user_defined_period.end_date is not None
             else "C.end_date"
         )
         query = query.replace("@endDateExpression", end_date_expression)
@@ -102,14 +101,19 @@ from
         return query.replace("@codesetClause", "")
 
     def embed_ordinal_expression(
-        self, query: str, criteria: ObservationPeriod, where_clauses: List[str]
+        self,
+        query: str,
+        criteria: ObservationPeriod,
+        where_clauses: list[str],
     ) -> str:
         """Embed ordinal expression in query."""
         return query.replace("@ordinalExpression", "")
 
     def resolve_select_clauses(
-        self, criteria: ObservationPeriod, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+        self,
+        criteria: ObservationPeriod,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve select clauses for observation period criteria.
 
         Note: The outer SELECT in the template handles event_id, start_date, end_date, visit_occurrence_id, sort_date.
@@ -142,22 +146,24 @@ from
         return select_cols
 
     def resolve_join_clauses(
-        self, criteria: ObservationPeriod, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+        self,
+        criteria: ObservationPeriod,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve join clauses for observation period criteria."""
         join_clauses = []
 
         # join to PERSON
         if criteria.age_at_start is not None or criteria.age_at_end is not None:
-            join_clauses.append(
-                "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id"
-            )
+            join_clauses.append("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id")
 
         return join_clauses
 
     def resolve_where_clauses(
-        self, criteria: ObservationPeriod, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+        self,
+        criteria: ObservationPeriod,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve where clauses for observation period criteria."""
         where_clauses = []
 
@@ -169,34 +175,26 @@ from
             user_defined_period = criteria.user_defined_period
 
             if user_defined_period.start_date is not None:
-                start_date_expression = BuilderUtils.date_string_to_sql(
-                    user_defined_period.start_date
-                )
+                start_date_expression = BuilderUtils.date_string_to_sql(user_defined_period.start_date)
                 where_clauses.append(
                     f"C.start_date <= {start_date_expression} and C.end_date >= {start_date_expression}"
                 )
 
             if user_defined_period.end_date is not None:
-                end_date_expression = BuilderUtils.date_string_to_sql(
-                    user_defined_period.end_date
-                )
+                end_date_expression = BuilderUtils.date_string_to_sql(user_defined_period.end_date)
                 where_clauses.append(
                     f"C.start_date <= {end_date_expression} and C.end_date >= {end_date_expression}"
                 )
 
         # periodStartDate
         if criteria.period_start_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(
-                "C.start_date", criteria.period_start_date
-            )
+            date_clause = BuilderUtils.build_date_range_clause("C.start_date", criteria.period_start_date)
             if date_clause:
                 where_clauses.append(date_clause)
 
         # periodEndDate
         if criteria.period_end_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(
-                "C.end_date", criteria.period_end_date
-            )
+            date_clause = BuilderUtils.build_date_range_clause("C.end_date", criteria.period_end_date)
             if date_clause:
                 where_clauses.append(date_clause)
 
@@ -206,13 +204,9 @@ from
             and hasattr(criteria.period_type, "__len__")
             and len(criteria.period_type) > 0
         ):
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.period_type
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.period_type)
             if concept_ids:
-                where_clauses.append(
-                    f"C.period_type_concept_id in ({','.join(map(str, concept_ids))})"
-                )
+                where_clauses.append(f"C.period_type_concept_id in ({','.join(map(str, concept_ids))})")
 
         # periodTypeCS
         if criteria.period_type_cs is not None:
@@ -250,14 +244,11 @@ from
 
         return where_clauses
 
-    def get_additional_columns(self, columns: List[CriteriaColumn]) -> str:
+    def get_additional_columns(self, columns: list[CriteriaColumn]) -> str:
         """Get additional columns string with proper aliases.
 
         Java equivalent: ObservationPeriodSqlBuilder.getAdditionalColumns()
         """
         return ", ".join(
-            [
-                f"{self.get_table_column_for_criteria_column(col)} as {col.value}"
-                for col in columns
-            ]
+            [f"{self.get_table_column_for_criteria_column(col)} as {col.value}" for col in columns]
         )

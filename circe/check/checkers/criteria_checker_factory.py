@@ -8,10 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Callable, List, Optional
-
-from .base_checker_factory import BaseCheckerFactory
-from .warning_reporter import WarningReporter
+from typing import Callable, Optional
 
 # Import at runtime to avoid circular dependencies
 try:
@@ -88,9 +85,7 @@ class CriteriaCheckerFactory:
         """
         return CriteriaCheckerFactory(concept_set)
 
-    def get_criteria_checker(
-        self, criteria: "Criteria"
-    ) -> Callable[["Criteria"], bool]:
+    def get_criteria_checker(self, criteria: "Criteria") -> Callable[["Criteria"], bool]:
         """Get a checker function that returns True if the criteria uses the concept set.
 
         Args:
@@ -100,7 +95,6 @@ class CriteriaCheckerFactory:
             A function that returns True if the criteria uses the concept set
         """
         # Import here to avoid circular dependencies
-        from ...cohortdefinition.core import ConceptSetSelection
         from ...cohortdefinition.criteria import (
             ConditionEra,
             ConditionOccurrence,
@@ -122,19 +116,13 @@ class CriteriaCheckerFactory:
             return c.codeset_id == self._concept_set.id
 
         def check_condition_occurrence(c: "ConditionOccurrence") -> bool:
-            return (
-                c.codeset_id == self._concept_set.id
-                or c.condition_source_concept == self._concept_set.id
-            )
+            return c.codeset_id == self._concept_set.id or c.condition_source_concept == self._concept_set.id
 
         def check_death(c: "Death") -> bool:
             return c.codeset_id == self._concept_set.id
 
         def check_device_exposure(c: "DeviceExposure") -> bool:
-            return (
-                c.codeset_id == self._concept_set.id
-                or c.device_source_concept == self._concept_set.id
-            )
+            return c.codeset_id == self._concept_set.id or c.device_source_concept == self._concept_set.id
 
         def check_dose_era(c: "DoseEra") -> bool:
             return c.codeset_id == self._concept_set.id
@@ -143,28 +131,20 @@ class CriteriaCheckerFactory:
             return c.codeset_id == self._concept_set.id
 
         def check_drug_exposure(c: "DrugExposure") -> bool:
-            return (
-                c.codeset_id == self._concept_set.id
-                or c.drug_source_concept == self._concept_set.id
-            )
+            return c.codeset_id == self._concept_set.id or c.drug_source_concept == self._concept_set.id
 
         def check_measurement(c: "Measurement") -> bool:
             return (
-                c.codeset_id == self._concept_set.id
-                or c.measurement_source_concept == self._concept_set.id
+                c.codeset_id == self._concept_set.id or c.measurement_source_concept == self._concept_set.id
             )
 
         def check_observation(c: "Observation") -> bool:
             return (
-                c.codeset_id == self._concept_set.id
-                or c.observation_source_concept == self._concept_set.id
+                c.codeset_id == self._concept_set.id or c.observation_source_concept == self._concept_set.id
             )
 
         def check_procedure_occurrence(c: "ProcedureOccurrence") -> bool:
-            return (
-                c.codeset_id == self._concept_set.id
-                or c.procedure_source_concept == self._concept_set.id
-            )
+            return c.codeset_id == self._concept_set.id or c.procedure_source_concept == self._concept_set.id
 
         def check_specimen(c: "Specimen") -> bool:
             return c.codeset_id == self._concept_set.id
@@ -222,8 +202,9 @@ class CriteriaCheckerFactory:
             return default_check
 
     def _get_concept_set_selection_suppliers(
-        self, criteria: "VisitDetail"
-    ) -> List[Callable[[], Optional["ConceptSetSelection"]]]:
+        self,
+        criteria: "VisitDetail",
+    ) -> list[Callable[[], Optional["ConceptSetSelection"]]]:
         """Get suppliers for ConceptSetSelection fields in VisitDetail.
 
         Args:
@@ -232,7 +213,7 @@ class CriteriaCheckerFactory:
         Returns:
             A list of functions that return ConceptSetSelection objects
         """
-        suppliers: List[Callable[[], Optional["ConceptSetSelection"]]] = []
+        suppliers: list[Callable[[], Optional[ConceptSetSelection]]] = []
         suppliers.append(lambda: criteria.place_of_service_cs)
         suppliers.append(lambda: criteria.gender_cs)
         suppliers.append(lambda: criteria.provider_specialty_cs)

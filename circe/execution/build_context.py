@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import uuid
 import weakref
+from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import reduce
 from pathlib import Path
-from typing import Callable, Iterable, Optional, Tuple, Union
+from typing import Callable, Union
 
 import ibis
 import ibis.common.exceptions as ibis_exc
@@ -14,7 +15,7 @@ import ibis.expr.types as ir
 from ..vocabulary.concept import ConceptSet
 from .ibis_compat import table_from_literal_list
 
-Database = Union[str, Tuple[str, str]]
+Database = Union[str, tuple[str, str]]
 
 
 def _qualify(database: Database | None, name: str) -> str:
@@ -34,9 +35,7 @@ def _warn(message: str) -> None:
     print(f"Warning: {message}")
 
 
-def _analyze_table(
-    conn: ibis.BaseBackend, *, backend: str | None, qualified_name: str
-) -> None:
+def _analyze_table(conn: ibis.BaseBackend, *, backend: str | None, qualified_name: str) -> None:
     if not backend:
         return
     if backend in ("postgres", "duckdb"):
@@ -61,16 +60,16 @@ def _drop_table_safely(
 
 @dataclass(frozen=True)
 class CohortBuildOptions:
-    cdm_schema: Optional[str] = None
-    vocabulary_schema: Optional[str] = None
-    result_schema: Optional[str] = None
-    target_table: Optional[str] = None
-    cohort_id: Optional[int] = None
+    cdm_schema: str | None = None
+    vocabulary_schema: str | None = None
+    result_schema: str | None = None
+    target_table: str | None = None
+    cohort_id: int | None = None
     generate_stats: bool = False
-    temp_emulation_schema: Optional[str] = None
-    profile_dir: Optional[str] = None
+    temp_emulation_schema: str | None = None
+    profile_dir: str | None = None
     capture_sql: bool = False
-    backend: Optional[str] = None
+    backend: str | None = None
     materialize_stages: bool = True
     materialize_codesets: bool = True
 
@@ -78,7 +77,7 @@ class CohortBuildOptions:
 @dataclass
 class CodesetResource:
     table: ir.Table
-    _dropper: Optional[Callable[[], None]] = None
+    _dropper: Callable[[], None] | None = None
 
     def cleanup(self):
         if self._dropper:
@@ -115,7 +114,7 @@ class BuildContext:
         self._slice_cache: dict[str, ir.Table] = {}
         weakref.finalize(self, self.close)
 
-    def _table(self, database: Optional[str], name: str) -> ir.Table:
+    def _table(self, database: str | None, name: str) -> ir.Table:
         try:
             return _table(self._conn, database, name)
         except (
@@ -165,18 +164,14 @@ class BuildContext:
 
         # "temp emulation" means: create a *real* table in a chosen database/schema.
         use_temp_emulation = temp and self._options.temp_emulation_schema is not None
-        database: Database | None = (
-            self._options.temp_emulation_schema if use_temp_emulation else None
-        )
+        database: Database | None = self._options.temp_emulation_schema if use_temp_emulation else None
         temp_flag = False if use_temp_emulation else temp
 
         # duckdb profiling setup for local dev
         profile_filename: Path | None = None
         profiling_enabled = False
         if backend == "duckdb" and self._profile_dir is not None:
-            profile_filename = (
-                self._profile_dir / f"ibis_profile_{label}_{step_id}.json"
-            ).resolve()
+            profile_filename = (self._profile_dir / f"ibis_profile_{label}_{step_id}.json").resolve()
             try:
                 escaped = str(profile_filename).replace("'", "''")
                 self._conn.raw_sql(f"SET profiling_output='{escaped}'")
@@ -255,25 +250,17 @@ class BuildContext:
           (cohort_definition_id, subject_id, cohort_start_date, cohort_end_date)
         """
         if append and overwrite:
-            raise ValueError(
-                "`append=True` and `overwrite=True` cannot be used together."
-            )
+            raise ValueError("`append=True` and `overwrite=True` cannot be used together.")
         target_table = table_name or self._options.target_table
         if not target_table:
-            raise ValueError(
-                "target_table must be set (argument or CohortBuildOptions.target_table)"
-            )
+            raise ValueError("target_table must be set (argument or CohortBuildOptions.target_table)")
         target_db = database if database is not None else self._options.result_schema
         if target_db is None:
-            raise ValueError(
-                "result_schema must be set (argument or CohortBuildOptions.result_schema)"
-            )
+            raise ValueError("result_schema must be set (argument or CohortBuildOptions.result_schema)")
 
         cohort_id = self._options.cohort_id
         cohort_id_expr = (
-            ibis.literal(int(cohort_id), type="int64")
-            if cohort_id is not None
-            else ibis.null().cast("int64")
+            ibis.literal(int(cohort_id), type="int64") if cohort_id is not None else ibis.null().cast("int64")
         )
 
         result = events.select(
@@ -369,16 +356,11 @@ def compile_codesets(
 
     compiled = []
     for concept_set in concept_sets or []:
-        compiled_expr = _compile_single_codeset(
-            concept, concept_ancestor, concept_relationship, concept_set
-        )
+        compiled_expr = _compile_single_codeset(concept, concept_ancestor, concept_relationship, concept_set)
         if compiled_expr is not None:
             compiled.append(compiled_expr)
 
-    if not compiled:
-        compiled_expr = _empty_codeset_table()
-    else:
-        compiled_expr = _union_all(compiled).distinct()
+    compiled_expr = _empty_codeset_table() if not compiled else _union_all(compiled).distinct()
 
     if not options.materialize_codesets:
         return CodesetResource(table=compiled_expr)
@@ -391,7 +373,7 @@ def _compile_single_codeset(
     concept_ancestor: ir.Table,
     concept_relationship: ir.Table,
     concept_set: ConceptSet,
-) -> Optional[ir.Table]:
+) -> ir.Table | None:
     expression = concept_set.expression
     if expression is None or not expression.items:
         return None
@@ -469,17 +451,13 @@ def _compile_single_codeset(
     return include_expr.mutate(codeset_id=codeset_literal)[["codeset_id", "concept_id"]]
 
 
-def _ids_memtable(ids: list[int]) -> Optional[ir.Table]:
+def _ids_memtable(ids: list[int]) -> ir.Table | None:
     if not ids:
         return None
-    return table_from_literal_list(
-        ids, column_name="concept_id", element_type="int64"
-    ).distinct()
+    return table_from_literal_list(ids, column_name="concept_id", element_type="int64").distinct()
 
 
-def _descendants(
-    concept: ir.Table, concept_ancestor: ir.Table, ancestor_ids: list[int]
-) -> Optional[ir.Table]:
+def _descendants(concept: ir.Table, concept_ancestor: ir.Table, ancestor_ids: list[int]) -> ir.Table | None:
     if not ancestor_ids:
         return None
     return (
@@ -497,7 +475,7 @@ def _mapped_concepts(
     concept_relationship: ir.Table,
     concepts_to_map: list[int],
     concepts_with_descendants_to_map: list[int],
-) -> Optional[ir.Table]:
+) -> ir.Table | None:
     sources = _union_distinct(
         [
             _ids_memtable(concepts_to_map),
@@ -516,18 +494,14 @@ def _mapped_concepts(
     )
 
     return (
-        sources.join(
-            valid_relationships, sources.concept_id == valid_relationships.concept_id_2
-        )
+        sources.join(valid_relationships, sources.concept_id == valid_relationships.concept_id_2)
         .select(valid_relationships.concept_id_1.cast("int64").name("concept_id"))
         .distinct()
     )
 
 
 def _empty_codeset_table() -> ir.Table:
-    empty_concepts = table_from_literal_list(
-        [], column_name="concept_id", element_type="int64"
-    )
+    empty_concepts = table_from_literal_list([], column_name="concept_id", element_type="int64")
     empty_codesets = empty_concepts.mutate(
         codeset_id=ibis.null().cast("int64"),
     )
@@ -589,7 +563,7 @@ def _materialize_codesets(
     return resource
 
 
-def _union_distinct(tables: Iterable[Optional[ir.Table]]) -> Optional[ir.Table]:
+def _union_distinct(tables: Iterable[ir.Table | None]) -> ir.Table | None:
     valid_tables = [t for t in tables if t is not None]
     if not valid_tables:
         return None

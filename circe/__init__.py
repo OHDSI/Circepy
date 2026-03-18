@@ -19,61 +19,34 @@ Author: CIRCE Python Implementation Team
 License: Apache License 2.0
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "CIRCE Python Implementation Team"
 __email__ = "circe-python@ohdsi.org"
 __license__ = "Apache License 2.0"
 
-# Main exports
-from .cohortdefinition import CohortExpression
-from .vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
-from .api import (
-    cohort_expression_from_json,
-    build_cohort_query,
-    cohort_print_friendly,
-)
-from .skills import get_cohort_builder_skill, get_skill, list_skills
-
-from circe.cohortdefinition import (
-    CohortExpression, Criteria, CorelatedCriteria, DemographicCriteria,
-    Occurrence, CriteriaColumn, InclusionRule, CollapseType, DateType,
-    ResultLimit, Period, DateRange, NumericRange, DateAdjustment,
-    ObservationFilter, CollapseSettings, EndStrategy, PrimaryCriteria,
-    CriteriaGroup, ConceptSetSelection, Window, TextFilter, GeoCriteria, WindowedCriteria,
-    DateOffsetStrategy, CustomEraStrategy, ConditionOccurrence, DrugExposure,
-    InclusionRule, WindowBound,
-    ProcedureOccurrence, VisitOccurrence, Observation, Measurement, DeviceExposure,
-    Specimen, Death, VisitDetail, ObservationPeriod, PayerPlanPeriod, LocationRegion,
-    ConditionEra, DrugEra, DoseEra
-)
-
-from typing import Dict
+import importlib
+import inspect
+import pkgutil
+from contextlib import suppress
 
 # ---------------------------------------------------------------------
 # Embedded interpreter (e.g. R reticulate) bootstrapping for Pydantic
 # ---------------------------------------------------------------------
-import sys
-from typing import Dict
-
 from pydantic import BaseModel
 
-import circe as package
 from circe.cohortdefinition import (
     CohortExpression,
     CollapseSettings,
-    CollapseType,
     ConceptSetSelection,
     ConditionEra,
     ConditionOccurrence,
     CorelatedCriteria,
     Criteria,
-    CriteriaColumn,
     CriteriaGroup,
     CustomEraStrategy,
     DateAdjustment,
     DateOffsetStrategy,
     DateRange,
-    DateType,
     Death,
     DemographicCriteria,
     DeviceExposure,
@@ -109,9 +82,6 @@ from .api import (
     cohort_expression_from_json,
     cohort_print_friendly,
 )
-
-# Main exports
-from .cohortdefinition import CohortExpression
 from .execution import (
     ExecutionOptions,
     IbisExecutor,
@@ -129,30 +99,19 @@ def safe_model_rebuild(package):
     In embedded environments like R's reticulate, this avoids
     'ValueError: call stack is not deep enough' during instantiation.
     """
-    try:
-        for loader, module_name, is_pkg in pkgutil.walk_packages(
-            package.__path__, package.__name__ + "."
-        ):
-            try:
+    with suppress(Exception):
+        for _loader, module_name, _is_pkg in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
+            with suppress(ImportError):
                 mod = importlib.import_module(module_name)
-            except ImportError:
-                continue
 
-            for name, obj in inspect.getmembers(mod):
+            for _name, obj in inspect.getmembers(mod):
                 if inspect.isclass(obj) and issubclass(obj, BaseModel):
-                    try:
+                    with suppress(Exception):
                         # Rebuild Pydantic v2 models
                         obj.model_rebuild(raise_errors=False)
                         # Eager instantiation to trigger lazy resolution early
-                        try:
+                        with suppress(Exception):
                             obj()
-                        except Exception:
-                            # Ignore models requiring mandatory args
-                            pass
-                    except Exception:
-                        pass
-    except Exception:
-        pass
 
 
 def get_json_schema() -> dict:
@@ -161,7 +120,7 @@ def get_json_schema() -> dict:
     in the same shape as the Java version.
     """
     # Map name → Pydantic model
-    models: Dict[str, type] = {
+    models: dict[str, type] = {
         "CohortExpression": CohortExpression,
         "ConceptSet": ConceptSet,
         "ConceptSetExpression": ConceptSetExpression,
@@ -210,7 +169,7 @@ def get_json_schema() -> dict:
     }
 
     # Build root-level $defs with each schema
-    defs: Dict[str, dict] = {}
+    defs: dict[str, dict] = {}
     for name, model in models.items():
         # Use by_alias=True so JSON keys match Java casing if you set aliases in models
         schema = model.model_json_schema(by_alias=True)

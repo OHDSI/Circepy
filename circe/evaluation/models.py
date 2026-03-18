@@ -2,10 +2,12 @@
 Pydantic models for the Phenotype Evaluation Framework.
 """
 
-from typing import List, Optional
-from pydantic import Field, ConfigDict
+from typing import Optional
+
+from pydantic import ConfigDict, Field
+
 from circe.cohortdefinition.core import CirceBaseModel
-from circe.cohortdefinition.criteria import CorelatedCriteria, CriteriaGroup
+from circe.cohortdefinition.criteria import CriteriaGroup
 from circe.vocabulary import ConceptSet
 
 
@@ -13,6 +15,7 @@ class EvaluationRule(CirceBaseModel):
     """
     Wraps a CriteriaGroup with scoring metadata.
     """
+
     rule_id: int = Field(..., description="Unique identifier for the rule")
     name: str = Field(..., description="Human-readable name for the rule")
     description: str = Field("", description="Optional description of the rule")
@@ -28,9 +31,10 @@ class EvaluationRubric(CirceBaseModel):
     """
     A collection of rules and concept sets targeting a specific phenotype.
     """
+
     description: str = Field("", description="Optional description of the rubric")
-    concept_sets: List[ConceptSet] = Field(default_factory=list, description="Concept sets used by the rules")
-    rules: List[EvaluationRule] = Field(..., description="List of evaluation rules")
+    concept_sets: list[ConceptSet] = Field(default_factory=list, description="Concept sets used by the rules")
+    rules: list[EvaluationRule] = Field(..., description="List of evaluation rules")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -39,6 +43,7 @@ class RuleResult(CirceBaseModel):
     """
     Result of a single rule evaluation for an individual.
     """
+
     rule_id: int
     rule_name: str
     score: float
@@ -52,10 +57,11 @@ class IndividualEvaluation(CirceBaseModel):
     """
     Structured result object for a single person at a given index date.
     """
+
     subject_id: int
     index_date: str
     ruleset_id: int
     total_score: float
-    rules: List[RuleResult]
+    rules: list[RuleResult]
 
     model_config = ConfigDict(populate_by_name=True)

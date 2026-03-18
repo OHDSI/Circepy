@@ -8,8 +8,9 @@ accept either in-memory models or serialized payloads.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping, Union
+from typing import Any, Union
 
 from .api import cohort_expression_from_json
 from .cohortdefinition import CohortExpression

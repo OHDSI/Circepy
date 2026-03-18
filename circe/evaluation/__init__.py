@@ -2,11 +2,6 @@
 Phenotype Evaluation Framework extension for CIRCE.
 """
 
-from .models import EvaluationRule, EvaluationRubric, IndividualEvaluation, RuleResult
+from .models import EvaluationRubric, EvaluationRule, IndividualEvaluation, RuleResult
 
-__all__ = [
-    "EvaluationRule",
-    "EvaluationRubric",
-    "IndividualEvaluation",
-    "RuleResult"
-]
+__all__ = ["EvaluationRule", "EvaluationRubric", "IndividualEvaluation", "RuleResult"]

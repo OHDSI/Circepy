@@ -38,22 +38,23 @@ To also auto-generate cohort builder methods (with_X, require_X, etc.)::
     class WaveformOccurrence(Criteria):
         ...
 """
-from typing import Callable, Dict, List, Optional, Type, Union, Any
-from dataclasses import dataclass, field
+
+from dataclasses import dataclass
 from pathlib import Path
 
 # Forward references to avoid circular imports
 # Actual imports happen inside methods or with TYPE_CHECKING
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Optional, Union
 
 if TYPE_CHECKING:
-    from circe.cohortdefinition.criteria import Criteria
     from circe.cohortdefinition.builders.base import CriteriaSqlBuilder
+    from circe.cohortdefinition.criteria import Criteria
 
 
 # ---------------------------------------------------------------------------
 # DomainSpec: describes a complete OMOP domain for method generation
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DomainSpec:
@@ -69,6 +70,7 @@ class DomainSpec:
         requires_concept: ``False`` for domains like Death and
                           ObservationPeriod that don't need a concept set id.
     """
+
     name: str
     domain: str
     criteria_class: type
@@ -80,10 +82,10 @@ class DomainSpec:
 # Global domain registry — populated by register_domain() and built-in init
 # ---------------------------------------------------------------------------
 
-_DOMAIN_REGISTRY: List[DomainSpec] = []
+_DOMAIN_REGISTRY: list[DomainSpec] = []
 
 
-def get_domain_registry() -> List[DomainSpec]:
+def get_domain_registry() -> list[DomainSpec]:
     """Return a snapshot of all registered domain specs."""
     return list(_DOMAIN_REGISTRY)
 
@@ -102,6 +104,7 @@ def _register_domain_spec(spec: DomainSpec) -> None:
 # Builder method generation helpers
 # ---------------------------------------------------------------------------
 
+
 def _wire_builder_methods(spec: DomainSpec) -> None:
     """Generate with_X / require_X / exclude_X / censor_on_X on builder classes.
 
@@ -111,7 +114,9 @@ def _wire_builder_methods(spec: DomainSpec) -> None:
     # Deferred imports to avoid circular dependencies with builder module
     try:
         from circe.cohort_builder.builder import (
-            CohortBuilder, CohortWithEntry, CohortWithCriteria,
+            CohortBuilder,
+            CohortWithCriteria,
+            CohortWithEntry,
         )
         from circe.cohort_builder.query_builder import CriteriaGroupBuilder
     except ImportError:
@@ -127,76 +132,97 @@ def _wire_builder_methods(spec: DomainSpec) -> None:
     # domain as the first positional arg. Subclasses like ConditionQuery
     # hardcode their domain in __init__.
     from circe.cohort_builder.query_builder import BaseQuery as _BQ
-    needs_domain = (query_cls is _BQ)
+
+    needs_domain = query_cls is _BQ
 
     # --- CohortBuilder.with_{name} ---
     if not hasattr(CohortBuilder, f"with_{name}"):
         if requires_concept:
             if needs_domain:
+
                 def _make_entry(qc, dom):
                     def method(self, concept_set_id: int):
                         query = qc(dom, concept_set_id, is_entry=True)
                         cohort = CohortWithEntry(self, query)
                         query._parent = cohort
                         return cohort
+
                     return method
             else:
+
                 def _make_entry(qc, dom):
                     def method(self, concept_set_id: int):
                         query = qc(concept_set_id, is_entry=True)
                         cohort = CohortWithEntry(self, query)
                         query._parent = cohort
                         return cohort
+
                     return method
         else:
+
             def _make_entry(qc, dom):
                 def method(self):
                     query = qc(dom, is_entry=True)
                     return CohortWithEntry(self, query)
+
                 return method
+
         setattr(CohortBuilder, f"with_{name}", _make_entry(query_cls, domain))
 
     # --- CohortWithEntry.or_with_{name} ---
     if not hasattr(CohortWithEntry, f"or_with_{name}"):
         if requires_concept:
             if needs_domain:
+
                 def _make_or_entry(qc, dom):
                     def method(self, concept_set_id: int):
                         query = qc(dom, concept_set_id, is_entry=True, parent=self)
                         self._entry_queries.append(query)
                         return self
+
                     return method
             else:
+
                 def _make_or_entry(qc, dom):
                     def method(self, concept_set_id: int):
                         query = qc(concept_set_id, is_entry=True, parent=self)
                         self._entry_queries.append(query)
                         return self
+
                     return method
         else:
+
             def _make_or_entry(qc, dom):
                 def method(self):
                     query = qc(dom, is_entry=True, parent=self)
                     self._entry_queries.append(query)
                     return self
+
                 return method
+
         setattr(CohortWithEntry, f"or_with_{name}", _make_or_entry(query_cls, domain))
 
     # --- CohortWithEntry delegate methods ---
     for action in ("require", "exclude", "censor_on"):
         method_name = f"{action}_{name}"
         if not hasattr(CohortWithEntry, method_name):
+
             def _make_delegate(act, n):
                 if act == "censor_on":
+
                     def method(self, *args, **kwargs):
                         return getattr(self._to_criteria(), f"censor_on_{n}")(*args, **kwargs)
                 elif act == "require":
+
                     def method(self, *args, **kwargs):
                         return getattr(self._to_criteria(), f"require_{n}")(*args, **kwargs)
                 else:
+
                     def method(self, *args, **kwargs):
                         return getattr(self._to_criteria(), f"exclude_{n}")(*args, **kwargs)
+
                 return method
+
             setattr(CohortWithEntry, method_name, _make_delegate(action, name))
 
     # --- CohortWithCriteria.require_{name} / exclude_{name} / censor_on_{name} ---
@@ -210,38 +236,52 @@ def _wire_builder_methods(spec: DomainSpec) -> None:
             if is_censor:
                 if requires_concept:
                     if needs_domain:
+
                         def _make_censor(qc, dom):
                             def method(self, concept_set_id: int):
                                 return qc(dom, concept_set_id, parent=self, is_censor=True)
+
                             return method
                     else:
+
                         def _make_censor(qc, dom):
                             def method(self, concept_set_id: int):
                                 return qc(concept_set_id, parent=self, is_censor=True)
+
                             return method
                 else:
+
                     def _make_censor(qc, dom):
                         def method(self, concept_set_id: Optional[int] = None):
                             return qc(dom, concept_set_id, parent=self, is_censor=True)
+
                         return method
+
                 setattr(CohortWithCriteria, method_name, _make_censor(query_cls, domain))
             else:
                 if requires_concept:
                     if needs_domain:
+
                         def _make_criteria(qc, dom, excl):
                             def method(self, concept_set_id: int):
                                 return qc(dom, concept_set_id, parent=self, is_exclusion=excl)
+
                             return method
                     else:
+
                         def _make_criteria(qc, dom, excl):
                             def method(self, concept_set_id: int):
                                 return qc(concept_set_id, parent=self, is_exclusion=excl)
+
                             return method
                 else:
+
                     def _make_criteria(qc, dom, excl):
                         def method(self):
                             return qc(dom, parent=self, is_exclusion=excl)
+
                         return method
+
                 setattr(CohortWithCriteria, method_name, _make_criteria(query_cls, domain, is_exclusion))
 
     # --- CriteriaGroupBuilder.require_{name} / exclude_{name} ---
@@ -250,20 +290,27 @@ def _wire_builder_methods(spec: DomainSpec) -> None:
         if not hasattr(CriteriaGroupBuilder, method_name):
             if requires_concept:
                 if needs_domain:
+
                     def _make_group(qc, dom, excl):
                         def method(self, concept_set_id: int):
                             return qc(dom, concept_set_id, parent=self, is_exclusion=excl)
+
                         return method
                 else:
+
                     def _make_group(qc, dom, excl):
                         def method(self, concept_set_id: int):
                             return qc(concept_set_id, parent=self, is_exclusion=excl)
+
                         return method
             else:
+
                 def _make_group(qc, dom, excl):
                     def method(self):
                         return qc(dom, parent=self, is_exclusion=excl)
+
                     return method
+
             setattr(CriteriaGroupBuilder, method_name, _make_group(query_cls, domain, is_exclusion))
 
 
@@ -271,7 +318,8 @@ def _wire_builder_methods(spec: DomainSpec) -> None:
 # Helpers that replace duplicated criteria_class_map / domain_map dicts
 # ---------------------------------------------------------------------------
 
-def get_criteria_class_map() -> Dict[str, type]:
+
+def get_criteria_class_map() -> dict[str, type]:
     """Return {domain_string: criteria_class} merging built-ins + extensions.
 
     Replaces the hand-written ``NAMES_TO_CLASSES``, ``criteria_class_map``,
@@ -285,7 +333,7 @@ def get_criteria_class_map() -> Dict[str, type]:
     return result
 
 
-def get_sql_builder_map() -> Dict[type, type]:
+def get_sql_builder_map() -> dict[type, type]:
     """Return {criteria_class: sql_builder_class} for all registered domains.
 
     Used by ``CohortExpressionQueryBuilder`` to replace the isinstance chain.
@@ -297,23 +345,24 @@ def get_sql_builder_map() -> Dict[type, type]:
 # ExtensionRegistry class
 # ---------------------------------------------------------------------------
 
+
 class ExtensionRegistry:
     """Central registry for OMOP CDM extensions."""
 
     def __init__(self):
         # Maps criteria names to criteria classes (for JSON deserialization)
-        self._criteria_classes: Dict[str, Type['Criteria']] = {}
+        self._criteria_classes: dict[str, type[Criteria]] = {}
 
         # Maps criteria types to SQL builder classes
-        self._sql_builders: Dict[Type['Criteria'], Type['CriteriaSqlBuilder']] = {}
+        self._sql_builders: dict[type[Criteria], type[CriteriaSqlBuilder]] = {}
 
         # Maps criteria types to markdown template names
-        self._markdown_templates: Dict[Type['Criteria'], str] = {}
+        self._markdown_templates: dict[type[Criteria], str] = {}
 
         # List of paths to search for Jinja2 templates
-        self._template_paths: List[Path] = []
+        self._template_paths: list[Path] = []
 
-    def register_criteria_class(self, name: str, cls: Type['Criteria']) -> None:
+    def register_criteria_class(self, name: str, cls: type["Criteria"]) -> None:
         """Register a new criteria class for JSON deserialization.
 
         Args:
@@ -322,7 +371,11 @@ class ExtensionRegistry:
         """
         self._criteria_classes[name] = cls
 
-    def register_sql_builder(self, criteria_cls: Type['Criteria'], builder_cls: Type['CriteriaSqlBuilder']) -> None:
+    def register_sql_builder(
+        self,
+        criteria_cls: type["Criteria"],
+        builder_cls: type["CriteriaSqlBuilder"],
+    ) -> None:
         """Register a SQL builder for a criteria type.
 
         Args:
@@ -331,7 +384,7 @@ class ExtensionRegistry:
         """
         self._sql_builders[criteria_cls] = builder_cls
 
-    def register_markdown_template(self, criteria_cls: Type['Criteria'], template_name: str) -> None:
+    def register_markdown_template(self, criteria_cls: type["Criteria"], template_name: str) -> None:
         """Register a Jinja2 template for markdown rendering.
 
         Args:
@@ -349,7 +402,7 @@ class ExtensionRegistry:
         if path not in self._template_paths:
             self._template_paths.append(path)
 
-    def get_builder(self, criteria: 'Criteria') -> Optional['CriteriaSqlBuilder']:
+    def get_builder(self, criteria: "Criteria") -> Optional["CriteriaSqlBuilder"]:
         """Get the SQL builder for a criteria instance.
 
         Args:
@@ -361,7 +414,7 @@ class ExtensionRegistry:
         builder_cls = self._sql_builders.get(type(criteria))
         return builder_cls() if builder_cls else None
 
-    def get_template(self, criteria: 'Criteria') -> Optional[str]:
+    def get_template(self, criteria: "Criteria") -> Optional[str]:
         """Get the markdown template name for a criteria instance.
 
         Args:
@@ -372,7 +425,7 @@ class ExtensionRegistry:
         """
         return self._markdown_templates.get(type(criteria))
 
-    def get_criteria_class(self, name: str) -> Optional[Type['Criteria']]:
+    def get_criteria_class(self, name: str) -> Optional[type["Criteria"]]:
         """Get a registered criteria class by name.
 
         Args:
@@ -384,9 +437,10 @@ class ExtensionRegistry:
         return self._criteria_classes.get(name)
 
     @property
-    def template_paths(self) -> List[Path]:
+    def template_paths(self) -> list[Path]:
         """Get all registered template paths."""
         return list(self._template_paths)
+
 
 # Global registry instance
 _registry = ExtensionRegistry()
@@ -401,7 +455,8 @@ def get_registry() -> ExtensionRegistry:
 # Decorator helpers
 # ---------------------------------------------------------------------------
 
-def criteria_class(name: str) -> "Callable[[Type['Criteria']], Type['Criteria']]":
+
+def criteria_class(name: str) -> "Callable[[type['Criteria']], type['Criteria']]":
     """Class decorator that registers a Criteria subclass for JSON deserialization.
 
     Args:
@@ -414,13 +469,17 @@ def criteria_class(name: str) -> "Callable[[Type['Criteria']], Type['Criteria']]
         class WaveformOccurrence(Criteria):
             ...
     """
-    def decorator(cls: "Type['Criteria']") -> "Type['Criteria']":
+
+    def decorator(cls: "type['Criteria']") -> "type['Criteria']":
         _registry.register_criteria_class(name, cls)  # type: ignore[arg-type]
         return cls
+
     return decorator  # type: ignore[return-value]
 
 
-def sql_builder(criteria_cls: "Type['Criteria']") -> "Callable[[Type['CriteriaSqlBuilder']], Type['CriteriaSqlBuilder']]":
+def sql_builder(
+    criteria_cls: "type['Criteria']",
+) -> "Callable[[type['CriteriaSqlBuilder']], type['CriteriaSqlBuilder']]":
     """Class decorator that registers a SQL builder for a given Criteria type.
 
     Args:
@@ -432,13 +491,15 @@ def sql_builder(criteria_cls: "Type['Criteria']") -> "Callable[[Type['CriteriaSq
         class WaveformOccurrenceSqlBuilder(CriteriaSqlBuilder):
             ...
     """
-    def decorator(builder_cls: "Type['CriteriaSqlBuilder']") -> "Type['CriteriaSqlBuilder']":
+
+    def decorator(builder_cls: "type['CriteriaSqlBuilder']") -> "type['CriteriaSqlBuilder']":
         _registry.register_sql_builder(criteria_cls, builder_cls)  # type: ignore[arg-type]
         return builder_cls
+
     return decorator  # type: ignore[return-value]
 
 
-def markdown_template(criteria_cls: "Type['Criteria']", template_name: str) -> "Callable[[Type], Type]":
+def markdown_template(criteria_cls: "type['Criteria']", template_name: str) -> "Callable[[type], type]":
     """Class decorator that registers a Jinja2 markdown template for a Criteria type.
 
     Args:
@@ -452,19 +513,17 @@ def markdown_template(criteria_cls: "Type['Criteria']", template_name: str) -> "
         class WaveformOccurrenceMarkdownRenderer:
             ...
     """
-    def decorator(cls: Type) -> Type:
+
+    def decorator(cls: type) -> type:
         _registry.register_markdown_template(criteria_cls, template_name)  # type: ignore[arg-type]
         return cls
+
     return decorator
 
 
 def register_domain(
-    *,
-    name: str,
-    domain: str,
-    query_class: type,
-    requires_concept: bool = True
-) -> "Callable[[Type['Criteria']], Type['Criteria']]":
+    *, name: str, domain: str, query_class: type, requires_concept: bool = True
+) -> "Callable[[type['Criteria']], type['Criteria']]":
     """Class decorator that registers a domain for builder method generation.
 
     Combines ``@criteria_class`` registration with automatic generation of
@@ -488,7 +547,8 @@ def register_domain(
         class WaveformOccurrence(Criteria):
             ...
     """
-    def decorator(cls: "Type['Criteria']") -> "Type['Criteria']":
+
+    def decorator(cls: "type['Criteria']") -> "type['Criteria']":
         # Register for JSON deserialization
         _registry.register_criteria_class(domain, cls)  # type: ignore[arg-type]
         # Register as a full domain with builder method generation
@@ -501,6 +561,7 @@ def register_domain(
         )
         _register_domain_spec(spec)
         return cls
+
     return decorator  # type: ignore[return-value]
 
 

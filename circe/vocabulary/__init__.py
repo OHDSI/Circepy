@@ -9,15 +9,14 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional, List, Union
-from .concept import (
-    Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
-)
+from typing import Optional, Union
 
+from .concept import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 # =============================================================================
 # COMPOSER HELPER FUNCTIONS
 # =============================================================================
+
 
 class ConceptReference:
     """
@@ -29,12 +28,13 @@ class ConceptReference:
         include_mapped: Whether to include mapped concepts
         is_excluded: Whether this concept is excluded
     """
+
     def __init__(
         self,
         concept_id: int,
         include_descendants: bool = False,
         include_mapped: bool = False,
-        is_excluded: bool = False
+        is_excluded: bool = False,
     ):
         self.concept_id = concept_id
         self.include_descendants = include_descendants
@@ -56,10 +56,7 @@ def descendants(concept_id: int) -> ConceptReference:
         >>> # Type 2 Diabetes and all descendants
         >>> descendants(201826)
     """
-    return ConceptReference(
-        concept_id=concept_id,
-        include_descendants=True
-    )
+    return ConceptReference(concept_id=concept_id, include_descendants=True)
 
 
 def mapped(concept_id: int) -> ConceptReference:
@@ -72,10 +69,7 @@ def mapped(concept_id: int) -> ConceptReference:
     Returns:
         ConceptReference with include_mapped=True
     """
-    return ConceptReference(
-        concept_id=concept_id,
-        include_mapped=True
-    )
+    return ConceptReference(concept_id=concept_id, include_mapped=True)
 
 
 def exclude(concept_ref: Union[int, ConceptReference]) -> ConceptReference:
@@ -94,14 +88,12 @@ def exclude(concept_ref: Union[int, ConceptReference]) -> ConceptReference:
         concept_id=concept_ref.concept_id,
         include_descendants=concept_ref.include_descendants,
         include_mapped=concept_ref.include_mapped,
-        is_excluded=True
+        is_excluded=True,
     )
 
 
 def concept_set(
-    *concepts: Union[int, ConceptReference],
-    id: Optional[int] = None,
-    name: Optional[str] = None
+    *concepts: Union[int, ConceptReference], id: Optional[int] = None, name: Optional[str] = None
 ) -> ConceptSet:
     """
     Create a concept set from concept IDs or references.
@@ -139,31 +131,42 @@ def concept_set(
     for concept in concepts:
         if isinstance(concept, int):
             # Simple concept ID
-            items.append(ConceptSetItem(
-                concept=Concept(concept_id=concept),
-                include_descendants=False,
-                include_mapped=False,
-                is_excluded=False
-            ))
+            items.append(
+                ConceptSetItem(
+                    concept=Concept(concept_id=concept),
+                    include_descendants=False,
+                    include_mapped=False,
+                    is_excluded=False,
+                )
+            )
         elif isinstance(concept, ConceptReference):
             # ConceptReference with options
-            items.append(ConceptSetItem(
-                concept=Concept(concept_id=concept.concept_id),
-                include_descendants=concept.include_descendants,
-                include_mapped=concept.include_mapped,
-                is_excluded=concept.is_excluded
-            ))
+            items.append(
+                ConceptSetItem(
+                    concept=Concept(concept_id=concept.concept_id),
+                    include_descendants=concept.include_descendants,
+                    include_mapped=concept.include_mapped,
+                    is_excluded=concept.is_excluded,
+                )
+            )
 
     return ConceptSet(
         id=id or 0,  # Will need to be set by user or auto-assigned
         name=name or "Concept Set",
-        expression=ConceptSetExpression(items=items)
+        expression=ConceptSetExpression(items=items),
     )
 
 
 __all__ = [
     # Core classes
-    "Concept", "ConceptSet", "ConceptSetExpression", "ConceptSetItem",
+    "Concept",
+    "ConceptSet",
+    "ConceptSetExpression",
+    "ConceptSetItem",
     # Composer helpers
-    "concept_set", "descendants", "mapped", "exclude", "ConceptReference"
+    "concept_set",
+    "descendants",
+    "mapped",
+    "exclude",
+    "ConceptReference",
 ]

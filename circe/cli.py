@@ -11,7 +11,7 @@ from pathlib import Path
 from .api import build_cohort_query, cohort_expression_from_json, cohort_print_friendly
 from .cohortdefinition import BuildExpressionQueryOptions
 from .cohortdefinition.code_generator import to_python_code
-from .skills import list_skills, get_skill
+from .skills import get_skill, list_skills
 
 
 def main():
@@ -24,23 +24,15 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Validate command
-    validate_parser = subparsers.add_parser(
-        "validate", help="Validate a cohort definition"
-    )
+    validate_parser = subparsers.add_parser("validate", help="Validate a cohort definition")
     validate_parser.add_argument("input", help="Input JSON file")
-    validate_parser.add_argument(
-        "--quiet", "-q", action="store_true", help="Only show errors"
-    )
+    validate_parser.add_argument("--quiet", "-q", action="store_true", help="Only show errors")
 
     # Generate SQL command
-    sql_parser = subparsers.add_parser(
-        "generate-sql", help="Generate SQL from cohort definition"
-    )
+    sql_parser = subparsers.add_parser("generate-sql", help="Generate SQL from cohort definition")
     sql_parser.add_argument("input", help="Input JSON file")
     sql_parser.add_argument("--output", "-o", help="Output SQL file (default: stdout)")
-    sql_parser.add_argument(
-        "--cdm-schema", default="@cdm_database_schema", help="CDM schema name"
-    )
+    sql_parser.add_argument("--cdm-schema", default="@cdm_database_schema", help="CDM schema name")
     sql_parser.add_argument(
         "--target-table",
         default="@target_database_schema.@target_cohort_table",
@@ -52,47 +44,33 @@ def main():
         default=None,
         help="Cohort ID (default: @target_cohort_id placeholder)",
     )
-    sql_parser.add_argument(
-        "--no-validate", action="store_true", help="Skip validation"
-    )
+    sql_parser.add_argument("--no-validate", action="store_true", help="Skip validation")
 
     # Render markdown command
-    md_parser = subparsers.add_parser(
-        "render-markdown", help="Render cohort definition as Markdown"
-    )
+    md_parser = subparsers.add_parser("render-markdown", help="Render cohort definition as Markdown")
     md_parser.add_argument("input", help="Input JSON file")
-    md_parser.add_argument(
-        "--output", "-o", help="Output Markdown file (default: stdout)"
-    )
+    md_parser.add_argument("--output", "-o", help="Output Markdown file (default: stdout)")
     md_parser.add_argument("--no-validate", action="store_true", help="Skip validation")
-    md_parser.add_argument(
-        "--title", "-t", type=str, help="Title to add to markdown document"
-    )
+    md_parser.add_argument("--title", "-t", type=str, help="Title to add to markdown document")
 
     # Generate source code command
     source_parser = subparsers.add_parser(
         "generate-source", help="Generate Python source code from cohort definition"
     )
     source_parser.add_argument("input", help="Input JSON file")
-    source_parser.add_argument(
-        "--output", "-o", help="Output Python file (default: stdout)"
-    )
+    source_parser.add_argument("--output", "-o", help="Output Python file (default: stdout)")
 
     # Get skill command
-    skill_parser = subparsers.add_parser('get-skill', help='Get skill documentation for AI agents')
-    skill_parser.add_argument('name', nargs='?', help='Name of the skill to retrieve')
-    skill_parser.add_argument('--list', action='store_true', help='List available skills')
+    skill_parser = subparsers.add_parser("get-skill", help="Get skill documentation for AI agents")
+    skill_parser.add_argument("name", nargs="?", help="Name of the skill to retrieve")
+    skill_parser.add_argument("--list", action="store_true", help="List available skills")
 
     # Process command (all-in-one)
-    process_parser = subparsers.add_parser(
-        "process", help="Validate, generate SQL and Markdown"
-    )
+    process_parser = subparsers.add_parser("process", help="Validate, generate SQL and Markdown")
     process_parser.add_argument("input", help="Input JSON file")
     process_parser.add_argument("--sql-output", help="SQL output file")
     process_parser.add_argument("--md-output", help="Markdown output file")
-    process_parser.add_argument(
-        "--cdm-schema", default="@cdm_database_schema", help="CDM schema name"
-    )
+    process_parser.add_argument("--cdm-schema", default="@cdm_database_schema", help="CDM schema name")
     process_parser.add_argument(
         "--target-table",
         default="@target_database_schema.@target_cohort_table",
@@ -122,7 +100,7 @@ def main():
             return process_command(args)
         elif args.command == "generate-source":
             return generate_source_command(args)
-        elif args.command == 'get-skill':
+        elif args.command == "get-skill":
             return get_skill_command(args)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -151,9 +129,7 @@ def validate_command(args):
 
     if not args.quiet:
         for warning in warnings:
-            severity = (
-                warning.severity.name if hasattr(warning, "severity") else "WARNING"
-            )
+            severity = warning.severity.name if hasattr(warning, "severity") else "WARNING"
             msg = str(warning) if not hasattr(warning, "message") else warning.message
             print(f"[{severity}] {msg}")
 

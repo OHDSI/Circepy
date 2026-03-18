@@ -6,11 +6,13 @@ This guide will help you get started with CIRCE Python in just a few minutes.
 Installation
 ------------
 
-First, install CIRCE Python:
+First, install CIRCE Python from source:
 
 .. code-block:: bash
 
-   pip install ohdsi-circe
+   git clone https://github.com/OHDSI/Circepy.git
+   cd Circepy
+   uv sync --extra dev
 
 Using the CLI
 -------------
@@ -22,21 +24,21 @@ Validate a Cohort
 
 .. code-block:: bash
 
-   circe validate my_cohort.json
+   uv run circe validate my_cohort.json
 
 Generate SQL
 ~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   circe generate-sql my_cohort.json --output cohort.sql
+   uv run circe generate-sql my_cohort.json --output cohort.sql
 
 Render Markdown
 ~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   circe render-markdown my_cohort.json --output cohort.md
+   uv run circe render-markdown my_cohort.json --output cohort.md
 
 Using the Python API
 --------------------
@@ -237,4 +239,3 @@ Next Steps
 * :doc:`user_guide/validation` - Validate your cohorts
 * :doc:`api/cohortdefinition` - API reference for cohort definitions
 * :doc:`user_guide/examples` - More examples and use cases
-

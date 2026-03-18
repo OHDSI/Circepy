@@ -22,9 +22,7 @@ def build_death(criteria: Death, ctx: BuildContext):
 
     table = apply_codeset_filter(table, "cause_concept_id", criteria.codeset_id, ctx)
 
-    table = apply_date_range(
-        table, "death_date", getattr(criteria, "occurrence_start_date", None)
-    )
+    table = apply_date_range(table, "death_date", getattr(criteria, "occurrence_start_date", None))
 
     table = apply_concept_criteria(
         table,
@@ -44,9 +42,7 @@ def build_death(criteria: Death, ctx: BuildContext):
         )
 
     if criteria.age:
-        table = apply_age_filter(
-            table, criteria.age, ctx, criteria.get_start_date_column()
-        )
+        table = apply_age_filter(table, criteria.age, ctx, criteria.get_start_date_column())
     table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
 
     window = ibis.window(order_by=[table.person_id, table.death_date])

@@ -9,7 +9,10 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Any, Callable, Generic, Protocol, TypeVar
+from typing import TYPE_CHECKING, Callable, Generic, Protocol, TypeVar
+
+if TYPE_CHECKING:
+    from .executive_operations import ExecutiveOperations
 
 T = TypeVar("T")
 V = TypeVar("V")

@@ -1,4 +1,3 @@
-
 """
 Chat module for interacting with LLMs to generate cohort definitions.
 """
@@ -8,7 +7,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from circe.prompt_builder import CohortPromptBuilder, ConceptSet
 
@@ -60,7 +59,7 @@ def start_chat(
         model = os.getenv("LLM_MODEL", "gpt-4o")
         # Handle optional temperature if needed, but litellm handles it or we pass it
 
-    print(f"🚀 Starting Circe Chat")
+    print("🚀 Starting Circe Chat")
     print(f"   Model: {model}")
     print(f"   Prompt: {prompt_type}")
     print("-" * 50)
@@ -69,7 +68,7 @@ def start_chat(
     concept_sets_data = []
     if concept_sets_file:
         try:
-            with open(concept_sets_file, "r") as f:
+            with open(concept_sets_file) as f:
                 raw_data = json.load(f)
                 # Expecting list of dicts with id, name
                 for item in raw_data:
@@ -80,9 +79,7 @@ def start_chat(
                             description=item.get("description"),
                         )
                     )
-            print(
-                f"   Loaded {len(concept_sets_data)} concept sets from {concept_sets_file}"
-            )
+            print(f"   Loaded {len(concept_sets_data)} concept sets from {concept_sets_file}")
         except Exception as e:
             print(f"Error loading concept sets: {e}", file=sys.stderr)
             return 1
@@ -125,7 +122,7 @@ def start_chat(
         try:
             if first_turn and initial_input:
                 user_input = initial_input
-                print(f"\n> [Processing input from file...]")
+                print("\n> [Processing input from file...]")
             else:
                 user_input = input("\n> ")
         except (EOFError, KeyboardInterrupt):
@@ -145,15 +142,11 @@ def start_chat(
         # Construct user message
         if len(messages) == 1:
             # First user message - format nicely
-            formatted_content = (
-                f"\n---\n## User Task\n**Clinical Description:**\n{user_input}\n"
-            )
+            formatted_content = f"\n---\n## User Task\n**Clinical Description:**\n{user_input}\n"
             if concept_sets_data:
                 formatted_content += builder.format_concept_sets(concept_sets_data)
             else:
-                formatted_content += (
-                    "\nNo pre-defined concept sets provided. Please infer them."
-                )
+                formatted_content += "\nNo pre-defined concept sets provided. Please infer them."
 
             messages.append({"role": "user", "content": formatted_content})
         else:
@@ -223,7 +216,7 @@ def _process_response_content(content: str, output_base: Optional[str]):
         cohort_obj = local_scope.get("cohort")
         if not cohort_obj:
             # Try to find any variable that is a tuple (builder) or CohortExpression
-            for k, v in local_scope.items():
+            for _k, v in local_scope.items():
                 if hasattr(v, "to_json"):  # CohortExpression has to_json? Check API.
                     cohort_obj = v
                     break
@@ -260,6 +253,4 @@ def _process_response_content(content: str, output_base: Optional[str]):
 
     except Exception as e:
         print(f"   Error executing generated code: {e}")
-        print(
-            "   (Ensure the generated code is valid and all dependencies are installed)"
-        )
+        print("   (Ensure the generated code is valid and all dependencies are installed)")

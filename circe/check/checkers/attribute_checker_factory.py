@@ -42,9 +42,7 @@ class AttributeCheckerFactory(BaseCheckerFactory):
         super().__init__(reporter, group_name)
 
     @staticmethod
-    def get_factory(
-        reporter: WarningReporter, group_name: str
-    ) -> "AttributeCheckerFactory":
+    def get_factory(reporter: WarningReporter, group_name: str) -> "AttributeCheckerFactory":
         """Get a factory instance.
 
         Args:
@@ -68,7 +66,8 @@ class AttributeCheckerFactory(BaseCheckerFactory):
         return lambda c: None  # Non-demographic criteria don't need attribute checks
 
     def _get_check_demographic(
-        self, criteria: "DemographicCriteria"
+        self,
+        criteria: "DemographicCriteria",
     ) -> Callable[["DemographicCriteria"], None]:
         """Get a checker function for demographic criteria.
 
@@ -86,11 +85,7 @@ class AttributeCheckerFactory(BaseCheckerFactory):
                 c.gender,
                 c.race,
                 c.ethnicity,
-                (
-                    c.occurrence_start_date
-                    if hasattr(c, "occurrence_start_date")
-                    else None
-                ),
+                (c.occurrence_start_date if hasattr(c, "occurrence_start_date") else None),
                 c.occurrence_end_date if hasattr(c, "occurrence_end_date") else None,
             )
 

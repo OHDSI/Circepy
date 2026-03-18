@@ -26,10 +26,10 @@ def get_cohort_builder_skill() -> str:
 def get_evaluation_builder_skill() -> str:
     """
     Return the EvaluationBuilder skill documentation for AI agents.
-    
+
     This returns a markdown document describing how to use the
     EvaluationBuilder context manager API to build phenotype evaluation rubrics.
-    
+
     Returns:
         str: Markdown documentation for the EvaluationBuilder API
     """
@@ -40,13 +40,13 @@ def get_evaluation_builder_skill() -> str:
 def get_skill(name: str = "cohort_builder") -> Optional[str]:
     """
     Return skill documentation by name.
-    
+
     Args:
         name: Name of the skill (default: "cohort_builder")
-        
+
     Returns:
         str: Skill documentation, or None if not found
-        
+
     Available skills:
         - cohort_builder: Build OHDSI cohort definitions using CohortBuilder
         - evaluation_builder: Build OHDSI evaluation rubrics using EvaluationBuilder
@@ -55,7 +55,7 @@ def get_skill(name: str = "cohort_builder") -> Optional[str]:
         "cohort_builder": get_cohort_builder_skill,
         "evaluation_builder": get_evaluation_builder_skill,
     }
-    
+
     func = skill_map.get(name)
     if func:
         return func()
@@ -65,7 +65,7 @@ def get_skill(name: str = "cohort_builder") -> Optional[str]:
 def list_skills() -> list:
     """
     List all available skills.
-    
+
     Returns:
         list: Names of available skills
     """

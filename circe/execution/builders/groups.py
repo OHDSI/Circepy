@@ -31,18 +31,14 @@ from .common import (
 from .registry import build_events
 
 
-def apply_criteria_group(
-    events: ir.Table, group: CriteriaGroup | None, ctx: BuildContext
-) -> ir.Table:
+def apply_criteria_group(events: ir.Table, group: CriteriaGroup | None, ctx: BuildContext) -> ir.Table:
     mask = _group_mask(events, group, ctx)
     if mask is None:
         return events
     return events.filter(mask)
 
 
-def _correlated_mask(
-    events: ir.Table, correlated: CorrelatedCriteria, ctx: BuildContext
-) -> ir.Value:
+def _correlated_mask(events: ir.Table, correlated: CorrelatedCriteria, ctx: BuildContext) -> ir.Value:
     criteria_model = correlated.criteria
     if criteria_model and not isinstance(criteria_model, ir.Expr):
         criteria_model = parse_single_criteria(criteria_model)
@@ -82,9 +78,7 @@ def _correlated_mask(
         base_events.end_date.name("_corr_end_date"),
     ]
     if "visit_occurrence_id" in base_events.columns:
-        select_fields.append(
-            base_events.visit_occurrence_id.name("_corr_visit_occurrence_id")
-        )
+        select_fields.append(base_events.visit_occurrence_id.name("_corr_visit_occurrence_id"))
     if count_column_name and count_column_name in base_events.columns:
         select_fields.append(base_events[count_column_name])
 
@@ -92,23 +86,12 @@ def _correlated_mask(
     join_condition = index_events.person_id == criteria_events.person_id
     if not correlated.ignore_observation_period:
         if "observation_period_start_date" in index_events.columns:
-            join_condition &= (
-                criteria_events._corr_start_date
-                >= index_events.observation_period_start_date
-            )
+            join_condition &= criteria_events._corr_start_date >= index_events.observation_period_start_date
         if "observation_period_end_date" in index_events.columns:
-            join_condition &= (
-                criteria_events._corr_start_date
-                <= index_events.observation_period_end_date
-            )
+            join_condition &= criteria_events._corr_start_date <= index_events.observation_period_end_date
             if requires_corr_end_alignment:
-                join_condition &= (
-                    criteria_events._corr_end_date
-                    <= index_events.observation_period_end_date
-                )
-    window_condition = _build_window_condition(
-        index_events, criteria_events, correlated
-    )
+                join_condition &= criteria_events._corr_end_date <= index_events.observation_period_end_date
+    window_condition = _build_window_condition(index_events, criteria_events, correlated)
     if window_condition is not None:
         join_condition &= window_condition
 
@@ -121,19 +104,15 @@ def _correlated_mask(
     if correlated.restrict_visit is None and isinstance(criteria_model, VisitDetail):
         require_same_visit = True
 
-    if require_same_visit:
-        if (
-            "visit_occurrence_id" in index_events.columns
-            and "_corr_visit_occurrence_id" in criteria_events.columns
-        ):
-            join_condition &= (
-                index_events.visit_occurrence_id.notnull()
-                & criteria_events._corr_visit_occurrence_id.notnull()
-                & (
-                    index_events.visit_occurrence_id
-                    == criteria_events._corr_visit_occurrence_id
-                )
-            )
+    if require_same_visit and (
+        "visit_occurrence_id" in index_events.columns
+        and "_corr_visit_occurrence_id" in criteria_events.columns
+    ):
+        join_condition &= (
+            index_events.visit_occurrence_id.notnull()
+            & criteria_events._corr_visit_occurrence_id.notnull()
+            & (index_events.visit_occurrence_id == criteria_events._corr_visit_occurrence_id)
+        )
 
     joined = index_events.join(criteria_events, join_condition, how="left")
 
@@ -151,19 +130,13 @@ def _correlated_mask(
     else:
         aggregator = joined._corr_match_value.count()
 
-    aggregated = joined.group_by(joined.person_id, joined.event_id).aggregate(
-        match_count=aggregator
-    )
+    aggregated = joined.group_by(joined.person_id, joined.event_id).aggregate(match_count=aggregator)
     predicate = _occurrence_predicate(aggregated.match_count, correlated.occurrence)
-    matching_ids = (
-        aggregated.filter(predicate).select("person_id", "event_id").distinct()
-    )
+    matching_ids = aggregated.filter(predicate).select("person_id", "event_id").distinct()
     return _event_membership_mask(events, matching_ids)
 
 
-def _group_mask(
-    events: ir.Table, group: CriteriaGroup | None, ctx: BuildContext
-) -> ir.Value | None:
+def _group_mask(events: ir.Table, group: CriteriaGroup | None, ctx: BuildContext) -> ir.Value | None:
     if not group or group.is_empty():
         return None
 
@@ -211,13 +184,9 @@ def _combine_any(masks: list[ir.Value]) -> ir.Value:
     return combined
 
 
-def _combine_threshold(
-    masks: list[ir.Value], threshold: int, *, at_least: bool
-) -> ir.Value:
+def _combine_threshold(masks: list[ir.Value], threshold: int, *, at_least: bool) -> ir.Value:
     def _to_int(mask: ir.Value) -> ir.Value:
-        return ibis.ifelse(
-            mask, ibis.literal(1, type="int64"), ibis.literal(0, type="int64")
-        )
+        return ibis.ifelse(mask, ibis.literal(1, type="int64"), ibis.literal(0, type="int64"))
 
     total = _to_int(masks[0])
     for mask in masks[1:]:
@@ -226,7 +195,9 @@ def _combine_threshold(
 
 
 def _demographic_mask(
-    events: ir.Table, demographic: DemoGraphicCriteria, ctx: BuildContext
+    events: ir.Table,
+    demographic: DemoGraphicCriteria,
+    ctx: BuildContext,
 ) -> ir.Value | None:
     if demographic is None:
         return None
@@ -237,29 +208,19 @@ def _demographic_mask(
         filtered = apply_age_filter(filtered, demographic.age, ctx, "start_date")
         applied = True
     if demographic.gender or demographic.gender_cs:
-        filtered = apply_gender_filter(
-            filtered, demographic.gender, demographic.gender_cs, ctx
-        )
+        filtered = apply_gender_filter(filtered, demographic.gender, demographic.gender_cs, ctx)
         applied = True
     if demographic.race or demographic.race_cs:
-        filtered = apply_race_filter(
-            filtered, demographic.race, demographic.race_cs, ctx
-        )
+        filtered = apply_race_filter(filtered, demographic.race, demographic.race_cs, ctx)
         applied = True
     if demographic.ethnicity or demographic.ethnicity_cs:
-        filtered = apply_ethnicity_filter(
-            filtered, demographic.ethnicity, demographic.ethnicity_cs, ctx
-        )
+        filtered = apply_ethnicity_filter(filtered, demographic.ethnicity, demographic.ethnicity_cs, ctx)
         applied = True
     if demographic.occurrence_start_date:
-        filtered = apply_date_range(
-            filtered, "start_date", demographic.occurrence_start_date
-        )
+        filtered = apply_date_range(filtered, "start_date", demographic.occurrence_start_date)
         applied = True
     if demographic.occurrence_end_date:
-        filtered = apply_date_range(
-            filtered, "end_date", demographic.occurrence_end_date
-        )
+        filtered = apply_date_range(filtered, "end_date", demographic.occurrence_end_date)
         applied = True
 
     if not applied:
@@ -275,11 +236,7 @@ def _event_membership_mask(events: ir.Table, ids: ir.Table) -> ir.Value:
 
 
 def _event_key_expr(table: ir.Table) -> ir.Value:
-    return (
-        table.person_id.cast("string")
-        + ibis.literal(":")
-        + table.event_id.cast("string")
-    )
+    return table.person_id.cast("string") + ibis.literal(":") + table.event_id.cast("string")
 
 
 def _occurrence_predicate(count_expr: ir.Value, occurrence) -> ir.Value:
@@ -300,7 +257,9 @@ def _occurrence_predicate(count_expr: ir.Value, occurrence) -> ir.Value:
 
 
 def _build_window_condition(
-    index_events: ir.Table, correlated_events: ir.Table, correlated: CorrelatedCriteria
+    index_events: ir.Table,
+    correlated_events: ir.Table,
+    correlated: CorrelatedCriteria,
 ) -> ir.Value:
     cond = ibis.literal(True)
 
@@ -396,9 +355,7 @@ _COUNT_COLUMN_MAPPING: dict[CriteriaColumn, str] = {
 
 _COUNT_COLUMN_SOURCES: dict[CriteriaColumn, Callable[[Criteria], str]] = {
     CriteriaColumn.DOMAIN_CONCEPT: lambda criteria: criteria.get_concept_id_column(),
-    CriteriaColumn.DOMAIN_SOURCE_CONCEPT: lambda criteria: _source_concept_column(
-        criteria
-    ),
+    CriteriaColumn.DOMAIN_SOURCE_CONCEPT: lambda criteria: _source_concept_column(criteria),
 }
 
 
@@ -465,9 +422,7 @@ def _attach_count_columns(
         domain_table[primary_key].name("_corr_join_key"),
         domain_table[source_column].name(count_column_name),
     )
-    augmented = events.join(
-        lookup, events.event_id == lookup._corr_join_key, how="left"
-    )
+    augmented = events.join(lookup, events.event_id == lookup._corr_join_key, how="left")
     base_columns = events.columns
     projection = [augmented[name] for name in base_columns if name in augmented.columns]
     projection.append(augmented[count_column_name])

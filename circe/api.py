@@ -7,20 +7,17 @@ This module provides a simple R CirceR-style API for working with cohort definit
 - cohort_print_friendly(): Generate Markdown from cohort expression
 """
 
-from typing import Optional, List, Dict, Any, Literal
+from typing import Any, Optional
+
 from .cohortdefinition import (
+    BuildExpressionQueryOptions,
     CohortExpression,
     CohortExpressionQueryBuilder,
-    BuildExpressionQueryOptions,
     MarkdownRender,
 )
+from .prompt_builder import ModelType
+from .prompt_builder import create_prompt as _create_prompt_impl
 from .vocabulary.concept import ConceptSet
-from .prompt_builder import (
-    CohortPromptBuilder,
-    ConceptSet as PromptConceptSet,
-    create_prompt as _create_prompt_impl,
-    ModelType
-)
 
 
 def cohort_expression_from_json(json_str: str) -> CohortExpression:
@@ -78,7 +75,8 @@ def cohort_expression_from_json(json_str: str) -> CohortExpression:
 
 
 def build_cohort_query(
-    expression: CohortExpression, options: Optional[BuildExpressionQueryOptions] = None
+    expression: CohortExpression,
+    options: Optional[BuildExpressionQueryOptions] = None,
 ) -> str:
     """Generate SQL query from a cohort expression.
 
@@ -108,7 +106,7 @@ def build_cohort_query(
 
 def cohort_print_friendly(
     expression: CohortExpression,
-    concept_sets: Optional[List[ConceptSet]] = None,
+    concept_sets: Optional[list[ConceptSet]] = None,
     title: Optional[str] = None,
     include_concept_sets: bool = False,
 ) -> str:
@@ -133,17 +131,15 @@ def cohort_print_friendly(
     if concept_sets is None:
         concept_sets = expression.concept_sets or []
 
-    renderer = MarkdownRender(
-        concept_sets=concept_sets, include_concept_sets=include_concept_sets
-    )
+    renderer = MarkdownRender(concept_sets=concept_sets, include_concept_sets=include_concept_sets)
     return renderer.render_cohort_expression(expression, title=title)
 
 
 def create_cohort_prompt(
     clinical_description: str,
-    concept_sets: List[Dict[str, Any]],
+    concept_sets: list[dict[str, Any]],
     model_type: ModelType = "standard",
-    additional_notes: Optional[str] = None
+    additional_notes: Optional[str] = None,
 ) -> str:
     """
     Generate a complete prompt for LLM-based cohort generation.
@@ -182,6 +178,5 @@ def create_cohort_prompt(
         clinical_description=clinical_description,
         concept_sets=concept_sets,
         model_type=model_type,
-        additional_notes=additional_notes
+        additional_notes=additional_notes,
     )
-

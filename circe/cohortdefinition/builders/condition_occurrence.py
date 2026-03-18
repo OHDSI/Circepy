@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Any, List, Optional, Set
+from typing import Optional
 
 from ..criteria import ConditionOccurrence
 from .base import CriteriaSqlBuilder
@@ -53,13 +53,11 @@ FROM
 -- End Condition Occurrence Criteria
 """
 
-    def get_default_columns(self) -> Set[CriteriaColumn]:
+    def get_default_columns(self) -> set[CriteriaColumn]:
         """Get default columns for condition occurrence criteria."""
         return self.DEFAULT_COLUMNS
 
-    def get_table_column_for_criteria_column(
-        self, criteria_column: CriteriaColumn
-    ) -> str:
+    def get_table_column_for_criteria_column(self, criteria_column: CriteriaColumn) -> str:
         """Get table column for criteria column."""
         column_mapping = {
             CriteriaColumn.DOMAIN_CONCEPT: "C.condition_concept_id",
@@ -86,7 +84,10 @@ FROM
         )
 
     def embed_ordinal_expression(
-        self, query: str, criteria: ConditionOccurrence, where_clauses: List[str]
+        self,
+        query: str,
+        criteria: ConditionOccurrence,
+        where_clauses: list[str],
     ) -> str:
         """Embed ordinal expression in query."""
         # first
@@ -101,8 +102,10 @@ FROM
         return query
 
     def resolve_select_clauses(
-        self, criteria: ConditionOccurrence, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+        self,
+        criteria: ConditionOccurrence,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve select clauses for condition occurrence criteria."""
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
 
@@ -118,8 +121,7 @@ FROM
 
         # providerSpecialty
         if (
-            criteria.provider_specialty is not None
-            and len(criteria.provider_specialty) > 0
+            criteria.provider_specialty is not None and len(criteria.provider_specialty) > 0
         ) or criteria.provider_specialty_cs is not None:
             select_cols.append("co.provider_id")
 
@@ -154,8 +156,10 @@ FROM
         return select_cols
 
     def resolve_join_clauses(
-        self, criteria: ConditionOccurrence, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+        self,
+        criteria: ConditionOccurrence,
+        options: Optional[BuilderOptions] = None,
+    ) -> list[str]:
         """Resolve join clauses for condition occurrence criteria."""
         join_clauses = []
 
@@ -165,9 +169,7 @@ FROM
             or (criteria.gender is not None and len(criteria.gender) > 0)
             or criteria.gender_cs is not None
         ):
-            join_clauses.append(
-                "JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id"
-            )
+            join_clauses.append("JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id")
 
         # join to VISIT_OCCURRENCE
         if (
@@ -179,8 +181,7 @@ FROM
 
         # join to PROVIDER
         if (
-            criteria.provider_specialty is not None
-            and len(criteria.provider_specialty) > 0
+            criteria.provider_specialty is not None and len(criteria.provider_specialty) > 0
         ) or criteria.provider_specialty_cs is not None:
             join_clauses.append(
                 "LEFT JOIN @cdm_database_schema.PROVIDER PR on C.provider_id = PR.provider_id"
@@ -190,31 +191,25 @@ FROM
 
     def resolve_where_clauses(
         self, criteria: ConditionOccurrence, options: Optional[BuilderOptions] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """Resolve where clauses for condition occurrence criteria."""
         where_clauses = []
 
         # occurrenceStartDate
         if criteria.occurrence_start_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(
-                "C.start_date", criteria.occurrence_start_date
-            )
+            date_clause = BuilderUtils.build_date_range_clause("C.start_date", criteria.occurrence_start_date)
             if date_clause:
                 where_clauses.append(date_clause)
 
         # occurrenceEndDate
         if criteria.occurrence_end_date is not None:
-            date_clause = BuilderUtils.build_date_range_clause(
-                "C.end_date", criteria.occurrence_end_date
-            )
+            date_clause = BuilderUtils.build_date_range_clause("C.end_date", criteria.occurrence_end_date)
             if date_clause:
                 where_clauses.append(date_clause)
 
         # conditionType
         if criteria.condition_type is not None and len(criteria.condition_type) > 0:
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.condition_type
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.condition_type)
             if concept_ids:
                 exclude_clause = "not" if criteria.condition_type_exclude else ""
                 where_clauses.append(
@@ -233,9 +228,7 @@ FROM
 
         # Stop Reason
         if criteria.stop_reason is not None:
-            text_clause = BuilderUtils.build_text_filter_clause(
-                criteria.stop_reason, "C.stop_reason"
-            )
+            text_clause = BuilderUtils.build_text_filter_clause(criteria.stop_reason, "C.stop_reason")
             if text_clause:
                 where_clauses.append(text_clause)
 
@@ -251,9 +244,7 @@ FROM
         if criteria.gender is not None and len(criteria.gender) > 0:
             concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.gender)
             if concept_ids:
-                where_clauses.append(
-                    f"P.gender_concept_id in ({','.join(map(str, concept_ids))})"
-                )
+                where_clauses.append(f"P.gender_concept_id in ({','.join(map(str, concept_ids))})")
 
         # genderCS
         if criteria.gender_cs is not None:
@@ -266,17 +257,10 @@ FROM
                 where_clauses.append(codeset_clause)
 
         # providerSpecialty
-        if (
-            criteria.provider_specialty is not None
-            and len(criteria.provider_specialty) > 0
-        ):
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.provider_specialty
-            )
+        if criteria.provider_specialty is not None and len(criteria.provider_specialty) > 0:
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.provider_specialty)
             if concept_ids:
-                where_clauses.append(
-                    f"PR.specialty_concept_id in ({','.join(map(str, concept_ids))})"
-                )
+                where_clauses.append(f"PR.specialty_concept_id in ({','.join(map(str, concept_ids))})")
 
         # providerSpecialtyCS
         if criteria.provider_specialty_cs is not None:
@@ -290,13 +274,9 @@ FROM
 
         # visitType
         if criteria.visit_type is not None and len(criteria.visit_type) > 0:
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.visit_type
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.visit_type)
             if concept_ids:
-                where_clauses.append(
-                    f"V.visit_concept_id in ({','.join(map(str, concept_ids))})"
-                )
+                where_clauses.append(f"V.visit_concept_id in ({','.join(map(str, concept_ids))})")
 
         # visitTypeCS
         if criteria.visit_type_cs is not None:
@@ -310,13 +290,9 @@ FROM
 
         # conditionStatus
         if criteria.condition_status is not None and len(criteria.condition_status) > 0:
-            concept_ids = BuilderUtils.get_concept_ids_from_concepts(
-                criteria.condition_status
-            )
+            concept_ids = BuilderUtils.get_concept_ids_from_concepts(criteria.condition_status)
             if concept_ids:
-                where_clauses.append(
-                    f"C.condition_status_concept_id in ({','.join(map(str, concept_ids))})"
-                )
+                where_clauses.append(f"C.condition_status_concept_id in ({','.join(map(str, concept_ids))})")
 
         # conditionStatusCS
         if criteria.condition_status_cs is not None:
