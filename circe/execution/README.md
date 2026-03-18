@@ -63,3 +63,8 @@ The resolver cache is local to an execution context run.
 
 The execution test structure and expected test layers are documented in
 `circe/execution/TESTING.md`.
+
+## Architecture
+
+The subsystem design, layer boundaries, and migration notes from the legacy
+execution prototype are documented in `circe/execution/ARCHITECTURE.md`.
