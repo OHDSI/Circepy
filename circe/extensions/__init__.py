@@ -159,13 +159,22 @@ def _wire_builder_methods(spec: DomainSpec) -> None:
 
                     return method
         else:
+            if needs_domain:
 
-            def _make_entry(qc, dom):
-                def method(self):
-                    query = qc(dom, is_entry=True)
-                    return CohortWithEntry(self, query)
+                def _make_entry(qc, dom):
+                    def method(self):
+                        query = qc(dom, is_entry=True)
+                        return CohortWithEntry(self, query)
 
-                return method
+                    return method
+            else:
+
+                def _make_entry(qc, dom):
+                    def method(self):
+                        query = qc(is_entry=True)
+                        return CohortWithEntry(self, query)
+
+                    return method
 
         setattr(CohortBuilder, f"with_{name}", _make_entry(query_cls, domain))
 
@@ -191,14 +200,24 @@ def _wire_builder_methods(spec: DomainSpec) -> None:
 
                     return method
         else:
+            if needs_domain:
 
-            def _make_or_entry(qc, dom):
-                def method(self):
-                    query = qc(dom, is_entry=True, parent=self)
-                    self._entry_queries.append(query)
-                    return self
+                def _make_or_entry(qc, dom):
+                    def method(self):
+                        query = qc(dom, is_entry=True, parent=self)
+                        self._entry_queries.append(query)
+                        return self
 
-                return method
+                    return method
+            else:
+
+                def _make_or_entry(qc, dom):
+                    def method(self):
+                        query = qc(is_entry=True, parent=self)
+                        self._entry_queries.append(query)
+                        return self
+
+                    return method
 
         setattr(CohortWithEntry, f"or_with_{name}", _make_or_entry(query_cls, domain))
 
@@ -225,6 +244,13 @@ def _wire_builder_methods(spec: DomainSpec) -> None:
 
             setattr(CohortWithEntry, method_name, _make_delegate(action, name))
 
+    # Time-window kwargs that trigger auto-finalization
+    _TIME_WINDOW_PARAMS = frozenset([
+        "anytime_before", "anytime_after", "within_days_before",
+        "within_days_after", "within_days", "same_day",
+        "during_event", "before_event_end",
+    ])
+
     # --- CohortWithCriteria.require_{name} / exclude_{name} / censor_on_{name} ---
     for action, is_exclusion, is_censor in [
         ("require", False, False),
@@ -237,52 +263,108 @@ def _wire_builder_methods(spec: DomainSpec) -> None:
                 if requires_concept:
                     if needs_domain:
 
-                        def _make_censor(qc, dom):
-                            def method(self, concept_set_id: int):
-                                return qc(dom, concept_set_id, parent=self, is_censor=True)
+                        def _make_censor(qc, dom, twp):
+                            def method(self, concept_set_id: int, **kwargs):
+                                query = qc(dom, concept_set_id, parent=self, is_censor=True)
+                                if kwargs:
+                                    query.apply_params(**kwargs)
+                                    if any(p in kwargs for p in twp):
+                                        return query._finalize()
+                                return query
 
                             return method
                     else:
 
-                        def _make_censor(qc, dom):
-                            def method(self, concept_set_id: int):
-                                return qc(concept_set_id, parent=self, is_censor=True)
+                        def _make_censor(qc, dom, twp):
+                            def method(self, concept_set_id: int, **kwargs):
+                                query = qc(concept_set_id, parent=self, is_censor=True)
+                                if kwargs:
+                                    query.apply_params(**kwargs)
+                                    if any(p in kwargs for p in twp):
+                                        return query._finalize()
+                                return query
 
                             return method
                 else:
+                    if needs_domain:
 
-                    def _make_censor(qc, dom):
-                        def method(self, concept_set_id: Optional[int] = None):
-                            return qc(dom, concept_set_id, parent=self, is_censor=True)
+                        def _make_censor(qc, dom, twp):
+                            def method(self, concept_set_id: Optional[int] = None, **kwargs):
+                                query = qc(dom, concept_set_id, parent=self, is_censor=True)
+                                if kwargs:
+                                    query.apply_params(**kwargs)
+                                    if any(p in kwargs for p in twp):
+                                        return query._finalize()
+                                return query
 
-                        return method
+                            return method
+                    else:
 
-                setattr(CohortWithCriteria, method_name, _make_censor(query_cls, domain))
+                        def _make_censor(qc, dom, twp):
+                            def method(self, concept_set_id: Optional[int] = None, **kwargs):
+                                query = qc(concept_set_id, parent=self, is_censor=True)
+                                if kwargs:
+                                    query.apply_params(**kwargs)
+                                    if any(p in kwargs for p in twp):
+                                        return query._finalize()
+                                return query
+
+                            return method
+
+                setattr(CohortWithCriteria, method_name, _make_censor(query_cls, domain, _TIME_WINDOW_PARAMS))
             else:
                 if requires_concept:
                     if needs_domain:
 
-                        def _make_criteria(qc, dom, excl):
-                            def method(self, concept_set_id: int):
-                                return qc(dom, concept_set_id, parent=self, is_exclusion=excl)
+                        def _make_criteria(qc, dom, excl, twp):
+                            def method(self, concept_set_id: int, **kwargs):
+                                query = qc(dom, concept_set_id, parent=self, is_exclusion=excl)
+                                if kwargs:
+                                    query.apply_params(**kwargs)
+                                    if any(p in kwargs for p in twp):
+                                        return query._finalize()
+                                return query
 
                             return method
                     else:
 
-                        def _make_criteria(qc, dom, excl):
-                            def method(self, concept_set_id: int):
-                                return qc(concept_set_id, parent=self, is_exclusion=excl)
+                        def _make_criteria(qc, dom, excl, twp):
+                            def method(self, concept_set_id: int, **kwargs):
+                                query = qc(concept_set_id, parent=self, is_exclusion=excl)
+                                if kwargs:
+                                    query.apply_params(**kwargs)
+                                    if any(p in kwargs for p in twp):
+                                        return query._finalize()
+                                return query
 
                             return method
                 else:
+                    if needs_domain:
 
-                    def _make_criteria(qc, dom, excl):
-                        def method(self):
-                            return qc(dom, parent=self, is_exclusion=excl)
+                        def _make_criteria(qc, dom, excl, twp):
+                            def method(self, **kwargs):
+                                query = qc(dom, parent=self, is_exclusion=excl)
+                                if kwargs:
+                                    query.apply_params(**kwargs)
+                                    if any(p in kwargs for p in twp):
+                                        return query._finalize()
+                                return query
 
-                        return method
+                            return method
+                    else:
 
-                setattr(CohortWithCriteria, method_name, _make_criteria(query_cls, domain, is_exclusion))
+                        def _make_criteria(qc, dom, excl, twp):
+                            def method(self, **kwargs):
+                                query = qc(parent=self, is_exclusion=excl)
+                                if kwargs:
+                                    query.apply_params(**kwargs)
+                                    if any(p in kwargs for p in twp):
+                                        return query._finalize()
+                                return query
+
+                            return method
+
+                setattr(CohortWithCriteria, method_name, _make_criteria(query_cls, domain, is_exclusion, _TIME_WINDOW_PARAMS))
 
     # --- CriteriaGroupBuilder.require_{name} / exclude_{name} ---
     for action, is_exclusion in [("require", False), ("exclude", True)]:
@@ -291,27 +373,55 @@ def _wire_builder_methods(spec: DomainSpec) -> None:
             if requires_concept:
                 if needs_domain:
 
-                    def _make_group(qc, dom, excl):
-                        def method(self, concept_set_id: int):
-                            return qc(dom, concept_set_id, parent=self, is_exclusion=excl)
+                    def _make_group(qc, dom, excl, twp):
+                        def method(self, concept_set_id: int, **kwargs):
+                            query = qc(dom, concept_set_id, parent=self, is_exclusion=excl)
+                            if kwargs:
+                                query.apply_params(**kwargs)
+                                if any(p in kwargs for p in twp):
+                                    return query._finalize()
+                            return query
 
                         return method
                 else:
 
-                    def _make_group(qc, dom, excl):
-                        def method(self, concept_set_id: int):
-                            return qc(concept_set_id, parent=self, is_exclusion=excl)
+                    def _make_group(qc, dom, excl, twp):
+                        def method(self, concept_set_id: int, **kwargs):
+                            query = qc(concept_set_id, parent=self, is_exclusion=excl)
+                            if kwargs:
+                                query.apply_params(**kwargs)
+                                if any(p in kwargs for p in twp):
+                                    return query._finalize()
+                            return query
 
                         return method
             else:
+                if needs_domain:
 
-                def _make_group(qc, dom, excl):
-                    def method(self):
-                        return qc(dom, parent=self, is_exclusion=excl)
+                    def _make_group(qc, dom, excl, twp):
+                        def method(self, **kwargs):
+                            query = qc(dom, parent=self, is_exclusion=excl)
+                            if kwargs:
+                                query.apply_params(**kwargs)
+                                if any(p in kwargs for p in twp):
+                                    return query._finalize()
+                            return query
 
-                    return method
+                        return method
+                else:
 
-            setattr(CriteriaGroupBuilder, method_name, _make_group(query_cls, domain, is_exclusion))
+                    def _make_group(qc, dom, excl, twp):
+                        def method(self, **kwargs):
+                            query = qc(parent=self, is_exclusion=excl)
+                            if kwargs:
+                                query.apply_params(**kwargs)
+                                if any(p in kwargs for p in twp):
+                                    return query._finalize()
+                            return query
+
+                        return method
+
+            setattr(CriteriaGroupBuilder, method_name, _make_group(query_cls, domain, is_exclusion, _TIME_WINDOW_PARAMS))
 
 
 # ---------------------------------------------------------------------------

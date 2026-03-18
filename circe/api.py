@@ -7,7 +7,7 @@ This module provides a simple R CirceR-style API for working with cohort definit
 - cohort_print_friendly(): Generate Markdown from cohort expression
 """
 
-from typing import Any, Optional
+from typing import Optional
 
 from .cohortdefinition import (
     BuildExpressionQueryOptions,
@@ -15,8 +15,6 @@ from .cohortdefinition import (
     CohortExpressionQueryBuilder,
     MarkdownRender,
 )
-from .prompt_builder import ModelType
-from .prompt_builder import create_prompt as _create_prompt_impl
 from .vocabulary.concept import ConceptSet
 
 
@@ -133,50 +131,3 @@ def cohort_print_friendly(
 
     renderer = MarkdownRender(concept_sets=concept_sets, include_concept_sets=include_concept_sets)
     return renderer.render_cohort_expression(expression, title=title)
-
-
-def create_cohort_prompt(
-    clinical_description: str,
-    concept_sets: list[dict[str, Any]],
-    model_type: ModelType = "standard",
-    additional_notes: Optional[str] = None,
-) -> str:
-    """
-    Generate a complete prompt for LLM-based cohort generation.
-
-    This combines the appropriate system prompt with your clinical description
-    and concept sets to create a ready-to-use prompt for AI models.
-
-    Args:
-        clinical_description: Clinical description of the cohort to generate
-        concept_sets: List of dicts with 'id', 'name', and optional 'description'
-        model_type: Target model type: 'reasoning', 'standard', or 'fast'
-        additional_notes: Optional additional instructions or constraints
-
-    Returns:
-        Complete prompt string ready to send to an LLM
-
-    Example:
-        >>> from circe.api import create_cohort_prompt
-        >>>
-        >>> concept_sets = [
-        ...     {"id": 1, "name": "Type 2 Diabetes", "description": "Standard T2DM codes"},
-        ...     {"id": 2, "name": "Metformin"},
-        ...     {"id": 3, "name": "Insulin"}
-        ... ]
-        >>>
-        >>> prompt = create_cohort_prompt(
-        ...     clinical_description="Adults aged 18-65 with new T2DM, prior Metformin, no Insulin",
-        ...     concept_sets=concept_sets,
-        ...     model_type="standard"
-        ... )
-        >>>
-        >>> # Send to your LLM
-        >>> # response = openai.chat.completions.create(..., messages=[{"role": "user", "content": prompt}])
-    """
-    return _create_prompt_impl(
-        clinical_description=clinical_description,
-        concept_sets=concept_sets,
-        model_type=model_type,
-        additional_notes=additional_notes,
-    )

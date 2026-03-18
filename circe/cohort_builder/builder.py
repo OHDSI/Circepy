@@ -1786,6 +1786,24 @@ class CohortWithEntry:
         """Delegate to CohortWithCriteria. See CohortWithCriteria.exclude_any_of for documentation."""
         return self._to_criteria().exclude_any_of(**kwargs)
 
+    def _add_query(self, config: QueryConfig, is_exclusion: bool = False) -> "CohortWithCriteria":
+        """Transition to CohortWithCriteria and add the query there."""
+        criteria = self._to_criteria()
+        return criteria._add_query(config, is_exclusion)
+
+    def _add_censor_query(self, config: QueryConfig) -> "CohortWithCriteria":
+        """Transition to CohortWithCriteria and add the censor query there."""
+        criteria = self._to_criteria()
+        return criteria._add_censor_query(config)
+
+    def _add_or_entry(self, query_cls: type, concept_set_id: int, **kwargs) -> "CohortWithEntry":
+        """Add an alternative entry event (OR logic)."""
+        query = query_cls(concept_set_id, is_entry=True, parent=self)
+        if kwargs:
+            query.apply_params(**kwargs)
+        self._entry_queries.append(query)
+        return self
+
     def _to_criteria(self) -> "CohortWithCriteria":
         """Transition to criteria state."""
         return CohortWithCriteria(
@@ -2224,10 +2242,15 @@ def _config_to_criteria(config: QueryConfig):
     if not criteria_class:
         raise ValueError(f"Unknown domain: {config.domain}")
 
-    kwargs = {
-        "codeset_id": config.concept_set_id,
-        "first": config.first_occurrence if config.first_occurrence else None,
-    }
+    kwargs = {}
+
+    # Only pass codeset_id if the criteria class has it
+    if hasattr(criteria_class, 'model_fields') and 'codeset_id' in criteria_class.model_fields:
+        kwargs["codeset_id"] = config.concept_set_id
+
+    # Only pass first if the criteria class has it and the value is truthy
+    if config.first_occurrence and hasattr(criteria_class, 'model_fields') and 'first' in criteria_class.model_fields:
+        kwargs["first"] = config.first_occurrence
 
     if config.age_min is not None or config.age_max is not None:
         op = (

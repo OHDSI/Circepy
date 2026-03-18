@@ -46,6 +46,17 @@ class EvaluationMarkdownRender:
         self._env.globals["format_date"] = self._format_date
         self._env.globals["format_number"] = self._format_number
 
+        # Add extension helper to look up template name for a criteria instance
+        # (required by shared cohort templates like criteria_types.j2)
+        from circe.extensions import get_registry
+
+        registry = get_registry()
+
+        def get_template_for_criteria(criteria):
+            return registry.get_template(criteria)
+
+        self._env.globals["get_template_for_criteria"] = get_template_for_criteria
+
     def render_rubric(
         self,
         rubric: Union[EvaluationRubric, str],
