@@ -169,7 +169,7 @@ if (!dir.exists(cohorts_dir)) {
 
 json_files <- list.files(cohorts_dir, pattern = "\\.json$", full.names = TRUE)
 if (length(json_files) == 0) stop("No cohort JSON files found in tests/cohorts/")
-sample_files <- head(json_files, 10)
+sample_files <- head(json_files, 100)
 
 # ==============================================================================
 # CREATE COHORT TABLE
