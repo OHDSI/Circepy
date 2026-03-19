@@ -42,7 +42,11 @@ def _collapse_era(intervals, era_pad: int):
         )
     )
 
-    group_index = marked._is_new_group.sum().over(cumulative_window)
+    grouping_window = ibis.cumulative_window(
+        group_by=marked.person_id,
+        order_by=[marked.start_date, marked._is_new_group.desc()],
+    )
+    group_index = marked._is_new_group.sum().over(grouping_window)
     grouped = marked.mutate(_group_idx=group_index)
 
     collapsed = grouped.group_by(grouped.person_id, grouped._group_idx).aggregate(
