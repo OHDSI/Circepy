@@ -56,13 +56,34 @@ def _concept_set(set_id: int, concept_id: int) -> ConceptSet:
 
 
 def test_error_message_for_custom_era_end_strategy():
-    expression = CohortExpression(
-        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence()]),
-        end_strategy=CustomEraStrategy(drug_codeset_id=1, gap_days=30, offset=0),
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1],
+                "condition_occurrence_id": [100],
+                "condition_concept_id": [111],
+                "condition_start_date": ["2020-01-01"],
+                "condition_end_date": ["2020-01-01"],
+                "visit_occurrence_id": [10],
+            }
+        ),
+        overwrite=True,
     )
 
-    with pytest.raises(UnsupportedFeatureError, match="custom_era end strategy"):
-        _ = build_cohort(expression, backend=object(), cdm_schema="main")
+    expression = CohortExpression(
+        concept_sets=[_concept_set(1, 111)],
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
+        end_strategy=CustomEraStrategy(drug_codeset_id=None, gap_days=30, offset=0),
+    )
+
+    with pytest.raises(UnsupportedFeatureError, match="custom_era requires drug_codeset_id"):
+        _ = build_cohort(expression, backend=conn, cdm_schema="main")
 
 
 def test_error_message_for_unsupported_criterion_type():

@@ -172,9 +172,10 @@ In other words:
 - write semantics now live in `write_cohort(...)`, not a mutable executor
   object
 
-## Current Explicit Limitation
+## End Strategy Support
 
-- `custom_era` end strategy is not implemented in this execution path
+- `custom_era` end strategy is implemented in the engine layer using native
+  Ibis operations over `drug_exposure`
 
 Unsupported semantics should fail explicitly with execution-layer errors rather
 than silently degrading behavior.

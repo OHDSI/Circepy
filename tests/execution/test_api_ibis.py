@@ -27,7 +27,6 @@ from circe.cohortdefinition import (
     VisitOccurrence,
 )
 from circe.cohortdefinition.core import CustomEraStrategy, NumericRange
-from circe.execution.errors import UnsupportedFeatureError
 from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 
@@ -1068,10 +1067,48 @@ def test_build_cohort_location_region_keeps_repeated_location_history_rows():
     assert sorted(result.start_date.astype(str).tolist()) == ["2020-01-01", "2020-02-01"]
 
 
-def test_build_cohort_rejects_unsupported_features():
-    expression = CohortExpression(
-        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence()]),
-        end_strategy=CustomEraStrategy(drug_codeset_id=1, gap_days=30, offset=0),
+def test_build_cohort_supports_custom_era_end_strategy():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1],
+                "condition_occurrence_id": [100],
+                "condition_concept_id": [111],
+                "condition_start_date": ["2020-01-10"],
+                "condition_end_date": ["2020-01-10"],
+                "visit_occurrence_id": [10],
+            }
+        ),
+        overwrite=True,
     )
-    with pytest.raises(UnsupportedFeatureError, match="custom_era"):
-        _ = build_cohort(expression, backend=object(), cdm_schema="main")
+    conn.create_table(
+        "drug_exposure",
+        obj=ibis.memtable(
+            {
+                "person_id": [1],
+                "drug_exposure_id": [200],
+                "drug_concept_id": [222],
+                "drug_source_concept_id": [222],
+                "drug_exposure_start_date": ["2020-01-01"],
+                "drug_exposure_end_date": ["2020-01-12"],
+                "days_supply": [0],
+                "visit_occurrence_id": [10],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(1, 111), _make_concept_set(2, 222)],
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
+        end_strategy=CustomEraStrategy(drug_codeset_id=2, gap_days=30, offset=0),
+    )
+
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
+    assert str(result.iloc[0]["end_date"])[:10] == "2020-01-12"

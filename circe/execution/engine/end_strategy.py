@@ -4,6 +4,7 @@ import ibis
 
 from ..errors import UnsupportedFeatureError
 from ..plan.schema import END_DATE, PERSON_ID, START_DATE
+from .custom_era import apply_custom_era_end_strategy
 
 
 def attach_observation_bounds(events, ctx):
@@ -64,7 +65,12 @@ def apply_end_strategy(events, strategy, ctx):
         return _replace_end_date(events, with_bounds, end_date_expr)
 
     if strategy.kind == "custom_era":
-        raise UnsupportedFeatureError("Ibis executor end-strategy error: custom_era is not supported.")
+        with_custom_eras = apply_custom_era_end_strategy(events, with_bounds, strategy, ctx)
+        end_date_expr = ibis.least(
+            ibis.coalesce(with_custom_eras._custom_era_end, with_custom_eras.op_end_date),
+            with_custom_eras.op_end_date,
+        )
+        return _replace_end_date(events, with_custom_eras, end_date_expr)
 
     # Fallback: preserve default semantics of op_end_date clipping.
     return _replace_end_date(events, with_bounds, with_bounds.op_end_date)

@@ -55,9 +55,10 @@ Resolution behavior:
 
 The resolver cache is local to an execution context run.
 
-## Current Limitation
+## End Strategy Support
 
-- `custom_era` end strategy remains unsupported in this executor path.
+- `custom_era` end strategy is implemented with native Ibis semantics over
+  `drug_exposure`, including drug codeset filtering and days-supply override.
 
 ## Testing
 
