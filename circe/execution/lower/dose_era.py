@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ..normalize.criteria import NormalizedCriterion
 from ..plan.events import EventPlan
-from .common import lower_standard_domain_plan
+from .common import append_duration_filter, build_standard_domain_plan, lower_common_steps
 
 
 def lower_dose_era(
@@ -10,4 +10,13 @@ def lower_dose_era(
     *,
     criterion_index: int,
 ) -> EventPlan:
-    return lower_standard_domain_plan(criterion, criterion_index=criterion_index)
+    steps = lower_common_steps(criterion)
+    post_standardize_steps = []
+    append_duration_filter(post_standardize_steps, value=criterion.raw_criteria.era_length)
+
+    return build_standard_domain_plan(
+        criterion,
+        criterion_index=criterion_index,
+        steps=steps,
+        post_standardize_steps=post_standardize_steps,
+    )

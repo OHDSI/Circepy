@@ -29,7 +29,8 @@ def _collapse_era(intervals, era_pad: int):
 
     ordering = [padded.start_date]
     ordered_window = ibis.window(group_by=padded.person_id, order_by=ordering)
-    with_cummax = padded.mutate(_cummax_padded_end=padded._padded_end_date.max().over(ordered_window))
+    cumulative_window = ibis.cumulative_window(group_by=padded.person_id, order_by=ordering)
+    with_cummax = padded.mutate(_cummax_padded_end=padded._padded_end_date.max().over(cumulative_window))
     with_prev = with_cummax.mutate(
         _prev_max_padded_end=with_cummax._cummax_padded_end.lag().over(ordered_window)
     )
@@ -41,7 +42,7 @@ def _collapse_era(intervals, era_pad: int):
         )
     )
 
-    group_index = marked._is_new_group.sum().over(ordered_window)
+    group_index = marked._is_new_group.sum().over(cumulative_window)
     grouped = marked.mutate(_group_idx=group_index)
 
     collapsed = grouped.group_by(grouped.person_id, grouped._group_idx).aggregate(
