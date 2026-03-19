@@ -14,7 +14,6 @@ from .cohort_expression_query_builder import (
     BuildExpressionQueryOptions,
     CohortExpressionQueryBuilder,
 )
-from .concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
 from .core import (  # Supporting Classes
     CollapseSettings,
     CollapseType,
@@ -118,7 +117,6 @@ __all__ = [
     # Query Builders
     "CohortExpressionQueryBuilder",
     "BuildExpressionQueryOptions",
-    "ConceptSetExpressionQueryBuilder",
     # Interfaces
     "IGetCriteriaSqlDispatcher",
     "IGetEndStrategySqlDispatcher",

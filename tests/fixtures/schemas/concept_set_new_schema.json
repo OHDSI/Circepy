@@ -1,0 +1,53 @@
+{
+  "id": 2,
+  "name": "Hypertension Concept Set",
+  "description": "Comprehensive concept set for essential hypertension including all subtypes",
+  "version": "1.0.0",
+  "createdBy": "researcher@ohdsi.org",
+  "createdDate": "2024-01-15T10:30:00Z",
+  "modifiedBy": "reviewer@ohdsi.org",
+  "modifiedDate": "2024-02-20T14:45:00Z",
+  "createdByTool": "circe-python 0.1.0",
+  "modifiedByTool": "ATLAS 2.14.0",
+  "tags": ["hypertension", "cardiovascular", "validated"],
+  "metadata": {
+    "reviewStatus": "approved",
+    "clinicalDomain": "cardiology"
+  },
+  "expression": {
+    "items": [
+      {
+        "concept": {
+          "conceptId": 320128,
+          "conceptName": "Essential hypertension",
+          "domainId": "Condition",
+          "vocabularyId": "SNOMED",
+          "conceptClassId": "Clinical Finding",
+          "standardConcept": "S",
+          "conceptCode": "59621000",
+          "validStartDate": "1970-01-01",
+          "validEndDate": "2099-12-31",
+          "invalidReason": null
+        },
+        "isExcluded": false,
+        "includeDescendants": true,
+        "includeMapped": true
+      },
+      {
+        "concept": {
+          "conceptId": 4028741,
+          "conceptName": "Secondary hypertension",
+          "domainId": "Condition",
+          "vocabularyId": "SNOMED",
+          "conceptClassId": "Clinical Finding",
+          "standardConcept": "S",
+          "conceptCode": "38341003"
+        },
+        "isExcluded": true,
+        "includeDescendants": true,
+        "includeMapped": false
+      }
+    ]
+  }
+}
+
