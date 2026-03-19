@@ -5,6 +5,14 @@ import ibis
 from ..errors import UnsupportedFeatureError
 from ..plan.schema import END_DATE, PERSON_ID, START_DATE
 
+# Import custom era functions (conditional to avoid breaking if sqlglot not installed)
+try:
+    from .custom_era import apply_custom_era, validate_custom_era_support
+
+    CUSTOM_ERA_AVAILABLE = True
+except ImportError:
+    CUSTOM_ERA_AVAILABLE = False
+
 
 def attach_observation_bounds(events, ctx):
     observation_period = ctx.table("observation_period").select(
@@ -64,7 +72,36 @@ def apply_end_strategy(events, strategy, ctx):
         return _replace_end_date(events, with_bounds, end_date_expr)
 
     if strategy.kind == "custom_era":
-        raise UnsupportedFeatureError("Ibis executor end-strategy error: custom_era is not supported.")
+        # Check if custom era implementation is available
+        if not CUSTOM_ERA_AVAILABLE:
+            raise UnsupportedFeatureError(
+                "Custom era requires sqlglot package. Install with: pip install 'ohdsi-circe-python-alpha[ibis]'"
+            )
+
+        # Validate backend supports custom era
+        if not validate_custom_era_support(ctx.backend):
+            raise UnsupportedFeatureError(
+                f"Custom era not supported for backend: {ctx.backend.name}. "
+                "Supported backends: duckdb, postgres, spark, databricks, snowflake"
+            )
+
+        # Extract custom era parameters from strategy
+        gap_days = int(strategy.payload.get("gap_days", 0))
+        offset = int(strategy.payload.get("offset", 0))
+
+        # Apply custom era using SQLGlot transpilation
+        # Note: Custom era replaces end_date with era end, so we use the events directly
+        eras = apply_custom_era(
+            backend=ctx.backend,
+            events=events,
+            gap_days=gap_days,
+            offset_start=0,  # Custom era typically doesn't offset start
+            offset_end=offset,
+            schema=ctx.results_schema,
+            debug=False,  # Set to True for SQL debugging
+        )
+
+        return eras
 
     # Fallback: preserve default semantics of op_end_date clipping.
     return _replace_end_date(events, with_bounds, with_bounds.op_end_date)

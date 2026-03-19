@@ -60,15 +60,19 @@ docs = [
 ]
 ibis = [
     "ibis-framework>=11.0.0; python_version >= '3.9'",
+    "sqlglot>=23.0.0",
 ]
 ibis-duckdb = [
     "ibis-framework[duckdb]>=11.0.0; python_version >= '3.9'",
+    "sqlglot>=23.0.0",
 ]
 ibis-postgres = [
     "ibis-framework[postgres]>=11.0.0; python_version >= '3.9'",
+    "sqlglot>=23.0.0",
 ]
 ibis-databricks = [
     "ibis-framework[databricks]>=11.0.0; python_version >= '3.9'",
+    "sqlglot>=23.0.0",
 ]
 waveform = [
     "pydantic>=2.0.0",
