@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+from datetime import date
+from types import SimpleNamespace
+
 import pytest
 
 from circe.api import build_cohort
 from circe.cohortdefinition import CohortExpression, ConditionOccurrence, PrimaryCriteria
 from circe.cohortdefinition.core import CollapseSettings, DateOffsetStrategy, Period
+from circe.execution.engine.end_strategy import apply_end_strategy
+from circe.execution.errors import UnsupportedFeatureError
+from circe.execution.normalize.end_strategy import NormalizedEndStrategy
 from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 
@@ -169,3 +175,46 @@ def test_collapse_settings_era_merges_intervals():
     assert len(result) == 1
     assert str(result.iloc[0]["start_date"])[:10] == "2020-01-01"
     assert str(result.iloc[0]["end_date"])[:10] == "2020-01-03"
+
+
+def test_apply_end_strategy_rejects_invalid_date_field_and_preserves_fallback_semantics():
+    ibis_mod = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis_mod.duckdb.connect()
+    conn.create_table(
+        "events",
+        obj=ibis_mod.memtable(
+            {
+                "person_id": [1],
+                "event_id": [100],
+                "start_date": [date(2020, 1, 1)],
+                "end_date": [date(2020, 1, 5)],
+                "visit_occurrence_id": [10],
+            }
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "observation_period",
+        obj=ibis_mod.memtable(
+            {
+                "person_id": [1],
+                "observation_period_start_date": [date(2019, 1, 1)],
+                "observation_period_end_date": [date(2020, 1, 10)],
+            }
+        ),
+        overwrite=True,
+    )
+    ctx = SimpleNamespace(table=lambda name: conn.table(name))
+    events = conn.table("events")
+
+    with pytest.raises(UnsupportedFeatureError, match="unsupported date_offset date field"):
+        apply_end_strategy(
+            events,
+            NormalizedEndStrategy(kind="date_offset", payload={"offset": 1, "date_field": "weird"}),
+            ctx,
+        ).execute()
+
+    fallback = apply_end_strategy(events, NormalizedEndStrategy(kind="unknown", payload={}), ctx).execute()
+    assert str(fallback.iloc[0]["end_date"])[:10] == "2020-01-10"
