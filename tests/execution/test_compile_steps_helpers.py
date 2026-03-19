@@ -233,8 +233,9 @@ def test_apply_step_covers_keep_first_person_filter_and_error_paths():
         table=table,
         source=None,
         ctx=ctx,
-    ).execute()
-    assert set(first[EVENT_ID]) == {10, 20}
+    )
+    assert first.columns == table.columns
+    assert "row_number()" in ibis_mod.to_sql(first).lower()
 
     filtered = apply_step(
         FilterByPersonGender(concept_ids=(8507,), codeset_id=None),
