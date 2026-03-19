@@ -153,40 +153,6 @@ py_backend <- ibis$databricks$connect(
 )
 
 # ==============================================================================
-# SPARK OPTIMIZATION CONFIGURATION
-# ==============================================================================
-cat("Configuring Spark optimizations for benchmark...\n")
-
-# Set Spark configuration for optimal parallelism and performance
-tryCatch({
-  py_backend$raw_sql("SET spark.sql.adaptive.enabled=true")$execute()
-  cat("  ✓ Enabled adaptive query execution\n")
-}, error = function(e) {
-  cat("  Note: Could not enable adaptive query execution\n")
-})
-
-tryCatch({
-  py_backend$raw_sql("SET spark.sql.adaptive.coalescePartitions.enabled=true")$execute()
-  cat("  ✓ Enabled adaptive partition coalescing\n")
-}, error = function(e) {
-  cat("  Note: Could not enable adaptive partition coalescing\n")
-})
-
-tryCatch({
-  py_backend$raw_sql("SET spark.sql.shuffle.partitions=200")$execute()
-  cat("  ��� Set shuffle partitions to 200\n")
-}, error = function(e) {
-  cat("  Note: Could not set shuffle partitions\n")
-})
-
-tryCatch({
-  py_backend$raw_sql("SET spark.sql.autoBroadcastJoinThreshold=10485760")$execute()
-  cat("  ✓ Set auto broadcast join threshold to 10MB\n")
-}, error = function(e) {
-  cat("  Note: Could not set broadcast join threshold\n")
-})
-
-# ==============================================================================
 # DATABRICKS BENCHMARK CONFIGURATION
 # ==============================================================================
 TARGET_DIALECT <- "spark"
@@ -312,7 +278,7 @@ for (file in sample_files) {
 }
 
 # Generate Markdown Report
-report_file <- "benchmark_report.md"
+report_file <- "benchmark_report_databricks.md"
 cat("Generating report...\n")
 
 java_medians <- c()
