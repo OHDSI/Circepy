@@ -273,3 +273,81 @@ def test_additional_demographic_criteria_groups_filter_primary_events():
 
     result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
     assert set(result.person_id) == {1}
+
+
+def test_nested_correlated_criteria_inside_group_are_applied():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis, persons=(1, 2))
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 1, 1, 2, 2],
+                "condition_occurrence_id": [100, 101, 102, 200, 201],
+                "condition_concept_id": [111, 222, 333, 111, 222],
+                "condition_start_date": [
+                    "2020-01-01",
+                    "2020-01-10",
+                    "2020-01-15",
+                    "2020-01-01",
+                    "2020-01-10",
+                ],
+                "condition_end_date": [
+                    "2020-01-01",
+                    "2020-01-10",
+                    "2020-01-15",
+                    "2020-01-01",
+                    "2020-01-10",
+                ],
+                "visit_occurrence_id": [10, 10, 10, 20, 20],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[
+            _make_concept_set(1, 111),
+            _make_concept_set(2, 222),
+            _make_concept_set(3, 333),
+        ],
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
+        additional_criteria=CriteriaGroup(
+            type="ALL",
+            criteria_list=[
+                CorelatedCriteria(
+                    criteria=ConditionOccurrence(
+                        codeset_id=2,
+                        correlated_criteria=CriteriaGroup(
+                            type="ALL",
+                            criteria_list=[
+                                CorelatedCriteria(
+                                    criteria=ConditionOccurrence(codeset_id=3),
+                                    occurrence=Occurrence(type=Occurrence._AT_LEAST, count=1),
+                                    start_window=Window(
+                                        start=WindowBound(coeff=1, days=0),
+                                        end=WindowBound(coeff=1, days=10),
+                                        use_event_end=False,
+                                        use_index_end=False,
+                                    ),
+                                )
+                            ],
+                        ),
+                    ),
+                    occurrence=Occurrence(type=Occurrence._AT_LEAST, count=1),
+                    start_window=Window(
+                        start=WindowBound(coeff=1, days=0),
+                        end=WindowBound(coeff=1, days=20),
+                        use_event_end=False,
+                        use_index_end=False,
+                    ),
+                )
+            ],
+        ),
+    )
+
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
+    assert set(result.person_id) == {1}

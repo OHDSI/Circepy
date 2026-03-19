@@ -101,7 +101,17 @@ def _compile_correlated_events(
     ctx: ExecutionContext,
 ) -> Table:
     event_plan = lower_criterion(correlated.criterion, criterion_index=criterion_index)
-    return compile_event_plan(event_plan, ctx)
+    events = compile_event_plan(event_plan, ctx)
+
+    nested_group = correlated.criterion.correlated_criteria
+    if nested_group is None or nested_group.is_empty():
+        return events
+
+    # Correlated criteria can themselves carry nested correlated criteria.
+    # Re-apply the same group evaluator used for primary/additional criteria.
+    from .groups import apply_additional_criteria
+
+    return apply_additional_criteria(events, nested_group, ctx)
 
 
 def correlated_match_keys(
