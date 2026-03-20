@@ -1,7 +1,7 @@
 # CIRCE Python Implementation
 
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-3400%2B%20passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](tests/)
 [![codecov](https://codecov.io/gh/OHDSI/Circepy/graph/badge.svg?token=CODECOV_TOKEN)](https://codecov.io/gh/OHDSI/Circepy)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![PyPI](https://img.shields.io/badge/PyPI-ohdsi--circe--python--alpha-blue)](https://pypi.org/project/ohdsi-circe-python-alpha/)
@@ -27,17 +27,15 @@ CIRCE Python provides a comprehensive toolkit for working with OMOP CDM cohort d
 > [!IMPORTANT]
 > This package is currently in **Alpha** status and undergoing rigorous parity testing against the Java implementation.
 
-- **Version**: 0.1.0 (Alpha)
-- **Tests**: 3,400+ passing
-- **Coverage**: 34% (Core logic focus)
+- **Version**: 0.2.0 (Alpha)
+- **Tests**: Passing in CI
 - **Python**: 3.9+
 - **License**: Apache 2.0
 
 ## Installation
 
 > [!NOTE]
-> This package is currently in private development. Install from source using Git.
-> The recommended workflow uses `uv` and the checked-in `uv.lock` for a reproducible environment.
+> The recommended source workflow uses `uv` and the checked-in `uv.lock` for a reproducible environment.
 
 ### From Source (Current Method)
 
@@ -176,18 +174,17 @@ An experimental backend-native execution API is available under
 `circe.execution`.
 
 ```python
-from circe.execution import ExecutionOptions, IbisExecutor
+from circe.execution import build_cohort
 
 # Requires optional extras, e.g. `pip install ohdsi-circe-python-alpha[ibis-duckdb]`
-executor = IbisExecutor(conn, ExecutionOptions(cdm_schema="main"))
-events = executor.build(cohort)  # lazy ibis relation
+events = build_cohort(cohort, backend=conn, cdm_schema="main")  # lazy ibis relation
 ```
 
 ## What's Included
 
 This package provides a complete Python implementation of CIRCE-BE with:
 
-- **800+ passing tests** with focused coverage on core logic
+- **Passing test suite** with focused coverage on core logic
 - **18+ SQL builders** for all OMOP CDM domains:
   - Condition Occurrence/Era
   - Drug Exposure/Era
@@ -255,7 +252,7 @@ circe/
 - [x] Java interoperability with camelCase/snake_case field support
 - [x] Cohort expression validation with 40+ checker implementations
 - [x] Markdown rendering for print-friendly descriptions
-- [x] Full test suite (3,400+ tests)
+- [x] Full test suite
 - [x] Type hints throughout with py.typed marker
 - [x] Concept set expression handling
 - [x] Window criteria and correlated criteria support
@@ -401,7 +398,7 @@ uv run circe --help
 uv run pytest
 ```
 
-All 3,400+ tests should pass.
+The full test suite should pass.
 
 ### Linting and Formatting
 

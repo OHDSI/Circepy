@@ -4,10 +4,12 @@ Simple library API for CIRCE Python
 This module provides a simple R CirceR-style API for working with cohort definitions:
 - cohort_expression_from_json(): Load cohort expression from JSON string
 - build_cohort_query(): Generate SQL from cohort expression
+- build_cohort(): Build cohort as a relational expression (experimental)
+- write_cohort(): Write OHDSI cohort-table rows to a database table
 - cohort_print_friendly(): Generate Markdown from cohort expression
 """
 
-from typing import Optional
+from typing import Literal, Optional
 
 from .cohortdefinition import (
     BuildExpressionQueryOptions,
@@ -15,6 +17,7 @@ from .cohortdefinition import (
     CohortExpressionQueryBuilder,
     MarkdownRender,
 )
+from .execution.typing import IbisBackendLike, Table
 from .vocabulary.concept import ConceptSet
 
 
@@ -100,6 +103,122 @@ def build_cohort_query(
 
     builder = CohortExpressionQueryBuilder()
     return builder.build_expression_query(expression, options)
+
+
+def build_cohort(
+    expression: CohortExpression,
+    *,
+    backend: IbisBackendLike,
+    cdm_schema: str,
+    vocabulary_schema: Optional[str] = None,
+    results_schema: Optional[str] = None,
+) -> Table:
+    """Build a cohort as a relational table expression.
+
+    This uses the experimental Ibis execution engine to compile the cohort
+    expression into a backend-native relational expression.
+
+    Args:
+        expression: CohortExpression instance
+        backend: Ibis backend used to compile the cohort relation
+        cdm_schema: Schema containing the OMOP CDM tables
+        vocabulary_schema: Optional schema for vocabulary tables. Defaults to
+            ``cdm_schema`` when omitted.
+        results_schema: Optional schema used for result-side table resolution
+
+    Returns:
+        Ibis table expression representing the cohort result
+
+    Raises:
+        ExecutionError: If the cohort cannot be normalized, lowered, or
+            compiled into a relational expression
+
+    Example:
+        >>> import ibis
+        >>> backend = ibis.duckdb.connect()
+        >>> expression = cohort_expression_from_json(json_str)
+        >>> relation = build_cohort(
+        ...     expression,
+        ...     backend=backend,
+        ...     cdm_schema="cdm",
+        ...     vocabulary_schema="vocab",
+        ... )
+    """
+    from .execution import build_cohort as _build_cohort
+
+    return _build_cohort(
+        expression,
+        backend=backend,
+        cdm_schema=cdm_schema,
+        vocabulary_schema=vocabulary_schema,
+        results_schema=results_schema,
+    )
+
+
+def write_cohort(
+    expression: CohortExpression,
+    *,
+    backend: IbisBackendLike,
+    cdm_schema: str,
+    cohort_table: str,
+    cohort_id: int,
+    vocabulary_schema: Optional[str] = None,
+    results_schema: Optional[str] = None,
+    if_exists: Literal["fail", "replace"] = "fail",
+) -> None:
+    """Build and write an OHDSI cohort table.
+
+    This wraps :func:`build_cohort`, projects the resulting relation into the
+    standard OHDSI cohort-table shape, and materializes it to a backend table.
+    Existing rows for other cohort IDs are preserved.
+
+    Args:
+        expression: CohortExpression instance
+        backend: Ibis backend used to compile and write the cohort relation
+        cdm_schema: Schema containing the OMOP CDM tables
+        cohort_table: Name of the OHDSI cohort table to create or update
+        cohort_id: Cohort definition identifier written to
+            ``cohort_definition_id``
+        vocabulary_schema: Optional schema for vocabulary tables. Defaults to
+            ``cdm_schema`` when omitted.
+        results_schema: Optional schema for the target table
+        if_exists: Cohort-row policy, either ``"fail"`` or ``"replace"``.
+            ``"fail"`` raises if rows for ``cohort_id`` already exist.
+            ``"replace"`` replaces only rows for ``cohort_id``.
+
+    Returns:
+        None
+
+    Raises:
+        ExecutionError: If the cohort cannot be built or the target table
+            cannot be written
+
+    Example:
+        >>> import ibis
+        >>> backend = ibis.duckdb.connect()
+        >>> expression = cohort_expression_from_json(json_str)
+        >>> write_cohort(
+        ...     expression,
+        ...     backend=backend,
+        ...     cdm_schema="cdm",
+        ...     cohort_table="cohort",
+        ...     cohort_id=1,
+        ...     results_schema="results",
+        ...     if_exists="replace",
+        ... )
+    """
+    from .execution import write_cohort as _write_cohort
+
+    _write_cohort(
+        expression,
+        backend=backend,
+        cdm_schema=cdm_schema,
+        cohort_table=cohort_table,
+        cohort_id=cohort_id,
+        vocabulary_schema=vocabulary_schema,
+        results_schema=results_schema,
+        if_exists=if_exists,
+    )
 
 
 def cohort_print_friendly(

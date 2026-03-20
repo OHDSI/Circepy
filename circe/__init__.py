@@ -78,17 +78,14 @@ from circe.cohortdefinition import (
 )
 
 from .api import (
+    build_cohort,
     build_cohort_query,
     cohort_expression_from_json,
     cohort_print_friendly,
-)
-from .execution import (
-    ExecutionOptions,
-    IbisExecutor,
-    build_ibis,
-    to_polars,
     write_cohort,
 )
+
+# Main exports
 from .io import load_expression
 from .vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
@@ -208,17 +205,12 @@ __all__ = [
     # API functions
     "cohort_expression_from_json",
     "build_cohort_query",
+    "build_cohort",
+    "write_cohort",
     "cohort_print_friendly",
     "safe_model_rebuild",
-    # I/O and experimental execution API
+    # I/O helpers
     "load_expression",
-    "ExecutionOptions",
-    "IbisExecutor",
-    "build_ibis",
-    "to_polars",
-    "write_cohort",
-    "safe_model_rebuild",
-    # Skills for AI agents
     "get_cohort_builder_skill",
     "get_skill",
     "list_skills",

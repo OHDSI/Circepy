@@ -63,7 +63,6 @@ ibis = [
 ]
 ibis-duckdb = [
     "ibis-framework[duckdb]>=11.0.0; python_version >= '3.9'",
-    "polars>=0.20.0; python_version >= '3.9'",
 ]
 ibis-postgres = [
     "ibis-framework[postgres]>=11.0.0; python_version >= '3.9'",

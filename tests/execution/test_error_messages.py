@@ -1,0 +1,148 @@
+from __future__ import annotations
+
+import pytest
+
+from circe.api import build_cohort
+from circe.cohortdefinition import (
+    CohortExpression,
+    ConditionOccurrence,
+    CorelatedCriteria,
+    Criteria,
+    CriteriaGroup,
+    DemographicCriteria,
+    Measurement,
+    Occurrence,
+    PrimaryCriteria,
+)
+from circe.cohortdefinition.core import CustomEraStrategy, NumericRange
+from circe.execution.errors import CompilationError, UnsupportedCriterionError, UnsupportedFeatureError
+from circe.execution.normalize.criteria import normalize_criterion
+from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
+
+
+def _seed_common_tables(conn, ibis):
+    conn.create_table(
+        "person",
+        obj=ibis.memtable(
+            {
+                "person_id": [1],
+                "year_of_birth": [1980],
+                "gender_concept_id": [8507],
+                "race_concept_id": [8527],
+                "ethnicity_concept_id": [38003564],
+            }
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "observation_period",
+        obj=ibis.memtable(
+            {
+                "person_id": [1],
+                "observation_period_id": [10],
+                "observation_period_start_date": ["2019-01-01"],
+                "observation_period_end_date": ["2022-12-31"],
+            }
+        ),
+        overwrite=True,
+    )
+
+
+def _concept_set(set_id: int, concept_id: int) -> ConceptSet:
+    return ConceptSet(
+        id=set_id,
+        expression=ConceptSetExpression(items=[ConceptSetItem(concept=Concept(conceptId=concept_id))]),
+    )
+
+
+def test_error_message_for_custom_era_end_strategy():
+    expression = CohortExpression(
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence()]),
+        end_strategy=CustomEraStrategy(drug_codeset_id=1, gap_days=30, offset=0),
+    )
+
+    with pytest.raises(UnsupportedFeatureError, match="custom_era end strategy"):
+        _ = build_cohort(expression, backend=object(), cdm_schema="main")
+
+
+def test_error_message_for_unsupported_criterion_type():
+    with pytest.raises(
+        UnsupportedCriterionError,
+        match="normalization error: unsupported criterion type Criteria",
+    ):
+        _ = normalize_criterion(Criteria())
+
+
+def test_error_message_for_unsupported_numeric_op_during_compilation():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "measurement",
+        obj=ibis.memtable(
+            {
+                "person_id": [1],
+                "measurement_id": [100],
+                "measurement_concept_id": [444],
+                "measurement_date": ["2020-01-01"],
+                "visit_occurrence_id": [10],
+                "value_as_number": [5.0],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_concept_set(1, 444)],
+        primary_criteria=PrimaryCriteria(
+            criteria_list=[Measurement(codeset_id=1, value_as_number=NumericRange(op="nope", value=1))]
+        ),
+    )
+
+    with pytest.raises(CompilationError, match="compilation error: unsupported numeric range op"):
+        _ = build_cohort(expression, backend=conn, cdm_schema="main").execute()
+
+
+def test_error_message_for_unsupported_demographic_numeric_op():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 1],
+                "condition_occurrence_id": [100, 101],
+                "condition_concept_id": [111, 222],
+                "condition_start_date": ["2020-01-01", "2020-01-03"],
+                "condition_end_date": ["2020-01-01", "2020-01-03"],
+                "visit_occurrence_id": [10, 10],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_concept_set(1, 111), _concept_set(2, 222)],
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
+        additional_criteria=CriteriaGroup(
+            type="ALL",
+            criteria_list=[
+                CorelatedCriteria(
+                    criteria=ConditionOccurrence(codeset_id=2),
+                    occurrence=Occurrence(type=Occurrence._AT_LEAST, count=1),
+                )
+            ],
+            demographic_criteria_list=[DemographicCriteria(age=NumericRange(op="invalid", value=18))],
+        ),
+    )
+
+    with pytest.raises(
+        UnsupportedFeatureError,
+        match="group evaluation error: unsupported demographic numeric range op",
+    ):
+        _ = build_cohort(expression, backend=conn, cdm_schema="main").execute()
