@@ -177,6 +177,112 @@ def test_collapse_settings_era_merges_intervals():
     assert str(result.iloc[0]["end_date"])[:10] == "2020-01-03"
 
 
+def test_collapse_settings_era_does_not_merge_non_overlapping_intervals():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 1, 1],
+                "condition_occurrence_id": [100, 101, 102],
+                "condition_concept_id": [111, 111, 111],
+                "condition_start_date": ["2020-01-01", "2020-03-01", "2020-06-01"],
+                "condition_end_date": ["2020-01-01", "2020-03-01", "2020-06-01"],
+                "visit_occurrence_id": [10, 10, 10],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(1, 111)],
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
+        end_strategy=DateOffsetStrategy(offset=0, date_field="start_date"),
+        collapse_settings=CollapseSettings(era_pad=1),
+    )
+
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
+    assert set(result.columns) == {"person_id", "start_date", "end_date"}
+    assert len(result) == 3
+    assert list(result.sort_values(["start_date", "end_date"]).start_date.astype(str)) == [
+        "2020-01-01",
+        "2020-03-01",
+        "2020-06-01",
+    ]
+
+
+def test_collapse_settings_era_deduplicates_identical_intervals():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 1],
+                "condition_occurrence_id": [100, 101],
+                "condition_concept_id": [111, 111],
+                "condition_start_date": ["2020-01-01", "2020-01-01"],
+                "condition_end_date": ["2020-01-01", "2020-01-01"],
+                "visit_occurrence_id": [10, 10],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(1, 111)],
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
+        end_strategy=DateOffsetStrategy(offset=14, date_field="end_date"),
+        collapse_settings=CollapseSettings(era_pad=0),
+    )
+
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
+    assert len(result) == 1
+    assert str(result.iloc[0]["start_date"])[:10] == "2020-01-01"
+    assert str(result.iloc[0]["end_date"])[:10] == "2020-01-15"
+
+
+def test_collapse_settings_era_merges_tied_start_dates_into_one_group():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 1],
+                "condition_occurrence_id": [100, 101],
+                "condition_concept_id": [111, 111],
+                "condition_start_date": ["2020-01-01", "2020-01-01"],
+                "condition_end_date": ["2020-01-02", "2020-01-05"],
+                "visit_occurrence_id": [10, 10],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(1, 111)],
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
+        end_strategy=DateOffsetStrategy(offset=0, date_field="end_date"),
+        collapse_settings=CollapseSettings(era_pad=0),
+    )
+
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
+    assert len(result) == 1
+    assert str(result.iloc[0]["start_date"])[:10] == "2020-01-01"
+    assert str(result.iloc[0]["end_date"])[:10] == "2020-01-05"
+
+
 def test_apply_end_strategy_rejects_invalid_date_field_and_preserves_fallback_semantics():
     ibis_mod = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
