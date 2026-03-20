@@ -10,6 +10,7 @@ from circe.cohortdefinition import (
     CriteriaColumn,
     CriteriaGroup,
     DemographicCriteria,
+    DrugEra,
     Occurrence,
     PrimaryCriteria,
     Window,
@@ -865,4 +866,61 @@ def test_nested_correlated_multi_level_nesting_is_applied():
     )
 
     result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
+    assert set(result.person_id) == {1}
+
+
+def test_primary_drug_era_correlated_era_length_is_applied():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis, persons=(1, 2))
+    conn.create_table(
+        "drug_era",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 1, 2, 2],
+                "drug_era_id": [1300, 1301, 2300, 2301],
+                "drug_concept_id": [111, 222, 111, 222],
+                "drug_era_start_date": ["2020-01-01", "2020-03-20", "2020-01-01", "2020-03-20"],
+                "drug_era_end_date": ["2020-03-15", "2020-04-25", "2020-03-15", "2020-03-20"],
+                "drug_exposure_count": [3, 1, 3, 1],
+                "gap_days": [10, 0, 10, 0],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(1, 111), _make_concept_set(2, 222)],
+        primary_criteria=PrimaryCriteria(
+            criteria_list=[
+                DrugEra(
+                    codeset_id=1,
+                    era_length=NumericRange(op="gte", value=30),
+                    correlated_criteria=CriteriaGroup(
+                        type="ALL",
+                        criteria_list=[
+                            CorelatedCriteria(
+                                criteria=DrugEra(
+                                    codeset_id=2,
+                                    era_length=NumericRange(op="gte", value=30),
+                                ),
+                                occurrence=Occurrence(type=Occurrence._AT_LEAST, count=1),
+                                start_window=Window(
+                                    start=WindowBound(coeff=1, days=0),
+                                    end=WindowBound(coeff=1, days=60),
+                                    use_event_end=False,
+                                    use_index_end=True,
+                                ),
+                            )
+                        ],
+                    ),
+                )
+            ]
+        ),
+    )
+
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
+
     assert set(result.person_id) == {1}

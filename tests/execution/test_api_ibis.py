@@ -920,6 +920,45 @@ def test_build_cohort_condition_era():
     assert all(result.domain == "condition_era")
 
 
+def test_build_cohort_condition_era_applies_era_length_and_occurrence_count():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "condition_era",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2, 3],
+                "condition_era_id": [1200, 1201, 1202],
+                "condition_concept_id": [12121, 12121, 12121],
+                "condition_era_start_date": ["2020-01-01", "2020-01-01", "2020-01-01"],
+                "condition_era_end_date": ["2020-02-15", "2020-01-20", "2020-02-15"],
+                "condition_occurrence_count": [4, 4, 1],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(11, 12121)],
+        primary_criteria=PrimaryCriteria(
+            criteria_list=[
+                ConditionEra(
+                    codeset_id=11,
+                    era_length=NumericRange(op="gte", value=30),
+                    occurrence_count=NumericRange(op="gte", value=2),
+                )
+            ]
+        ),
+    )
+
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
+
+    assert set(result.person_id) == {1}
+
+
 def test_build_cohort_drug_era():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
@@ -952,6 +991,80 @@ def test_build_cohort_drug_era():
     assert all(result.domain == "drug_era")
 
 
+def test_build_cohort_drug_era_applies_era_length():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "drug_era",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2],
+                "drug_era_id": [1300, 1301],
+                "drug_concept_id": [13131, 13131],
+                "drug_era_start_date": ["2020-03-01", "2020-03-01"],
+                "drug_era_end_date": ["2020-04-15", "2020-03-10"],
+                "drug_exposure_count": [2, 2],
+                "gap_days": [5, 5],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(12, 13131)],
+        primary_criteria=PrimaryCriteria(
+            criteria_list=[DrugEra(codeset_id=12, era_length=NumericRange(op="gte", value=30))]
+        ),
+    )
+
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
+
+    assert set(result.person_id) == {1}
+
+
+def test_build_cohort_drug_era_applies_occurrence_count_and_gap_days():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "drug_era",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2, 3],
+                "drug_era_id": [1300, 1301, 1302],
+                "drug_concept_id": [13131, 13131, 13131],
+                "drug_era_start_date": ["2020-03-01", "2020-03-01", "2020-03-01"],
+                "drug_era_end_date": ["2020-04-15", "2020-04-15", "2020-04-15"],
+                "drug_exposure_count": [4, 1, 4],
+                "gap_days": [8, 8, 2],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(12, 13131)],
+        primary_criteria=PrimaryCriteria(
+            criteria_list=[
+                DrugEra(
+                    codeset_id=12,
+                    occurrence_count=NumericRange(op="gte", value=2),
+                    gap_days=NumericRange(op="gte", value=5),
+                )
+            ]
+        ),
+    )
+
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
+
+    assert set(result.person_id) == {1}
+
+
 def test_build_cohort_dose_era():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
@@ -982,6 +1095,38 @@ def test_build_cohort_dose_era():
 
     assert set(result.person_id) == {1}
     assert all(result.domain == "dose_era")
+
+
+def test_build_cohort_dose_era_applies_era_length():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "dose_era",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2],
+                "dose_era_id": [1400, 1401],
+                "drug_concept_id": [14141, 14141],
+                "dose_era_start_date": ["2020-05-01", "2020-05-01"],
+                "dose_era_end_date": ["2020-06-15", "2020-05-10"],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(13, 14141)],
+        primary_criteria=PrimaryCriteria(
+            criteria_list=[DoseEra(codeset_id=13, era_length=NumericRange(op="gte", value=30))]
+        ),
+    )
+
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
+
+    assert set(result.person_id) == {1}
 
 
 def test_build_cohort_location_region():

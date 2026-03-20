@@ -9,7 +9,7 @@ This module provides a simple R CirceR-style API for working with cohort definit
 - cohort_print_friendly(): Generate Markdown from cohort expression
 """
 
-from typing import Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from .cohortdefinition import (
     BuildExpressionQueryOptions,
@@ -20,6 +20,12 @@ from .cohortdefinition import (
 from .evaluation.models import EvaluationRubric, RubricSet
 from .execution.typing import IbisBackendLike, Table
 from .vocabulary.concept import ConceptSet
+
+if TYPE_CHECKING:
+    from .execution.typing import IbisBackendLike, Table
+else:
+    IbisBackendLike = Any
+    Table = Any
 
 
 def cohort_expression_from_json(json_str: str) -> CohortExpression:
