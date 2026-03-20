@@ -17,6 +17,7 @@ from .cohortdefinition import (
     CohortExpressionQueryBuilder,
     MarkdownRender,
 )
+from .evaluation.models import EvaluationRubric, RubricSet
 from .execution.typing import IbisBackendLike, Table
 from .vocabulary.concept import ConceptSet
 
@@ -218,6 +219,123 @@ def write_cohort(
         vocabulary_schema=vocabulary_schema,
         results_schema=results_schema,
         if_exists=if_exists,
+    )
+
+
+def evaluate_cohort(
+    rubric: EvaluationRubric,
+    index_events: Table,
+    *,
+    ruleset_id: int,
+    backend: IbisBackendLike,
+    cdm_schema: str,
+    results_schema: Optional[str] = None,
+    vocabulary_schema: Optional[str] = None,
+    include_cohort_id: bool = True,
+) -> Table:
+    """Evaluate an Ibis cohort table using an EvaluationRubric natively.
+
+    Args:
+        rubric: EvaluationRubric instance
+        index_events: Ibis table representing the cohort to evaluate
+        ruleset_id: Identifier for the evaluation run
+        backend: Ibis backend used to compile the relation
+        cdm_schema: Schema containing the OMOP CDM tables
+        results_schema: Optional schema for result-side table resolution
+        vocabulary_schema: Optional schema for vocabulary tables
+        include_cohort_id: Whether to include cohort_definition_id in output
+
+    Returns:
+        Ibis table expression representing the normalized evaluation results.
+    """
+    from .execution import evaluate_cohort as _evaluate_cohort
+
+    return _evaluate_cohort(
+        rubric,
+        index_events,
+        ruleset_id=ruleset_id,
+        backend=backend,
+        cdm_schema=cdm_schema,
+        results_schema=results_schema,
+        vocabulary_schema=vocabulary_schema,
+        include_cohort_id=include_cohort_id,
+    )
+
+
+def write_evaluation(
+    rubric: EvaluationRubric,
+    index_events: Table,
+    *,
+    ruleset_id: int,
+    backend: IbisBackendLike,
+    cdm_schema: str,
+    target_table: str = "cohort_rubric",
+    results_schema: Optional[str] = None,
+    vocabulary_schema: Optional[str] = None,
+    include_cohort_id: bool = True,
+    if_exists: Literal["fail", "replace"] = "fail",
+) -> None:
+    """Build evaluation rows and materialize them to a backend table.
+
+    Args:
+        rubric: EvaluationRubric instance
+        index_events: Ibis table representing the cohort to evaluate
+        ruleset_id: Identifier for the evaluation run
+        backend: Ibis backend used to compile and write the relation
+        cdm_schema: Schema containing the OMOP CDM tables
+        target_table: Name of the table to create or update (default: cohort_rubric)
+        results_schema: Optional schema for result-side table resolution
+        vocabulary_schema: Optional schema for vocabulary tables
+        include_cohort_id: Whether to include cohort_definition_id in output
+        if_exists: Cohort-row policy, either "fail" or "replace"
+    """
+    from .execution import write_evaluation as _write_evaluation
+
+    _write_evaluation(
+        rubric,
+        index_events,
+        ruleset_id=ruleset_id,
+        backend=backend,
+        cdm_schema=cdm_schema,
+        target_table=target_table,
+        results_schema=results_schema,
+        vocabulary_schema=vocabulary_schema,
+        include_cohort_id=include_cohort_id,
+        if_exists=if_exists,
+    )
+
+
+def calculate_cohort_metrics(
+    rubric_set: RubricSet,
+    index_events: Table,
+    *,
+    backend: IbisBackendLike,
+    cdm_schema: str,
+    results_schema: Optional[str] = None,
+    vocabulary_schema: Optional[str] = None,
+) -> Table:
+    """Calculate Positive Predictive Value (PPV) and Sensitivity estimates for a target cohort.
+
+    Args:
+        rubric_set: RubricSet containing sensitive and specific proxy rubrics
+        index_events: Ibis table representing the cohort evaluation universe
+        backend: Ibis backend used to compile the relation
+        cdm_schema: Schema containing the OMOP CDM tables
+        results_schema: Optional schema for result-side table resolution
+        vocabulary_schema: Optional schema for vocabulary tables
+
+    Returns:
+        Ibis table expression with target_cohort_id, pseudo_tp, pseudo_fp, pseudo_fn, ppv, sensitivity.
+    """
+    from .execution import calculate_cohort_metrics as _calculate_cohort_metrics
+
+    return _calculate_cohort_metrics(
+        rubric_set,
+        index_events,
+        backend=backend,
+        cdm_schema=cdm_schema,
+        results_schema=results_schema,
+        vocabulary_schema=vocabulary_schema,
     )
 
 

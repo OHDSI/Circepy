@@ -65,3 +65,15 @@ class IndividualEvaluation(CirceBaseModel):
     rules: list[RuleResult]
 
     model_config = ConfigDict(populate_by_name=True)
+
+
+class RubricSet(CirceBaseModel):
+    """
+    Groups rubrics to form pseudo-gold standards and adjudication thresholds.
+    """
+
+    target_cohort_id: int = Field(..., description="The cohort ID we are validating")
+    sensitive_rubric: EvaluationRubric = Field(..., description="Broad heuristic (Proxy for All Positives)")
+    specific_rubric: EvaluationRubric = Field(..., description="Strict heuristic (Proxy for True Positives)")
+
+    model_config = ConfigDict(populate_by_name=True)
