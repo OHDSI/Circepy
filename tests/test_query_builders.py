@@ -14,7 +14,6 @@ from circe.cohortdefinition import (
     CohortExpressionQueryBuilder,
     CollapseSettings,
     CollapseType,
-    ConceptSetExpressionQueryBuilder,
     ConceptSetSelection,
     ConditionOccurrence,
     CorelatedCriteria,
@@ -32,6 +31,7 @@ from circe.cohortdefinition import (
     ResultLimit,
 )
 from circe.vocabulary import Concept, ConceptSetExpression, ConceptSetItem
+from circe.vocabulary.concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
 
 
 class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
