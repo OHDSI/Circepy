@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from circe.cohortdefinition.criteria import ConditionEra
+from circe.extensions import lowerer
+
 from ..normalize.criteria import NormalizedCriterion
 from ..plan.events import EventPlan
 from ..plan.schema import OCCURRENCE_COUNT
@@ -11,6 +14,7 @@ from .common import (
 )
 
 
+@lowerer(ConditionEra)
 def lower_condition_era(
     criterion: NormalizedCriterion,
     *,

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from circe.extensions import lowerer
+
 from ...cohortdefinition.criteria import ConditionOccurrence
 from ..normalize.criteria import NormalizedCriterion
 from ..plan.events import EventPlan
@@ -13,6 +15,7 @@ from .common import (
 )
 
 
+@lowerer(ConditionOccurrence)
 def lower_condition_occurrence(
     criterion: NormalizedCriterion,
     *,

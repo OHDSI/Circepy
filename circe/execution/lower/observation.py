@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from circe.extensions import lowerer
+
 from ...cohortdefinition.criteria import Observation
 from ..normalize.criteria import NormalizedCriterion
 from ..plan.events import EventPlan
@@ -14,6 +16,7 @@ from .common import (
 )
 
 
+@lowerer(Observation)
 def lower_observation(
     criterion: NormalizedCriterion,
     *,

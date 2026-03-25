@@ -34,6 +34,10 @@ from typing import TYPE_CHECKING, Callable, Optional, Union
 if TYPE_CHECKING:
     from .cohortdefinition.builders.base import CriteriaSqlBuilder
     from .cohortdefinition.criteria import Criteria
+    from .execution.lower.criteria import LowerFn
+    from .execution.normalize.criteria import NormalizedCriterion
+
+NormalizerFn = Callable[["Criteria"], "NormalizedCriterion"]
 
 
 class ExtensionRegistry:
@@ -45,6 +49,12 @@ class ExtensionRegistry:
 
         # Maps criteria types to SQL builder classes
         self._sql_builders: dict[type[Criteria], type[CriteriaSqlBuilder]] = {}
+
+        # Maps criteria types to lower functions
+        self._lowerers: dict[type[Criteria], LowerFn] = {}
+
+        # Maps criteria types to normalizer functions
+        self._normalizers: dict[type[Criteria], NormalizerFn] = {}
 
         # Maps criteria types to markdown template names
         self._markdown_templates: dict[type[Criteria], str] = {}
@@ -73,6 +83,24 @@ class ExtensionRegistry:
             builder_cls: The CriteriaSqlBuilder subclass
         """
         self._sql_builders[criteria_cls] = builder_cls
+
+    def register_lowerer(self, criteria_cls: type["Criteria"], lowerer: "LowerFn") -> None:
+        """Register a lower function for a criteria type.
+
+        Args:
+            criteria_cls: The Criteria subclass
+            lowerer: The LowerFn to execute for this criteria
+        """
+        self._lowerers[criteria_cls] = lowerer
+
+    def register_normalizer(self, criteria_cls: type["Criteria"], normalizer: NormalizerFn) -> None:
+        """Register a normalizer function for a criteria type.
+
+        Args:
+            criteria_cls: The Criteria subclass
+            normalizer: The NormalizerFn to execute for this criteria
+        """
+        self._normalizers[criteria_cls] = normalizer
 
     def register_markdown_template(self, criteria_cls: type["Criteria"], template_name: str) -> None:
         """Register a Jinja2 template for markdown rendering.
@@ -103,6 +131,28 @@ class ExtensionRegistry:
         """
         builder_cls = self._sql_builders.get(type(criteria))
         return builder_cls() if builder_cls else None
+
+    def get_lowerer(self, criteria_cls: type["Criteria"]) -> Optional["LowerFn"]:
+        """Get the lower function for a criteria type.
+
+        Args:
+            criteria_cls: The Criteria subclass
+
+        Returns:
+            The LowerFn, or None if not found
+        """
+        return self._lowerers.get(criteria_cls)
+
+    def get_normalizer(self, criteria_cls: type["Criteria"]) -> Optional[NormalizerFn]:
+        """Get the normalizer function for a criteria type.
+
+        Args:
+            criteria_cls: The Criteria subclass
+
+        Returns:
+            The normalizer function, or None if not found
+        """
+        return self._normalizers.get(criteria_cls)
 
     def get_template(self, criteria: "Criteria") -> Optional[str]:
         """Get the markdown template name for a criteria instance.
@@ -187,6 +237,46 @@ def sql_builder(
         return builder_cls
 
     return decorator  # type: ignore[return-value]
+
+
+def lowerer(criteria_cls: "type['Criteria']") -> Callable[["LowerFn"], "LowerFn"]:
+    """Decorator that registers an execution lower function for a Criteria type.
+
+    Args:
+        criteria_cls: The Criteria subclass this function lowers.
+
+    Example::
+
+        @lowerer(WaveformOccurrence)
+        def lower_waveform_occurrence(criterion, *, criterion_index):
+            ...
+    """
+
+    def decorator(fn: "LowerFn") -> "LowerFn":
+        _registry.register_lowerer(criteria_cls, fn)  # type: ignore[arg-type]
+        return fn
+
+    return decorator
+
+
+def normalizer(criteria_cls: "type['Criteria']") -> Callable[[NormalizerFn], NormalizerFn]:
+    """Decorator that registers a normalizer function for a Criteria type.
+
+    Args:
+        criteria_cls: The Criteria subclass this function normalizes.
+
+    Example::
+
+        @normalizer(WaveformOccurrence)
+        def normalize_waveform_occurrence(criteria):
+            ...
+    """
+
+    def decorator(fn: NormalizerFn) -> NormalizerFn:
+        _registry.register_normalizer(criteria_cls, fn)  # type: ignore[arg-type]
+        return fn
+
+    return decorator
 
 
 def markdown_template(criteria_cls: "type['Criteria']", template_name: str) -> "Callable[[type], type]":

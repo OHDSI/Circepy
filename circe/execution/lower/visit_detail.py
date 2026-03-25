@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from circe.extensions import lowerer
+
 from ...cohortdefinition.criteria import VisitDetail
 from ..normalize.criteria import NormalizedCriterion
 from ..plan.events import EventPlan, PlanStep
@@ -14,6 +16,7 @@ from .common import (
 )
 
 
+@lowerer(VisitDetail)
 def lower_visit_detail(
     criterion: NormalizedCriterion,
     *,

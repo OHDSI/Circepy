@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from circe.cohortdefinition.criteria import LocationRegion
+from circe.extensions import lowerer
+
 from ..normalize.criteria import NormalizedCriterion
 from ..plan.events import (
     EventPlan,
@@ -11,6 +14,7 @@ from ..plan.events import (
 )
 
 
+@lowerer(LocationRegion)
 def lower_location_region(
     criterion: NormalizedCriterion,
     *,

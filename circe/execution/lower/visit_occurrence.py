@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from circe.extensions import lowerer
+
 from ...cohortdefinition.criteria import VisitOccurrence
 from ..normalize.criteria import NormalizedCriterion
 from ..plan.events import EventPlan, PlanStep
@@ -14,6 +16,7 @@ from .common import (
 )
 
 
+@lowerer(VisitOccurrence)
 def lower_visit_occurrence(
     criterion: NormalizedCriterion,
     *,
