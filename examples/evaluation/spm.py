@@ -58,14 +58,14 @@ def create_spm_rubric():
                 group.procedure(radiation)
             rule.within_days_before(30)  # Within 30 days before/on index
 
-        # 3. Exclusion Rules (Negative Polarity)
+        # 3. Exclusion Rules (Negative weight indicates exclusion)
 
         # Rule 5: Exclusion - Metastatic Evidence
         # If the codes around index are explicitly for secondary/metastatic sites,
         # it strongly suggests it's not a new primary.
-        ev.add_rule(
-            "Explicit Metastasis Diagnosis", weight=15.0, polarity=-1, category="Exclusion"
-        ).condition(metastatic_cancer).at_least(1).within_days_before(30)
+        ev.add_rule("Explicit Metastasis Diagnosis", weight=-15.0, category="Exclusion").condition(
+            metastatic_cancer
+        ).at_least(1).within_days_before(30)
         # 4. Rare Covariates (Genetics & Histology)
 
         # Rule 6: Genetic Susceptibility (High confidence in second primary)
@@ -91,9 +91,9 @@ def create_spm_rubric():
         # Rule 9: Multi-focal Disease at Index
         # Suggestive of metastasis rather than a single new primary.
         multi_focal = ev.concept_set("Multi-focal Disease", 4197576)
-        ev.add_rule(
-            "Multi-focal/Systemic Involvement", weight=10.0, polarity=-1, category="Exclusion"
-        ).observation(multi_focal).within_days_before(30)
+        ev.add_rule("Multi-focal/Systemic Involvement", weight=-10.0, category="Exclusion").observation(
+            multi_focal
+        ).within_days_before(30)
         # 6. Advanced Clinical Measures
 
         # Rule 10: Radical Surgical Intervention
@@ -119,9 +119,9 @@ def create_spm_rubric():
         # If the patient already had Stage IV disease documented before the index,
         # the new event is much more likely to be a metastatic progression.
         stage_iv = ev.concept_set("Stage IV Disease", 4166060)
-        ev.add_rule(
-            "Pre-existing Advanced Staging", weight=15.0, polarity=-1, category="Exclusion"
-        ).observation(stage_iv).anytime_before()
+        ev.add_rule("Pre-existing Advanced Staging", weight=-15.0, category="Exclusion").observation(
+            stage_iv
+        ).anytime_before()
 
     return ev.rubric
 

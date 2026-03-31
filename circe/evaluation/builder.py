@@ -131,13 +131,13 @@ class EvaluationBuilder:
         self,
         name: str,
         weight: float,
-        polarity: int = 1,
         category: Optional[str] = None,
         description: str = "",
     ) -> "RuleBuilder":
-        """Add a simple one-line rule."""
+        """Add a simple one-line rule. The sign of `weight` determines whether this is
+        evidence (positive) or an exclusion (negative)."""
         rule_id = len(self._rules) + 1
-        builder = RuleBuilder(self, rule_id, name, weight, polarity, category, description)
+        builder = RuleBuilder(self, rule_id, name, weight, category, description)
         self._rules.append(builder)
         return builder
 
@@ -145,12 +145,11 @@ class EvaluationBuilder:
         self,
         name: str,
         weight: float,
-        polarity: int = 1,
         category: Optional[str] = None,
         description: str = "",
     ) -> "RuleBuilder":
         """Alias for add_rule, ideal for 'with' blocks."""
-        return self.add_rule(name, weight, polarity, category, description)
+        return self.add_rule(name, weight, category, description)
 
     @property
     def rubric(self) -> EvaluationRubric:
@@ -195,7 +194,6 @@ class RuleBuilder:
         rule_id: int,
         name: str,
         weight: float,
-        polarity: int,
         category: Optional[str],
         description: str = "",
     ):
@@ -203,7 +201,6 @@ class RuleBuilder:
         self._rule_id = rule_id
         self._name = name
         self._weight = weight
-        self._polarity = polarity
         self._category = category
         self._description = description
         self._group = GroupConfig(type="ALL")
@@ -295,6 +292,13 @@ class RuleBuilder:
 
         return self._modify_last_criteria(set_occurrence)
 
+    def at_most(self, count: int) -> "RuleBuilder":
+        def set_occurrence(cfg):
+            cfg.occurrence_count = count
+            cfg.occurrence_type = "exactly"
+
+        return self._modify_last_criteria(set_occurrence)
+
     def _set_time_window(self, days_before: int = 0, days_after: int = 0) -> "RuleBuilder":
         """Generic temporal window setter."""
         return self._modify_last_criteria(
@@ -359,7 +363,6 @@ class RuleBuilder:
             name=self._name,
             description=self._description,
             weight=self._weight,
-            polarity=self._polarity,
             category=self._category,
             expression=_build_criteria_group(self._group),
         )

@@ -27,7 +27,6 @@ class TestEvaluationMarkdownRender(unittest.TestCase):
             rule_id=1,
             name="Test Rule",
             weight=10.0,
-            polarity=1,
             category="Primary",
             expression=CriteriaGroup(),
         )
@@ -44,9 +43,7 @@ class TestEvaluationMarkdownRender(unittest.TestCase):
 
     def test_render_rubric_with_polarity_exclusion(self):
         # Create a rubric with an exclusion rule
-        rule = EvaluationRule(
-            rule_id=2, name="Exclusion Rule", weight=5.5, polarity=-1, expression=CriteriaGroup()
-        )
+        rule = EvaluationRule(rule_id=2, name="Exclusion Rule", weight=-5.5, expression=CriteriaGroup())
         rubric = EvaluationRubric(rules=[rule])
 
         result = self.renderer.render_rubric(rubric)
@@ -58,7 +55,7 @@ class TestEvaluationMarkdownRender(unittest.TestCase):
         # Create a rubric with concept sets
         cs = ConceptSet(id=1, name="My Concept Set", expression={"items": []})
 
-        rule = EvaluationRule(rule_id=1, name="CS Rule", weight=1.0, polarity=1, expression=CriteriaGroup())
+        rule = EvaluationRule(rule_id=1, name="CS Rule", weight=1.0, expression=CriteriaGroup())
         rubric = EvaluationRubric(rules=[rule], concept_sets=[cs])
 
         result = self.renderer.render_rubric(rubric, show_concept_sets=True)
@@ -71,7 +68,7 @@ class TestEvaluationMarkdownRender(unittest.TestCase):
         # Create a rubric with concept sets
         cs = ConceptSet(id=1, name="My Concept Set", expression={"items": []})
 
-        rule = EvaluationRule(rule_id=1, name="CS Rule", weight=1.0, polarity=1, expression=CriteriaGroup())
+        rule = EvaluationRule(rule_id=1, name="CS Rule", weight=1.0, expression=CriteriaGroup())
         rubric = EvaluationRubric(rules=[rule], concept_sets=[cs])
 
         result = self.renderer.render_rubric(rubric)
@@ -89,7 +86,7 @@ class TestEvaluationMarkdownRender(unittest.TestCase):
         )
         group = CriteriaGroup(criteria_list=[corelated])
 
-        rule = EvaluationRule(rule_id=1, name="Complex Rule", weight=1.0, polarity=1, expression=group)
+        rule = EvaluationRule(rule_id=1, name="Complex Rule", weight=1.0, expression=group)
 
         # Provide concept sets to help resolver
         cs = ConceptSet(id=101, name="Heart Failure", expression={"items": []})
@@ -112,7 +109,6 @@ class TestEvaluationMarkdownRender(unittest.TestCase):
                         "rule_id": 1,
                         "name": "JSON Rule",
                         "weight": 1.0,
-                        "polarity": 1,
                         "expression": {
                             "CriteriaList": [],
                             "Groups": [],

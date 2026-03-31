@@ -14,7 +14,7 @@
 | ID | Name | Weight | Mode | Category |
 |:---|:---|:---:|:---:|:---|
 {% for rule in rubric.rules -%}
-| {{ rule.rule_id }} | {{ rule.name }} | {{ format_number(rule.weight) }} | {{ 'Exclusion' if rule.polarity == -1 else 'Evidence' }} | {{ rule.category or '-' }} |
+| {{ rule.rule_id }} | {{ rule.name }} | {{ format_number(rule.weight | abs) }} | {{ 'Exclusion' if rule.weight < 0 else 'Evidence' }} | {{ rule.category or '-' }} |
 {% endfor %}
 
 ## Rule Details
@@ -22,9 +22,9 @@
 {% for rule in rubric.rules %}
 
 ### {{ rule.rule_id }}. {{ rule.name }}
-**Weight:** {{ format_number(rule.weight) }}
+**Weight:** {{ format_number(rule.weight | abs) }}
 
-**Mode:** {{ 'Negative (Exclusion)' if rule.polarity == -1 else 'Positive (Evidence)' }}
+**Mode:** {{ 'Negative (Exclusion)' if rule.weight < 0 else 'Positive (Evidence)' }}
 
 {% if rule.category %}
 **Category:** {{ rule.category }}

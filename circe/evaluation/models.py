@@ -20,9 +20,10 @@ class EvaluationRule(CirceBaseModel):
     name: str = Field(..., description="Human-readable name for the rule")
     description: str = Field("", description="Optional description of the rule")
     expression: CriteriaGroup = Field(..., description="CIRCE criteria expression to evaluate")
-    weight: float = Field(..., description="Score awarded if criteria is matched")
+    weight: float = Field(
+        ..., description="Signed score awarded if criteria is matched (negative for exclusions)"
+    )
     category: Optional[str] = Field(None, description="Rule category (e.g., Primary, Validation)")
-    polarity: int = Field(1, description="1 for positive evidence, -1 for negative evidence")
 
     model_config = ConfigDict(populate_by_name=True)
 

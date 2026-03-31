@@ -10,7 +10,7 @@ Build phenotype evaluation rubrics (collections of weighted rules) using the `Ev
 
 1.  **Use named rules** - Each rule should have a clear, human-readable name reflecting its clinical meaning.
 2.  **Weighted Evidence** - Assign weights to rules based on their importance in the phenotype definition.
-3.  **Positive vs Negative Evidence** - Use `polarity=1` for evidence of the phenotype and `polarity=-1` for evidence against it (exclusions).
+3.  **Signed Weights for Polarity** - Use a positive `weight` for evidence of the phenotype and a negative `weight` for evidence against it (exclusions).
 4.  **Complex Logic** - Use nested logical groups (`any_of`, `all_of`) for sophisticated rules that require multiple criteria.
 
 ## What Makes Good Evaluation Criteria
@@ -34,7 +34,7 @@ Results are inserted into a table named `cohort_rubric` (configurable) with the 
 | `subject_id` | `BIGINT` | The OMOP `person_id` being evaluated |
 | `index_date` | `DATE` | The specific date the evaluation is anchored to |
 | `rule_id` | `INT` | ID of the rule being scored |
-| `score` | `FLOAT` | The calculated score (`weight * polarity`) or `0` if not matched |
+| `score` | `FLOAT` | The calculated score (signed `weight`) or `0` if not matched |
 
 > [!NOTE]
 > This normalized format allows you to easily aggregate scores to get a total phenotype probability or analyze which specific rules are most frequently matching.
@@ -59,8 +59,8 @@ def create_gi_bleed_rubric():
         with ev.rule("Recent Aspirin Use", weight=5) as rule:
             rule.drug(aspirin).at_least(1).within_days_before(30)
             
-        # 4. Exclusion Rule (Negative Polarity)
-        ev.add_rule("Alternative Diagnosis", weight=5, polarity=-1).condition(4329041)
+        # 4. Exclusion Rule (Negative weight)
+        ev.add_rule("Alternative Diagnosis", weight=-5).condition(4329041)
         
     return ev.rubric
 ```
@@ -80,11 +80,10 @@ rubric = ev.rubric  # Access after block exits
 ### Rule Configuration
 
 ```python
-ev.add_rule(name, weight, polarity=1, category=None)
+ev.add_rule(name, weight, category=None)
 ```
 
--   `weight`: The numeric score assigned if the rule is matched.
--   `polarity`: `1` (positive evidence), `-1` (negative evidence/exclusion).
+-   `weight`: The numeric score assigned if the rule is matched. Positive values indicate supporting evidence; negative values indicate exclusions.
 -   `category`: Optional grouping (e.g., "Primary", "Validation").
 
 ### Criteria Types
@@ -105,14 +104,12 @@ rule.visit(concept_set_id)
 ```python
 # Occurrence count
 rule.at_least(N)
+rule.at_most(0) # Zero occurrences allowed
 
-# Temporal windows (relative to index date)
-rule.within_days_before(N)      # N days before index
-rule.within_days_after(N)       # N days after index
-rule.within_days(N)             # N days before AND after index (symmetric window)
-rule.within_days(before=N, after=M) # Asymmetric window
-rule.anytime_before()           # Any time before index
-rule.anytime_after()            # Any time after index
+rule.within_days(before=N, after=M) # Asymmetric window allowed
+rule.within_days(before=0, after=0) # On the index date only
+rule.anytime_before()               # Any time before index - equivalent to rule.within_days(before = 99999, after = 0)
+rule.anytime_after()                # Any time after index - equivalent to rule.within_days(before = 0, after = 99999)
 
 # Value ranges (Measurements)
 rule.measurement(id).with_value(gt=130)

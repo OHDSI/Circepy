@@ -56,7 +56,7 @@ def build_evaluation(
             how="inner",
         )
 
-        score_val = float(rule.weight * rule.polarity)
+        score_val = float(rule.weight)
 
         # 5. Project required columns
         columns = [

@@ -8,6 +8,10 @@ from circe.cohortdefinition.cohort_expression_query_builder import CohortExpress
 from circe.evaluation.models import EvaluationRubric
 
 
+def _sign_of_weight(w: float) -> int:
+    return 1 if w >= 0 else -1
+
+
 class EvaluationQueryBuilder:
     """
     Translates an EvaluationRubric into T-SQL results.
@@ -115,11 +119,10 @@ CREATE TABLE {table_full_name} (
             cg_sql = cg_sql.replace("@indexId", str(rule.rule_id))
             cg_sql = cg_sql.replace("@cdm_database_schema", cdm_schema)
 
-            # The Criteria Group query returns (index_id, person_id, event_id) for matched events.
-            # We need to join back to the index events to get the start_date for proper matching.
-            rule_comment = (
-                f"-- Rule {rule.rule_id}: {rule.name} (weight: {rule.weight}, polarity: {rule.polarity})"
-            )
+            sign = _sign_of_weight(rule.weight)
+            abs_weight = abs(rule.weight)
+
+            rule_comment = f"-- Rule {rule.rule_id}: {rule.name} (weight: {rule.weight})"
             if rule.category:
                 rule_comment += f" [Category: {rule.category}]"
 
@@ -139,12 +142,13 @@ CREATE TABLE {table_full_name} (
               {rule.rule_id} as rule_id,
               CAST(COALESCE(R.score, 0) AS FLOAT) as score"""
 
+            # Emit score as '<abs(weight)> * <sign> as score' to match legacy SQL expectations
             rule_query = f"""
             {rule_comment}
             SELECT DISTINCT{select_columns}
             FROM {index_event_table} E
             LEFT JOIN (
-              SELECT CG.person_id, P.start_date, {rule.weight} * {rule.polarity} as score
+              SELECT CG.person_id, P.start_date, {abs_weight} * {sign} as score
               FROM (
                 {cg_sql}
               ) CG
