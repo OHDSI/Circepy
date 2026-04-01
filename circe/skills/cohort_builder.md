@@ -139,6 +139,105 @@ with cohort.include_rule("No Contraindications") as rule:
     rule.exclude_condition(3, within_days_before=365)
 ```
 
+### Exclude Methods (shorthand for "exactly 0 occurrences")
+
+Use `exclude_*` methods to express **absence** of a criterion. Available on both the
+top-level `CohortBuilder` context and inside `include_rule` contexts:
+
+```python
+# Top-level exclusion
+cohort.exclude_condition(id, anytime_before=True)
+cohort.exclude_drug(id, within_days_before=365)
+
+# Inside an inclusion rule
+with cohort.include_rule("No Prior Cancer") as rule:
+    rule.exclude_condition(cancer_cs, anytime_before=True)
+```
+
+Available `exclude_*` methods:
+- `exclude_condition(id, **kwargs)`
+- `exclude_drug(id, **kwargs)`
+- `exclude_measurement(id, **kwargs)`
+- `exclude_procedure(id, **kwargs)`
+- `exclude_visit(id, **kwargs)`
+- `exclude_observation(id, **kwargs)`
+- `exclude_device(id, **kwargs)`
+- `exclude_condition_era(id, **kwargs)`
+
+### Complex Nested Criteria (Logical Groups)
+
+For inclusion rules that require complex logic (AND/OR combinations), use
+nested group builders inside `include_rule`:
+
+#### `any_of()` — OR logic (match at least one)
+
+```python
+with cohort.include_rule("Supporting Evidence") as rule:
+    with rule.any_of() as group:
+        group.require_condition(cs_dx, anytime_before=True)
+        group.require_drug(cs_drug, within_days_before=30)
+        group.require_measurement(cs_lab, within_days_before=7)
+```
+
+#### `all_of()` — AND logic (must match all)
+
+```python
+with cohort.include_rule("Confirmed Case") as rule:
+    with rule.all_of() as group:
+        group.require_condition(cs_dx)
+        group.require_procedure(cs_biopsy, within_days_after=30)
+```
+
+#### `at_least_of(N)` / `at_least(N)` — Match at least N criteria
+
+```python
+with cohort.include_rule("2 of 3 Criteria") as rule:
+    with rule.at_least_of(2) as group:
+        group.require_condition(cs_dx, at_least=1)
+        group.require_drug(cs_drug, within_days_before=90)
+        group.require_measurement(cs_lab, within_days_before=30)
+```
+
+> [!NOTE]
+> `at_least(N)` is an alias for `at_least_of(N)` on group builders. Both create
+> a nested group. Do not confuse with the `at_least=N` keyword argument on
+> `require_condition()` which sets occurrence count.
+
+#### Nested Groups (complex logic trees)
+
+Groups can be nested arbitrarily:
+
+```python
+with cohort.include_rule("Complex Criteria") as rule:
+    with rule.all_of() as outer:
+        outer.require_condition(cs_dx)
+        with outer.any_of() as inner:
+            inner.require_drug(cs_drug, within_days_before=30)
+            inner.require_measurement(cs_lab, within_days_before=7)
+```
+
+#### Using exclude inside groups
+
+```python
+with cohort.include_rule("No Metastatic Disease") as rule:
+    with rule.all_of() as group:
+        group.exclude_condition(cs_metastasis_a, anytime_before=True)
+        group.exclude_condition(cs_metastasis_b, anytime_before=True)
+```
+
+> [!IMPORTANT]
+> Inside a group builder (`any_of`, `all_of`, `at_least_of`), use the **parameter-based**
+> API (keyword arguments like `at_least=N`, `within_days_before=N`). Do NOT chain
+> methods like `.at_least(N)` on the return value of `group.require_condition()`.
+>
+> ```python
+> # ✅ CORRECT: keyword arguments
+> group.require_condition(cs_id, at_least=2, within_days_before=30)
+>
+> # ❌ WRONG: chaining on group builder return
+> group.require_condition(cs_id).at_least(2)  # This won't work as expected
+> ```
+
 ## Decision Guide: When to Apply Population Constraints
 
 Use this guide to determine whether to apply age, gender, observation window, or other population filters:

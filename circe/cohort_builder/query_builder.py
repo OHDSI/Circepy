@@ -673,7 +673,9 @@ class DoseEraQuery(BaseQuery):
 
 class CriteriaGroupBuilder:
     def __init__(
-        self, parent: Union["CriteriaGroupBuilder", "CohortWithCriteria", "BaseQuery"], group: GroupConfig
+        self,
+        parent: Union["CriteriaGroupBuilder", "CohortWithCriteria", "BaseQuery", Any],
+        group: GroupConfig,
     ):
         self._parent = parent
         self._group = group
@@ -793,6 +795,42 @@ class CriteriaGroupBuilder:
     def exclude_drug(self, concept_set_id: int, **kwargs) -> "CriteriaGroupBuilder":
         return DrugQuery(concept_set_id, parent=self, is_exclusion=True).apply_params(**kwargs)._finalize()
 
+    def exclude_measurement(self, concept_set_id: int, **kwargs) -> "CriteriaGroupBuilder":
+        return (
+            MeasurementQuery(concept_set_id, parent=self, is_exclusion=True)
+            .apply_params(**kwargs)
+            ._finalize()
+        )
+
+    def exclude_procedure(self, concept_set_id: int, **kwargs) -> "CriteriaGroupBuilder":
+        return (
+            ProcedureQuery(concept_set_id, parent=self, is_exclusion=True).apply_params(**kwargs)._finalize()
+        )
+
+    def exclude_visit(self, concept_set_id: int, **kwargs) -> "CriteriaGroupBuilder":
+        return VisitQuery(concept_set_id, parent=self, is_exclusion=True).apply_params(**kwargs)._finalize()
+
+    def exclude_observation(self, concept_set_id: int, **kwargs) -> "CriteriaGroupBuilder":
+        return (
+            ObservationQuery(concept_set_id, parent=self, is_exclusion=True)
+            .apply_params(**kwargs)
+            ._finalize()
+        )
+
+    def exclude_device(self, concept_set_id: int, **kwargs) -> "CriteriaGroupBuilder":
+        return (
+            DeviceExposureQuery(concept_set_id, parent=self, is_exclusion=True)
+            .apply_params(**kwargs)
+            ._finalize()
+        )
+
+    def exclude_condition_era(self, concept_set_id: int, **kwargs) -> "CriteriaGroupBuilder":
+        return (
+            ConditionEraQuery(concept_set_id, parent=self, is_exclusion=True)
+            .apply_params(**kwargs)
+            ._finalize()
+        )
+
     def any_of(self) -> "CriteriaGroupBuilder":
         new_group = GroupConfig(type="ANY")
         self._group.criteria.append(new_group)
@@ -805,5 +843,27 @@ class CriteriaGroupBuilder:
 
     def at_least_of(self, count: int) -> "CriteriaGroupBuilder":
         new_group = GroupConfig(type="AT_LEAST", count=count)
+        self._group.criteria.append(new_group)
+        return CriteriaGroupBuilder(self, new_group)
+
+    def at_least(self, count: int) -> "CriteriaGroupBuilder":
+        """Alias for ``at_least_of``.  Creates a nested group requiring at least *count* criteria to match.
+
+        .. note::
+            This creates a *group* (like ``any_of`` / ``all_of``), **not** an
+            occurrence modifier.  Use ``require_condition(..., at_least=N)``
+            to set occurrence count on an individual criterion.
+        """
+        return self.at_least_of(count)
+
+    def at_most(self, count: int) -> "CriteriaGroupBuilder":
+        """Create a nested group requiring at most *count* criteria to match.
+
+        .. note::
+            This creates a *group*, **not** an occurrence modifier.
+            Use ``require_condition(..., at_most=N)`` to set occurrence
+            count on an individual criterion.
+        """
+        new_group = GroupConfig(type="AT_MOST", count=count)
         self._group.criteria.append(new_group)
         return CriteriaGroupBuilder(self, new_group)

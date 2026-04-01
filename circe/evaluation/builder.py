@@ -275,6 +275,69 @@ class RuleBuilder:
     def dose_era(self, concept_set_id: int, **kwargs) -> "RuleBuilder":
         return self._add_domain_criteria("dose_era", concept_set_id, **kwargs)
 
+    # --- Exclude Methods (shorthand for "exactly 0 occurrences") ---
+
+    def _exclude_domain(self, domain_name: str, concept_set_id: int, **kwargs) -> "RuleBuilder":
+        """Generic exclude: adds a criteria with exactly 0 occurrences.
+
+        This is shorthand for ``rule.condition(id).at_most(0).within_days_before(N)``
+        but expressed as ``rule.exclude_condition(id, within_days_before=N)``.
+        """
+        query_class = self._DOMAIN_QUERIES.get(domain_name)
+        if not query_class:
+            raise ValueError(f"Unknown domain: {domain_name}")
+        query = query_class(concept_set_id, parent=self, is_exclusion=True)
+        # Force exactly 0 occurrences for exclusion semantics
+        query._config.occurrence_count = 0
+        query._config.occurrence_type = "exactly"
+        query.apply_params(**kwargs)
+        query._finalize()
+        return self
+
+    def exclude_condition(self, concept_set_id: int, **kwargs) -> "RuleBuilder":
+        """Exclude if a condition is present (exactly 0 occurrences).
+
+        Equivalent to ``rule.condition(id).at_most(0)`` with optional time window.
+
+        Example::
+
+            rule.exclude_condition(cs_id, anytime_before=True)
+            rule.exclude_condition(cs_id, within_days_before=365)
+        """
+        return self._exclude_domain("condition", concept_set_id, **kwargs)
+
+    def exclude_drug(self, concept_set_id: int, **kwargs) -> "RuleBuilder":
+        """Exclude if a drug exposure is present (exactly 0 occurrences)."""
+        return self._exclude_domain("drug", concept_set_id, **kwargs)
+
+    def exclude_drug_era(self, concept_set_id: int, **kwargs) -> "RuleBuilder":
+        """Exclude if a drug era is present (exactly 0 occurrences)."""
+        return self._exclude_domain("drug_era", concept_set_id, **kwargs)
+
+    def exclude_measurement(self, concept_set_id: int, **kwargs) -> "RuleBuilder":
+        """Exclude if a measurement is present (exactly 0 occurrences)."""
+        return self._exclude_domain("measurement", concept_set_id, **kwargs)
+
+    def exclude_procedure(self, concept_set_id: int, **kwargs) -> "RuleBuilder":
+        """Exclude if a procedure is present (exactly 0 occurrences)."""
+        return self._exclude_domain("procedure", concept_set_id, **kwargs)
+
+    def exclude_visit(self, concept_set_id: int, **kwargs) -> "RuleBuilder":
+        """Exclude if a visit is present (exactly 0 occurrences)."""
+        return self._exclude_domain("visit", concept_set_id, **kwargs)
+
+    def exclude_observation(self, concept_set_id: int, **kwargs) -> "RuleBuilder":
+        """Exclude if an observation is present (exactly 0 occurrences)."""
+        return self._exclude_domain("observation", concept_set_id, **kwargs)
+
+    def exclude_device_exposure(self, concept_set_id: int, **kwargs) -> "RuleBuilder":
+        """Exclude if a device exposure is present (exactly 0 occurrences)."""
+        return self._exclude_domain("device_exposure", concept_set_id, **kwargs)
+
+    def exclude_condition_era(self, concept_set_id: int, **kwargs) -> "RuleBuilder":
+        """Exclude if a condition era is present (exactly 0 occurrences)."""
+        return self._exclude_domain("condition_era", concept_set_id, **kwargs)
+
     def _modify_last_criteria(self, modifier_fn) -> "RuleBuilder":
         """Generic helper for modifying the last criteria."""
         if not self._group.criteria:
@@ -347,12 +410,43 @@ class RuleBuilder:
         return self._modify_last_criteria(set_values)
 
     def any_of(self) -> CriteriaGroupBuilder:
+        """Create a nested group where **any** criterion can match (OR logic)."""
         new_group = GroupConfig(type="ANY")
         self._group.criteria.append(new_group)
         return CriteriaGroupBuilder(self, new_group)
 
     def all_of(self) -> CriteriaGroupBuilder:
+        """Create a nested group where **all** criteria must match (AND logic)."""
         new_group = GroupConfig(type="ALL")
+        self._group.criteria.append(new_group)
+        return CriteriaGroupBuilder(self, new_group)
+
+    def at_least_of(self, count: int) -> CriteriaGroupBuilder:
+        """Create a nested group where at least *count* criteria must match.
+
+        Example::
+
+            with ev.rule("Supporting Evidence", weight=5) as rule:
+                with rule.at_least_of(2) as group:
+                    group.condition(cs_dx)
+                    group.drug(cs_drug)
+                    group.measurement(cs_lab)
+        """
+        new_group = GroupConfig(type="AT_LEAST", count=count)
+        self._group.criteria.append(new_group)
+        return CriteriaGroupBuilder(self, new_group)
+
+    def at_most_of(self, count: int) -> CriteriaGroupBuilder:
+        """Create a nested group where at most *count* criteria may match.
+
+        Example::
+
+            with ev.rule("Rare Side Effect", weight=-3) as rule:
+                with rule.at_most_of(1) as group:
+                    group.condition(cs_side_effect_a)
+                    group.condition(cs_side_effect_b)
+        """
+        new_group = GroupConfig(type="AT_MOST", count=count)
         self._group.criteria.append(new_group)
         return CriteriaGroupBuilder(self, new_group)
 
@@ -391,7 +485,11 @@ def _build_correlated_criteria(criteria_cfg: CriteriaConfig) -> CorelatedCriteri
     # Occurrence
     type_map = {"exactly": 0, "atMost": 1, "atLeast": 2}
     occ_type = type_map.get(config.occurrence_type, 2)
-    occurrence = Occurrence(type=occ_type, count=config.occurrence_count or 1, is_distinct=config.is_distinct)
+    occurrence = Occurrence(
+        type=occ_type,
+        count=config.occurrence_count if config.occurrence_count is not None else 1,
+        is_distinct=config.is_distinct,
+    )
 
     # Window
     start_window = None
