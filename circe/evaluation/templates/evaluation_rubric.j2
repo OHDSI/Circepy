@@ -22,14 +22,15 @@
 {% for rule in rubric.rules %}
 
 ### {{ rule.rule_id }}. {{ rule.name }}
+
 **Weight:** {{ format_number(rule.weight | abs) }}
 
 **Mode:** {{ 'Negative (Exclusion)' if rule.weight < 0 else 'Positive (Evidence)' }}
 
-{% if rule.category %}
+{% if rule.category -%}
 **Category:** {{ rule.category }}
-{% endif %}
 
+{% endif -%}
 Matched if the person has {{ ct.Group(rule.expression) }}
 
 {% endfor %}
