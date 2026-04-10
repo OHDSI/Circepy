@@ -339,12 +339,26 @@ class RuleBuilder:
         return self._exclude_domain("condition_era", concept_set_id, **kwargs)
 
     def _modify_last_criteria(self, modifier_fn) -> "RuleBuilder":
-        """Generic helper for modifying the last criteria."""
+        """Generic helper for modifying the last criteria.
+
+        If the last item is a plain CriteriaConfig, the modifier is applied to
+        its QueryConfig directly.  If the last item is a GroupConfig (e.g. the
+        result of ``any_of()`` / ``all_of()``), the modifier is applied
+        recursively to every CriteriaConfig inside that group so that callers
+        can write::
+
+            with rule.any_of() as g:
+                g.procedure(cs_a)
+                g.condition(cs_b)
+            rule.anytime_before()   # correctly fans out to both criteria
+        """
         if not self._group.criteria:
             raise RuntimeError("Call a criteria method before applying modifiers")
         last = self._group.criteria[-1]
         if isinstance(last, CriteriaConfig):
             modifier_fn(last.query_config)
+        elif isinstance(last, GroupConfig):
+            _apply_modifier_to_group(last, modifier_fn)
         return self
 
     # Fluent modifiers for simple one-line rules
@@ -470,6 +484,15 @@ class RuleBuilder:
 
 
 # --- Helper Conversion Functions (Adapted from CohortBuilder) ---
+
+
+def _apply_modifier_to_group(group_cfg: GroupConfig, modifier_fn) -> None:
+    """Recursively apply a QueryConfig modifier to every CriteriaConfig in a group."""
+    for item in group_cfg.criteria:
+        if isinstance(item, CriteriaConfig):
+            modifier_fn(item.query_config)
+        elif isinstance(item, GroupConfig):
+            _apply_modifier_to_group(item, modifier_fn)
 
 
 def _build_criteria_group(group_cfg: GroupConfig) -> CirceCriteriaGroup:

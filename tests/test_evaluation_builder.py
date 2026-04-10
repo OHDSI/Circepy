@@ -155,6 +155,34 @@ class TestEvaluationBuilder(unittest.TestCase):
             "ignore_observation_period must be propagated to CorelatedCriteria",
         )
 
+    def test_anytime_before_on_group_fans_out_to_all_criteria(self):
+        """Regression: window modifier after any_of()/all_of() must apply to every criterion inside the group.
+
+        Pattern:
+            with rule.any_of() as g:
+                g.procedure(cs_a)
+                g.condition(cs_b)
+            rule.anytime_before()   # must reach BOTH criteria, not be silently dropped
+        """
+        with (
+            EvaluationBuilder("GroupWindow") as ev,
+            ev.rule("Pre-existing transplant", weight=-9999) as rule,
+            rule.any_of() as g,
+        ):
+            g.procedure(1)
+            g.condition(2)
+            rule.anytime_before()
+
+        any_group = ev.rubric.rules[0].expression.groups[0]
+        self.assertEqual(any_group.type, "ANY")
+        for correlated in any_group.criteria_list:
+            w = correlated.start_window
+            self.assertIsNotNone(w, "start_window must not be None after anytime_before()")
+            self.assertEqual(w.start.days, 99999, "start bound must be 99999 for anytime_before()")
+            self.assertEqual(w.start.coeff, -1)
+            self.assertEqual(w.end.days, 0)
+            self.assertEqual(w.end.coeff, 1)
+
 
 if __name__ == "__main__":
     unittest.main()
