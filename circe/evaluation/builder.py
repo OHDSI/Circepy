@@ -358,6 +358,13 @@ class RuleBuilder:
     def at_most(self, count: int) -> "RuleBuilder":
         def set_occurrence(cfg):
             cfg.occurrence_count = count
+            cfg.occurrence_type = "atMost"
+
+        return self._modify_last_criteria(set_occurrence)
+
+    def exactly(self, count: int) -> "RuleBuilder":
+        def set_occurrence(cfg):
+            cfg.occurrence_count = count
             cfg.occurrence_type = "exactly"
 
         return self._modify_last_criteria(set_occurrence)
@@ -502,7 +509,13 @@ def _build_correlated_criteria(criteria_cfg: CriteriaConfig) -> CorelatedCriteri
             end=WindowBound(coeff=1, days=tw.days_after),
         )
 
-    return CorelatedCriteria(criteria=query_criteria, start_window=start_window, occurrence=occurrence)
+    return CorelatedCriteria(
+        criteria=query_criteria,
+        start_window=start_window,
+        occurrence=occurrence,
+        restrict_visit=config.restrict_visit,
+        ignore_observation_period=config.ignore_observation_period,
+    )
 
 
 def _apply_numeric_range(

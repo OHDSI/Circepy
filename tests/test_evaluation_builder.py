@@ -121,6 +121,40 @@ class TestEvaluationBuilder(unittest.TestCase):
         self.assertEqual(window.start.days, 5)
         self.assertEqual(window.end.days, 5)
 
+    def test_at_most_serializes_as_at_most_not_exactly(self):
+        """Regression: at_most() must produce occurrence type 1 (atMost), not 0 (exactly)."""
+        with EvaluationBuilder("AtMost") as ev:
+            ev.add_rule("Rule", weight=1).condition(1).at_most(2)
+
+        correlated = ev.rubric.rules[0].expression.criteria_list[0]
+        # CIRCE type map: exactly=0, atMost=1, atLeast=2
+        self.assertEqual(
+            correlated.occurrence.type, 1, "at_most() must serialize as type 1 (atMost), not 0 (exactly)"
+        )
+        self.assertEqual(correlated.occurrence.count, 2)
+
+    def test_exactly_serializes_as_exactly(self):
+        """exactly() must produce occurrence type 0 (exactly)."""
+        with EvaluationBuilder("Exactly") as ev:
+            ev.add_rule("Rule", weight=1).condition(1).exactly(3)
+
+        correlated = ev.rubric.rules[0].expression.criteria_list[0]
+        # CIRCE type map: exactly=0, atMost=1, atLeast=2
+        self.assertEqual(correlated.occurrence.type, 0, "exactly() must serialize as type 0 (exactly)")
+        self.assertEqual(correlated.occurrence.count, 3)
+
+    def test_restrict_visit_and_ignore_obs_period_propagated(self):
+        """Regression: restrict_visit and ignore_observation_period must survive serialization."""
+        with EvaluationBuilder("Flags") as ev:
+            ev.add_rule("Rule", weight=1).condition(1, restrict_visit=True, ignore_observation_period=True)
+
+        correlated = ev.rubric.rules[0].expression.criteria_list[0]
+        self.assertTrue(correlated.restrict_visit, "restrict_visit must be propagated to CorelatedCriteria")
+        self.assertTrue(
+            correlated.ignore_observation_period,
+            "ignore_observation_period must be propagated to CorelatedCriteria",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
