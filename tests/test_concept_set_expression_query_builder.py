@@ -1,6 +1,6 @@
 import unittest
 
-from circe.vocabulary.concept import Concept, ConceptSetExpression, ConceptSetItem
+from circe.vocabulary.concept import Concept, ConceptExpressionItem, ConceptSetExpression
 from circe.vocabulary.concept_set_expression_query_builder import (
     ConceptSetExpressionQueryBuilder,
 )
@@ -64,7 +64,7 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
 
     def test_build_expression_query_simple_include(self):
         c1 = Concept(concept_id=1, concept_name="C1")
-        item = ConceptSetItem(
+        item = ConceptExpressionItem(
             concept=c1,
             is_excluded=False,
             include_descendants=False,
@@ -85,13 +85,13 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         c1 = Concept(concept_id=1, concept_name="C1")
         c2 = Concept(concept_id=2, concept_name="C2")
 
-        item1 = ConceptSetItem(
+        item1 = ConceptExpressionItem(
             concept=c1,
             is_excluded=False,
             include_descendants=False,
             include_mapped=False,
         )
-        item2 = ConceptSetItem(
+        item2 = ConceptExpressionItem(
             concept=c2,
             is_excluded=True,
             include_descendants=False,
@@ -111,7 +111,9 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         c1 = Concept(concept_id=1, concept_name="C1")
 
         # Test mapped + descendants
-        item = ConceptSetItem(concept=c1, is_excluded=False, include_descendants=True, include_mapped=True)
+        item = ConceptExpressionItem(
+            concept=c1, is_excluded=False, include_descendants=True, include_mapped=True
+        )
         expression = ConceptSetExpression(items=[item])
 
         query = self.builder.build_expression_query(expression)
@@ -128,7 +130,9 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         c1 = Concept(concept_id=1, concept_name="C1")
 
         # Test excluded + mapped + descendants
-        item = ConceptSetItem(concept=c1, is_excluded=True, include_descendants=True, include_mapped=True)
+        item = ConceptExpressionItem(
+            concept=c1, is_excluded=True, include_descendants=True, include_mapped=True
+        )
         expression = ConceptSetExpression(items=[item])
 
         query = self.builder.build_expression_query(expression)

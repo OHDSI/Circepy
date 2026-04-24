@@ -1,0 +1,28 @@
+{
+  "id": 789,
+  "name": "Essential Hypertension",
+  "description": "Minimal concept set using only concept IDs for efficient storage",
+  "version": "1.0.0",
+  "createdByTool": "CAPR 4.3",
+  "expression": {
+    "items": [
+      {
+        "concept": {
+          "conceptId": 320128
+        },
+        "isExcluded": false,
+        "includeDescendants": true,
+        "includeMapped": true
+      },
+      {
+        "concept": {
+          "conceptId": 437663
+        },
+        "isExcluded": false,
+        "includeDescendants": true,
+        "includeMapped": false
+      }
+    ]
+  },
+  "tags": ["hypertension", "cardiovascular"]
+}

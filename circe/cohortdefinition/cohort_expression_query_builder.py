@@ -13,6 +13,7 @@ from typing import Any, Optional, Union
 
 from circe.extensions import get_registry
 
+from ..vocabulary.concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
 from .builders import (
     ConditionEraSqlBuilder,
     ConditionOccurrenceSqlBuilder,
@@ -34,7 +35,6 @@ from .builders import (
 )
 from .builders.utils import BuilderOptions, BuilderUtils, CriteriaColumn
 from .cohort import CohortExpression
-from .concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
 from .core import CustomEraStrategy, DateOffsetStrategy, Period
 from .criteria import (
     ConditionEra,
