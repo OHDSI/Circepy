@@ -56,7 +56,19 @@ def apply_databricks_post_connect_workaround(
     This helper should be applied lazily by the execution path when a
     Databricks backend is actually used.
     """
-    backend_cls = _databricks_backend_class() if backend_cls is None else backend_cls
+    # Only apply the global Ibis-version short-circuit when we are auto-detecting
+    # the real Databricks backend class from ibis. Tests may pass an explicit fake
+    # backend class to validate patch behavior regardless of installed Ibis version.
+    if backend_cls is None:
+        import ibis
+        from packaging.version import Version
+
+        # If the installed Ibis version is late enough to contain the fix, skip patch
+        if Version(ibis.__version__) >= Version("10.0.0"):
+            return False
+
+        backend_cls = _databricks_backend_class()
+
     if backend_cls is None:
         return False
 
@@ -69,6 +81,15 @@ def apply_databricks_post_connect_workaround(
 
     if not _post_connect_needs_workaround(post_connect):
         return False
+
+    import warnings
+
+    warnings.warn(
+        "The Databricks workaround for Ibis issue #11598 is active. "
+        "This will be removed in a future release once older Ibis versions are deprecated.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
     @functools.wraps(post_connect)
     def _patched_post_connect(self: Any, *args: Any, **kwargs: Any) -> Any:
