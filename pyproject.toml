@@ -92,7 +92,7 @@ include = ["circe*"]
 exclude = ["circe.tests*"]
 
 [tool.setuptools.package-data]
-circe = ["py.typed"]
+circe = ["py.typed", "skills/*.md", "**/*.j2"]
 "circe.extensions.waveform" = ["templates/*.j2"]
 
 [tool.mypy]

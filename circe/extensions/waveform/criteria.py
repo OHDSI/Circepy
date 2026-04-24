@@ -2,13 +2,19 @@ from typing import Optional
 
 from pydantic import AliasChoices, Field
 
+from circe.cohort_builder.query_builder import BaseQuery
 from circe.cohortdefinition.core import DateRange, NumericRange, TextFilter
 from circe.cohortdefinition.criteria import Criteria
-from circe.extensions import criteria_class
+from circe.extensions import register_domain
 from circe.vocabulary.concept import Concept
 
 
-@criteria_class("WaveformOccurrence")
+@register_domain(
+    name="waveform_occurrence",
+    domain="WaveformOccurrence",
+    query_class=BaseQuery,
+    requires_concept=False,
+)
 class WaveformOccurrence(Criteria):
     """
     Criteria for Waveform Occurrence.
@@ -72,7 +78,12 @@ class WaveformOccurrence(Criteria):
     )
 
 
-@criteria_class("WaveformRegistry")
+@register_domain(
+    name="waveform_registry",
+    domain="WaveformRegistry",
+    query_class=BaseQuery,
+    requires_concept=False,
+)
 class WaveformRegistry(Criteria):
     """
     Criteria for Waveform Registry.
@@ -127,7 +138,12 @@ class WaveformRegistry(Criteria):
     )
 
 
-@criteria_class("WaveformChannelMetadata")
+@register_domain(
+    name="waveform_channel_metadata",
+    domain="WaveformChannelMetadata",
+    query_class=BaseQuery,
+    requires_concept=False,
+)
 class WaveformChannelMetadata(Criteria):
     """
     Criteria for Waveform Channel Metadata.
@@ -202,7 +218,12 @@ class WaveformChannelMetadata(Criteria):
     )
 
 
-@criteria_class("WaveformFeature")
+@register_domain(
+    name="waveform_feature",
+    domain="WaveformFeature",
+    query_class=BaseQuery,
+    requires_concept=False,
+)
 class WaveformFeature(Criteria):
     """
     Criteria for Waveform Feature.

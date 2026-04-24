@@ -165,17 +165,20 @@
     {%- if group.demographic_criteria_list -%}
       {%- for demoCriteria in group.demographic_criteria_list %}
 
+
 {{ utils.indent(level + 1) }}{{ loop.index }}. {{ DemographicCriteria(demoCriteria, level + 1, indexLabel) }}
       {%- endfor -%}
     {%- endif -%}
     {%- if group.criteria_list -%}
       {%- for countCriteria in group.criteria_list %}
 
+
 {{ utils.indent(level + 1) }}{{ demo_size + loop.index }}. {{ CountCriteria(countCriteria, level + 1, indexLabel) }}
       {%- endfor -%}
     {%- endif -%}
     {%- if group.groups -%}
       {%- for subgroup in group.groups %}
+
 
 {{ utils.indent(level + 1) }}{{ demo_size + crit_size + loop.index }}. {{ Group(subgroup, group, (loop.index == 1 and crit_size == 0 and demo_size == 0), indexLabel, level + 1) }}
       {%- endfor -%}
@@ -184,6 +187,7 @@
     {%- if crit_size == 1 -%}{{ CountCriteria(group.criteria_list[0], level, indexLabel) }}{%- endif -%}
     {%- if demo_size == 1 -%}{{ DemographicCriteria(group.demographic_criteria_list[0], level, indexLabel) }}{%- endif -%}
   {%- endif -%}
+
 {%- endmacro -%}
 
 {%- macro CountCriteria(countCriteria, level=0, indexLabel="cohort entry") -%}

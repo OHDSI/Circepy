@@ -82,7 +82,6 @@ class MarkdownRender:
             return registry.get_template(criteria)
 
         self._env.globals["get_template_for_criteria"] = get_template_for_criteria
-
         # Register global functions
         self._env.globals["codeset_name"] = self._codeset_name
         self._env.globals["format_date"] = self._format_date

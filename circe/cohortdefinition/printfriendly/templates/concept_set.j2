@@ -11,9 +11,9 @@
 
 |Concept ID|Concept Name|Code|Vocabulary|Excluded|Descendants|Mapped|
 |---|---|---|---|---|---|---|
-  {%- for item in cs.expression.items %}
-|{{ item.concept.concept_id }}|{{ item.concept.concept_name }}|{{ item.concept.concept_code }}|{{ item.concept.vocabulary_id }}|{{ "YES" if item.is_excluded else "NO" }}|{{ "YES" if item.include_descendants else "NO" }}|{{ "YES" if item.include_mapped else "NO" }}|
-  {%- endfor %}
+{% for item in cs.expression.items %}
+|{{ item.concept.concept_id if item.concept.concept_id is not none else "-" }}{{ '|' }}{{ item.concept.concept_name if item.concept.concept_name is not none else "-" }}{{ '|' }}{{ item.concept.concept_code if item.concept.concept_code is not none else "-" }}{{ '|' }}{{ item.concept.vocabulary_id if item.concept.vocabulary_id is not none else "-" }}{{ '|' }}{{ "YES" if item.is_excluded else "NO" }}{{ '|' }}{{ "YES" if item.include_descendants else "NO" }}{{ '|' }}{{ "YES" if item.include_mapped else "NO" }}|
+{% endfor %}
 {%- else %}
 
 There are no concept set items in this concept set.

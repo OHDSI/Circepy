@@ -62,6 +62,22 @@ from .criteria import (  # Moved from core; Criteria Domain Classes; Era Criteri
 )
 from .interfaces import IGetCriteriaSqlDispatcher, IGetEndStrategySqlDispatcher
 from .printfriendly import MarkdownRender
+from .validators import (
+    get_censoring_criteria_types,
+    get_concept_set_count,
+    get_end_strategy_type,
+    get_exclusion_count,
+    get_primary_criteria_types,
+    get_primary_limit_type,
+    has_additional_criteria,
+    has_censoring_criteria,
+    has_concept_sets,
+    has_end_strategy,
+    has_exclusion_rules,
+    has_inclusion_rule_by_name,
+    has_observation_window,
+    is_first_event,
+)
 
 __all__ = [
     # Main cohort class
@@ -122,6 +138,21 @@ __all__ = [
     "IGetEndStrategySqlDispatcher",
     # Print-Friendly
     "MarkdownRender",
+    # Validator Functions
+    "is_first_event",
+    "has_exclusion_rules",
+    "has_inclusion_rule_by_name",
+    "get_exclusion_count",
+    "has_censoring_criteria",
+    "get_censoring_criteria_types",
+    "has_additional_criteria",
+    "has_end_strategy",
+    "get_end_strategy_type",
+    "get_primary_criteria_types",
+    "has_observation_window",
+    "get_primary_limit_type",
+    "get_concept_set_count",
+    "has_concept_sets",
 ]
 
 # Rebuild models with forward references after all imports are complete

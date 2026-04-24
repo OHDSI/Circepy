@@ -211,4 +211,7 @@ __all__ = [
     "safe_model_rebuild",
     # I/O helpers
     "load_expression",
+    "get_cohort_builder_skill",
+    "get_skill",
+    "list_skills",
 ]
