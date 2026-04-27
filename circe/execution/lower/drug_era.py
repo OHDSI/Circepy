@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from circe.cohortdefinition.criteria import DrugEra
+from circe.extensions import lowerer
+
 from ..normalize.criteria import NormalizedCriterion
 from ..plan.events import EventPlan
 from ..plan.schema import GAP_DAYS, OCCURRENCE_COUNT
@@ -11,6 +14,7 @@ from .common import (
 )
 
 
+@lowerer(DrugEra)
 def lower_drug_era(
     criterion: NormalizedCriterion,
     *,

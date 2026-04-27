@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from circe.cohortdefinition.criteria import DoseEra
+from circe.extensions import lowerer
+
 from ..normalize.criteria import NormalizedCriterion
 from ..plan.events import EventPlan
 from .common import append_duration_filter, build_standard_domain_plan, lower_common_steps
 
 
+@lowerer(DoseEra)
 def lower_dose_era(
     criterion: NormalizedCriterion,
     *,

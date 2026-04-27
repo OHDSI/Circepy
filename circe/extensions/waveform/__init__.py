@@ -2,6 +2,8 @@ from pathlib import Path
 
 from circe.extensions import template_path
 
+# Import lowers and normalizers to trigger decorators
+from . import lower, normalizer
 from .builders.waveform_channel_metadata import WaveformChannelMetadataSqlBuilder
 from .builders.waveform_feature import WaveformFeatureSqlBuilder
 
@@ -16,6 +18,8 @@ from .criteria import WaveformChannelMetadata, WaveformFeature, WaveformOccurren
 template_path(Path(__file__).parent / "templates")
 
 __all__ = [
+    "lower",
+    "normalizer",
     "WaveformChannelMetadata",
     "WaveformFeature",
     "WaveformOccurrence",

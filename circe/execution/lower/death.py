@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from circe.extensions import lowerer
+
 from ...cohortdefinition.criteria import Death
 from ..normalize.criteria import NormalizedCriterion
 from ..plan.events import EventPlan
 from .common import append_concept_filters, build_standard_domain_plan, lower_common_steps
 
 
+@lowerer(Death)
 def lower_death(
     criterion: NormalizedCriterion,
     *,

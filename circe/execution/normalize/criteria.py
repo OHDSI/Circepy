@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
+from circe.extensions import get_registry, normalizer
+
 from ...cohortdefinition.criteria import (
     ConditionEra,
     ConditionOccurrence,
@@ -140,6 +142,7 @@ def _build_normalized_criterion(
     )
 
 
+@normalizer(ConditionOccurrence)
 def _normalize_condition_occurrence(criteria: ConditionOccurrence) -> NormalizedCriterion:
     return _build_normalized_criterion(
         criteria=criteria,
@@ -159,6 +162,7 @@ def _normalize_condition_occurrence(criteria: ConditionOccurrence) -> Normalized
     )
 
 
+@normalizer(DrugExposure)
 def _normalize_drug_exposure(criteria: DrugExposure) -> NormalizedCriterion:
     return _build_normalized_criterion(
         criteria=criteria,
@@ -178,6 +182,7 @@ def _normalize_drug_exposure(criteria: DrugExposure) -> NormalizedCriterion:
     )
 
 
+@normalizer(VisitOccurrence)
 def _normalize_visit_occurrence(criteria: VisitOccurrence) -> NormalizedCriterion:
     return _build_normalized_criterion(
         criteria=criteria,
@@ -197,6 +202,7 @@ def _normalize_visit_occurrence(criteria: VisitOccurrence) -> NormalizedCriterio
     )
 
 
+@normalizer(Measurement)
 def _normalize_measurement(criteria: Measurement) -> NormalizedCriterion:
     return _build_normalized_criterion(
         criteria=criteria,
@@ -216,6 +222,7 @@ def _normalize_measurement(criteria: Measurement) -> NormalizedCriterion:
     )
 
 
+@normalizer(ProcedureOccurrence)
 def _normalize_procedure_occurrence(
     criteria: ProcedureOccurrence,
 ) -> NormalizedCriterion:
@@ -237,6 +244,7 @@ def _normalize_procedure_occurrence(
     )
 
 
+@normalizer(Observation)
 def _normalize_observation(criteria: Observation) -> NormalizedCriterion:
     return _build_normalized_criterion(
         criteria=criteria,
@@ -256,6 +264,7 @@ def _normalize_observation(criteria: Observation) -> NormalizedCriterion:
     )
 
 
+@normalizer(VisitDetail)
 def _normalize_visit_detail(criteria: VisitDetail) -> NormalizedCriterion:
     return _build_normalized_criterion(
         criteria=criteria,
@@ -275,6 +284,7 @@ def _normalize_visit_detail(criteria: VisitDetail) -> NormalizedCriterion:
     )
 
 
+@normalizer(DeviceExposure)
 def _normalize_device_exposure(criteria: DeviceExposure) -> NormalizedCriterion:
     return _build_normalized_criterion(
         criteria=criteria,
@@ -294,6 +304,7 @@ def _normalize_device_exposure(criteria: DeviceExposure) -> NormalizedCriterion:
     )
 
 
+@normalizer(Specimen)
 def _normalize_specimen(criteria: Specimen) -> NormalizedCriterion:
     return _build_normalized_criterion(
         criteria=criteria,
@@ -313,6 +324,7 @@ def _normalize_specimen(criteria: Specimen) -> NormalizedCriterion:
     )
 
 
+@normalizer(Death)
 def _normalize_death(criteria: Death) -> NormalizedCriterion:
     return _build_normalized_criterion(
         criteria=criteria,
@@ -332,6 +344,7 @@ def _normalize_death(criteria: Death) -> NormalizedCriterion:
     )
 
 
+@normalizer(ObservationPeriod)
 def _normalize_observation_period(criteria: ObservationPeriod) -> NormalizedCriterion:
     return _build_normalized_criterion(
         criteria=criteria,
@@ -351,6 +364,7 @@ def _normalize_observation_period(criteria: ObservationPeriod) -> NormalizedCrit
     )
 
 
+@normalizer(PayerPlanPeriod)
 def _normalize_payer_plan_period(criteria: PayerPlanPeriod) -> NormalizedCriterion:
     return _build_normalized_criterion(
         criteria=criteria,
@@ -370,6 +384,7 @@ def _normalize_payer_plan_period(criteria: PayerPlanPeriod) -> NormalizedCriteri
     )
 
 
+@normalizer(ConditionEra)
 def _normalize_condition_era(criteria: ConditionEra) -> NormalizedCriterion:
     return _build_normalized_criterion(
         criteria=criteria,
@@ -389,6 +404,7 @@ def _normalize_condition_era(criteria: ConditionEra) -> NormalizedCriterion:
     )
 
 
+@normalizer(DrugEra)
 def _normalize_drug_era(criteria: DrugEra) -> NormalizedCriterion:
     return _build_normalized_criterion(
         criteria=criteria,
@@ -408,6 +424,7 @@ def _normalize_drug_era(criteria: DrugEra) -> NormalizedCriterion:
     )
 
 
+@normalizer(DoseEra)
 def _normalize_dose_era(criteria: DoseEra) -> NormalizedCriterion:
     return _build_normalized_criterion(
         criteria=criteria,
@@ -427,6 +444,7 @@ def _normalize_dose_era(criteria: DoseEra) -> NormalizedCriterion:
     )
 
 
+@normalizer(LocationRegion)
 def _normalize_location_region(criteria: LocationRegion) -> NormalizedCriterion:
     return _build_normalized_criterion(
         criteria=criteria,
@@ -447,42 +465,15 @@ def _normalize_location_region(criteria: LocationRegion) -> NormalizedCriterion:
 
 
 def normalize_criterion(criteria: Criteria) -> NormalizedCriterion:
-    if isinstance(criteria, ConditionOccurrence):
-        normalized = _normalize_condition_occurrence(criteria)
-    elif isinstance(criteria, DrugExposure):
-        normalized = _normalize_drug_exposure(criteria)
-    elif isinstance(criteria, VisitOccurrence):
-        normalized = _normalize_visit_occurrence(criteria)
-    elif isinstance(criteria, Measurement):
-        normalized = _normalize_measurement(criteria)
-    elif isinstance(criteria, ProcedureOccurrence):
-        normalized = _normalize_procedure_occurrence(criteria)
-    elif isinstance(criteria, Observation):
-        normalized = _normalize_observation(criteria)
-    elif isinstance(criteria, VisitDetail):
-        normalized = _normalize_visit_detail(criteria)
-    elif isinstance(criteria, DeviceExposure):
-        normalized = _normalize_device_exposure(criteria)
-    elif isinstance(criteria, Specimen):
-        normalized = _normalize_specimen(criteria)
-    elif isinstance(criteria, Death):
-        normalized = _normalize_death(criteria)
-    elif isinstance(criteria, ObservationPeriod):
-        normalized = _normalize_observation_period(criteria)
-    elif isinstance(criteria, PayerPlanPeriod):
-        normalized = _normalize_payer_plan_period(criteria)
-    elif isinstance(criteria, ConditionEra):
-        normalized = _normalize_condition_era(criteria)
-    elif isinstance(criteria, DrugEra):
-        normalized = _normalize_drug_era(criteria)
-    elif isinstance(criteria, DoseEra):
-        normalized = _normalize_dose_era(criteria)
-    elif isinstance(criteria, LocationRegion):
-        normalized = _normalize_location_region(criteria)
-    else:
+    registry = get_registry()
+    normalizer_fn = registry.get_normalizer(type(criteria))
+
+    if normalizer_fn is None:
         raise UnsupportedCriterionError(
             f"Ibis executor normalization error: unsupported criterion type {criteria.__class__.__name__}."
         )
+
+    normalized = normalizer_fn(criteria)
 
     if criteria.correlated_criteria is not None and not criteria.correlated_criteria.is_empty():
         from .groups import normalize_criteria_group

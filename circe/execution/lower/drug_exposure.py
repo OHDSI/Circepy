@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from circe.extensions import lowerer
+
 from ...cohortdefinition.criteria import DrugExposure
 from ..normalize.criteria import NormalizedCriterion
 from ..plan.events import EventPlan
@@ -14,6 +16,7 @@ from .common import (
 )
 
 
+@lowerer(DrugExposure)
 def lower_drug_exposure(
     criterion: NormalizedCriterion,
     *,
