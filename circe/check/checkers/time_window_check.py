@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional
+from typing import Any, Optional
 
 from ..operations.operations import Operations
 from ..utils.criteria_name_helper import CriteriaNameHelper
@@ -77,7 +77,7 @@ class TimeWindowCheck(BaseCorelatedCriteriaCheck):
         """
         name = f"{group_name} {CriteriaNameHelper.get_criteria_name(criteria.criteria)}"
 
-        match_result = Operations.match(criteria)
+        match_result: Any = Operations.match(criteria)
         match_result.when(
             lambda c: (
                 c.start_window is not None

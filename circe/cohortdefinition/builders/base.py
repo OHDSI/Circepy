@@ -64,8 +64,6 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
                 )
             else:
                 query = query.replace("@additionalColumns", "")
-        else:
-            query = query.replace("@additionalColumns", "")
 
         return query
 

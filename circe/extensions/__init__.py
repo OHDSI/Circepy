@@ -32,10 +32,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional, Union
 
 if TYPE_CHECKING:
-    from .cohortdefinition.builders.base import CriteriaSqlBuilder
-    from .cohortdefinition.criteria import Criteria
-    from .execution.lower.criteria import LowerFn
-    from .execution.normalize.criteria import NormalizedCriterion
+    from ..cohortdefinition.builders.base import CriteriaSqlBuilder
+    from ..cohortdefinition.criteria import Criteria
+    from ..execution.lower.criteria import LowerFn
+    from ..execution.normalize.criteria import NormalizedCriterion
 
 NormalizerFn = Callable[["Criteria"], "NormalizedCriterion"]
 
@@ -43,7 +43,7 @@ NormalizerFn = Callable[["Criteria"], "NormalizedCriterion"]
 class ExtensionRegistry:
     """Central registry for OMOP CDM extensions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Maps criteria names to criteria classes (for JSON deserialization)
         self._criteria_classes: dict[str, type[Criteria]] = {}
 
@@ -211,10 +211,10 @@ def criteria_class(name: str) -> "Callable[[type['Criteria']], type['Criteria']]
     """
 
     def decorator(cls: "type['Criteria']") -> "type['Criteria']":
-        _registry.register_criteria_class(name, cls)  # type: ignore[arg-type]
+        _registry.register_criteria_class(name, cls)
         return cls
 
-    return decorator  # type: ignore[return-value]
+    return decorator
 
 
 def sql_builder(
@@ -233,10 +233,10 @@ def sql_builder(
     """
 
     def decorator(builder_cls: "type['CriteriaSqlBuilder']") -> "type['CriteriaSqlBuilder']":
-        _registry.register_sql_builder(criteria_cls, builder_cls)  # type: ignore[arg-type]
+        _registry.register_sql_builder(criteria_cls, builder_cls)
         return builder_cls
 
-    return decorator  # type: ignore[return-value]
+    return decorator
 
 
 def lowerer(criteria_cls: "type['Criteria']") -> Callable[["LowerFn"], "LowerFn"]:
@@ -253,7 +253,7 @@ def lowerer(criteria_cls: "type['Criteria']") -> Callable[["LowerFn"], "LowerFn"
     """
 
     def decorator(fn: "LowerFn") -> "LowerFn":
-        _registry.register_lowerer(criteria_cls, fn)  # type: ignore[arg-type]
+        _registry.register_lowerer(criteria_cls, fn)
         return fn
 
     return decorator
@@ -273,7 +273,7 @@ def normalizer(criteria_cls: "type['Criteria']") -> Callable[[NormalizerFn], Nor
     """
 
     def decorator(fn: NormalizerFn) -> NormalizerFn:
-        _registry.register_normalizer(criteria_cls, fn)  # type: ignore[arg-type]
+        _registry.register_normalizer(criteria_cls, fn)
         return fn
 
     return decorator
@@ -295,7 +295,7 @@ def markdown_template(criteria_cls: "type['Criteria']", template_name: str) -> "
     """
 
     def decorator(cls: type) -> type:
-        _registry.register_markdown_template(criteria_cls, template_name)  # type: ignore[arg-type]
+        _registry.register_markdown_template(criteria_cls, template_name)
         return cls
 
     return decorator

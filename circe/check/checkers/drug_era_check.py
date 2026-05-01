@@ -8,6 +8,8 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+from typing import Any
+
 from ..operations.operations import Operations
 from ..warning_severity import WarningSeverity
 from .base_corelated_criteria_check import BaseCorelatedCriteriaCheck
@@ -53,15 +55,15 @@ class DrugEraCheck(BaseCorelatedCriteriaCheck):
             reporter: The warning reporter to use
         """
         # Handle case where criteria is still a dict (not yet deserialized)
-        if isinstance(criteria, dict):
+        if isinstance(criteria, dict):  # type: ignore[unreachable]
             # Skip validation for dict-based criteria - they need to be deserialized first
-            return
+            return  # type: ignore[unreachable]
 
         # Ensure criteria has a criteria attribute
         if not hasattr(criteria, "criteria") or not criteria.criteria:
             return
 
-        match_result = Operations.match(criteria.criteria)
+        match_result: Any = Operations.match(criteria.criteria)
         match_result.is_a(DrugEra)
         match_result.then(
             lambda c: (

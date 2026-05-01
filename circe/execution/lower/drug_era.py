@@ -4,7 +4,7 @@ from circe.cohortdefinition.criteria import DrugEra
 from circe.extensions import lowerer
 
 from ..normalize.criteria import NormalizedCriterion
-from ..plan.events import EventPlan
+from ..plan.events import EventPlan, PlanStep
 from ..plan.schema import GAP_DAYS, OCCURRENCE_COUNT
 from .common import (
     append_duration_filter,
@@ -21,7 +21,7 @@ def lower_drug_era(
     criterion_index: int,
 ) -> EventPlan:
     steps = lower_common_steps(criterion)
-    post_standardize_steps = []
+    post_standardize_steps: list[PlanStep] = []
     raw = criterion.raw_criteria
 
     append_numeric_filter(

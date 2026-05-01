@@ -69,8 +69,8 @@ class RangeCheck(BaseValueCheck):
                 if rule.expression and rule.expression.criteria_list:
                     for criteria in rule.expression.criteria_list:
                         # Handle both dict and CorelatedCriteria objects
-                        if isinstance(criteria, dict):
-                            start_window = criteria.get("startWindow") or criteria.get("start_window")
+                        if isinstance(criteria, dict):  # type: ignore[unreachable]
+                            start_window = criteria.get("startWindow") or criteria.get("start_window")  # type: ignore[unreachable]
                             end_window = criteria.get("endWindow") or criteria.get("end_window")
                         else:
                             start_window = getattr(criteria, "start_window", None) or getattr(

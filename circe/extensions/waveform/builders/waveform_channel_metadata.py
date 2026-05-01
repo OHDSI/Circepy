@@ -43,7 +43,7 @@ WHERE @whereClause
         query = self.get_query_template()
 
         where_clauses = []
-        join_clauses = []
+        join_clauses: list[str] = []
         codeset_clause = ""
 
         # Link to registry file

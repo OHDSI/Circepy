@@ -271,14 +271,6 @@ class Criteria(CirceBaseModel):
 
         return {self.__class__.__name__: data}
 
-        # Get the serialized data using default serialization
-        data = serializer(self)
-        # Wrap in class name for polymorphic deserialization in Java
-        # Only wrap if this is a subclass (not the base Criteria class)
-        if self.__class__.__name__ != "Criteria":
-            return {self.__class__.__name__: data}
-        return data
-
     def accept(self, dispatcher: Any, options: Optional[Any] = None) -> str:
         """Accept method for visitor pattern."""
         return dispatcher.get_criteria_sql(self, options)
@@ -1146,7 +1138,7 @@ class CriteriaGroup(BaseModel):
         # Helper window normalizer (same as before)
         def normalize_window(window_dict: dict) -> dict:
             if not isinstance(window_dict, dict):
-                return window_dict
+                return window_dict  # type: ignore[unreachable]
             normalized = {}
             if "UseEventEnd" in window_dict:
                 normalized["useEventEnd"] = window_dict["UseEventEnd"]
