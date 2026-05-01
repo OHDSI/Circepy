@@ -176,3 +176,6 @@ examples/*.json
 debug_app/.gemini_cache/
 debug_app/user_overrides.json
 debug_app/test_results.json
+
+.test_baseline.json
+.test_final.json

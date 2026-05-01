@@ -1,0 +1,1409 @@
+cdm_version_range: '>=5.0.0'
+primary_criteria:
+  criteria_list:
+  - condition_occurrence:
+      codeset_id: 30
+      condition_type_exclude: false
+  observation_window:
+    prior_days: 0
+    post_days: 0
+  primary_criteria_limit:
+    type: All
+concept_sets:
+- id: 7
+  name: Platelet measurement
+  expression:
+    items:
+    - concept:
+        concept_id: 4267147
+        concept_name: Platelet count
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '61928009'
+        domain_id: Measurement
+        vocabulary_id: SNOMED
+        concept_class_id: Procedure
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 3031586
+        concept_name: Platelets [#/volume] in Blood by Estimate
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: 49497-1
+        domain_id: Measurement
+        vocabulary_id: LOINC
+        concept_class_id: Lab Test
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 3050583
+        concept_name: Platelets panel - Blood by Automated count
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: 53800-9
+        domain_id: Measurement
+        vocabulary_id: LOINC
+        concept_class_id: Lab Test
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 3007461
+        concept_name: Platelets [#/volume] in Blood
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: 26515-7
+        domain_id: Measurement
+        vocabulary_id: LOINC
+        concept_class_id: Lab Test
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 37393863
+        concept_name: Platelet count
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '1022651000000100'
+        domain_id: Measurement
+        vocabulary_id: SNOMED
+        concept_class_id: Observable Entity
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+- id: 9
+  name: Congenital or genetic causes for thrombocytopenia
+  expression:
+    items:
+    - concept:
+        concept_id: 37397537
+        concept_name: Beta thalassemia X-linked thrombocytopenia syndrome
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '718196002'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4121131
+        concept_name: Inherited platelet disorder
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '234469001'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4006469
+        concept_name: Reticular dysgenesis
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '111584000'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 42537688
+        concept_name: Congenital thrombocytopenia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '737221003'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 437242
+        concept_name: Congenital thrombocytopenic purpura
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '267535004'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+- id: 10
+  name: Thrombocytosis
+  expression:
+    items:
+    - concept:
+        concept_id: 4280071
+        concept_name: Thrombocytosis
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '6631009'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 36715584
+        concept_name: Refractory anemia with ringed sideroblasts associated with marked
+          thrombocytosis
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '721302006'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 45766614
+        concept_name: Refractory anemia with ring sideroblasts associated with marked
+          thrombocytosis
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '703817002'
+        domain_id: Observation
+        vocabulary_id: SNOMED
+        concept_class_id: Morph Abnormality
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+- id: 24
+  name: Pancytopenia & bone marrow disorder
+  expression:
+    items:
+    - concept:
+        concept_id: 432881
+        concept_name: Pancytopenia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '127034005'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4131124
+        concept_name: Bone marrow disorder
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '127035006'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+- id: 25
+  name: Neutropenia, Agranulocytosis or Unspecified Leukopenia
+  expression:
+    items:
+    - concept:
+        concept_id: 36715585
+        concept_name: Refractory neutropenia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '721303001'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 320073
+        concept_name: Neutropenia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '165517008'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 42872951
+        concept_name: Refractory neutropenia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '450946009'
+        domain_id: Observation
+        vocabulary_id: SNOMED
+        concept_class_id: Morph Abnormality
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 435224
+        concept_name: Leukopenia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '84828003'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: false
+      include_mapped: false
+    - concept:
+        concept_id: 440689
+        concept_name: Agranulocytosis
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '17182001'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 45766061
+        concept_name: Periodontitis associated with chronic familial neutropenia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '703148008'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4119158
+        concept_name: Neutropenic disorder
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '303011007'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+- id: 26
+  name: Neutrophil Absolute Count
+  expression:
+    items:
+    - concept:
+        concept_id: 37393856
+        concept_name: Neutrophil count
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '1022551000000104'
+        domain_id: Measurement
+        vocabulary_id: SNOMED
+        concept_class_id: Observable Entity
+      is_excluded: false
+      include_descendants: false
+      include_mapped: false
+    - concept:
+        concept_id: 4148615
+        concept_name: Neutrophil count
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '30630007'
+        domain_id: Measurement
+        vocabulary_id: SNOMED
+        concept_class_id: Procedure
+      is_excluded: false
+      include_descendants: false
+      include_mapped: false
+    - concept:
+        concept_id: 3017732
+        concept_name: Neutrophils [#/volume] in Blood
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: 26499-4
+        domain_id: Measurement
+        vocabulary_id: LOINC
+        concept_class_id: Lab Test
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 3013650
+        concept_name: Neutrophils [#/volume] in Blood by Automated count
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: 751-8
+        domain_id: Measurement
+        vocabulary_id: LOINC
+        concept_class_id: Lab Test
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 3017501
+        concept_name: Neutrophils [#/volume] in Blood by Manual count
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: 753-4
+        domain_id: Measurement
+        vocabulary_id: LOINC
+        concept_class_id: Lab Test
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+- id: 27
+  name: Anemia or Reticulocytopenia
+  expression:
+    items:
+    - concept:
+        concept_id: 2617149
+        concept_name: Erythropoetic stimulating agent (esa) administered to treat
+          anemia due to anti-cancer radiotherapy
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: EB
+        domain_id: Observation
+        vocabulary_id: HCPCS
+        concept_class_id: HCPCS Modifier
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 36716029
+        concept_name: Hyperuricemia, anemia, renal failure syndrome
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '721840000'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 2617148
+        concept_name: Erythropoetic stimulating agent (esa) administered to treat
+          anemia due to anti-cancer chemotherapy
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: EA
+        domain_id: Observation
+        vocabulary_id: HCPCS
+        concept_class_id: HCPCS Modifier
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4029669
+        concept_name: Refractory anemia with sideroblasts
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '128846006'
+        domain_id: Observation
+        vocabulary_id: SNOMED
+        concept_class_id: Morph Abnormality
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4120449
+        concept_name: von Jaksch's anemia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '234345001'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 35624756
+        concept_name: Anemia due to and following chemotherapy
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '767657005'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4028718
+        concept_name: Refractory anemia with excess blasts
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '128847002'
+        domain_id: Observation
+        vocabulary_id: SNOMED
+        concept_class_id: Morph Abnormality
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 37017165
+        concept_name: GATA binding protein 1 related thrombocytopenia with dyserythropoiesis
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '713388002'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4144746
+        concept_name: Hereditary hemoglobinopathy
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '427306008'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 2617150
+        concept_name: Erythropoetic stimulating agent (esa) administered to treat
+          anemia not due to anti-cancer radiotherapy or anti-cancer chemotherapy
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: EC
+        domain_id: Observation
+        vocabulary_id: HCPCS
+        concept_class_id: HCPCS Modifier
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 44831063
+        concept_name: Anemia associated with other specified nutritional deficiency
+        standard_concept: N
+        standard_concept_caption: Non-Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '281.8'
+        domain_id: Condition
+        vocabulary_id: ICD9CM
+        concept_class_id: 4-dig billing code
+      is_excluded: false
+      include_descendants: false
+      include_mapped: false
+    - concept:
+        concept_id: 4105643
+        concept_name: Myasthenic syndrome due to pernicious anemia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '193213003'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 37398911
+        concept_name: Anemia in chronic kidney disease stage 4
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '691401000119104'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 438869
+        concept_name: Perinatal jaundice due to hereditary hemolytic anemia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '56921004'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4183718
+        concept_name: Pericarditis associated with severe chronic anemia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '43742007'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 37395652
+        concept_name: Anemia in chronic kidney disease stage 5
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '691411000119101'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4125630
+        concept_name: Chronic non-spherocytic hemolytic anemia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '234402007'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4217370
+        concept_name: Aase syndrome
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '71988008'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4267432
+        concept_name: Erythropenia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '62574001'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 36680584
+        concept_name: Autosomal dominant aplasia and myelodysplasia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '778006008'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 37018722
+        concept_name: Anemia caused by zidovudine
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '713496008'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4295183
+        concept_name: Mixed hemoglobin disorder
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '38589006'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4028717
+        concept_name: Refractory anemia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '128845005'
+        domain_id: Observation
+        vocabulary_id: SNOMED
+        concept_class_id: Morph Abnormality
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 44783626
+        concept_name: Pulmonary arterial hypertension associated with chronic hemolytic
+          anemia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '697908003'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4159748
+        concept_name: Hand-foot syndrome in sickle cell anemia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '371104006'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4051681
+        concept_name: Reticulocytopenia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '124961001'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 37017132
+        concept_name: Anemia co-occurrent with human immunodeficiency virus infection
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '713349004'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4029670
+        concept_name: Refractory anemia with excess blasts in transformation
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '128848007'
+        domain_id: Observation
+        vocabulary_id: SNOMED
+        concept_class_id: Morph Abnormality
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4006467
+        concept_name: Anemia due to infection
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '111570005'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 40478891
+        concept_name: Erythropoietin resistance in anemia of chronic kidney disease
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '444271000'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 36715584
+        concept_name: Refractory anemia with ringed sideroblasts associated with marked
+          thrombocytosis
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '721302006'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+- id: 28
+  name: Hemoglobin measurement
+  expression:
+    items:
+    - concept:
+        concept_id: 3000963
+        concept_name: Hemoglobin [Mass/volume] in Blood
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: 718-7
+        domain_id: Measurement
+        vocabulary_id: LOINC
+        concept_class_id: Lab Test
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 3027484
+        concept_name: Hemoglobin [Mass/volume] in Blood by calculation
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: 20509-6
+        domain_id: Measurement
+        vocabulary_id: LOINC
+        concept_class_id: Lab Test
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+- id: 30
+  name: Immune Thrombocytopenia
+  expression:
+    items:
+    - concept:
+        concept_id: 4103532
+        concept_name: Immune thrombocytopenia
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '2897005'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+    - concept:
+        concept_id: 4119134
+        concept_name: Thrombocytopenic purpura
+        standard_concept: S
+        standard_concept_caption: Standard
+        invalid_reason: V
+        invalid_reason_caption: Valid
+        concept_code: '302873008'
+        domain_id: Condition
+        vocabulary_id: SNOMED
+        concept_class_id: Clinical Finding
+      is_excluded: false
+      include_descendants: true
+      include_mapped: false
+qualified_limit:
+  type: First
+expression_limit:
+  type: All
+inclusion_rules:
+- name: No congenital or genetic thrombocytopenia
+  expression:
+    type: ALL
+    criteria_list:
+    - criteria:
+        condition_occurrence:
+          codeset_id: 9
+          condition_type_exclude: false
+      start_window:
+        start:
+          coeff: -1
+        end:
+          days: 7
+          coeff: 1
+        use_index_end: false
+        use_event_end: false
+      restrict_visit: false
+      ignore_observation_period: true
+      occurrence:
+        type: 0
+        count: 0
+        is_distinct: false
+    demographic_criteria_list: []
+    groups: []
+- name: No Platelet count > 100 on index date
+  expression:
+    type: ALL
+    criteria_list:
+    - criteria:
+        measurement:
+          codeset_id: 7
+          measurement_type_exclude: false
+          value_as_number:
+            value: 101
+            op: bt
+            extent: 450
+          unit:
+          - concept_id: 8848
+            concept_name: thousand per microliter
+            standard_concept: null
+            standard_concept_caption: Unknown
+            invalid_reason: null
+            invalid_reason_caption: Unknown
+            concept_code: 10*3/uL
+            domain_id: Unit
+            vocabulary_id: UCUM
+            concept_class_id: null
+          - concept_id: 8961
+            concept_name: thousand per cubic millimeter
+            standard_concept: null
+            standard_concept_caption: Unknown
+            invalid_reason: null
+            invalid_reason_caption: Unknown
+            concept_code: 10*3/mm3
+            domain_id: Unit
+            vocabulary_id: UCUM
+            concept_class_id: null
+          - concept_id: 9444
+            concept_name: billion per liter
+            standard_concept: null
+            standard_concept_caption: Unknown
+            invalid_reason: null
+            invalid_reason_caption: Unknown
+            concept_code: 10*9/L
+            domain_id: Unit
+            vocabulary_id: UCUM
+            concept_class_id: null
+          - concept_id: 8816
+            concept_name: million per milliliter
+            standard_concept: null
+            standard_concept_caption: Unknown
+            invalid_reason: null
+            invalid_reason_caption: Unknown
+            concept_code: 10*6/mL
+            domain_id: Unit
+            vocabulary_id: UCUM
+            concept_class_id: null
+          - concept_id: 44777588
+            concept_name: billion cells per liter
+            standard_concept: null
+            standard_concept_caption: Unknown
+            invalid_reason: null
+            invalid_reason_caption: Unknown
+            concept_code: 10*9.{cellls}/L
+            domain_id: Unit
+            vocabulary_id: UCUM
+            concept_class_id: null
+      start_window:
+        start:
+          days: 0
+          coeff: -1
+        end:
+          days: 0
+          coeff: 1
+        use_index_end: false
+        use_event_end: false
+      restrict_visit: false
+      ignore_observation_period: true
+      occurrence:
+        type: 0
+        count: 0
+        is_distinct: false
+    demographic_criteria_list: []
+    groups: []
+- name: No thrombocytosis on index date
+  expression:
+    type: ALL
+    criteria_list:
+    - criteria:
+        condition_occurrence:
+          codeset_id: 10
+          condition_type_exclude: false
+      start_window:
+        start:
+          days: 0
+          coeff: -1
+        end:
+          days: 0
+          coeff: 1
+        use_index_end: false
+        use_event_end: false
+      restrict_visit: false
+      ignore_observation_period: true
+      occurrence:
+        type: 0
+        count: 0
+        is_distinct: false
+    demographic_criteria_list: []
+    groups: []
+- name: No Pancytopenia or bone marrow disorder diagnosis within 7 days
+  expression:
+    type: ALL
+    criteria_list:
+    - criteria:
+        condition_occurrence:
+          codeset_id: 24
+          condition_type_exclude: false
+      start_window:
+        start:
+          days: 7
+          coeff: -1
+        end:
+          days: 7
+          coeff: 1
+        use_index_end: false
+        use_event_end: false
+      restrict_visit: false
+      ignore_observation_period: true
+      occurrence:
+        type: 0
+        count: 0
+        is_distinct: false
+    demographic_criteria_list: []
+    groups: []
+- name: No Neutropenia, Agranulocytosis diagnosis within 7 days
+  expression:
+    type: ALL
+    criteria_list:
+    - criteria:
+        condition_occurrence:
+          codeset_id: 25
+          condition_type_exclude: false
+      start_window:
+        start:
+          days: 7
+          coeff: -1
+        end:
+          days: 7
+          coeff: 1
+        use_index_end: false
+        use_event_end: false
+      restrict_visit: false
+      ignore_observation_period: true
+      occurrence:
+        type: 0
+        count: 0
+        is_distinct: false
+    demographic_criteria_list: []
+    groups: []
+- name: No low neutrophil count within 7 days
+  expression:
+    type: ALL
+    criteria_list:
+    - criteria:
+        measurement:
+          codeset_id: 26
+          measurement_type_exclude: false
+          value_as_number:
+            value: 0.01
+            op: bt
+            extent: 1.499
+          unit:
+          - concept_id: 9444
+            concept_name: billion per liter
+            standard_concept: null
+            standard_concept_caption: Unknown
+            invalid_reason: null
+            invalid_reason_caption: Unknown
+            concept_code: 10*9/L
+            domain_id: Unit
+            vocabulary_id: UCUM
+            concept_class_id: null
+          - concept_id: 8848
+            concept_name: thousand per microliter
+            standard_concept: null
+            standard_concept_caption: Unknown
+            invalid_reason: null
+            invalid_reason_caption: Unknown
+            concept_code: 10*3/uL
+            domain_id: Unit
+            vocabulary_id: UCUM
+            concept_class_id: null
+          - concept_id: 8816
+            concept_name: million per milliliter
+            standard_concept: null
+            standard_concept_caption: Unknown
+            invalid_reason: null
+            invalid_reason_caption: Unknown
+            concept_code: 10*6/mL
+            domain_id: Unit
+            vocabulary_id: UCUM
+            concept_class_id: null
+          - concept_id: 8961
+            concept_name: thousand per cubic millimeter
+            standard_concept: null
+            standard_concept_caption: Unknown
+            invalid_reason: null
+            invalid_reason_caption: Unknown
+            concept_code: 10*3/mm3
+            domain_id: Unit
+            vocabulary_id: UCUM
+            concept_class_id: null
+          - concept_id: 44777588
+            concept_name: billion cells per liter
+            standard_concept: null
+            standard_concept_caption: Unknown
+            invalid_reason: null
+            invalid_reason_caption: Unknown
+            concept_code: 10*9.{cellls}/L
+            domain_id: Unit
+            vocabulary_id: UCUM
+            concept_class_id: null
+          range_low:
+            value: 1.5
+            op: bt
+            extent: 4
+      start_window:
+        start:
+          days: 7
+          coeff: -1
+        end:
+          days: 7
+          coeff: -1
+        use_index_end: false
+        use_event_end: false
+      restrict_visit: false
+      ignore_observation_period: true
+      occurrence:
+        type: 0
+        count: 0
+        is_distinct: false
+    - criteria:
+        measurement:
+          codeset_id: 26
+          measurement_type_exclude: false
+          value_as_number:
+            value: 10
+            op: bt
+            extent: 1500
+          unit:
+          - concept_id: 8784
+            concept_name: cells per microliter
+            standard_concept: null
+            standard_concept_caption: Unknown
+            invalid_reason: null
+            invalid_reason_caption: Unknown
+            concept_code: '{cells}/uL'
+            domain_id: Unit
+            vocabulary_id: UCUM
+            concept_class_id: null
+          - concept_id: 8647
+            concept_name: per microliter
+            standard_concept: null
+            standard_concept_caption: Unknown
+            invalid_reason: null
+            invalid_reason_caption: Unknown
+            concept_code: /uL
+            domain_id: Unit
+            vocabulary_id: UCUM
+            concept_class_id: null
+      start_window:
+        start:
+          days: 7
+          coeff: -1
+        end:
+          days: 7
+          coeff: 1
+        use_index_end: false
+        use_event_end: false
+      restrict_visit: false
+      ignore_observation_period: true
+      occurrence:
+        type: 0
+        count: 0
+        is_distinct: false
+    demographic_criteria_list: []
+    groups: []
+- name: No Anemia diagnosis within 7 days
+  expression:
+    type: ALL
+    criteria_list:
+    - criteria:
+        condition_occurrence:
+          codeset_id: 27
+          condition_type_exclude: false
+      start_window:
+        start:
+          days: 7
+          coeff: -1
+        end:
+          days: 7
+          coeff: 1
+        use_index_end: false
+        use_event_end: false
+      restrict_visit: false
+      ignore_observation_period: true
+      occurrence:
+        type: 0
+        count: 0
+        is_distinct: false
+    - criteria:
+        observation:
+          codeset_id: 27
+          observation_type_exclude: false
+      start_window:
+        start:
+          days: 7
+          coeff: -1
+        end:
+          days: 7
+          coeff: 1
+        use_index_end: false
+        use_event_end: false
+      restrict_visit: false
+      ignore_observation_period: true
+      occurrence:
+        type: 0
+        count: 0
+        is_distinct: false
+    demographic_criteria_list: []
+    groups: []
+- name: No low Hemoglobin measurement in blood within 7 days
+  expression:
+    type: ALL
+    criteria_list:
+    - criteria:
+        measurement:
+          codeset_id: 28
+          measurement_type_exclude: false
+          value_as_number:
+            value: 4
+            op: bt
+            extent: 11
+          unit:
+          - concept_id: 4121395
+            concept_name: g/dL
+            standard_concept: null
+            standard_concept_caption: Unknown
+            invalid_reason: null
+            invalid_reason_caption: Unknown
+            concept_code: '258795003'
+            domain_id: Unit
+            vocabulary_id: SNOMED
+            concept_class_id: null
+          - concept_id: 8713
+            concept_name: gram per deciliter
+            standard_concept: null
+            standard_concept_caption: Unknown
+            invalid_reason: null
+            invalid_reason_caption: Unknown
+            concept_code: g/dL
+            domain_id: Unit
+            vocabulary_id: UCUM
+            concept_class_id: null
+          - concept_id: 8950
+            concept_name: gram per deciliter calculated
+            standard_concept: null
+            standard_concept_caption: Unknown
+            invalid_reason: null
+            invalid_reason_caption: Unknown
+            concept_code: g/dL{calc}
+            domain_id: Unit
+            vocabulary_id: UCUM
+            concept_class_id: null
+      start_window:
+        start:
+          days: 7
+          coeff: -1
+        end:
+          days: 7
+          coeff: 1
+        use_index_end: false
+        use_event_end: false
+      restrict_visit: false
+      ignore_observation_period: true
+      occurrence:
+        type: 0
+        count: 0
+        is_distinct: false
+    demographic_criteria_list: []
+    groups: []
+end_strategy:
+  date_offset:
+    date_field: EndDate
+    offset: 0
+censoring_criteria:
+- measurement:
+    codeset_id: 7
+    measurement_type_exclude: false
+    value_as_number:
+      value: 150
+      op: bt
+      extent: 450
+    unit:
+    - concept_id: 8848
+      concept_name: thousand per microliter
+      standard_concept: null
+      standard_concept_caption: Unknown
+      invalid_reason: null
+      invalid_reason_caption: Unknown
+      concept_code: 10*3/uL
+      domain_id: Unit
+      vocabulary_id: UCUM
+      concept_class_id: null
+    - concept_id: 8961
+      concept_name: thousand per cubic millimeter
+      standard_concept: null
+      standard_concept_caption: Unknown
+      invalid_reason: null
+      invalid_reason_caption: Unknown
+      concept_code: 10*3/mm3
+      domain_id: Unit
+      vocabulary_id: UCUM
+      concept_class_id: null
+    - concept_id: 9444
+      concept_name: billion per liter
+      standard_concept: null
+      standard_concept_caption: Unknown
+      invalid_reason: null
+      invalid_reason_caption: Unknown
+      concept_code: 10*9/L
+      domain_id: Unit
+      vocabulary_id: UCUM
+      concept_class_id: null
+    - concept_id: 8816
+      concept_name: million per milliliter
+      standard_concept: null
+      standard_concept_caption: Unknown
+      invalid_reason: null
+      invalid_reason_caption: Unknown
+      concept_code: 10*6/mL
+      domain_id: Unit
+      vocabulary_id: UCUM
+      concept_class_id: null
+    - concept_id: 44777588
+      concept_name: billion cells per liter
+      standard_concept: null
+      standard_concept_caption: Unknown
+      invalid_reason: null
+      invalid_reason_caption: Unknown
+      concept_code: 10*9.{cellls}/L
+      domain_id: Unit
+      vocabulary_id: UCUM
+      concept_class_id: null
+- condition_occurrence:
+    codeset_id: 10
+    condition_type_exclude: false
+collapse_settings:
+  collapse_type: ERA
+  era_pad: 0
+censor_window: {}
