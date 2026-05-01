@@ -17,6 +17,7 @@ from .cohortdefinition import (
     CohortExpressionQueryBuilder,
     MarkdownRender,
 )
+from .cohortdefinition.yaml_utils import snake_case_dict_to_cohort_expression
 from .vocabulary.concept import ConceptSet
 
 if TYPE_CHECKING:
@@ -78,6 +79,37 @@ def cohort_expression_from_json(json_str: str) -> CohortExpression:
         return CohortExpression.model_validate(data)
     except Exception as e:
         raise ValueError(f"Invalid cohort expression JSON: {str(e)}") from e
+
+
+def cohort_expression_from_yaml(yaml_str: str) -> CohortExpression:
+    """Load a cohort expression from a YAML string.
+
+    Args:
+        yaml_str: YAML string containing the cohort definition with snake_case field names
+
+    Returns:
+        CohortExpression instance
+
+    Raises:
+        ValueError: If the YAML is invalid or doesn't conform to the schema
+
+    Example:
+        >>> yaml_str = '''
+        ... title: "My Cohort"
+        ... concept_sets: []
+        ... primary_criteria: {...}
+        ... '''
+        >>> expression = cohort_expression_from_yaml(yaml_str)
+    """
+    import yaml
+
+    try:
+        data = yaml.safe_load(yaml_str)
+        if data is None:
+            data = {}
+        return snake_case_dict_to_cohort_expression(data)
+    except Exception as e:
+        raise ValueError(f"Invalid cohort expression YAML: {str(e)}") from e
 
 
 def build_cohort_query(
