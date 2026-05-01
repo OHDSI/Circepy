@@ -52,6 +52,7 @@ def make_execution_context(
     concept_sets: Mapping[int, NormalizedConceptSet],
     results_schema: str | None = None,
     vocabulary_schema: str | None = None,
+    use_persistent_cache: bool = False,
 ) -> ExecutionContext:
     """Construct an executor context from API-level wiring arguments."""
     vocabulary_schema = vocabulary_schema or cdm_schema
@@ -63,6 +64,9 @@ def make_execution_context(
         table_getter=_table_getter,
         vocabulary_schema=vocabulary_schema,
         concept_sets=concept_sets,
+        backend=backend if use_persistent_cache else None,
+        results_schema=results_schema if use_persistent_cache else None,
+        use_persistent_cache=use_persistent_cache,
     )
     return ExecutionContext(
         backend=backend,
