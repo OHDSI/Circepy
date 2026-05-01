@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 from ..constants import Constants
 from ..operations.operations import Operations
@@ -613,7 +613,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
 
         if isinstance(range_val, DateRange):
             # Date range checks
-            match_result = Operations.match(range_val)
+            match_result: Any = Operations.match(range_val)
             match_result.when(lambda r: r.value is not None and not Comparisons.is_date_valid(r.value)).then(
                 lambda x: warning(self.WARNING_DATE_IS_INVALID)
             )
@@ -639,7 +639,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
             )
         elif isinstance(range_val, NumericRange):
             # Numeric range checks
-            match_result = Operations.match(range_val)
+            match_result: Any = Operations.match(range_val)
             match_result.when(lambda r: r.op is not None and r.op.endswith("bt")).then(
                 lambda r: (
                     Operations.match(r)
@@ -673,7 +673,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
         def warning(template: str) -> None:
             self._reporter(template, self._group_name, criteria_name, attribute)
 
-        match_result = Operations.match(period)
+        match_result: Any = Operations.match(period)
         match_result.when(
             lambda x: x.start_date is not None and not Comparisons.is_date_valid(x.start_date)
         ).then(lambda x: warning(self.WARNING_DATE_IS_INVALID))

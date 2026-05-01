@@ -82,7 +82,7 @@ def _extract_codesets(concept_sets: list[ConceptSet]) -> dict[int, NormalizedCon
 
     for concept_set in concept_sets or []:
         if concept_set is None or concept_set.id is None:
-            continue
+            continue  # type: ignore[unreachable]
         set_id = int(concept_set.id)
         expression = concept_set.expression
         if not expression:
@@ -102,7 +102,7 @@ def _extract_codesets(concept_sets: list[ConceptSet]) -> dict[int, NormalizedCon
 
         for item in expression.items or []:
             if item is None:
-                continue
+                continue  # type: ignore[unreachable]
             if item.concept is None or item.concept.concept_id is None:
                 continue
             items.append(

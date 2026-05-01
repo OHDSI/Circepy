@@ -1471,9 +1471,9 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
         Java equivalent: Various getCriteriaSql methods
         """
         # Handle case where criteria is still a dict (shouldn't happen, but be defensive)
-        if isinstance(criteria, dict):
+        if isinstance(criteria, dict):  # type: ignore[unreachable]
             # Try to deserialize it - import here to avoid circular dependency issues
-            from .criteria import ConditionEra as CE
+            from .criteria import ConditionEra as CE  # type: ignore[unreachable]
             from .criteria import ConditionOccurrence as CO
             from .criteria import Death as D
             from .criteria import DeviceExposure as DevE

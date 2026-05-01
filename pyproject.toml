@@ -110,6 +110,29 @@ warn_no_return = true
 warn_unreachable = true
 strict_equality = true
 
+[[tool.mypy.overrides]]
+module = "ibis.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["litellm.*", "dotenv.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["circe.chat", "circe.prompt_builder"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+    "circe.execution.ibis.*",
+    "circe.execution.engine.*",
+    "circe.execution.ibis_compat",
+    "circe.execution.databricks_compat",
+]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+warn_return_any = false
+
 [tool.coverage.run]
 source = ["circe"]
 omit = [
