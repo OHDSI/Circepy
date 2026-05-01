@@ -256,8 +256,6 @@ from
 
         return where_clauses
 
-        return where_clauses
-
     def embed_ordinal_expression(
         self,
         query: str,

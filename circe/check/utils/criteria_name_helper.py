@@ -90,5 +90,5 @@ class CriteriaNameHelper:
             .is_a(PayerPlanPeriod)
             .then_return(lambda c: Constants.Criteria.PAYER_PLAN_PERIOD)
             .value()
-            or "unknown criteria"
+            or "unknown criteria"  # type: ignore[unreachable]
         )

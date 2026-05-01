@@ -238,7 +238,7 @@ class MarkdownRender:
             Formatted string (e.g. "1,500" or "1.5")
         """
         if value is None:
-            return ""
+            return ""  # type: ignore[unreachable]
 
         # If matches integer, convert to int for clean formatting
         if isinstance(value, float) and value.is_integer():

@@ -119,7 +119,7 @@ class Comparisons:
             An integer representing the comparison result
         """
         if filter_val is None or window is None:
-            return 0
+            return 0  # type: ignore[unreachable]
 
         range1 = filter_val.post_days + filter_val.prior_days
         range2_start = 0
@@ -144,7 +144,7 @@ class Comparisons:
             True if the window is before, False otherwise
         """
         if window is None:
-            return False
+            return False  # type: ignore[unreachable]
         return Comparisons.is_before_endpoint(window.start) and not Comparisons.is_after_endpoint(window.end)
 
     @staticmethod

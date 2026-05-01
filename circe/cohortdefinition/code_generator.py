@@ -106,7 +106,7 @@ def to_python_code(obj: Any) -> str:
     # Generate Imports
     import_lines = []
     # Group by module
-    module_map = {}
+    module_map: dict[str, list[str]] = {}
     for cls in required_classes:
         mod = cls.__module__
         if mod not in module_map:
