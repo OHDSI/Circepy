@@ -11,6 +11,13 @@ This module provides a simple R CirceR-style API for working with cohort definit
 
 from typing import TYPE_CHECKING, Any, Literal, Optional
 
+from .cohort_definition_set import (  # noqa: F401
+    CohortDefinition,
+    CohortDefinitionSet,
+    CohortGenerationResult,
+    generate_cohort_set,
+    summarise_generation_results,
+)
 from .cohortdefinition import (
     BuildExpressionQueryOptions,
     CohortExpression,
