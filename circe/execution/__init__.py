@@ -13,10 +13,12 @@ from .errors import (
     UnsupportedCriterionError,
     UnsupportedFeatureError,
 )
+from .ibis.codesets import clear_codeset_cache
 
 __all__ = [
     "build_cohort",
     "write_cohort",
+    "clear_codeset_cache",
     "apply_databricks_post_connect_workaround",
     "ExecutionError",
     "ExecutionNormalizationError",

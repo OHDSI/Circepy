@@ -29,6 +29,7 @@ def build_cohort(
     cdm_schema: str,
     results_schema: str | None = None,
     vocabulary_schema: str | None = None,
+    use_persistent_cache: bool = False,
 ) -> Table:
     """Normalize, compile, and assemble a cohort relation."""
     maybe_apply_databricks_post_connect_workaround(backend)
@@ -41,6 +42,7 @@ def build_cohort(
         results_schema=results_schema,
         vocabulary_schema=vocabulary_schema,
         concept_sets=normalized.concept_sets,
+        use_persistent_cache=use_persistent_cache,
     )
 
     return build_cohort_table(normalized, ctx)
@@ -94,6 +96,7 @@ def write_cohort(
     results_schema: str | None = None,
     vocabulary_schema: str | None = None,
     if_exists: Literal["fail", "replace"] = "fail",
+    use_persistent_cache: bool = False,
 ) -> None:
     """Build cohort rows and materialize them with cohort-scoped semantics."""
     if if_exists not in {"fail", "replace"}:
@@ -105,6 +108,7 @@ def write_cohort(
         cdm_schema=cdm_schema,
         results_schema=results_schema,
         vocabulary_schema=vocabulary_schema,
+        use_persistent_cache=use_persistent_cache,
     )
     new_rows = project_to_ohdsi_cohort_table(new_rows, cohort_id=cohort_id)
 
