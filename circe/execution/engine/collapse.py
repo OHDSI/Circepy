@@ -27,7 +27,11 @@ def _apply_censor_window(events, censor_window):
 def _collapse_era(intervals, era_pad: int):
     padded = intervals.mutate(_padded_end_date=(intervals.end_date + ibis.interval(days=int(era_pad))))
 
-    ordering = [padded.start_date]
+    ordering = [
+        padded.start_date,
+        padded._padded_end_date.desc(),
+        padded.end_date.desc(),
+    ]
     ordered_window = ibis.window(group_by=padded.person_id, order_by=ordering)
     cumulative_window = ibis.cumulative_window(group_by=padded.person_id, order_by=ordering)
     with_cummax = padded.mutate(_cummax_padded_end=padded._padded_end_date.max().over(cumulative_window))
@@ -44,7 +48,12 @@ def _collapse_era(intervals, era_pad: int):
 
     grouping_window = ibis.cumulative_window(
         group_by=marked.person_id,
-        order_by=[marked.start_date, marked._is_new_group.desc()],
+        order_by=[
+            marked.start_date,
+            marked._padded_end_date.desc(),
+            marked.end_date.desc(),
+            marked._is_new_group.desc(),
+        ],
     )
     group_index = marked._is_new_group.sum().over(grouping_window)
     grouped = marked.mutate(_group_idx=group_index)
