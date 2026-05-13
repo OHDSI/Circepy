@@ -1,0 +1,64 @@
+# CircePy OHDSI Phenotype Benchmark - Database Configuration
+# This file defines database backends for running comprehensive benchmarks
+# Add additional backends as needed for your infrastructure
+
+# Primary benchmark backend (DuckDB - recommended for local development)
+duckdb:
+  driver: "duckdb"
+  description: "DuckDB in-memory database (fast, no external dependencies)"
+  connection:
+    database: ":memory:"  # Use in-memory for speed, or provide file path for persistence
+  cdm_schema: "main"
+  vocabulary_schema: "main"
+  results_schema: "main"
+  data_source: "eunomia"  # Use OHDSI Eunomia synthetic OMOP CDM data
+  notes: |
+    DuckDB provides fast iteration for benchmark development.
+    Set database to a file path (e.g., /tmp/benchmark_eunomia.duckdb) for persistence.
+
+# PostgreSQL backend (for production-like validation)
+# Uncomment and configure to test against PostgreSQL
+# postgresql:
+#   driver: "postgresql"
+#   description: "PostgreSQL database"
+#   connection:
+#     host: "localhost"
+#     port: 5432
+#     database: "omop_cdm"
+#     user: "postgres"
+#     password: "${POSTGRES_PASSWORD}"  # Use environment variable
+#   cdm_schema: "public"
+#   vocabulary_schema: "public"
+#   results_schema: "results"
+#   data_source: "eunomia"
+#   notes: |
+#     Requires PostgreSQL to be running and populated with OMOP CDM data.
+#     Use environment variables for sensitive credentials.
+
+# Databricks backend (for cloud-scale validation)
+# Uncomment and configure to test against Databricks
+# databricks:
+#   driver: "databricks"
+#   description: "Databricks SQL warehouse"
+#   connection:
+#     server_hostname: "${DATABRICKS_HOST}"
+#     http_path: "${DATABRICKS_HTTP_PATH}"
+#     personal_access_token: "${DATABRICKS_TOKEN}"
+#   cdm_schema: "hive_metastore.omop_cdm"
+#   vocabulary_schema: "hive_metastore.omop_cdm"
+#   results_schema: "hive_metastore.results"
+#   data_source: "provided"  # Assumes OMOP data already loaded
+#   notes: |
+#     Requires Databricks workspace and valid credentials via environment variables.
+#     Use for validating CircePy with cloud-scale OMOP implementations.
+
+# Eunomia data source configuration
+eunomia:
+  description: "OHDSI Eunomia synthetic OMOP CDM dataset"
+  url: "https://github.com/OHDSI/Eunomia/releases/download/v2.0.0/GimlettData_5.4.zip"
+  size: "~10MB compressed, ~100MB uncompressed"
+  patient_count: "~2500 patients"
+  notes: |
+    Synthetic OMOP CDM dataset for testing and development.
+    Includes realistic OMOP structure with conditions, drugs, visits, procedures, measurements, etc.
+    Ideal for benchmarking SQL generation and execution without privacy concerns.
