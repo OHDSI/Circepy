@@ -32,6 +32,7 @@ def normalize_end_strategy(
                 "drug_codeset_id": value.drug_codeset_id,
                 "offset": int(value.offset),
                 "gap_days": int(value.gap_days),
+                "days_supply_override": value.days_supply_override,
             },
         )
     return NormalizedEndStrategy(kind="end_strategy", payload={})

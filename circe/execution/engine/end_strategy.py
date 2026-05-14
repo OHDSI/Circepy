@@ -64,7 +64,9 @@ def apply_end_strategy(events, strategy, ctx):
         return _replace_end_date(events, with_bounds, end_date_expr)
 
     if strategy.kind == "custom_era":
-        raise UnsupportedFeatureError("Ibis executor end-strategy error: custom_era is not supported.")
+        from .custom_era import apply_custom_era_strategy
+
+        return apply_custom_era_strategy(events, strategy, ctx)
 
     # Fallback: preserve default semantics of op_end_date clipping.
     return _replace_end_date(events, with_bounds, with_bounds.op_end_date)

@@ -26,8 +26,7 @@ from circe.cohortdefinition import (
     VisitDetail,
     VisitOccurrence,
 )
-from circe.cohortdefinition.core import CustomEraStrategy, NumericRange
-from circe.execution.errors import UnsupportedFeatureError
+from circe.cohortdefinition.core import NumericRange
 from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 
@@ -1213,10 +1212,12 @@ def test_build_cohort_location_region_keeps_repeated_location_history_rows():
     assert sorted(result.start_date.astype(str).tolist()) == ["2020-01-01", "2020-02-01"]
 
 
-def test_build_cohort_rejects_unsupported_features():
-    expression = CohortExpression(
-        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence()]),
-        end_strategy=CustomEraStrategy(drug_codeset_id=1, gap_days=30, offset=0),
-    )
-    with pytest.raises(UnsupportedFeatureError, match="custom_era"):
-        _ = build_cohort(expression, backend=object(), cdm_schema="main")
+def test_build_cohort_rejects_unsupported_criteria():
+    """Unsupported base criteria type is rejected at normalization time."""
+    from circe.cohortdefinition.criteria import Criteria as RawCriteria
+    from circe.execution.errors import UnsupportedCriterionError
+
+    with pytest.raises(UnsupportedCriterionError):
+        from circe.execution.normalize.criteria import normalize_criterion
+
+        normalize_criterion(RawCriteria())
