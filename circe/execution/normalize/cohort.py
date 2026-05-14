@@ -3,7 +3,7 @@ from __future__ import annotations
 from ...cohortdefinition import CohortExpression
 from ...vocabulary.concept import ConceptSet
 from .._dataclass import frozen_slots_dataclass
-from ..errors import ExecutionNormalizationError, UnsupportedFeatureError
+from ..errors import ExecutionNormalizationError
 from .collapse import NormalizedCollapseSettings, normalize_collapse_settings
 from .criteria import NormalizedCriterion, normalize_criterion
 from .end_strategy import NormalizedEndStrategy, normalize_end_strategy
@@ -149,10 +149,6 @@ def normalize_cohort(
     )
 
     normalized_end_strategy = normalize_end_strategy(expression.end_strategy)
-    if normalized_end_strategy is not None and normalized_end_strategy.kind == "custom_era":
-        raise UnsupportedFeatureError(
-            "Ibis executor normalization error: custom_era end strategy is not supported."
-        )
 
     return NormalizedCohort(
         title=expression.title,

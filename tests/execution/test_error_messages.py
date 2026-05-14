@@ -14,7 +14,7 @@ from circe.cohortdefinition import (
     Occurrence,
     PrimaryCriteria,
 )
-from circe.cohortdefinition.core import CustomEraStrategy, NumericRange
+from circe.cohortdefinition.core import NumericRange
 from circe.execution.errors import CompilationError, UnsupportedCriterionError, UnsupportedFeatureError
 from circe.execution.normalize.criteria import normalize_criterion
 from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
@@ -53,16 +53,6 @@ def _concept_set(set_id: int, concept_id: int) -> ConceptSet:
         id=set_id,
         expression=ConceptSetExpression(items=[ConceptSetItem(concept=Concept(conceptId=concept_id))]),
     )
-
-
-def test_error_message_for_custom_era_end_strategy():
-    expression = CohortExpression(
-        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence()]),
-        end_strategy=CustomEraStrategy(drug_codeset_id=1, gap_days=30, offset=0),
-    )
-
-    with pytest.raises(UnsupportedFeatureError, match="custom_era end strategy"):
-        _ = build_cohort(expression, backend=object(), cdm_schema="main")
 
 
 def test_error_message_for_unsupported_criterion_type():
