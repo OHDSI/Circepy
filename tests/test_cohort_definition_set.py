@@ -277,7 +277,7 @@ def test_generate_cohort_set_continue_on_error():
 
     call_count = 0
 
-    def _failing_write_cohort(expression, *, cohort_id, **kwargs):
+    def _failing_write_cohort(*, compiled_relation, cohort_id, **kwargs):
         nonlocal call_count
         call_count += 1
         if cohort_id == 1:
@@ -285,7 +285,7 @@ def test_generate_cohort_set_continue_on_error():
         # Delegate to real write_cohort for cohort 2
         from circe.execution.api import write_cohort as real_write_cohort
 
-        real_write_cohort(expression, cohort_id=cohort_id, **kwargs)
+        real_write_cohort(compiled_relation=compiled_relation, cohort_id=cohort_id, **kwargs)
 
     cds = CohortDefinitionSet()
     cds.add(cohort_id=1, cohort_name="Bad", expression=_simple_expression())
@@ -318,7 +318,7 @@ def test_generate_cohort_set_stop_on_error():
 
     from circe.execution.errors import ExecutionError
 
-    def _always_fail(expression, *, cohort_id, **kwargs):
+    def _always_fail(*, compiled_relation, cohort_id, **kwargs):
         raise ExecutionError("Always fail")
 
     cds = CohortDefinitionSet()
@@ -354,6 +354,175 @@ def test_summarise_generation_results():
     assert summary["COMPLETE"] == 2
     assert summary["SKIPPED"] == 1
     assert summary["FAILED"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Generation history table integration tests
+# ---------------------------------------------------------------------------
+
+
+def test_generate_cohort_set_history_table_populated():
+    import pandas as pd
+
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_tables(conn, ibis)
+
+    cds = CohortDefinitionSet()
+    cds.add(cohort_id=1, cohort_name="A", expression=_simple_expression())
+    cds.add(cohort_id=2, cohort_name="B", expression=_simple_expression())
+
+    CHECKSUM_TABLE = "cohort_checksum_test"
+
+    results = generate_cohort_set(
+        cds,
+        backend=conn,
+        cdm_schema="main",
+        cohort_table="cohort",
+        incremental=True,
+        checksum_table=CHECKSUM_TABLE,
+    )
+    assert all(r.status == "COMPLETE" for r in results)
+
+    history = conn.table(CHECKSUM_TABLE, database="main").execute()
+    assert not history.empty
+    assert "cohort_definition_id" in history.columns
+    assert "checksum" in history.columns
+    assert "status" in history.columns
+    assert "start_time" in history.columns
+    assert "end_time" in history.columns
+
+    for _, row in history.iterrows():
+        assert row["status"] in ("COMPLETE", "FAILED")
+        assert pd.to_datetime(row["end_time"]) >= pd.to_datetime(row["start_time"])
+
+    assert set(history["cohort_definition_id"]) == {1, 2}
+    assert all(history["status"] == "COMPLETE")
+
+
+def test_generate_cohort_set_history_table_skip_no_duplicate():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_tables(conn, ibis)
+
+    cds = CohortDefinitionSet()
+    cds.add(cohort_id=1, cohort_name="A", expression=_simple_expression())
+    cds.add(cohort_id=2, cohort_name="B", expression=_simple_expression())
+
+    CHECKSUM_TABLE = "cohort_checksum_skip_test"
+
+    # Run 1: both COMPLETE → both get history entries
+    generate_cohort_set(
+        cds,
+        backend=conn,
+        cdm_schema="main",
+        cohort_table="cohort_skip",
+        incremental=True,
+        checksum_table=CHECKSUM_TABLE,
+    )
+    after_first = conn.table(CHECKSUM_TABLE, database="main").execute()
+    assert len(after_first) == 2  # 2 history rows
+
+    # Run 2: incremental, all should be SKIPPED → no new history entries
+    generate_cohort_set(
+        cds,
+        backend=conn,
+        cdm_schema="main",
+        cohort_table="cohort_skip",
+        incremental=True,
+        checksum_table=CHECKSUM_TABLE,
+    )
+    after_second = conn.table(CHECKSUM_TABLE, database="main").execute()
+    assert len(after_second) == 2  # still 2 — no duplicates for SKIPPED
+
+
+def test_generate_cohort_set_history_table_failed():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    from unittest.mock import patch
+
+    from circe.execution.errors import ExecutionError
+
+    conn = ibis.duckdb.connect()
+    _seed_tables(conn, ibis)
+
+    cds = CohortDefinitionSet()
+    cds.add(cohort_id=1, cohort_name="Bad", expression=_simple_expression())
+    cds.add(cohort_id=2, cohort_name="Good", expression=_simple_expression())
+
+    CHECKSUM_TABLE = "cohort_checksum_fail_test"
+
+    call_count = 0
+
+    def _failing_write(*, compiled_relation, cohort_id, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if cohort_id == 1:
+            raise ExecutionError("Simulated failure for cohort 1")
+        from circe.execution.api import write_cohort as real_write_cohort
+
+        real_write_cohort(compiled_relation=compiled_relation, cohort_id=cohort_id, **kwargs)
+
+    with patch("circe.cohort_definition_set._generate.write_cohort", side_effect=_failing_write):
+        results = generate_cohort_set(
+            cds,
+            backend=conn,
+            cdm_schema="main",
+            cohort_table="cohort_fail",
+            incremental=True,
+            checksum_table=CHECKSUM_TABLE,
+            stop_on_error=False,
+        )
+
+    statuses = {r.cohort_id: r.status for r in results}
+    assert statuses[1] == "FAILED"
+    assert statuses[2] == "COMPLETE"
+
+    history = conn.table(CHECKSUM_TABLE, database="main").execute()
+    history_statuses = dict(zip(history["cohort_definition_id"], history["status"]))
+    assert history_statuses[1] == "FAILED"
+    assert history_statuses[2] == "COMPLETE"
+
+
+def test_load_generation_history():
+    from circe.cohort_definition_set._checksum_store import load_generation_history
+
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_tables(conn, ibis)
+
+    cds = CohortDefinitionSet()
+    cds.add(cohort_id=1, cohort_name="A", expression=_simple_expression())
+
+    CHECKSUM_TABLE = "cohort_history_test"
+
+    generate_cohort_set(
+        cds,
+        backend=conn,
+        cdm_schema="main",
+        cohort_table="cohort_hist",
+        incremental=True,
+        checksum_table=CHECKSUM_TABLE,
+    )
+
+    history = load_generation_history(conn, schema="main", table_name=CHECKSUM_TABLE)
+    assert history is not None
+    assert not history.empty
+    assert "start_time" in history.columns
+    assert "end_time" in history.columns
+    assert "status" in history.columns
+    assert history.iloc[0]["status"] == "COMPLETE"
+
+    # Non-existent table returns None
+    none_result = load_generation_history(conn, schema="main", table_name="nonexistent_table")
+    assert none_result is None
 
 
 def test_api_exports_cohort_definition_set():

@@ -87,8 +87,9 @@ def write_relation(
 
 
 def write_cohort(
-    expression: CohortExpression,
+    expression: CohortExpression | None = None,
     *,
+    compiled_relation: Table | None = None,
     backend: IbisBackendLike,
     cdm_schema: str,
     cohort_table: str,
@@ -98,19 +99,49 @@ def write_cohort(
     if_exists: Literal["fail", "replace"] = "fail",
     use_persistent_cache: bool = False,
 ) -> None:
-    """Build cohort rows and materialize them with cohort-scoped semantics."""
+    """Build cohort rows and materialize them with cohort-scoped semantics.
+
+    Args:
+        expression: Cohort expression to compile and execute. Provide one of
+            ``expression`` or ``compiled_relation`` (not both).
+        compiled_relation: A pre-compiled ibis relation (output of
+            ``build_cohort()`` projected with ``project_to_ohdsi_cohort_table()``).
+            When provided, the compilation step is skipped and this relation is
+            materialized directly. Use this to isolate database-execution time
+            from query-compilation time in benchmarks.
+        backend: Ibis backend connection.
+        cdm_schema: Schema containing the OMOP CDM source tables.
+        cohort_table: Name of the OHDSI cohort table to write results into.
+        cohort_id: The cohort_definition_id value to stamp on written rows.
+        results_schema: Schema for the cohort table.
+        vocabulary_schema: Schema for vocabulary tables (defaults to cdm_schema).
+        if_exists: Behaviour when cohort rows already exist.  One of
+            ``"fail"`` (raise) or ``"replace"`` (remove existing rows for
+            this cohort_id before writing).
+        use_persistent_cache: Whether to cache concept set lookups persistently.
+
+    Raises:
+        ValueError: If both or neither of ``expression`` / ``compiled_relation``
+            are provided, or ``if_exists`` is invalid.
+        ExecutionError: If the write fails.
+    """
+    if (expression is None) == (compiled_relation is None):
+        raise ValueError("Exactly one of expression or compiled_relation must be provided.")
     if if_exists not in {"fail", "replace"}:
         raise ValueError("if_exists must be one of {'fail', 'replace'} for write_cohort.")
 
-    new_rows = build_cohort(
-        expression,
-        backend=backend,
-        cdm_schema=cdm_schema,
-        results_schema=results_schema,
-        vocabulary_schema=vocabulary_schema,
-        use_persistent_cache=use_persistent_cache,
-    )
-    new_rows = project_to_ohdsi_cohort_table(new_rows, cohort_id=cohort_id)
+    if compiled_relation is not None:
+        new_rows = compiled_relation
+    else:
+        new_rows = build_cohort(
+            expression,  # type: ignore[arg-type]
+            backend=backend,
+            cdm_schema=cdm_schema,
+            results_schema=results_schema,
+            vocabulary_schema=vocabulary_schema,
+            use_persistent_cache=use_persistent_cache,
+        )
+        new_rows = project_to_ohdsi_cohort_table(new_rows, cohort_id=cohort_id)
 
     if not table_exists(backend, table_name=cohort_table, schema=results_schema):
         write_relation(

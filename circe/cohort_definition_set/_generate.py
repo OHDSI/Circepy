@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
-from ..execution.api import write_cohort
+from ..execution.api import build_cohort, project_to_ohdsi_cohort_table, write_cohort
 from ..execution.errors import ExecutionError
-from ._checksum_store import load_checksums, save_checksums
+from ._checksum_store import load_checksums, save_generation_history
 from ._core import CohortDefinitionSet, CohortGenerationResult
 
 if TYPE_CHECKING:
     from ..execution.typing import IbisBackendLike
+
+logger = logging.getLogger(__name__)
 
 
 def generate_cohort_set(
@@ -73,6 +76,7 @@ def generate_cohort_set(
         >>> for r in results:
         ...     print(r.cohort_name, r.status)
     """
+    total = len(cohort_definition_set)
     current_checksums = cohort_definition_set.checksums()
 
     previous_checksums: dict[int, str] = {}
@@ -84,12 +88,21 @@ def generate_cohort_set(
         )
 
     results: list[CohortGenerationResult] = []
-    completed_this_run: dict[int, tuple[str, datetime]] = {}
+    generated_this_run: dict[int, tuple[str, str, datetime, datetime]] = {}
 
-    for cohort in cohort_definition_set:
+    logger.info("Generating %d cohort(s) (incremental=%s)", total, incremental)
+
+    for i, cohort in enumerate(cohort_definition_set, start=1):
         current_checksum = current_checksums[cohort.cohort_id]
 
         if incremental and previous_checksums.get(cohort.cohort_id) == current_checksum:
+            logger.info(
+                "[%d/%d] Skipping cohort %d (%s) — checksum unchanged",
+                i,
+                total,
+                cohort.cohort_id,
+                cohort.cohort_name,
+            )
             results.append(
                 CohortGenerationResult(
                     cohort_id=cohort.cohort_id,
@@ -102,10 +115,32 @@ def generate_cohort_set(
             )
             continue
 
-        start_time = datetime.now()
+        logger.info(
+            "[%d/%d] Building cohort %d (%s) ...",
+            i,
+            total,
+            cohort.cohort_id,
+            cohort.cohort_name,
+        )
+
+        start_time: datetime | None = None
+        end_time: datetime | None = None
         try:
-            write_cohort(
+            # Compile cohort expression to an ibis relation (not timed)
+            new_rows = build_cohort(
                 cohort.expression,
+                backend=backend,
+                cdm_schema=cdm_schema,
+                results_schema=results_schema,
+                vocabulary_schema=vocabulary_schema,
+                use_persistent_cache=False,
+            )
+            new_rows = project_to_ohdsi_cohort_table(new_rows, cohort_id=cohort.cohort_id)
+
+            # Materialize the compiled relation — this is the DB IO we time
+            start_time = datetime.now()
+            write_cohort(
+                compiled_relation=new_rows,
                 backend=backend,
                 cdm_schema=cdm_schema,
                 cohort_table=cohort_table,
@@ -114,43 +149,83 @@ def generate_cohort_set(
                 vocabulary_schema=vocabulary_schema,
                 if_exists="replace",
             )
-        except ExecutionError as exc:
             end_time = datetime.now()
+
+            duration = (end_time - start_time).total_seconds()
+            logger.info(
+                "[%d/%d] Completed cohort %d (%s) in %.1fs",
+                i,
+                total,
+                cohort.cohort_id,
+                cohort.cohort_name,
+                duration,
+            )
+        except ExecutionError as exc:
+            if end_time is None:
+                end_time = datetime.now()
+            duration = (end_time - (start_time or end_time)).total_seconds()
+            logger.error(
+                "[%d/%d] FAILED cohort %d (%s) after %.1fs: %s",
+                i,
+                total,
+                cohort.cohort_id,
+                cohort.cohort_name,
+                duration,
+                exc,
+            )
             results.append(
                 CohortGenerationResult(
                     cohort_id=cohort.cohort_id,
                     cohort_name=cohort.cohort_name,
                     status="FAILED",
                     checksum=current_checksum,
-                    start_time=start_time,
+                    start_time=start_time or datetime.now(),
                     end_time=end_time,
                     error=exc,
                 )
+            )
+            generated_this_run[cohort.cohort_id] = (
+                current_checksum,
+                "FAILED",
+                start_time or datetime.now(),
+                end_time,
             )
             if stop_on_error:
                 raise
             continue
 
-        end_time = datetime.now()
         results.append(
             CohortGenerationResult(
                 cohort_id=cohort.cohort_id,
                 cohort_name=cohort.cohort_name,
                 status="COMPLETE",
                 checksum=current_checksum,
-                start_time=start_time,
-                end_time=end_time,
+                start_time=start_time or datetime.now(),
+                end_time=end_time or datetime.now(),
             )
         )
-        completed_this_run[cohort.cohort_id] = (current_checksum, end_time)
+        generated_this_run[cohort.cohort_id] = (
+            current_checksum,
+            "COMPLETE",
+            start_time or datetime.now(),
+            end_time or datetime.now(),
+        )
 
-    if incremental and completed_this_run:
-        save_checksums(
+    if incremental and generated_this_run:
+        save_generation_history(
             backend,
             schema=results_schema,
             table_name=checksum_table,
-            completed=completed_this_run,
+            generated=generated_this_run,
         )
+
+    summary = summarise_generation_results(results)
+    logger.info(
+        "Cohort generation complete: %d completed, %d skipped, %d failed",
+        summary["COMPLETE"],
+        summary["SKIPPED"],
+        summary["FAILED"],
+    )
 
     return results
 
