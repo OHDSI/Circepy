@@ -94,24 +94,43 @@ def group_predicate(match_count_expr, mode: str, count: int | None, child_count:
     )
 
 
+_COMPILED_CORRELATED_EVENTS: dict[tuple[int, int], Table] = {}
+"""Cache for :func:`_compile_correlated_events` keyed by ``(backend_id, content_hash)``.
+
+Identical correlated criteria frequently appear across multiple primary event
+criteria within a cohort — compiling them once avoids 350+ duplicate ibis
+expression tree constructions for large cohorts.
+"""
+
+
 def _compile_correlated_events(
     correlated: NormalizedCorrelatedCriteria,
     *,
     criterion_index: int,
     ctx: ExecutionContext,
 ) -> Table:
+    """Compile a correlated criterion to an ibis Table expression.
+
+    The compiled events are independent of *criterion_index* (the position
+    within the enclosing group), so results are cached by content hash
+    scoped to the current backend connection.
+    """
+    cache_key = (id(ctx.backend), hash(repr(correlated)))
+    cached = _COMPILED_CORRELATED_EVENTS.get(cache_key)
+    if cached is not None:
+        return cached
+
     event_plan = lower_criterion(correlated.criterion, criterion_index=criterion_index)
     events = compile_event_plan(event_plan, ctx)
 
     nested_group = correlated.criterion.correlated_criteria
-    if nested_group is None or nested_group.is_empty():
-        return events
+    if nested_group is not None and not nested_group.is_empty():
+        from .groups import apply_additional_criteria  # noqa: PLC0415
 
-    # Correlated criteria can themselves carry nested correlated criteria.
-    # Re-apply the same group evaluator used for primary/additional criteria.
-    from .groups import apply_additional_criteria
+        events = apply_additional_criteria(events, nested_group, ctx)
 
-    return apply_additional_criteria(events, nested_group, ctx)
+    _COMPILED_CORRELATED_EVENTS[cache_key] = events
+    return events
 
 
 def correlated_match_keys(

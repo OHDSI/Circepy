@@ -14,10 +14,20 @@ from .limits import apply_result_limit
 
 
 def _union_all(tables):
-    current = tables[0]
-    for table in tables[1:]:
-        current = current.union(table, distinct=False)
-    return current
+    if not tables:
+        raise ValueError("_union_all requires at least one table")
+
+    if len(tables) == 1:
+        return tables[0]
+
+    # Binary-tree merge: recursively halve the list to produce a balanced
+    # union tree with O(log n) nesting depth instead of O(n).
+    # Without this, a cohort with 87 primary criteria would produce 86 levels
+    # of nested UNION ALL, exceeding DuckDB's query compilation limits.
+    mid = len(tables) // 2
+    left = _union_all(tables[:mid])
+    right = _union_all(tables[mid:])
+    return left.union(right, distinct=False)
 
 
 def _assign_primary_event_ids(events):

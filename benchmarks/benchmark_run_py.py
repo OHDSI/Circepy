@@ -25,14 +25,14 @@ from pathlib import Path
 import ibis
 import pandas as pd
 
+from circe.cohort_definition_set import CohortDefinitionSet, generate_cohort_set
+from circe.cohortdefinition import CohortExpression
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%H:%M:%S",
 )
-
-from circe.cohort_definition_set import CohortDefinitionSet, generate_cohort_set
-from circe.cohortdefinition import CohortExpression
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = REPO_ROOT / "benchmark_output"
@@ -75,9 +75,7 @@ def main() -> None:
 
     # ── 2. Connect to DuckDB ─────────────────────────────────────────────
     if not DUCKDB_PATH.exists():
-        raise FileNotFoundError(
-            f"{DUCKDB_PATH} not found. Run 'Rscript benchmarks/benchmark_run_r.R' first."
-        )
+        raise FileNotFoundError(f"{DUCKDB_PATH} not found. Run 'Rscript benchmarks/benchmark_run_r.R' first.")
     print(f"Connecting to DuckDB: {DUCKDB_PATH}")
     backend = ibis.duckdb.connect(str(DUCKDB_PATH))
 

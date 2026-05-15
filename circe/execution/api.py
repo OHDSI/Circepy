@@ -30,8 +30,13 @@ def build_cohort(
     results_schema: str | None = None,
     vocabulary_schema: str | None = None,
     use_persistent_cache: bool = False,
+    cohort_id: int = 0,
 ) -> Table:
-    """Normalize, compile, and assemble a cohort relation."""
+    """Normalize, compile, and assemble a cohort relation.
+
+    Paths like to stage-by-stage temp tables when *cohort_id* is provided,
+    so that the ibis expression tree never grows too large to compile.
+    """
     maybe_apply_databricks_post_connect_workaround(backend)
 
     normalized = normalize_cohort(expression)
@@ -45,7 +50,7 @@ def build_cohort(
         use_persistent_cache=use_persistent_cache,
     )
 
-    return build_cohort_table(normalized, ctx)
+    return build_cohort_table(normalized, ctx, cohort_id=cohort_id)
 
 
 def write_relation(
@@ -140,6 +145,7 @@ def write_cohort(
             results_schema=results_schema,
             vocabulary_schema=vocabulary_schema,
             use_persistent_cache=use_persistent_cache,
+            cohort_id=cohort_id,
         )
         new_rows = project_to_ohdsi_cohort_table(new_rows, cohort_id=cohort_id)
 

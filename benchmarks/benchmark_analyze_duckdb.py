@@ -17,6 +17,7 @@ from pathlib import Path
 
 import ibis
 import pandas as pd
+from compare_cohort_outputs import compare_cohort_outputs, print_comparison_report
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = REPO_ROOT / "benchmark_output"
@@ -55,10 +56,9 @@ def print_coverage(label: str, df: pd.DataFrame) -> None:
 
 
 def print_timing(label: str, df: pd.DataFrame) -> None:
-    if _has_status(df):
-        complete = df[df["status"] == "COMPLETE"]
-    else:
-        complete = df  # checksum table — all rows are COMPLETE
+    complete = (
+        df[df["status"] == "COMPLETE"] if _has_status(df) else df
+    )  # checksum table — all rows are COMPLETE
     if complete.empty:
         print(f"  {label}: no completed cohorts to report timing")
         return
@@ -72,8 +72,9 @@ def print_timing(label: str, df: pd.DataFrame) -> None:
     print(f"    Max   : {secs.max():.4f}s")
 
 
-def cross_validate(label: str, csv_df: pd.DataFrame, backend: ibis.BaseBackend,
-                   cohort_table: str, checksum_table: str) -> None:
+def cross_validate(
+    label: str, csv_df: pd.DataFrame, backend: ibis.BaseBackend, cohort_table: str, checksum_table: str
+) -> None:
     """Read the persisted checksum table and compare with the CSV."""
     try:
         history = backend.table(checksum_table, database="main").execute()
@@ -85,10 +86,7 @@ def cross_validate(label: str, csv_df: pd.DataFrame, backend: ibis.BaseBackend,
         print(f"  {label} cross-validation: checksum table is empty")
         return
 
-    if _has_status(csv_df):
-        complete_csv = csv_df[csv_df["status"] == "COMPLETE"]
-    else:
-        complete_csv = csv_df
+    complete_csv = csv_df[csv_df["status"] == "COMPLETE"] if _has_status(csv_df) else csv_df
     if complete_csv.empty:
         return
 
@@ -113,8 +111,7 @@ def cross_validate(label: str, csv_df: pd.DataFrame, backend: ibis.BaseBackend,
         print(f"    Delta              : {delta:.4f}s {'✓' if delta < 1.0 else '✗'}")
 
 
-def print_cohort_row_counts(label: str, backend: ibis.BaseBackend,
-                            cohort_table: str) -> None:
+def print_cohort_row_counts(label: str, backend: ibis.BaseBackend, cohort_table: str) -> None:
     """Print row count summary from the cohort output table."""
     try:
         rows = backend.table(cohort_table, database="main").execute()
@@ -131,8 +128,8 @@ def print_cohort_row_counts(label: str, backend: ibis.BaseBackend,
 
 def compare_shared(label_prefix: str, r_df: pd.DataFrame, py_df: pd.DataFrame) -> None:
     """Compare timing for cohorts present in both runs."""
-    r_complete = (r_df[r_df["status"] == "COMPLETE"].copy() if _has_status(r_df) else r_df.copy())
-    py_complete = (py_df[py_df["status"] == "COMPLETE"].copy() if _has_status(py_df) else py_df.copy())
+    r_complete = r_df[r_df["status"] == "COMPLETE"].copy() if _has_status(r_df) else r_df.copy()
+    py_complete = py_df[py_df["status"] == "COMPLETE"].copy() if _has_status(py_df) else py_df.copy()
     if r_complete.empty or py_complete.empty:
         return
 
@@ -208,6 +205,12 @@ def main() -> None:
     if r_df is not None and py_df is not None:
         print("\nTable 5 — R vs Python shared-cohort comparison")
         compare_shared("=>", r_df, py_df)
+
+    # ── Row-level cohort output comparison ──────────────────────────────
+    if DUCKDB_PATH.exists():
+        backend = ibis.duckdb.connect(str(DUCKDB_PATH))
+        report = compare_cohort_outputs(backend)
+        print_comparison_report(report)
 
     print(f"\n{'=' * 60}")
     print("Analysis complete")

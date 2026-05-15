@@ -18,9 +18,7 @@ from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptS
 def _make_concept_set(set_id: int, concept_id: int) -> ConceptSet:
     return ConceptSet(
         id=set_id,
-        expression=ConceptSetExpression(
-            items=[ConceptSetItem(concept=Concept(conceptId=concept_id))]
-        ),
+        expression=ConceptSetExpression(items=[ConceptSetItem(concept=Concept(conceptId=concept_id))]),
     )
 
 
@@ -92,9 +90,7 @@ def test_custom_era_merges_drugs_within_gap():
             _make_concept_set(1, 111),
             _make_concept_set(2, 222),
         ],
-        primary_criteria=PrimaryCriteria(
-            criteria_list=[ConditionOccurrence(codeset_id=1)]
-        ),
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
         end_strategy=CustomEraStrategy(drug_codeset_id=2, gap_days=30, offset=0),
     )
 
@@ -149,9 +145,7 @@ def test_custom_era_no_merge_across_large_gap():
             _make_concept_set(1, 111),
             _make_concept_set(2, 222),
         ],
-        primary_criteria=PrimaryCriteria(
-            criteria_list=[ConditionOccurrence(codeset_id=1)]
-        ),
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
         end_strategy=CustomEraStrategy(drug_codeset_id=2, gap_days=5, offset=0),
     )
 
@@ -207,9 +201,7 @@ def test_custom_era_offset_applied():
             _make_concept_set(1, 111),
             _make_concept_set(2, 222),
         ],
-        primary_criteria=PrimaryCriteria(
-            criteria_list=[ConditionOccurrence(codeset_id=1)]
-        ),
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
         end_strategy=CustomEraStrategy(drug_codeset_id=2, gap_days=30, offset=7),
     )
 
@@ -264,9 +256,7 @@ def test_custom_era_no_matching_drugs():
             _make_concept_set(1, 111),
             _make_concept_set(2, 999),
         ],
-        primary_criteria=PrimaryCriteria(
-            criteria_list=[ConditionOccurrence(codeset_id=1)]
-        ),
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
         end_strategy=CustomEraStrategy(drug_codeset_id=2, gap_days=30, offset=0),
     )
 
@@ -303,9 +293,7 @@ def test_custom_era_with_drug_exposure_as_primary():
 
     expression = CohortExpression(
         concept_sets=[_make_concept_set(1, 222)],
-        primary_criteria=PrimaryCriteria(
-            criteria_list=[DrugExposure(codeset_id=1)]
-        ),
+        primary_criteria=PrimaryCriteria(criteria_list=[DrugExposure(codeset_id=1)]),
         end_strategy=CustomEraStrategy(drug_codeset_id=1, gap_days=30, offset=0),
     )
 
@@ -316,9 +304,7 @@ def test_custom_era_with_drug_exposure_as_primary():
     assert len(result) == 2
     start_dates = sorted(result["start_date"].astype(str).tolist())
     assert start_dates == ["2020-01-01", "2020-02-01"]
-    assert all(
-        str(d)[:10] == "2020-03-03" for d in result["end_date"]
-    )
+    assert all(str(d)[:10] == "2020-03-03" for d in result["end_date"])
 
 
 def test_compute_drug_eras_matches_java_sql_logic():
@@ -478,9 +464,7 @@ def test_full_cohort_custom_era_matches_sql_end_dates():
             _make_concept_set(1, 111),
             _make_concept_set(2, 222),
         ],
-        primary_criteria=PrimaryCriteria(
-            criteria_list=[ConditionOccurrence(codeset_id=1)]
-        ),
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
         end_strategy=CustomEraStrategy(drug_codeset_id=2, gap_days=30, offset=0),
     )
 
@@ -489,7 +473,7 @@ def test_full_cohort_custom_era_matches_sql_end_dates():
 
     # --- raw SQL pipeline (Java CUSTOM_ERA_STRATEGY_TEMPLATE logic, DuckDB dialect) ---
     # Computes drug eras, then matches era end_dates to events via start_date overlap.
-    sql = f"""
+    sql = """
     WITH drug_eras AS (
         SELECT
             person_id,

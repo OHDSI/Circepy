@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
@@ -79,6 +80,13 @@ def generate_cohort_set(
     total = len(cohort_definition_set)
     current_checksums = cohort_definition_set.checksums()
 
+    # Clear the correlated-events compilation cache so that entries
+    # referencing a previous backend (whose ``id()`` may have been reused
+    # by the current connection) never collide.
+    from ..execution.engine.group_operators import _COMPILED_CORRELATED_EVENTS
+
+    _COMPILED_CORRELATED_EVENTS.clear()
+
     previous_checksums: dict[int, str] = {}
     if incremental:
         previous_checksums = load_checksums(
@@ -126,7 +134,9 @@ def generate_cohort_set(
         start_time: datetime | None = None
         end_time: datetime | None = None
         try:
-            # Compile cohort expression to an ibis relation (not timed)
+            # Compile cohort expression to an ibis relation (not timed for
+            # benchmark parity — benchmarks measure database execution only)
+            compile_start = datetime.now()
             new_rows = build_cohort(
                 cohort.expression,
                 backend=backend,
@@ -134,11 +144,21 @@ def generate_cohort_set(
                 results_schema=results_schema,
                 vocabulary_schema=vocabulary_schema,
                 use_persistent_cache=False,
+                cohort_id=cohort.cohort_id,
             )
+            compile_end = datetime.now()
+            compile_duration = (compile_end - compile_start).total_seconds()
             new_rows = project_to_ohdsi_cohort_table(new_rows, cohort_id=cohort.cohort_id)
 
             # Materialize the compiled relation — this is the DB IO we time
             start_time = datetime.now()
+            logger.debug(
+                "[%d/%d] Executing cohort %d (%s) ...",
+                i,
+                total,
+                cohort.cohort_id,
+                cohort.cohort_name,
+            )
             write_cohort(
                 compiled_relation=new_rows,
                 backend=backend,
@@ -153,11 +173,12 @@ def generate_cohort_set(
 
             duration = (end_time - start_time).total_seconds()
             logger.info(
-                "[%d/%d] Completed cohort %d (%s) in %.1fs",
+                "[%d/%d] Completed cohort %d (%s) — compile %.1fs, execute %.1fs",
                 i,
                 total,
                 cohort.cohort_id,
                 cohort.cohort_name,
+                compile_duration,
                 duration,
             )
         except ExecutionError as exc:
@@ -193,6 +214,12 @@ def generate_cohort_set(
             if stop_on_error:
                 raise
             continue
+
+        # Clean up staging tables created by the materialized pipeline
+        schema = results_schema or cdm_schema
+        for stage in ("primary", "qualified", "included", "ended"):
+            with contextlib.suppress(Exception):
+                backend.drop_table(f"__cg_{cohort.cohort_id}_{stage}", database=schema, force=True)
 
         results.append(
             CohortGenerationResult(
