@@ -36,21 +36,30 @@ duckdb:
 #     Use environment variables for sensitive credentials.
 
 # Databricks backend (for cloud-scale validation)
-# Uncomment and configure to test against Databricks
-# databricks:
-#   driver: "databricks"
-#   description: "Databricks SQL warehouse"
-#   connection:
-#     server_hostname: "${DATABRICKS_HOST}"
-#     http_path: "${DATABRICKS_HTTP_PATH}"
-#     personal_access_token: "${DATABRICKS_TOKEN}"
-#   cdm_schema: "hive_metastore.omop_cdm"
-#   vocabulary_schema: "hive_metastore.omop_cdm"
-#   results_schema: "hive_metastore.results"
-#   data_source: "provided"  # Assumes OMOP data already loaded
-#   notes: |
-#     Requires Databricks workspace and valid credentials via environment variables.
-#     Use for validating CircePy with cloud-scale OMOP implementations.
+# Set the required environment variables before running:
+#   export DATABRICKS_HOST="..."
+#   export DATABRICKS_HTTP_PATH="..."
+#   export DATABRICKS_TOKEN="..."
+databricks:
+  driver: "databricks"
+  description: "Databricks SQL warehouse"
+  connection:
+    server_hostname: "${DATABRICKS_HOST}"
+    http_path: "${DATABRICKS_HTTP_PATH}"
+    personal_access_token: "${DATABRICKS_TOKEN}"
+    # catalog: "main"       # optional — set if using Unity Catalog
+    # schema: "default"     # optional — default schema
+  cdm_schema: "hive_metastore.omop_cdm"
+  vocabulary_schema: "hive_metastore.omop_cdm"
+  results_schema: "hive_metastore.results"
+  r_cohort_table: "cohort_r"
+  py_cohort_table: "cohort_py"
+  r_checksum_table: "cohort_r_checksum"
+  py_checksum_table: "cohort_py_checksum"
+  notes: |
+    Requires Databricks workspace, valid credentials via env vars, and
+    OMOP CDM data already loaded into the configured schema.
+    Uses ibis-framework[databricks] for Python connectivity.
 
 # Eunomia data source configuration
 eunomia:

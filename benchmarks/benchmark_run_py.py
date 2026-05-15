@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Runnable Python benchmark of PhenotypeLibrary cohorts on Eunomia (DuckDB).
+"""Runnable Python benchmark of PhenotypeLibrary cohorts.
 
 Usage::
 
     # Export PhenotypeLibrary cohort JSONs (one-time setup)
     Rscript benchmarks/export_phenotypes.R
 
-    # Optional: create the Eunomia DuckDB (Python can also reuse R's)
-    Rscript benchmarks/benchmark_run_r.R
-
-    # Run the Python benchmark
+    # DuckDB (default — needs Eunomia DB from R)
     python benchmarks/benchmark_run_py.py
+
+    # Databricks (set DATABRICKS_HOST, DATABRICKS_HTTP_PATH, DATABRICKS_TOKEN)
+    python benchmarks/benchmark_run_py.py --backend databricks
 
 Output (written to *benchmark_output/*)::
 
@@ -19,11 +19,13 @@ Output (written to *benchmark_output/*)::
 
 from __future__ import annotations
 
+import argparse
 import logging
+import sys
 from pathlib import Path
 
-import ibis
 import pandas as pd
+from _backend import connect_backend
 
 from circe.cohort_definition_set import CohortDefinitionSet, generate_cohort_set
 from circe.cohortdefinition import CohortExpression
@@ -38,21 +40,32 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = REPO_ROOT / "benchmark_output"
 JSON_DIR = OUTPUT_DIR / "phenotype_jsons"
 MANIFEST_PATH = OUTPUT_DIR / "phenotype_manifest.csv"
-DUCKDB_PATH = OUTPUT_DIR / "eunomia.duckdb"
 RESULTS_CSV = OUTPUT_DIR / "py_checksum_times.csv"
 
-COHORT_TABLE = "cohort_py"
-CHECKSUM_TABLE = "cohort_py_checksum"
-CDM_SCHEMA = "main"
+
+def _parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(description="Python circe cohort benchmark runner")
+    p.add_argument(
+        "--backend",
+        default="duckdb",
+        choices=("duckdb", "databricks"),
+        help="Target database backend (default: duckdb)",
+    )
+    return p.parse_args()
 
 
 def main() -> None:
+    args = _parse_args()
+    backend_label = args.backend
+
     # ── 1. Load phenotype definitions ────────────────────────────────────
     print("Loading phenotype definitions ...")
     if not MANIFEST_PATH.exists():
-        raise FileNotFoundError(
-            f"{MANIFEST_PATH} not found. Run 'Rscript benchmarks/export_phenotypes.R' first."
+        print(
+            f"  {MANIFEST_PATH} not found. Run 'Rscript benchmarks/export_phenotypes.R' first.",
+            file=sys.stderr,
         )
+        sys.exit(1)
 
     manifest = pd.read_csv(MANIFEST_PATH)
     print(f"  Manifest has {len(manifest)} cohorts")
@@ -73,23 +86,23 @@ def main() -> None:
         print(f"  Skipped {skipped} cohorts with missing JSON files")
     print(f"  Loaded {len(cds)} cohorts into CohortDefinitionSet")
 
-    # ── 2. Connect to DuckDB ─────────────────────────────────────────────
-    if not DUCKDB_PATH.exists():
-        raise FileNotFoundError(f"{DUCKDB_PATH} not found. Run 'Rscript benchmarks/benchmark_run_r.R' first.")
-    print(f"Connecting to DuckDB: {DUCKDB_PATH}")
-    backend = ibis.duckdb.connect(str(DUCKDB_PATH))
+    # ── 2. Connect to backend ────────────────────────────────────────────
+    print(f"Connecting to backend: {backend_label}")
+    conn = connect_backend(backend_label)
 
     # ── 3. Generate cohorts ──────────────────────────────────────────────
-    print("Generating cohorts (incremental) ...")
+    checksum_table = conn.py_checksum_table
+    cohort_table = conn.py_cohort_table
+    print(f"Generating cohorts (incremental) → {conn.results_schema}.{cohort_table}")
     results = generate_cohort_set(
         cds,
-        backend=backend,
-        cdm_schema=CDM_SCHEMA,
-        cohort_table=COHORT_TABLE,
-        results_schema=CDM_SCHEMA,
-        vocabulary_schema=CDM_SCHEMA,
+        backend=conn.backend,
+        cdm_schema=conn.cdm_schema,
+        cohort_table=cohort_table,
+        results_schema=conn.results_schema,
+        vocabulary_schema=conn.vocabulary_schema,
         incremental=True,
-        checksum_table=CHECKSUM_TABLE,
+        checksum_table=checksum_table,
         stop_on_error=False,
     )
 
@@ -120,7 +133,7 @@ def main() -> None:
     skipped_df = df[df["status"] == "SKIPPED"]
 
     print(f"\n{'=' * 55}")
-    print("Python benchmark complete")
+    print(f"Python benchmark complete (backend={backend_label})")
     print(f"  Phenotypes loaded : {len(manifest)}")
     print(f"  COMPLETE          : {len(complete_df)}")
     print(f"  FAILED            : {len(failed_df)}")

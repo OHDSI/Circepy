@@ -3,33 +3,36 @@
 
 Reads the checksum timing CSVs produced by
 :file:`benchmarks/benchmark_run_r.R` and :file:`benchmarks/benchmark_run_py.py`,
-queries the persisted history tables directly from the DuckDB database for
+queries the persisted history tables directly from the database for
 cross-validation, and prints a paper-ready comparative summary.
 
 Usage::
 
-    python benchmarks/benchmark_analyze_duckdb.py
+    python benchmarks/benchmark_analyze_duckdb.py                    # DuckDB
+    python benchmarks/benchmark_analyze_duckdb.py --backend databricks
 """
 
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 
-import ibis
 import pandas as pd
+from _backend import PY_CSV, R_CSV, connect_backend
 from compare_cohort_outputs import compare_cohort_outputs, print_comparison_report
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-OUTPUT_DIR = REPO_ROOT / "benchmark_output"
-DUCKDB_PATH = OUTPUT_DIR / "eunomia.duckdb"
 
-R_CSV = OUTPUT_DIR / "r_checksum_times.csv"
-PY_CSV = OUTPUT_DIR / "py_checksum_times.csv"
 
-R_COHORT_TABLE = "cohort"
-PY_COHORT_TABLE = "cohort_py"
-R_CHECKSUM_TABLE = "cohort_checksum"
-PY_CHECKSUM_TABLE = "cohort_py_checksum"
+def _parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(description="CircePy benchmark result analyzer")
+    p.add_argument(
+        "--backend",
+        default="duckdb",
+        choices=("duckdb", "databricks"),
+        help="Target database backend for cross-validation (default: duckdb)",
+    )
+    return p.parse_args()
 
 
 def load_csv(path: Path) -> pd.DataFrame | None:
@@ -56,9 +59,7 @@ def print_coverage(label: str, df: pd.DataFrame) -> None:
 
 
 def print_timing(label: str, df: pd.DataFrame) -> None:
-    complete = (
-        df[df["status"] == "COMPLETE"] if _has_status(df) else df
-    )  # checksum table — all rows are COMPLETE
+    complete = df[df["status"] == "COMPLETE"] if _has_status(df) else df
     if complete.empty:
         print(f"  {label}: no completed cohorts to report timing")
         return
@@ -73,11 +74,15 @@ def print_timing(label: str, df: pd.DataFrame) -> None:
 
 
 def cross_validate(
-    label: str, csv_df: pd.DataFrame, backend: ibis.BaseBackend, cohort_table: str, checksum_table: str
+    label: str,
+    csv_df: pd.DataFrame,
+    conn,
+    cohort_table: str,
+    checksum_table: str,
 ) -> None:
     """Read the persisted checksum table and compare with the CSV."""
     try:
-        history = backend.table(checksum_table, database="main").execute()
+        history = conn.backend.table(checksum_table, database=conn.results_schema).execute()
     except Exception:
         print(f"  {label} cross-validation: checksum table '{checksum_table}' not found")
         return
@@ -90,13 +95,11 @@ def cross_validate(
     if complete_csv.empty:
         return
 
-    # Compare count of COMPLETE rows
     history_complete = history[history["status"] == "COMPLETE"] if _has_status(history) else history
     print(f"  {label} cross-validation:")
     print(f"    CSV rows            : {len(complete_csv)}")
     print(f"    DB rows             : {len(history_complete)}")
 
-    # Compare total timing
     csv_total = complete_csv["generation_seconds"].sum()
     if "start_time" in history_complete.columns and "end_time" in history_complete.columns:
         starts = history_complete["start_time"]
@@ -111,10 +114,10 @@ def cross_validate(
         print(f"    Delta              : {delta:.4f}s {'✓' if delta < 1.0 else '✗'}")
 
 
-def print_cohort_row_counts(label: str, backend: ibis.BaseBackend, cohort_table: str) -> None:
+def print_cohort_row_counts(label: str, conn, cohort_table: str) -> None:
     """Print row count summary from the cohort output table."""
     try:
-        rows = backend.table(cohort_table, database="main").execute()
+        rows = conn.backend.table(cohort_table, database=conn.results_schema).execute()
     except Exception:
         print(f"  {label} row counts: table '{cohort_table}' not found")
         return
@@ -154,8 +157,11 @@ def compare_shared(label_prefix: str, r_df: pd.DataFrame, py_df: pd.DataFrame) -
 
 
 def main() -> None:
+    args = _parse_args()
+    backend_label = args.backend
+
     print("=" * 60)
-    print("R vs Python CohortGenerator Benchmark Comparison")
+    print(f"R vs Python CohortGenerator Benchmark Comparison (backend={backend_label})")
     print("=" * 60)
 
     r_df = load_csv(R_CSV)
@@ -181,36 +187,39 @@ def main() -> None:
     if py_df is not None:
         print_timing("Py", py_df)
 
-    # ── Cross-validation against persisted checksum tables ──────────────
-    if DUCKDB_PATH.exists():
-        print("\nTable 3 — Cross-validation (CSV vs persisted checksum table)")
-        backend = ibis.duckdb.connect(str(DUCKDB_PATH))
-        if r_df is not None:
-            cross_validate("R ", r_df, backend, R_COHORT_TABLE, R_CHECKSUM_TABLE)
-        if py_df is not None:
-            cross_validate("Py", py_df, backend, PY_COHORT_TABLE, PY_CHECKSUM_TABLE)
-    else:
-        print(f"\nTable 3 — Cross-validation: {DUCKDB_PATH} not found, skipping")
+    # ── Cross-validation & row counts (needs a backend connection) ──────
+    print("\nTable 3 — Cross-validation (CSV vs persisted checksum table)")
+    try:
+        conn = connect_backend(backend_label)
+    except Exception as exc:
+        print(f"  Cannot connect to {backend_label}: {exc}")
+        conn = None
 
-    # ── Cohort row counts ────────────────────────────────────────────────
-    if DUCKDB_PATH.exists():
-        print("\nTable 4 — Cohort row counts")
-        backend = ibis.duckdb.connect(str(DUCKDB_PATH))
+    if conn is not None:
         if r_df is not None:
-            print_cohort_row_counts("R ", backend, R_COHORT_TABLE)
+            cross_validate("R ", r_df, conn, conn.r_cohort_table, conn.r_checksum_table)
         if py_df is not None:
-            print_cohort_row_counts("Py", backend, PY_COHORT_TABLE)
+            cross_validate("Py", py_df, conn, conn.py_cohort_table, conn.py_checksum_table)
+
+        print("\nTable 4 — Cohort row counts")
+        if r_df is not None:
+            print_cohort_row_counts("R ", conn, conn.r_cohort_table)
+        if py_df is not None:
+            print_cohort_row_counts("Py", conn, conn.py_cohort_table)
+
+        print("\nTable 6 — Row-level parity (R vs Python)")
+        report = compare_cohort_outputs(
+            conn.backend,
+            r_table=conn.r_cohort_table,
+            py_table=conn.py_cohort_table,
+            schema=conn.results_schema,
+        )
+        print_comparison_report(report)
 
     # ── R vs Python shared-cohort comparison ─────────────────────────────
     if r_df is not None and py_df is not None:
         print("\nTable 5 — R vs Python shared-cohort comparison")
         compare_shared("=>", r_df, py_df)
-
-    # ── Row-level cohort output comparison ──────────────────────────────
-    if DUCKDB_PATH.exists():
-        backend = ibis.duckdb.connect(str(DUCKDB_PATH))
-        report = compare_cohort_outputs(backend)
-        print_comparison_report(report)
 
     print(f"\n{'=' * 60}")
     print("Analysis complete")
