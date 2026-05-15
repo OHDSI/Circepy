@@ -51,6 +51,27 @@ cds <- PhenotypeLibrary::getPlCohortDefinitionSet(cohortIds = phenotype_log$coho
 cat(sprintf("  Loaded %d phenotype definitions\n", nrow(cds)))
 
 # ---------------------------------------------------------------------------
+# 1b. Export phenotype JSONs and manifest for the Python benchmark
+# ---------------------------------------------------------------------------
+cat("Exporting phenotype JSONs and manifest ...\n")
+json_dir <- file.path(OUTPUT_DIR, "phenotype_jsons")
+dir.create(json_dir, showWarnings = FALSE, recursive = TRUE)
+
+for (i in seq_len(nrow(cds))) {
+  cohort_id <- cds$cohortId[i]
+  json_path <- file.path(json_dir, sprintf("%d.json", cohort_id))
+  writeLines(cds$json[i], json_path)
+}
+
+manifest <- data.frame(
+  cohortId   = cds$cohortId,
+  cohortName = cds$cohortName,
+  stringsAsFactors = FALSE
+)
+write.csv(manifest, file.path(OUTPUT_DIR, "phenotype_manifest.csv"), row.names = FALSE)
+cat(sprintf("  Wrote %d JSONs and manifest\n", nrow(cds)))
+
+# ---------------------------------------------------------------------------
 # 2. Set up database connection
 # ---------------------------------------------------------------------------
 if (backend == "duckdb") {
