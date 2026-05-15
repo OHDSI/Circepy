@@ -16,7 +16,8 @@ def test_databricks_post_connect_workaround_swallows_memtable_volume_error():
         def _post_connect(self):
             raise RuntimeError("CREATE VOLUME IF NOT EXISTS my_catalog.my_schema.memtable")
 
-    patched = apply_databricks_post_connect_workaround(backend_cls=FakeDatabricksBackend)
+    with pytest.warns(DeprecationWarning):
+        patched = apply_databricks_post_connect_workaround(backend_cls=FakeDatabricksBackend)
     assert patched is True
 
     backend = FakeDatabricksBackend()
@@ -29,7 +30,8 @@ def test_databricks_post_connect_workaround_keeps_non_volume_errors():
             _ = "CREATE VOLUME IF NOT EXISTS my_catalog.my_schema.memtable"
             raise RuntimeError("different setup error")
 
-    patched = apply_databricks_post_connect_workaround(backend_cls=FakeDatabricksBackend)
+    with pytest.warns(DeprecationWarning):
+        patched = apply_databricks_post_connect_workaround(backend_cls=FakeDatabricksBackend)
     assert patched is True
 
     backend = FakeDatabricksBackend()
@@ -76,6 +78,8 @@ def test_apply_databricks_workaround_is_idempotent():
         def _post_connect(self):
             raise RuntimeError("CREATE VOLUME IF NOT EXISTS my_catalog.my_schema.memtable")
 
-    assert apply_databricks_post_connect_workaround(backend_cls=FakeDatabricksBackend) is True
+    with pytest.warns(DeprecationWarning):
+        assert apply_databricks_post_connect_workaround(backend_cls=FakeDatabricksBackend) is True
+    # Second call is idempotent — no warning because the patch flag is already set
     assert apply_databricks_post_connect_workaround(backend_cls=FakeDatabricksBackend) is True
     assert maybe_apply_databricks_post_connect_workaround(FakeDatabricksBackend()) is True
