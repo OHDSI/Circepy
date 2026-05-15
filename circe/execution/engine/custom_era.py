@@ -134,7 +134,7 @@ def apply_custom_era_strategy(events, strategy, ctx):
     )
 
     event_window = ibis.window(
-        group_by=joined.event_id,
+        group_by=[joined.person_id, joined.event_id],
         order_by=[joined.era_end_date.desc()],
     )
     ranked = joined.mutate(_rn=ibis.row_number().over(event_window))

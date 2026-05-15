@@ -11,7 +11,7 @@ from circe.cohortdefinition import (
     DrugExposure,
     PrimaryCriteria,
 )
-from circe.cohortdefinition.core import CustomEraStrategy
+from circe.cohortdefinition.core import CustomEraStrategy, ResultLimit
 from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 
@@ -564,3 +564,83 @@ def test_full_cohort_custom_era_matches_sql_end_dates():
     ibis_starts = sorted(cohort_result["start_date"].astype(str).tolist())
     sql_starts = sorted(sql_result["start_date"].astype(str).tolist())
     assert ibis_starts == sql_starts
+
+
+# ---------------------------------------------------------------------------
+# Regression: CustomEra must preserve all events when event_id is shared
+#
+# After ``first=True`` + ``QualifiedLimit=First`` + ``ExpressionLimit=First``
+# every person contributes at most one event, and ``_assign_primary_event_ids``
+# assigns ``event_id=1`` to all of them.  The CustomEra window that selects
+# one matching era per event must therefore partition on *(person_id, event_id)*
+# — otherwise all rows collapse into a single partition and only one survives.
+# ---------------------------------------------------------------------------
+
+
+def _seed_common_tables_multi_person(conn, ibis):
+    conn.create_table(
+        "person",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2, 3],
+                "year_of_birth": [1980, 1985, 1990],
+                "gender_concept_id": [8507, 8507, 8507],
+            }
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "observation_period",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2, 3],
+                "observation_period_id": [10, 11, 12],
+                "observation_period_start_date": [date(2019, 1, 1), date(2019, 1, 1), date(2019, 1, 1)],
+                "observation_period_end_date": [date(2021, 12, 31), date(2021, 12, 31), date(2021, 12, 31)],
+            }
+        ),
+        overwrite=True,
+    )
+
+
+def test_custom_era_preserves_all_persons_with_first_true():
+    """All persons survive when DrugExposure(first=True) + CustomEra + limits.
+
+    The window ``group_by=joined.event_id`` previously collapsed every row
+    into a single partition because all events had ``event_id=1`` (assigned
+    by ``_assign_primary_event_ids`` — each person has exactly 1 event after
+    ``first=True`` and the per-person limits).
+    """
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables_multi_person(conn, ibis)
+
+    conn.create_table(
+        "drug_exposure",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2, 3],
+                "drug_exposure_id": [100, 200, 300],
+                "drug_concept_id": [222, 222, 222],
+                "drug_exposure_start_date": [date(2020, 1, 1), date(2020, 2, 1), date(2020, 3, 1)],
+                "drug_exposure_end_date": [date(2020, 1, 31), date(2020, 2, 28), date(2020, 3, 31)],
+                "days_supply": [0, 0, 0],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(1, 222)],
+        primary_criteria=PrimaryCriteria(criteria_list=[DrugExposure(codeset_id=1, first=True)]),
+        qualified_limit=ResultLimit(Type="First"),
+        expression_limit=ResultLimit(Type="First"),
+        end_strategy=CustomEraStrategy(drug_codeset_id=1, gap_days=30, offset=0),
+    )
+
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
+
+    assert len(result) == 3, f"expected 3 rows, got {len(result)}"
+    assert set(result["person_id"]) == {1, 2, 3}
