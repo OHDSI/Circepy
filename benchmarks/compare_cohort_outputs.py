@@ -122,8 +122,9 @@ def _read_cohort_table(
 
     df = pd.DataFrame(
         {
-            "cohort_definition_id": pd.to_numeric(raw["cohort_definition_id"], errors="coerce")
-            .astype("int64"),
+            "cohort_definition_id": pd.to_numeric(raw["cohort_definition_id"], errors="coerce").astype(
+                "int64"
+            ),
             "subject_id": pd.to_numeric(raw["subject_id"], errors="coerce").astype("int64"),
             "cohort_start_date": pd.to_datetime(raw["cohort_start_date"], errors="coerce").dt.date,
             "cohort_end_date": pd.to_datetime(raw["cohort_end_date"], errors="coerce").dt.date,
@@ -140,12 +141,8 @@ def _compare_single_cohort(
     """Compare row-level output for a single cohort."""
     key_cols = ["subject_id", "cohort_start_date", "cohort_end_date"]
 
-    r_set = tuple(
-        tuple(row) for row in r_rows[key_cols].itertuples(index=False)
-    )
-    py_set = tuple(
-        tuple(row) for row in py_rows[key_cols].itertuples(index=False)
-    )
+    r_set = tuple(tuple(row) for row in r_rows[key_cols].itertuples(index=False))
+    py_set = tuple(tuple(row) for row in py_rows[key_cols].itertuples(index=False))
 
     r_unique = set(r_set)
     py_unique = set(py_set)
@@ -204,10 +201,7 @@ def compare_cohort_outputs(
     r_ids = set(r_df["cohort_definition_id"].unique())
     py_ids = set(py_df["cohort_definition_id"].unique())
 
-    if cohort_ids is not None:
-        shared = sorted(r_ids & py_ids & set(cohort_ids))
-    else:
-        shared = sorted(r_ids & py_ids)
+    shared = sorted(r_ids & py_ids & set(cohort_ids)) if cohort_ids is not None else sorted(r_ids & py_ids)
 
     per_cohort: list[CohortMatchSummary] = []
     total_r = 0
@@ -244,15 +238,14 @@ def compare_cohort_outputs(
 
 def print_comparison_report(report: CohortComparisonReport) -> None:
     """Print a human-readable row-level parity report."""
-    print(f"\nTable 6 — Row-level parity (R vs Python)")
+    print("\nTable 6 — Row-level parity (R vs Python)")
 
     if report.n_cohorts_shared == 0:
         print("  No shared cohorts to compare.")
         return
 
     print(f"  Shared cohorts:     {report.n_cohorts_shared}")
-    print(f"  Exactly matched:    {report.n_cohorts_matched_exactly} "
-          f"({report.exact_match_pct:.1f}%)")
+    print(f"  Exactly matched:    {report.n_cohorts_matched_exactly} ({report.exact_match_pct:.1f}%)")
     print(f"  Total R rows:       {report.total_r_rows:,}")
     print(f"  Total Py rows:      {report.total_py_rows:,}")
     print(f"  Total matched:      {report.total_matched:,}")
@@ -263,10 +256,12 @@ def print_comparison_report(report: CohortComparisonReport) -> None:
     if mismatched:
         print(f"\n  Cohort mismatches ({len(mismatched)}):")
         for c in mismatched:
-            print(f"    {c.cohort_id:>5d}  "
-                  f"R={c.n_r:<6d}  Py={c.n_py:<6d}  "
-                  f"matched={c.n_matched:<6d}  "
-                  f"only_R={c.n_only_r:<4d}  only_Py={c.n_only_py:<4d}")
+            print(
+                f"    {c.cohort_id:>5d}  "
+                f"R={c.n_r:<6d}  Py={c.n_py:<6d}  "
+                f"matched={c.n_matched:<6d}  "
+                f"only_R={c.n_only_r:<4d}  only_Py={c.n_only_py:<4d}"
+            )
             if c.sample_only_r:
                 print(f"           samples only_R:  {c.sample_only_r[:3]}")
             if c.sample_only_py:

@@ -31,11 +31,14 @@ def build_cohort(
     vocabulary_schema: str | None = None,
     use_persistent_cache: bool = False,
     cohort_id: int = 0,
+    materialize: bool = True,
 ) -> Table:
     """Normalize, compile, and assemble a cohort relation.
 
-    Paths like to stage-by-stage temp tables when *cohort_id* is provided,
-    so that the ibis expression tree never grows too large to compile.
+    Paths through stage-by-stage temp tables when *cohort_id* is provided
+    and *materialize* is True, so that the ibis expression tree never grows
+    too large to compile.  Set *materialize=False* for compile-only use
+    (e.g. unit tests that only verify the expression tree can be built).
     """
     maybe_apply_databricks_post_connect_workaround(backend)
 
@@ -50,7 +53,7 @@ def build_cohort(
         use_persistent_cache=use_persistent_cache,
     )
 
-    return build_cohort_table(normalized, ctx, cohort_id=cohort_id)
+    return build_cohort_table(normalized, ctx, cohort_id=cohort_id, materialize=materialize)
 
 
 def write_relation(

@@ -89,7 +89,9 @@ def _build_multi_criterion_expression(n: int) -> CohortExpression:
         cs_id = i + 1
         concept_sets.append(_make_concept_set(cs_id, concept_id=cs_id))
         criteria.append(ConditionOccurrence(codeset_id=cs_id))
-    return CohortExpression(concept_sets=concept_sets, primary_criteria=PrimaryCriteria(criteria_list=criteria))
+    return CohortExpression(
+        concept_sets=concept_sets, primary_criteria=PrimaryCriteria(criteria_list=criteria)
+    )
 
 
 @pytest.mark.parametrize("n_criteria", [1, 2, 5, 10, 20, 50, 100])

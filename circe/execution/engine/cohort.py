@@ -57,6 +57,7 @@ def build_cohort_table(
     ctx: ExecutionContext,
     *,
     cohort_id: int = 0,
+    materialize: bool = True,
 ) -> Table:
     primary_plans = tuple(
         PrimaryEventInput(
@@ -77,28 +78,32 @@ def build_cohort_table(
 
     # ── Primary events ──────────────────────────────────────────────────
     primary_events = build_primary_events(cohort_plan, ctx)
-    primary_events = _materialize(
-        primary_events, ctx=ctx, cohort_id=cohort_id, stage="primary", schema=schema
-    )
+    if materialize:
+        primary_events = _materialize(
+            primary_events, ctx=ctx, cohort_id=cohort_id, stage="primary", schema=schema
+        )
 
     # ── Additional (correlated) criteria ────────────────────────────────
     qualified_events = apply_additional_criteria(primary_events, normalized.additional_criteria, ctx)
     if normalized.additional_criteria is not None and not normalized.additional_criteria.is_empty():
         qualified_events = apply_result_limit(qualified_events, cohort_plan.qualified_limit_type)
-    qualified_events = _materialize(
-        qualified_events, ctx=ctx, cohort_id=cohort_id, stage="qualified", schema=schema
-    )
+    if materialize:
+        qualified_events = _materialize(
+            qualified_events, ctx=ctx, cohort_id=cohort_id, stage="qualified", schema=schema
+        )
 
     # ── Inclusion rules ─────────────────────────────────────────────────
     included_events = apply_inclusion_rules(qualified_events, normalized.inclusion_rules, ctx)
     included_events = apply_result_limit(included_events, cohort_plan.expression_limit_type)
-    included_events = _materialize(
-        included_events, ctx=ctx, cohort_id=cohort_id, stage="included", schema=schema
-    )
+    if materialize:
+        included_events = _materialize(
+            included_events, ctx=ctx, cohort_id=cohort_id, stage="included", schema=schema
+        )
 
     # ── End strategy ────────────────────────────────────────────────────
     ended_events = apply_end_strategy(included_events, normalized.end_strategy, ctx)
-    ended_events = _materialize(ended_events, ctx=ctx, cohort_id=cohort_id, stage="ended", schema=schema)
+    if materialize:
+        ended_events = _materialize(ended_events, ctx=ctx, cohort_id=cohort_id, stage="ended", schema=schema)
 
     # ── Censoring + collapse (final stage — no materialize after) ──────
     censored_events = apply_censoring(
