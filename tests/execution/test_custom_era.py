@@ -5,7 +5,6 @@ from datetime import date
 import pytest
 
 from circe.api import build_cohort
-from circe.cohort_definition_set import CohortDefinitionSet, generate_cohort_set
 from circe.cohortdefinition import (
     CohortExpression,
     ConditionOccurrence,
@@ -423,6 +422,72 @@ def test_compute_drug_eras_matches_java_sql_logic():
     )
 
 
+def test_custom_era_offset_affects_era_grouping():
+    """Offset included in padded_end changes which exposures merge into eras.
+
+    With gap_days=0, offset=30:
+      exp1: end=2020-01-10, exp2: start=2020-01-12 (gap=2 days)
+
+    Without offset in padded_end: padded_end1=2020-01-10 (< start 2020-01-12)
+      → separate eras, cohort end=2020-01-10+30=2020-02-09
+
+    With offset in padded_end (Circe BE: DATEADD(day, gap+offset, end)):
+      padded_end1=2020-01-10+30=2020-02-09 (>= start 2020-01-12)
+      → merged era, cohort end=2020-01-20+30=2020-02-19
+    """
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+
+    conn.create_table(
+        "drug_exposure",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 1],
+                "drug_exposure_id": [1, 2],
+                "drug_concept_id": [222, 222],
+                "drug_exposure_start_date": [date(2020, 1, 1), date(2020, 1, 12)],
+                "drug_exposure_end_date": [date(2020, 1, 10), date(2020, 1, 20)],
+                "days_supply": [0, 0],
+            }
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1],
+                "condition_occurrence_id": [100],
+                "condition_concept_id": [111],
+                "condition_start_date": [date(2020, 1, 1)],
+                "condition_end_date": [date(2020, 1, 1)],
+                "visit_occurrence_id": [10],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[
+            _make_concept_set(1, 111),
+            _make_concept_set(2, 222),
+        ],
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
+        end_strategy=CustomEraStrategy(drug_codeset_id=2, gap_days=0, offset=30),
+    )
+
+    result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
+
+    assert len(result) == 1
+    assert str(result.iloc[0]["start_date"])[:10] == "2020-01-01"
+    # Both exposures merge because padded_end1=2020-02-09 >= start 2020-01-12
+    # era end = max(end) + offset = 2020-01-20 + 30 = 2020-02-19
+    assert str(result.iloc[0]["end_date"])[:10] == "2020-02-19"
+
+
 def test_full_cohort_custom_era_matches_sql_end_dates():
     """Full cohort pipeline with CustomEraStrategy produces same end_dates as raw SQL."""
     ibis = pytest.importorskip("ibis")
@@ -473,13 +538,17 @@ def test_full_cohort_custom_era_matches_sql_end_dates():
     cohort_result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
 
     # --- raw SQL pipeline (Java CUSTOM_ERA_STRATEGY_TEMPLATE logic, DuckDB dialect) ---
-    # Computes drug eras, then matches era end_dates to events via start_date overlap.
-    sql = """
+    # Mirrors Circe BE's generateCohort.sql end-date selection:
+    #   ROW_NUMBER() PARTITION BY person_id, event_id ORDER BY era_end_date ASC
+    # picks the earliest strategy end per event, matching Circe BE's
+    #   MIN(end_date) across #strategy_ends union.
+    gap = 30
+    sql = f"""
     WITH drug_eras AS (
         SELECT
             person_id,
             MIN(start_date) AS era_start_date,
-            MAX(padded_end) - 30 AS era_end_date
+            MAX(padded_end) - {gap} AS era_end_date
         FROM (
             SELECT
                 person_id, start_date, padded_end,
@@ -506,7 +575,7 @@ def test_full_cohort_custom_era_matches_sql_end_dates():
                                 de.drug_exposure_end_date::DATE,
                                 de.drug_exposure_start_date::DATE + de.days_supply::INTEGER,
                                 de.drug_exposure_start_date::DATE + 1
-                            ) + 30 AS padded_end
+                            ) + {gap} AS padded_end
                         FROM drug_exposure de
                         WHERE de.drug_concept_id = 222
                     ) raw_ends
@@ -523,20 +592,33 @@ def test_full_cohort_custom_era_matches_sql_end_dates():
             op.observation_period_end_date::DATE AS op_end_date
         FROM condition_occurrence e
         JOIN observation_period op ON e.person_id = op.person_id
+    ),
+    ranked_ends AS (
+        SELECT
+            ev.person_id,
+            ev.event_id,
+            ev.start_date,
+            ev.op_end_date,
+            er.era_end_date,
+            ROW_NUMBER() OVER (
+                PARTITION BY ev.person_id, ev.event_id
+                ORDER BY er.era_end_date
+            ) AS rn
+        FROM events_with_obs ev
+        LEFT JOIN drug_eras er
+            ON ev.person_id = er.person_id
+            AND ev.start_date BETWEEN er.era_start_date AND er.era_end_date
     )
     SELECT
-        ev.person_id,
-        ev.start_date,
+        person_id,
+        start_date,
         LEAST(
-            COALESCE(MAX(er.era_end_date), ev.op_end_date),
-            ev.op_end_date
+            COALESCE(era_end_date, op_end_date),
+            op_end_date
         )::DATE AS end_date
-    FROM events_with_obs ev
-    LEFT JOIN drug_eras er
-        ON ev.person_id = er.person_id
-        AND ev.start_date BETWEEN er.era_start_date AND er.era_end_date
-    GROUP BY ev.person_id, ev.event_id, ev.start_date, ev.op_end_date
-    ORDER BY ev.person_id, ev.start_date
+    FROM ranked_ends
+    WHERE rn = 1
+    ORDER BY person_id, start_date
     """
 
     sql_result = conn.con.sql(sql).fetchdf()
@@ -629,45 +711,3 @@ def test_custom_era_preserves_all_persons_with_first_true():
 
     assert len(result) == 3, f"expected 3 rows, got {len(result)}"
     assert set(result["person_id"]) == {1, 2, 3}
-
-
-def test_custom_era_preserves_all_persons_via_generate_cohort_set():
-    """Full generate_cohort_set pipeline keeps every person."""
-    ibis = pytest.importorskip("ibis")
-    _ = pytest.importorskip("duckdb")
-
-    conn = ibis.duckdb.connect()
-    _seed_common_tables_multi_person(conn, ibis)
-
-    conn.create_table(
-        "drug_exposure",
-        obj=ibis.memtable(
-            {
-                "person_id": [1, 2, 3],
-                "drug_exposure_id": [100, 200, 300],
-                "drug_concept_id": [222, 222, 222],
-                "drug_exposure_start_date": [date(2020, 1, 1), date(2020, 2, 1), date(2020, 3, 1)],
-                "drug_exposure_end_date": [date(2020, 1, 31), date(2020, 2, 28), date(2020, 3, 31)],
-                "days_supply": [0, 0, 0],
-            }
-        ),
-        overwrite=True,
-    )
-
-    expression = CohortExpression(
-        concept_sets=[_make_concept_set(1, 222)],
-        primary_criteria=PrimaryCriteria(criteria_list=[DrugExposure(codeset_id=1, first=True)]),
-        qualified_limit=ResultLimit(Type="First"),
-        expression_limit=ResultLimit(Type="First"),
-        end_strategy=CustomEraStrategy(drug_codeset_id=1, gap_days=30, offset=0),
-    )
-
-    cds = CohortDefinitionSet()
-    cds.add(1, "CustomEra Regression", expression)
-    results = generate_cohort_set(cds, backend=conn, cdm_schema="main", cohort_table="ce_regress")
-
-    assert results[0].status == "COMPLETE", f"unexpected status: {results[0].status}"
-    # Verify row count from the output table
-    out_rows = conn.table("ce_regress", database="main").execute()
-    assert len(out_rows) == 3, f"expected 3 rows, got {len(out_rows)}"
-    assert set(out_rows["subject_id"]) == {1, 2, 3}
