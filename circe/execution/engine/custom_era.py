@@ -26,7 +26,9 @@ def _compute_exposure_end_date(table, *, days_supply_override: int | None):
 
 
 def _compute_eras(exposures, *, gap_days: int, offset: int):
-    padded = exposures.mutate(_padded_end=(exposures._exposure_end + ibis.interval(days=int(gap_days))))
+    padded = exposures.mutate(
+        _padded_end=(exposures._exposure_end + ibis.interval(days=int(gap_days + offset)))
+    )
 
     ordering = [
         padded.start_date,
@@ -62,18 +64,24 @@ def _compute_eras(exposures, *, gap_days: int, offset: int):
 
     collapsed = era_indexed.group_by(era_indexed.person_id, era_indexed._era_id).aggregate(
         era_start_date=era_indexed.start_date.min(),
-        _max_exposure_end=era_indexed._exposure_end.max(),
+        _max_padded_end=era_indexed._padded_end.max(),
     )
 
     return collapsed.select(
         collapsed.person_id.cast("int64").name(PERSON_ID),
         collapsed.era_start_date.cast("date").name("era_start_date"),
-        (collapsed._max_exposure_end + ibis.interval(days=int(offset))).cast("date").name("era_end_date"),
+        (collapsed._max_padded_end - ibis.interval(days=int(gap_days))).cast("date").name("era_end_date"),
     )
 
 
 def compute_drug_eras(
-    ctx, *, drug_codeset_id: int, gap_days: int, offset: int, days_supply_override: int | None
+    ctx,
+    *,
+    drug_codeset_id: int,
+    gap_days: int,
+    offset: int,
+    days_supply_override: int | None,
+    cohort_person_ids=None,
 ):
     concept_ids = ctx.concept_ids_for_codeset(drug_codeset_id)
 
@@ -86,7 +94,18 @@ def compute_drug_eras(
         )
 
     de = ctx.table("drug_exposure")
-    filtered = de.filter(de.drug_concept_id.isin(concept_ids))
+    if cohort_person_ids is not None:
+        de = de.semi_join(
+            cohort_person_ids.select(cohort_person_ids.person_id).distinct(),
+            predicates=[de.person_id == cohort_person_ids.person_id],
+        )
+
+    if "drug_source_concept_id" in de.columns:
+        filtered = de.filter(
+            de.drug_concept_id.isin(concept_ids) | de.drug_source_concept_id.isin(concept_ids)
+        )
+    else:
+        filtered = de.filter(de.drug_concept_id.isin(concept_ids))
 
     prepared = filtered.select(
         filtered.person_id.cast("int64").name("person_id"),
@@ -108,12 +127,15 @@ def apply_custom_era_strategy(events, strategy, ctx):
         with_bounds = attach_observation_bounds(events, ctx)
         return _replace_end_date(events, with_bounds, with_bounds.op_end_date)
 
+    cohort_person_ids = events.select(events.person_id).distinct()
+
     eras = compute_drug_eras(
         ctx,
         drug_codeset_id=drug_codeset_id,
         gap_days=gap_days,
         offset=offset,
         days_supply_override=days_supply_override,
+        cohort_person_ids=cohort_person_ids,
     )
 
     eras_for_join = eras.select(
