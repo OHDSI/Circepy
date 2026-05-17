@@ -250,31 +250,33 @@ def upsert_generation_history(
         end_time: When execution ended.
     """
     import ibis
-    import pandas as pd
 
     from ..execution.ibis.operations import (
         create_table,
         delete_cohort_rows,
-        insert_relation,
+        insert_rows_via_raw_sql,
         table_exists,
     )
 
-    new_rows_df = pd.DataFrame(
-        [
-            {
-                "cohort_definition_id": int(cohort_id),
-                "checksum": str(checksum),
-                "status": str(status),
-                "start_time": pd.to_datetime(start_time),
-                "end_time": pd.to_datetime(end_time),
-            }
-        ]
-    )
-
-    new_relation = ibis.memtable(new_rows_df)
+    columns = ["cohort_definition_id", "checksum", "status", "start_time", "end_time"]
+    row = [int(cohort_id), str(checksum), str(status), start_time, end_time]
 
     if not table_exists(backend, table_name=table_name, schema=schema):
-        create_table(backend, table_name=table_name, schema=schema, obj=new_relation, overwrite=False)
+        create_table(
+            backend,
+            table_name=table_name,
+            schema=schema,
+            obj=ibis.memtable(
+                {
+                    "cohort_definition_id": [int(cohort_id)],
+                    "checksum": [str(checksum)],
+                    "status": [str(status)],
+                    "start_time": [start_time],
+                    "end_time": [end_time],
+                }
+            ),
+            overwrite=False,
+        )
         return
 
     delete_cohort_rows(
@@ -283,9 +285,10 @@ def upsert_generation_history(
         results_schema=schema,
         cohort_id=cohort_id,
     )
-    insert_relation(
-        new_relation,
-        backend=backend,
-        target_table=table_name,
-        target_schema=schema,
+    insert_rows_via_raw_sql(
+        backend,
+        table_name=table_name,
+        schema=schema,
+        columns=columns,
+        rows=[row],
     )

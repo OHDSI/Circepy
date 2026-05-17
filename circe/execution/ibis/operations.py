@@ -119,6 +119,58 @@ def delete_cohort_rows(
         ) from exc
 
 
+def insert_rows_via_raw_sql(
+    backend: IbisBackendLike,
+    *,
+    table_name: str,
+    schema: str | None,
+    columns: list[str],
+    rows: list[list],
+) -> None:
+    """Insert rows into a backend table using a raw SQL INSERT VALUES statement.
+
+    Avoids ``ibis.memtable()`` so that backends like Databricks (which
+    restrict staging/volume paths) can write small payloads without
+    hitting ``staging_allowed_local_path`` constraints.
+    """
+    from datetime import datetime
+
+    raw_sql = getattr(backend, "raw_sql", None)
+    if not callable(raw_sql):
+        raise ExecutionError("Ibis executor write error: backend does not support raw_sql for raw inserts.")
+
+    catalog, database = _catalog_db_tuple(backend, schema)
+    quoted = getattr(getattr(backend, "compiler", None), "quoted", False)
+
+    table = sg.table(table_name, db=database, catalog=catalog, quoted=quoted)
+    table_sql = table.sql(dialect=getattr(backend, "name", None) or "duckdb")
+
+    cols_sql = ", ".join(
+        sg.column(c, quoted=quoted).sql(dialect=getattr(backend, "name", None) or "duckdb") for c in columns
+    )
+
+    def _sql_value(v):
+        if v is None:
+            return "NULL"
+        if isinstance(v, (int, float)):
+            return repr(v)
+        if isinstance(v, datetime):
+            return "'" + v.strftime("%Y-%m-%d %H:%M:%S") + "'"
+        return "'" + str(v).replace("'", "''") + "'"
+
+    values_sql = ", ".join("(" + ", ".join(_sql_value(v) for v in row) + ")" for row in rows)
+
+    statement = f"INSERT INTO {table_sql} ({cols_sql}) VALUES {values_sql}"
+
+    try:
+        raw_sql(statement)
+    except Exception as exc:
+        raise ExecutionError(
+            "Ibis executor write error: failed inserting rows into "
+            f"table '{table_name}' in schema '{schema}'."
+        ) from exc
+
+
 def supports_transactional_replace(backend: IbisBackendLike) -> bool:
     """Return whether cohort-scoped delete+insert can run transactionally."""
     return getattr(backend, "name", None) in {"duckdb", "postgres"}
