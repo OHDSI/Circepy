@@ -1,0 +1,79 @@
+Traceback (most recent call last):
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\execution\ibis\operations.py", line 190, in insert_relation
+    _call_with_optional_database(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        insert,
+        ^^^^^^^
+    ...<3 lines>...
+        overwrite=False,
+        ^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\execution\ibis\operations.py", line 13, in _call_with_optional_database
+    return method(*args, database=database, **kwargs)
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\ibis\backends\sql\__init__.py", line 457, in insert
+    self._run_pre_execute_hooks(obj)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\ibis\backends\__init__.py", line 1300, in _run_pre_execute_hooks
+    self._register_in_memory_tables(expr)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\ibis\backends\__init__.py", line 1277, in _register_in_memory_tables
+    self._register_in_memory_table(memtable)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\ibis\backends\databricks\__init__.py", line 476, in _register_in_memory_table
+    cur.execute(put_into)
+    ~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\databricks\sql\telemetry\latency_logger.py", line 182, in wrapper
+    return func(self, *args, **kwargs)
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\databricks\sql\client.py", line 1357, in execute
+    self._handle_staging_operation(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        staging_allowed_local_path=self.connection.staging_allowed_local_path,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        input_stream=input_stream,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\databricks\sql\client.py", line 1103, in _handle_staging_operation
+    raise ProgrammingError(
+    ...<3 lines>...
+    )
+databricks.sql.exc.ProgrammingError: Local file operations are restricted to paths within the configured staging_allowed_local_path
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\benchmarks\benchmark_run_py.py", line 160, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\benchmarks\benchmark_run_py.py", line 108, in main
+    results = generate_cohort_set(
+        cds,
+    ...<7 lines>...
+        stop_on_error=False,
+    )
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\cohort_definition_set\_generate.py", line 238, in generate_cohort_set
+    upsert_generation_history(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        backend,
+        ^^^^^^^^
+    ...<6 lines>...
+        end_time=end_time or datetime.now(),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\cohort_definition_set\_checksum_store.py", line 286, in upsert_generation_history
+    insert_relation(
+    ~~~~~~~~~~~~~~~^
+        new_relation,
+        ^^^^^^^^^^^^^
+    ...<2 lines>...
+        target_schema=schema,
+        ^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\execution\ibis\operations.py", line 199, in insert_relation
+    raise ExecutionError(
+    ...<2 lines>...
+    ) from exc
+circe.execution.errors.ExecutionError: Ibis executor write error: failed inserting relation into table 'benchmark_cohort_py_checksum' in schema 'scratch.scratch_jgilber2'.
