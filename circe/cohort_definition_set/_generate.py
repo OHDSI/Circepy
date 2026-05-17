@@ -2,23 +2,68 @@
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import logging
+import threading
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
-from ..execution.api import build_cohort, project_to_ohdsi_cohort_table, write_cohort
-from ..execution.errors import ExecutionError
+from ..execution.api import build_cohort, write_cohort
 from ._checksum_store import load_checksums, upsert_generation_history
-from ._core import CohortDefinitionSet, CohortGenerationResult
+from ._core import CohortDefinition, CohortDefinitionSet, CohortGenerationResult
 
 if TYPE_CHECKING:
     from ..execution.typing import IbisBackendLike
 
 logger = logging.getLogger(__name__)
 
+_backend_lock = threading.Lock()
 
-def generate_cohort_set(
+
+def _process_single_cohort(
+    cohort: CohortDefinition,
+    *,
+    backend: IbisBackendLike,
+    cdm_schema: str | None,
+    results_schema: str | None,
+    vocabulary_schema: str | None,
+    cohort_table: str,
+) -> tuple[datetime, datetime]:
+    """Build and write a single cohort. Thread-safe via ``_backend_lock``.
+
+    Returns ``(start_time, end_time)`` of the database-materialization
+    phase so the caller can compute execution duration.
+    """
+    from ..execution.ibis.materialize import project_to_ohdsi_cohort_table
+
+    with _backend_lock:
+        start_time = datetime.now()
+        new_rows = build_cohort(
+            cohort.expression,
+            backend=backend,
+            cdm_schema=cdm_schema,  # type: ignore[arg-type]
+            results_schema=results_schema,
+            vocabulary_schema=vocabulary_schema,
+            use_persistent_cache=False,
+            cohort_id=cohort.cohort_id,
+        )
+        projected = project_to_ohdsi_cohort_table(new_rows, cohort_id=cohort.cohort_id)
+        write_cohort(
+            compiled_relation=projected,
+            backend=backend,
+            cdm_schema=cdm_schema,  # type: ignore[arg-type]
+            cohort_table=cohort_table,
+            cohort_id=cohort.cohort_id,
+            results_schema=results_schema,
+            vocabulary_schema=vocabulary_schema,
+            if_exists="replace",
+        )
+        end_time = datetime.now()
+        return start_time, end_time
+
+
+async def async_generate_cohort_set(
     cohort_definition_set: CohortDefinitionSet,
     *,
     backend: IbisBackendLike,
@@ -29,66 +74,59 @@ def generate_cohort_set(
     incremental: bool = False,
     checksum_table: str = "cohort_checksum",
     stop_on_error: bool = True,
+    compile_timeout: float | None = None,
 ) -> list[CohortGenerationResult]:
     """Generate all cohorts in a CohortDefinitionSet and write them to a shared table.
 
-    This is the Python equivalent of OHDSI/CohortGenerator's ``generateCohortSet()``.
-    Each cohort is written to ``cohort_table`` with its ``cohort_id`` stamped into
-    ``cohort_definition_id``. If the table already contains rows for a cohort, they
-    are replaced (``if_exists="replace"`` semantics from ``write_cohort``).
+    This is the async counterpart of :func:`generate_cohort_set`.  It wraps
+    the synchronous build/write pipeline in :func:`asyncio.to_thread` so
+    that each cohort's work does not block the event loop.  When
+    *compile_timeout* is set, cohorts taking longer than the given number
+    of seconds are recorded as ``FAILED`` and the next cohort proceeds
+    (subject to *stop_on_error*).
 
-    When ``incremental=True``, cohorts whose expression checksum matches the stored
-    value in ``checksum_table`` are skipped.  Successfully completed cohorts have
-    their checksums persisted to ``checksum_table`` so future runs can detect them.
+    All exception types (not just ``ExecutionError``) are caught and
+    recorded as ``FAILED``, ensuring that transient database errors such as
+    Databricks ``ServerOperationError`` do not abort the entire batch.
 
     Args:
         cohort_definition_set: The set of cohort definitions to generate.
         backend: Ibis backend connection pointing at the target database.
         cdm_schema: Schema containing the OMOP CDM source tables.
         cohort_table: Name of the OHDSI cohort table to write results into.
-        results_schema: Optional schema for both the cohort table and checksum table.
-        vocabulary_schema: Optional schema for vocabulary tables (defaults to cdm_schema).
-        incremental: If True, skip cohorts whose expression checksum is unchanged
-            since the last successful generation.
-        checksum_table: Name of the table used to persist checksums for incremental
-            runs.  Defaults to ``"cohort_checksum"``.
-        stop_on_error: If True (default), raise the first ExecutionError encountered
-            and stop processing remaining cohorts.  If False, record the failure and
-            continue.
+        results_schema: Optional schema for both the cohort table and
+            checksum table.
+        vocabulary_schema: Optional schema for vocabulary tables (defaults
+            to *cdm_schema*).
+        incremental: If True, skip cohorts whose expression checksum is
+            unchanged since the last successful generation.
+        checksum_table: Name of the table used to persist checksums for
+            incremental runs.  Defaults to ``"cohort_checksum"``.
+        stop_on_error: If True (default), raise on the first failure and
+            stop processing remaining cohorts.  If False, record the
+            failure and continue.
+        compile_timeout: Maximum time in seconds to allow per-cohort before
+            recording a timeout failure.  ``None`` means no timeout.
 
     Returns:
-        A list of :class:`CohortGenerationResult` — one entry per cohort in the
-        set, in insertion order.
+        A list of :class:`CohortGenerationResult` — one entry per cohort
+        in the set, in insertion order.
 
     Raises:
-        ExecutionError: If a cohort fails to generate and ``stop_on_error=True``.
-
-    Example:
-        >>> cds = CohortDefinitionSet()
-        >>> cds.add(1, "Diabetes", expr1)
-        >>> cds.add(2, "Hypertension", expr2)
-        >>> results = generate_cohort_set(
-        ...     cds,
-        ...     backend=conn,
-        ...     cdm_schema="main",
-        ...     cohort_table="cohort",
-        ...     incremental=True,
-        ... )
-        >>> for r in results:
-        ...     print(r.cohort_name, r.status)
+        Exception: If a cohort fails and ``stop_on_error=True`` (the
+            exception type matches whatever the underlying operation
+            raised).
     """
     total = len(cohort_definition_set)
 
-    # Clear the correlated-events compilation cache so that entries
-    # referencing a previous backend (whose ``id()`` may have been reused
-    # by the current connection) never collide.
     from ..execution.engine.group_operators import _COMPILED_CORRELATED_EVENTS
 
     _COMPILED_CORRELATED_EVENTS.clear()
 
     previous_checksums: dict[int, str] = {}
     if incremental:
-        previous_checksums = load_checksums(
+        previous_checksums = await asyncio.to_thread(
+            load_checksums,
             backend,
             schema=results_schema,
             table_name=checksum_table,
@@ -103,7 +141,7 @@ def generate_cohort_set(
 
         if incremental and previous_checksums.get(cohort.cohort_id) == current_checksum:
             logger.info(
-                "[%d/%d] Skipping cohort %d (%s) — checksum unchanged",
+                "[%d/%d] Skipping cohort %d (%s) -- checksum unchanged",
                 i,
                 total,
                 cohort.cohort_id,
@@ -132,54 +170,69 @@ def generate_cohort_set(
         start_time: datetime | None = None
         end_time: datetime | None = None
         try:
-            # Compile cohort expression to an ibis relation (not timed for
-            # benchmark parity — benchmarks measure database execution only)
-            compile_start = datetime.now()
-            new_rows = build_cohort(
-                cohort.expression,
-                backend=backend,
-                cdm_schema=cdm_schema,
-                results_schema=results_schema,
-                vocabulary_schema=vocabulary_schema,
-                use_persistent_cache=False,
-                cohort_id=cohort.cohort_id,
+            start_time, end_time = await asyncio.wait_for(
+                asyncio.to_thread(
+                    _process_single_cohort,
+                    cohort,
+                    backend=backend,
+                    cdm_schema=cdm_schema,
+                    results_schema=results_schema,
+                    vocabulary_schema=vocabulary_schema,
+                    cohort_table=cohort_table,
+                ),
+                timeout=compile_timeout,
             )
-            compile_end = datetime.now()
-            compile_duration = (compile_end - compile_start).total_seconds()
-            new_rows = project_to_ohdsi_cohort_table(new_rows, cohort_id=cohort.cohort_id)
-
-            # Materialize the compiled relation — this is the DB IO we time
-            start_time = datetime.now()
-            logger.debug(
-                "[%d/%d] Executing cohort %d (%s) ...",
-                i,
-                total,
-                cohort.cohort_id,
-                cohort.cohort_name,
-            )
-            write_cohort(
-                compiled_relation=new_rows,
-                backend=backend,
-                cdm_schema=cdm_schema,
-                cohort_table=cohort_table,
-                cohort_id=cohort.cohort_id,
-                results_schema=results_schema,
-                vocabulary_schema=vocabulary_schema,
-                if_exists="replace",
-            )
-            end_time = datetime.now()
 
             duration = (end_time - start_time).total_seconds()
             logger.info(
-                "[%d/%d] Completed cohort %d (%s) — compile %.1fs, execute %.1fs",
+                "[%d/%d] Completed cohort %d (%s) -- duration %.1fs",
                 i,
                 total,
                 cohort.cohort_id,
                 cohort.cohort_name,
-                compile_duration,
                 duration,
             )
-        except ExecutionError as exc:
+        except asyncio.TimeoutError:
+            if end_time is None:
+                end_time = datetime.now()
+            duration = (end_time - (start_time or end_time)).total_seconds()
+            logger.error(
+                "[%d/%d] TIMED OUT cohort %d (%s) after %.1fs",
+                i,
+                total,
+                cohort.cohort_id,
+                cohort.cohort_name,
+                duration,
+            )
+            timeout_exc = TimeoutError(
+                f"Cohort {cohort.cohort_id} ({cohort.cohort_name}) exceeded timeout of {compile_timeout:.0f}s"
+            )
+            results.append(
+                CohortGenerationResult(
+                    cohort_id=cohort.cohort_id,
+                    cohort_name=cohort.cohort_name,
+                    status="FAILED",
+                    checksum=current_checksum,
+                    start_time=start_time or datetime.now(),
+                    end_time=end_time,
+                    error=timeout_exc,
+                )
+            )
+            if incremental:
+                upsert_generation_history(
+                    backend,
+                    schema=results_schema,
+                    table_name=checksum_table,
+                    cohort_id=cohort.cohort_id,
+                    checksum=current_checksum,
+                    status="FAILED",
+                    start_time=start_time or datetime.now(),
+                    end_time=end_time,
+                )
+            if stop_on_error:
+                raise timeout_exc from None
+            continue
+        except Exception as exc:
             if end_time is None:
                 end_time = datetime.now()
             duration = (end_time - (start_time or end_time)).total_seconds()
@@ -257,6 +310,43 @@ def generate_cohort_set(
     return results
 
 
+def generate_cohort_set(
+    cohort_definition_set: CohortDefinitionSet,
+    *,
+    backend: IbisBackendLike,
+    cdm_schema: str,
+    cohort_table: str,
+    results_schema: str | None = None,
+    vocabulary_schema: str | None = None,
+    incremental: bool = False,
+    checksum_table: str = "cohort_checksum",
+    stop_on_error: bool = True,
+) -> list[CohortGenerationResult]:
+    """Generate all cohorts in a CohortDefinitionSet and write them to a shared table.
+
+    This synchronous wrapper delegates to :func:`async_generate_cohort_set`
+    via :func:`asyncio.run`.  See that function for full parameter
+    documentation.
+
+    Raises:
+        RuntimeError: If called from within a running asyncio event loop.
+            Use :func:`async_generate_cohort_set` directly in that case.
+    """
+    return asyncio.run(
+        async_generate_cohort_set(
+            cohort_definition_set,
+            backend=backend,
+            cdm_schema=cdm_schema,
+            cohort_table=cohort_table,
+            results_schema=results_schema,
+            vocabulary_schema=vocabulary_schema,
+            incremental=incremental,
+            checksum_table=checksum_table,
+            stop_on_error=stop_on_error,
+        )
+    )
+
+
 def summarise_generation_results(
     results: list[CohortGenerationResult],
 ) -> dict[Literal["COMPLETE", "SKIPPED", "FAILED"], int]:
@@ -266,7 +356,8 @@ def summarise_generation_results(
         results: List of CohortGenerationResult from generate_cohort_set.
 
     Returns:
-        dict with counts for each status, e.g. {"COMPLETE": 2, "SKIPPED": 1, "FAILED": 0}.
+        dict with counts for each status, e.g.
+        ``{"COMPLETE": 2, "SKIPPED": 1, "FAILED": 0}``.
     """
     counts: dict[Literal["COMPLETE", "SKIPPED", "FAILED"], int] = {
         "COMPLETE": 0,

@@ -23,12 +23,13 @@ Example:
 """
 
 from ._core import CohortDefinition, CohortDefinitionSet, CohortGenerationResult
-from ._generate import generate_cohort_set, summarise_generation_results
+from ._generate import async_generate_cohort_set, generate_cohort_set, summarise_generation_results
 
 __all__ = [
     "CohortDefinition",
     "CohortDefinitionSet",
     "CohortGenerationResult",
+    "async_generate_cohort_set",
     "generate_cohort_set",
     "summarise_generation_results",
 ]

@@ -307,6 +307,50 @@ def test_generate_cohort_set_continue_on_error():
     assert results[0].error is not None
 
 
+def test_generate_cohort_set_continue_on_non_execution_error():
+    """Non-ExecutionError exceptions must also be caught and recorded."""
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    from unittest.mock import patch
+
+    conn = ibis.duckdb.connect()
+    _seed_tables(conn, ibis)
+
+    call_count = 0
+
+    def _failing_build(expression, *, backend, cohort_id, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if cohort_id == 1:
+            raise RuntimeError("Simulated RuntimeError")
+        from circe.execution.api import build_cohort as real_build
+
+        return real_build(expression, backend=backend, cohort_id=cohort_id, **kwargs)
+
+    cds = CohortDefinitionSet()
+    cds.add(cohort_id=1, cohort_name="Bad", expression=_simple_expression())
+    cds.add(cohort_id=2, cohort_name="Good", expression=_simple_expression())
+
+    with patch(
+        "circe.cohort_definition_set._generate.build_cohort",
+        side_effect=_failing_build,
+    ):
+        results = generate_cohort_set(
+            cds,
+            backend=conn,
+            cdm_schema="main",
+            cohort_table="cohort_non_exec",
+            stop_on_error=False,
+        )
+
+    assert call_count == 2
+    statuses = {r.cohort_id: r.status for r in results}
+    assert statuses[1] == "FAILED"
+    assert statuses[2] == "COMPLETE"
+    assert isinstance(results[0].error, RuntimeError)
+
+
 def test_generate_cohort_set_stop_on_error():
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
@@ -531,5 +575,200 @@ def test_api_exports_cohort_definition_set():
     assert hasattr(api, "CohortDefinitionSet")
     assert hasattr(api, "CohortDefinition")
     assert hasattr(api, "CohortGenerationResult")
+    assert hasattr(api, "async_generate_cohort_set")
     assert hasattr(api, "generate_cohort_set")
     assert hasattr(api, "summarise_generation_results")
+
+
+# ---------------------------------------------------------------------------
+# async_generate_cohort_set tests
+# ---------------------------------------------------------------------------
+
+
+def test_async_generate_cohort_set_basic():
+    import asyncio
+
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_tables(conn, ibis)
+
+    from circe.cohort_definition_set._generate import async_generate_cohort_set
+
+    cds = CohortDefinitionSet()
+    cds.add(cohort_id=10, cohort_name="Cohort 10", expression=_simple_expression())
+    cds.add(cohort_id=20, cohort_name="Cohort 20", expression=_simple_expression())
+
+    results = asyncio.run(
+        async_generate_cohort_set(cds, backend=conn, cdm_schema="main", cohort_table="cohort_async")
+    )
+
+    assert len(results) == 2
+    assert all(r.status == "COMPLETE" for r in results)
+    assert {r.cohort_id for r in results} == {10, 20}
+
+    cohort_table = conn.table("cohort_async").execute()
+    assert set(cohort_table.cohort_definition_id) == {10, 20}
+
+
+def test_async_generate_cohort_set_continue_on_non_execution_error():
+    """Non-ExecutionError exceptions (e.g. databricks ServerOperationError)
+    must be caught and recorded as FAILED."""
+    import asyncio
+
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    from unittest.mock import patch
+
+    conn = ibis.duckdb.connect()
+    _seed_tables(conn, ibis)
+
+    from circe.cohort_definition_set._generate import async_generate_cohort_set
+
+    call_count = 0
+
+    def _failing_build(expression, *, backend, cohort_id, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if cohort_id == 1:
+            raise RuntimeError("Simulated non-ExecutionError failure")
+        from circe.execution.api import build_cohort as real_build
+
+        return real_build(expression, backend=backend, cohort_id=cohort_id, **kwargs)
+
+    cds = CohortDefinitionSet()
+    cds.add(cohort_id=1, cohort_name="Bad", expression=_simple_expression())
+    cds.add(cohort_id=2, cohort_name="Good", expression=_simple_expression())
+
+    with patch(
+        "circe.cohort_definition_set._generate.build_cohort",
+        side_effect=_failing_build,
+    ):
+        results = asyncio.run(
+            async_generate_cohort_set(
+                cds,
+                backend=conn,
+                cdm_schema="main",
+                cohort_table="cohort_non_exec",
+                stop_on_error=False,
+            )
+        )
+
+    assert call_count == 2
+    statuses = {r.cohort_id: r.status for r in results}
+    assert statuses[1] == "FAILED"
+    assert statuses[2] == "COMPLETE"
+    assert isinstance(results[0].error, RuntimeError)
+
+
+def test_async_generate_cohort_set_stop_on_error():
+    import asyncio
+
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    from unittest.mock import patch
+
+    conn = ibis.duckdb.connect()
+    _seed_tables(conn, ibis)
+
+    from circe.cohort_definition_set._generate import async_generate_cohort_set
+
+    def _always_fail(expression, *, backend, cohort_id, **kwargs):
+        raise ValueError("Simulated non-ExecutionError failure")
+
+    cds = CohortDefinitionSet()
+    cds.add(cohort_id=1, cohort_name="Bad", expression=_simple_expression())
+    cds.add(cohort_id=2, cohort_name="Also bad", expression=_simple_expression())
+
+    with (
+        patch(
+            "circe.cohort_definition_set._generate.build_cohort",
+            side_effect=_always_fail,
+        ),
+        pytest.raises(ValueError, match="Simulated non-ExecutionError failure"),
+    ):
+        asyncio.run(
+            async_generate_cohort_set(
+                cds,
+                backend=conn,
+                cdm_schema="main",
+                cohort_table="cohort_stop",
+                stop_on_error=True,
+            )
+        )
+
+
+def test_async_generate_cohort_set_timeout():
+    import asyncio
+    import time
+
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    from unittest.mock import patch
+
+    conn = ibis.duckdb.connect()
+    _seed_tables(conn, ibis)
+
+    from circe.cohort_definition_set._generate import async_generate_cohort_set
+
+    def _slow_build(expression, *, backend, cohort_id, **kwargs):
+        time.sleep(0.5)
+        raise RuntimeError("should have timed out")
+
+    cds = CohortDefinitionSet()
+    cds.add(cohort_id=1, cohort_name="Slow", expression=_simple_expression())
+
+    with patch(
+        "circe.cohort_definition_set._generate.build_cohort",
+        side_effect=_slow_build,
+    ):
+        results = asyncio.run(
+            async_generate_cohort_set(
+                cds,
+                backend=conn,
+                cdm_schema="main",
+                cohort_table="cohort_timeout",
+                stop_on_error=False,
+                compile_timeout=0.1,
+            )
+        )
+
+    assert len(results) == 1
+    assert results[0].status == "FAILED"
+    assert "timeout" in str(results[0].error).lower()
+
+
+def test_async_generate_cohort_set_incremental_skip():
+    import asyncio
+
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_tables(conn, ibis)
+
+    from circe.cohort_definition_set._generate import async_generate_cohort_set
+
+    cds = CohortDefinitionSet()
+    cds.add(cohort_id=1, cohort_name="A", expression=_simple_expression())
+    cds.add(cohort_id=2, cohort_name="B", expression=_simple_expression())
+
+    # First run -- both COMPLETE
+    first = asyncio.run(
+        async_generate_cohort_set(
+            cds, backend=conn, cdm_schema="main", cohort_table="cohort_inc_async", incremental=True
+        )
+    )
+    assert all(r.status == "COMPLETE" for r in first)
+
+    # Second run -- both SKIPPED
+    second = asyncio.run(
+        async_generate_cohort_set(
+            cds, backend=conn, cdm_schema="main", cohort_table="cohort_inc_async", incremental=True
+        )
+    )
+    assert all(r.status == "SKIPPED" for r in second)

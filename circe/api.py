@@ -15,6 +15,7 @@ from .cohort_definition_set import (  # noqa: F401
     CohortDefinition,
     CohortDefinitionSet,
     CohortGenerationResult,
+    async_generate_cohort_set,
     generate_cohort_set,
     summarise_generation_results,
 )
