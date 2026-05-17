@@ -217,3 +217,75 @@ def save_generation_history(
     )
     merged = filtered_existing.union(new_relation, distinct=False)
     create_table(backend, table_name=table_name, schema=schema, obj=merged, overwrite=True)
+
+
+def upsert_generation_history(
+    backend: IbisBackendLike,
+    *,
+    schema: str | None,
+    table_name: str,
+    cohort_id: int,
+    checksum: str,
+    status: str,
+    start_time: datetime,
+    end_time: datetime,
+) -> None:
+    """Persist the generation result for a single cohort.
+
+    Unlike ``save_generation_history()`` this operates on one cohort at a
+    time so that incremental persistence is possible — a completed cohort
+    is recorded immediately rather than waiting for the entire batch to
+    finish.
+
+    Uses DELETE + INSERT (no full-table rewrite) so it is O(1) per call.
+
+    Args:
+        backend: Ibis backend connection.
+        schema: Schema/database where the table lives.
+        table_name: Name of the generation history table.
+        cohort_id: Cohort definition id.
+        checksum: Expression checksum for this generation.
+        status: ``"COMPLETE"`` or ``"FAILED"``.
+        start_time: When execution started.
+        end_time: When execution ended.
+    """
+    import ibis
+    import pandas as pd
+
+    from ..execution.ibis.operations import (
+        create_table,
+        delete_cohort_rows,
+        insert_relation,
+        table_exists,
+    )
+
+    new_rows_df = pd.DataFrame(
+        [
+            {
+                "cohort_definition_id": int(cohort_id),
+                "checksum": str(checksum),
+                "status": str(status),
+                "start_time": pd.to_datetime(start_time),
+                "end_time": pd.to_datetime(end_time),
+            }
+        ]
+    )
+
+    new_relation = ibis.memtable(new_rows_df)
+
+    if not table_exists(backend, table_name=table_name, schema=schema):
+        create_table(backend, table_name=table_name, schema=schema, obj=new_relation, overwrite=False)
+        return
+
+    delete_cohort_rows(
+        backend,
+        cohort_table=table_name,
+        results_schema=schema,
+        cohort_id=cohort_id,
+    )
+    insert_relation(
+        new_relation,
+        backend=backend,
+        target_table=table_name,
+        target_schema=schema,
+    )

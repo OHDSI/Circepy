@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Literal
 
 from ..execution.api import build_cohort, project_to_ohdsi_cohort_table, write_cohort
 from ..execution.errors import ExecutionError
-from ._checksum_store import load_checksums, save_generation_history
+from ._checksum_store import load_checksums, upsert_generation_history
 from ._core import CohortDefinitionSet, CohortGenerationResult
 
 if TYPE_CHECKING:
@@ -78,7 +78,6 @@ def generate_cohort_set(
         ...     print(r.cohort_name, r.status)
     """
     total = len(cohort_definition_set)
-    current_checksums = cohort_definition_set.checksums()
 
     # Clear the correlated-events compilation cache so that entries
     # referencing a previous backend (whose ``id()`` may have been reused
@@ -96,12 +95,11 @@ def generate_cohort_set(
         )
 
     results: list[CohortGenerationResult] = []
-    generated_this_run: dict[int, tuple[str, str, datetime, datetime]] = {}
 
     logger.info("Generating %d cohort(s) (incremental=%s)", total, incremental)
 
     for i, cohort in enumerate(cohort_definition_set, start=1):
-        current_checksum = current_checksums[cohort.cohort_id]
+        current_checksum = cohort.expression.checksum()
 
         if incremental and previous_checksums.get(cohort.cohort_id) == current_checksum:
             logger.info(
@@ -205,12 +203,17 @@ def generate_cohort_set(
                     error=exc,
                 )
             )
-            generated_this_run[cohort.cohort_id] = (
-                current_checksum,
-                "FAILED",
-                start_time or datetime.now(),
-                end_time,
-            )
+            if incremental:
+                upsert_generation_history(
+                    backend,
+                    schema=results_schema,
+                    table_name=checksum_table,
+                    cohort_id=cohort.cohort_id,
+                    checksum=current_checksum,
+                    status="FAILED",
+                    start_time=start_time or datetime.now(),
+                    end_time=end_time,
+                )
             if stop_on_error:
                 raise
             continue
@@ -231,20 +234,17 @@ def generate_cohort_set(
                 end_time=end_time or datetime.now(),
             )
         )
-        generated_this_run[cohort.cohort_id] = (
-            current_checksum,
-            "COMPLETE",
-            start_time or datetime.now(),
-            end_time or datetime.now(),
-        )
-
-    if incremental and generated_this_run:
-        save_generation_history(
-            backend,
-            schema=results_schema,
-            table_name=checksum_table,
-            generated=generated_this_run,
-        )
+        if incremental:
+            upsert_generation_history(
+                backend,
+                schema=results_schema,
+                table_name=checksum_table,
+                cohort_id=cohort.cohort_id,
+                checksum=current_checksum,
+                status="COMPLETE",
+                start_time=start_time or datetime.now(),
+                end_time=end_time or datetime.now(),
+            )
 
     summary = summarise_generation_results(results)
     logger.info(
