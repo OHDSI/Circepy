@@ -1,48 +1,4 @@
 Traceback (most recent call last):
-  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\execution\ibis\operations.py", line 190, in insert_relation
-    _call_with_optional_database(
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        insert,
-        ^^^^^^^
-    ...<3 lines>...
-        overwrite=False,
-        ^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\execution\ibis\operations.py", line 13, in _call_with_optional_database
-    return method(*args, database=database, **kwargs)
-  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\ibis\backends\sql\__init__.py", line 457, in insert
-    self._run_pre_execute_hooks(obj)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\ibis\backends\__init__.py", line 1300, in _run_pre_execute_hooks
-    self._register_in_memory_tables(expr)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\ibis\backends\__init__.py", line 1277, in _register_in_memory_tables
-    self._register_in_memory_table(memtable)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
-  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\ibis\backends\databricks\__init__.py", line 476, in _register_in_memory_table
-    cur.execute(put_into)
-    ~~~~~~~~~~~^^^^^^^^^^
-  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\databricks\sql\telemetry\latency_logger.py", line 182, in wrapper
-    return func(self, *args, **kwargs)
-  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\databricks\sql\client.py", line 1357, in execute
-    self._handle_staging_operation(
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        staging_allowed_local_path=self.connection.staging_allowed_local_path,
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        input_stream=input_stream,
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\databricks\sql\client.py", line 1103, in _handle_staging_operation
-    raise ProgrammingError(
-    ...<3 lines>...
-    )
-databricks.sql.exc.ProgrammingError: Local file operations are restricted to paths within the configured staging_allowed_local_path
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
   File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\benchmarks\benchmark_run_py.py", line 160, in <module>
     main()
     ~~~~^^
@@ -52,28 +8,142 @@ Traceback (most recent call last):
     ...<7 lines>...
         stop_on_error=False,
     )
-  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\cohort_definition_set\_generate.py", line 238, in generate_cohort_set
-    upsert_generation_history(
-    ~~~~~~~~~~~~~~~~~~~~~~~~~^
-        backend,
-        ^^^^^^^^
-    ...<6 lines>...
-        end_time=end_time or datetime.now(),
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\cohort_definition_set\_generate.py", line 138, in generate_cohort_set
+    new_rows = build_cohort(
+        cohort.expression,
+    ...<5 lines>...
+        cohort_id=cohort.cohort_id,
     )
-    ^
-  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\cohort_definition_set\_checksum_store.py", line 286, in upsert_generation_history
-    insert_relation(
-    ~~~~~~~~~~~~~~~^
-        new_relation,
-        ^^^^^^^^^^^^^
-    ...<2 lines>...
-        target_schema=schema,
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\execution\api.py", line 56, in build_cohort
+    return build_cohort_table(normalized, ctx, cohort_id=cohort_id, materialize=materialize)
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\execution\engine\cohort.py", line 99, in build_cohort_table
+    included_events = _materialize(
+        included_events, ctx=ctx, cohort_id=cohort_id, stage="included", schema=schema
+    )
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\execution\engine\cohort.py", line 39, in _materialize
+    create_table(ctx.backend, table_name=name, schema=schema, obj=table, overwrite=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\execution\ibis\operations.py", line 64, in create_table
+    _call_with_optional_database(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        backend.create_table,
         ^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        **kwargs,
+        ^^^^^^^^^
     )
     ^
-  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\execution\ibis\operations.py", line 199, in insert_relation
-    raise ExecutionError(
-    ...<2 lines>...
-    ) from exc
-circe.execution.errors.ExecutionError: Ibis executor write error: failed inserting relation into table 'benchmark_cohort_py_checksum' in schema 'scratch.scratch_jgilber2'.
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\circe\execution\ibis\operations.py", line 13, in _call_with_optional_database
+    return method(*args, database=database, **kwargs)
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\ibis\backends\databricks\__init__.py", line 228, in create_table
+    cur.execute(insert_stmt).fetchall()
+    ~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\databricks\sql\telemetry\latency_logger.py", line 182, in wrapper
+    return func(self, *args, **kwargs)
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\databricks\sql\client.py", line 1341, in execute
+    self.active_result_set = self.backend.execute_command(
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        operation=prepared_operation,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<10 lines>...
+        query_tags=query_tags,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\databricks\sql\backend\thrift_backend.py", line 1066, in execute_command
+    execute_response, has_more_rows = self._handle_execute_response(
+                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        resp, cursor
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\databricks\sql\backend\thrift_backend.py", line 1273, in _handle_execute_response
+    final_operation_state = self._wait_until_command_done(
+        resp.operationHandle,
+        resp.directResults and resp.directResults.operationStatus,
+    )
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\databricks\sql\backend\thrift_backend.py", line 954, in _wait_until_command_done
+    self._check_command_not_in_error_or_closed_state(op_handle, poll_resp)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin_jgilber2\PycharmProjects\Circepy\.venv\Lib\site-packages\databricks\sql\backend\thrift_backend.py", line 634, in _check_command_not_in_error_or_closed_state
+    raise ServerOperationError(
+    ...<7 lines>...
+    )
+databricks.sql.exc.ServerOperationError: ShuffleMapStage 9148 (mapPartitionsInternal at PhotonExec.scala:865) has failed the maximum allowable number of times: 4. Most recent failure reason:
+org.apache.spark.shuffle.PrismFetchFailedException: Prism failed to read shuffle data from BlockManagerId: BlockManagerId(9, 10.128.16.236, 4048, None). shuffleId=2880, firstMapdId=158410, firstMapIndex=4, firstReduceId=0. Error reason: status: ResourceExhausted, message: "Request is throttled: Low priority request queue is full", details: [], metadata: MetadataMap { headers: {"content-type": "application/grpc", "date": "Sun, 17 May 2026 21:32:04 GMT", "content-length": "0"} }. Failed shuffle fetch from executor node: 9 at 10.128.16.236
+        at org.apache.spark.errors.SparkCoreErrors$.prismFetchFailedError(SparkCoreErrors.scala:442)
+        at org.apache.spark.errors.SparkCoreErrors.prismFetchFailedError(SparkCoreErrors.scala)
+        at com.databricks.spark.prism.PrismInputStream.read(PrismInputStream.java:128)
+        at java.base/java.io.FilterInputStream.read(FilterInputStream.java:82)
+        at java.base/java.io.PushbackInputStream.read(PushbackInputStream.java:135)
+        at org.apache.spark.storage.ShuffleBlockFetcherIterator.prismHasNext(ShuffleBlockFetcherIterator.scala:1011)
+        at org.apache.spark.storage.ShuffleBlockFetcherIterator.hasNext(ShuffleBlockFetcherIterator.scala:962)
+        at org.apache.spark.util.CompletionIterator.hasNext(CompletionIterator.scala:30)
+        at scala.collection.Iterator$$anon$9.hasNext(Iterator.scala:583)
+        at com.databricks.photon.LazyBlockFetcherIterator.hasNext(ShuffledBlockRDD.scala:443)
+        at scala.collection.Iterator$$anon$9.hasNext(Iterator.scala:583)
+        at scala.collection.convert.JavaCollectionWrappers$IteratorWrapper.hasNext(JavaCollectionWrappers.scala:32)
+        at com.databricks.photon.CloseableIterator$$anon$6.hasNext(CloseableIterator.scala:71)
+        at com.databricks.photon.JniApiImpl.open(Native Method)
+        at com.databricks.photon.JniApi.open(JniApi.scala)
+        at com.databricks.photon.JniExecNode.open(JniExecNode.java:74)
+        at com.databricks.photon.PhotonPreShuffleResultHandler.$anonfun$getResultImpl$1(PhotonExec.scala:1413)
+        at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+        at com.databricks.photon.PhotonResultHandler.timeit(PhotonResultHandler.scala:33)
+        at com.databricks.photon.PhotonResultHandler.timeit$(PhotonResultHandler.scala:31)
+        at com.databricks.photon.PhotonPreShuffleResultHandler.timeit(PhotonExec.scala:1406)
+        at com.databricks.photon.PhotonPreShuffleResultHandler.getResultImpl(PhotonExec.scala:1413)
+        at com.databricks.photon.PhotonResultHandler.$anonfun$getResult$1(PhotonResultHandler.scala:74)
+        at com.databricks.photon.PhotonResultHandler.com$databricks$photon$PhotonResultHandler$$convertPhotonOOMIfNeeded(PhotonResultHandler.scala:53)
+        at com.databricks.photon.PhotonResultHandler.getResult(PhotonResultHandler.scala:74)
+        at com.databricks.photon.PhotonResultHandler.getResult$(PhotonResultHandler.scala:63)
+        at com.databricks.photon.PhotonPreShuffleResultHandler.getResult(PhotonExec.scala:1406)
+        at com.databricks.photon.PhotonBasicEvaluatorFactory$PhotonBasicEvaluator$$anon$1.open(PhotonBasicEvaluatorFactory.scala:258)
+        at com.databricks.photon.PhotonBasicEvaluatorFactory$PhotonBasicEvaluator$$anon$1.hasNextImpl(PhotonBasicEvaluatorFactory.scala:263)
+        at com.databricks.photon.PhotonBasicEvaluatorFactory$PhotonBasicEvaluator$$anon$1.$anonfun$hasNext$1(PhotonBasicEvaluatorFactory.scala:283)
+        at scala.runtime.java8.JFunction0$mcZ$sp.apply(JFunction0$mcZ$sp.scala:17)
+        at org.apache.spark.TaskContext.runFuncAsBillable(TaskContext.scala:274)
+        at com.databricks.photon.PhotonBasicEvaluatorFactory$PhotonBasicEvaluator$$anon$1.hasNext(PhotonBasicEvaluatorFactory.scala:283)
+        at com.databricks.photon.CloseableIterator$$anon$10.hasNext(CloseableIterator.scala:211)
+        at scala.collection.Iterator$$anon$9.hasNext(Iterator.scala:583)
+        at scala.collection.Iterator$$anon$9.hasNext(Iterator.scala:583)
+        at com.databricks.photon.MetadataOnlyShuffleWriter.write(MetadataOnlyShuffleWriter.scala:50)
+        at org.apache.spark.shuffle.ShuffleWriteProcessor.write(ShuffleWriteProcessor.scala:58)
+        at org.apache.spark.scheduler.ShuffleMapTask.$anonfun$runTask$5(ShuffleMapTask.scala:98)
+        at com.databricks.spark.util.ExecutorFrameProfiler$.record(ExecutorFrameProfiler.scala:110)
+        at org.apache.spark.scheduler.ShuffleMapTask.$anonfun$runTask$1(ShuffleMapTask.scala:93)
+        at com.databricks.spark.util.ExecutorFrameProfiler$.record(ExecutorFrameProfiler.scala:110)
+        at org.apache.spark.scheduler.ShuffleMapTask.runTask(ShuffleMapTask.scala:58)
+        at org.apache.spark.scheduler.ShuffleMapTask.runTask(ShuffleMapTask.scala:39)
+        at org.apache.spark.TaskContext.runTaskWithListeners(TaskContext.scala:233)
+        at org.apache.spark.scheduler.Task.doRunTask(Task.scala:223)
+        at org.apache.spark.scheduler.Task.$anonfun$run$6(Task.scala:179)
+        at com.databricks.unity.UCSEphemeralState$Handle.runWith(UCSEphemeralState.scala:51)
+        at com.databricks.unity.HandleImpl.runWith(UCSHandle.scala:128)
+        at com.databricks.unity.HandleImpl.$anonfun$runWithAndClose$1(UCSHandle.scala:133)
+        at scala.util.Using$.resource(Using.scala:296)
+        at com.databricks.unity.HandleImpl.runWithAndClose(UCSHandle.scala:132)
+        at org.apache.spark.scheduler.TaskExecutionUtils$.withUCHandleForTaskExecution(Task.scala:391)
+        at org.apache.spark.scheduler.Task.$anonfun$run$3(Task.scala:173)
+        at org.apache.spark.scheduler.TaskExecutionUtils$.withCredentialsForTaskExecution(Task.scala:368)
+        at org.apache.spark.scheduler.Task.$anonfun$run$1(Task.scala:119)
+        at com.databricks.spark.util.ExecutorFrameProfiler$.record(ExecutorFrameProfiler.scala:110)
+        at org.apache.spark.scheduler.Task.run(Task.scala:114)
+        at org.apache.spark.executor.Executor$TaskRunner.$anonfun$run$13(Executor.scala:1593)
+        at org.apache.spark.util.SparkErrorUtils.tryWithSafeFinally(SparkErrorUtils.scala:86)
+        at org.apache.spark.util.SparkErrorUtils.tryWithSafeFinally$(SparkErrorUtils.scala:83)
+        at org.apache.spark.util.Utils$.tryWithSafeFinally(Utils.scala:111)
+        at org.apache.spark.executor.Executor$TaskRunner.$anonfun$run$3(Executor.scala:1598)
+        at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+        at com.databricks.spark.util.ExecutorFrameProfiler$.record(ExecutorFrameProfiler.scala:110)
+        at org.apache.spark.executor.Executor$TaskRunner.run(Executor.scala:1425)
+        at com.databricks.aether.RDDTask.run(RDDTask.scala:271)
+        at com.databricks.aether.worker.WorkerTaskAttemptThread.$anonfun$runInternal$1(AetherWorkerImpl.scala:362)
+        at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+        at com.databricks.aether.AetherInt64Gauge.scopedAdd(AetherServiceMetricImpls.scala:129)
+        at com.databricks.aether.worker.WorkerTaskAttemptThread.runInternal(AetherWorkerImpl.scala:351)
+        at com.databricks.aether.worker.WorkerTaskAttemptThread.run(AetherWorkerImpl.scala:328)
+        at com.databricks.aether.FairBlockingQueue$SlotCountingRunnable.run(FairBlockingQueue.java:647)
+        at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+        at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+        at java.base/java.lang.Thread.run(Thread.java:840)
