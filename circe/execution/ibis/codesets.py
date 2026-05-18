@@ -414,13 +414,55 @@ def build_batch_codeset_table(
     return ref
 
 
-def _needs_vocabulary_expansion(concept_sets: Mapping[int, NormalizedConceptSet]) -> bool:
-    """Return True if any concept set requires vocabulary-table queries."""
-    for cset in concept_sets.values():
-        for item in cset.items:
-            if item.include_descendants or item.include_mapped:
-                return True
-    return False
+def _find_existing_checksums(
+    backend: IbisBackendLike,
+    checksums: set[str],
+    schema: str | None,
+) -> set[str]:
+    """Return the subset of *checksums* that already exist in ``_circe_codeset_cache``."""
+    if not checksums:
+        return set()
+    from .operations import table_exists
+
+    if not table_exists(backend, table_name=_CACHE_TABLE_NAME, schema=schema):
+        return set()
+    tbl = _read_table(backend, table_name=_CACHE_TABLE_NAME, schema=schema)
+    existing = tbl.filter(tbl.cache_key.isin(tuple(checksums))).select("cache_key").distinct().execute()
+    if hasattr(existing, "columns"):
+        return {str(v) for v in existing["cache_key"].tolist() if v is not None}
+    return set()
+
+
+def _resolve_codeset_ids(
+    cset: NormalizedConceptSet,
+    *,
+    table_getter: Callable[[str, str | None], Table],
+    vocabulary_schema: str | None,
+) -> tuple[int, ...]:
+    """Resolve a concept set to concrete concept IDs.
+
+    Uses ``_build_codeset_expression`` which handles descendants, mapped
+    codes, and exclusions.  The result is a tuple of concrete int IDs.
+    """
+    expr = _build_codeset_expression(cset, table_getter=table_getter, vocabulary_schema=vocabulary_schema)
+    try:
+        result = expr.execute()
+        return _extract_column(result, CONCEPT_ID)
+    except Exception as exc:
+        raise CompilationError(
+            "Ibis executor compilation error: failed executing concept-set resolution query."
+        ) from exc
+
+
+def _compute_checksum_map(
+    concept_sets: Mapping[int, NormalizedConceptSet],
+) -> dict[int, str]:
+    """Return a dict mapping ``codeset_id -> cache_key`` for each concept set."""
+    result: dict[int, str] = {}
+    for cid, cset in concept_sets.items():
+        if cset.items:
+            result[int(cid)] = _compute_cache_key(cset.items)
+    return result
 
 
 def build_single_codeset_table(
@@ -430,14 +472,25 @@ def build_single_codeset_table(
     batch_table_name: str = _CODESET_TABLE,
     results_schema: str | None = None,
     vocabulary_schema: str | None = None,
+    use_persistent_cache: bool = False,
 ) -> Table:
     """Build a codeset table for a single cohort.
 
-    When all concept sets use only direct concept IDs (no descendant or
-    mapped expansion needed), builds a simple memtable -- no vocabulary
-    tables required.  Falls back to full expansion otherwise.
+    When *use_persistent_cache* is True, concept sets are stored in
+    ``_circe_codeset_cache`` keyed by SHA-256 checksum of the concept set
+    items.  Cache misses are resolved and inserted.  The per-cohort table
+    is then built by selecting from the cache -- identical concept sets
+    across cohorts share the same cache entry and need only one resolution.
+
+    When *use_persistent_cache* is False and all concept sets are simple
+    (no descendant or mapped expansion), builds a lightweight memtable
+    directly without any vocabulary-table queries.
     """
-    if not _needs_vocabulary_expansion(concept_sets):
+    checksum_map = _compute_checksum_map(concept_sets)
+    needs_vocab = _needs_vocabulary_expansion(concept_sets)
+
+    # Fast path: all concept sets are simple, no persistent cache needed
+    if not needs_vocab and not use_persistent_cache:
         rows: list[dict[str, Any]] = []
         for cid, cset in concept_sets.items():
             for item in cset.items:
@@ -460,15 +513,108 @@ def build_single_codeset_table(
         )
         return _read_table(backend, table_name=batch_table_name, schema=results_schema)
 
-    return build_batch_codeset_table(
-        backend=backend,
-        concept_sets=concept_sets,
-        batch_table_name=batch_table_name,
-        results_schema=results_schema,
-        vocabulary_schema=vocabulary_schema,
-        use_persistent_cache=False,
-        temporary=True,
+    if use_persistent_cache:
+        # Persistent-cache path: resolve concept sets once into the cache,
+        # then build per-cohort table from the cache entries.
+
+        existing = _find_existing_checksums(backend, set(checksum_map.values()), results_schema)
+
+        table_getter = _table_getter_from_backend(backend, vocabulary_schema or "")
+
+        for cid, key in checksum_map.items():
+            if key not in existing:
+                cset = concept_sets[int(cid)]
+                resolved = _resolve_codeset_ids(
+                    cset, table_getter=table_getter, vocabulary_schema=vocabulary_schema
+                )
+                if resolved:
+                    _write_codeset_cache(
+                        backend,
+                        cache_key=key,
+                        concept_ids=resolved,
+                        schema=results_schema,
+                        table_name=_CACHE_TABLE_NAME,
+                    )
+
+        # Build per-cohort table from cache
+        cache_ref = _read_table(backend, table_name=_CACHE_TABLE_NAME, schema=results_schema)
+
+        parts: list[Table] = []
+        for cid, key in checksum_map.items():
+            part = (
+                cache_ref.filter(cache_ref.cache_key == key)
+                .select(cache_ref.concept_id.name(CONCEPT_ID))
+                .mutate(codeset_id=ibis.literal(int(cid), type="int64"))
+                .select("codeset_id", CONCEPT_ID)
+            )
+            parts.append(part)
+
+        combined = _union_all_tables(parts)
+        _create_table_impl(
+            backend,
+            table_name=batch_table_name,
+            schema=results_schema,
+            obj=combined,
+            overwrite=True,
+        )
+        return _read_table(backend, table_name=batch_table_name, schema=results_schema)
+
+    # No cache, but some concept sets need vocabulary expansion
+    table_getter = _table_getter_from_backend(backend, vocabulary_schema or "")
+
+    parts = []
+    for cid, cset in concept_sets.items():
+        if not cset.items:
+            continue
+        needs_vocab = any(item.include_descendants or item.include_mapped for item in cset.items)
+        if needs_vocab:
+            expr = _build_codeset_expression(
+                cset, table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+            labeled = expr.mutate(codeset_id=ibis.literal(int(cid), type="int64")).select(
+                "codeset_id", CONCEPT_ID
+            )
+            parts.append(labeled)
+        else:
+            for item in cset.items:
+                if not item.is_excluded and item.concept_id is not None:
+                    rows = [{"codeset_id": int(cid), "concept_id": int(item.concept_id)}]
+                    parts.append(ibis.memtable(rows, schema={"codeset_id": "int64", "concept_id": "int64"}))
+
+    if not parts:
+        empty = ibis.memtable(
+            {"codeset_id": [], "concept_id": []},
+            schema={"codeset_id": "int64", "concept_id": "int64"},
+        )
+        _create_table_impl(
+            backend,
+            table_name=batch_table_name,
+            schema=results_schema,
+            obj=empty,
+            overwrite=True,
+            temp=True,
+        )
+        return _read_table(backend, table_name=batch_table_name, schema=results_schema)
+
+    combined = _union_all_tables(parts)
+    _create_table_impl(
+        backend,
+        table_name=batch_table_name,
+        schema=results_schema,
+        obj=combined,
+        overwrite=True,
+        temp=True,
     )
+    return _read_table(backend, table_name=batch_table_name, schema=results_schema)
+
+
+def _needs_vocabulary_expansion(concept_sets: Mapping[int, NormalizedConceptSet]) -> bool:
+    """Return True if any concept set requires vocabulary-table queries."""
+    for cset in concept_sets.values():
+        for item in cset.items:
+            if item.include_descendants or item.include_mapped:
+                return True
+    return False
 
 
 def _read_table(

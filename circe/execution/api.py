@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 from typing import Literal
 
 from ..cohortdefinition import CohortExpression
@@ -44,21 +43,23 @@ def build_cohort(
     (e.g. unit tests that only verify the expression tree can be built).
 
     When *codeset_table* is provided (from a batch-generation caller), it is
-    used directly.  Otherwise one is auto-created for this single cohort.
+    used directly.  Otherwise a per-cohort codeset table is auto-created.
+    With *use_persistent_cache=True*, concept sets are stored in
+    ``_circe_codeset_cache`` keyed by SHA-256 checksum, enabling reuse
+    across cohorts and runs.
     """
     maybe_apply_databricks_post_connect_workaround(backend)
 
     normalized = normalize_cohort(expression)
 
-    if codeset_table is not None:
-        pass
-    else:
+    if codeset_table is None:
         codeset_table = build_single_codeset_table(
             backend=backend,
             concept_sets=normalized.concept_sets,
             batch_table_name=f"__cg_{cohort_id}_codesets",
             results_schema=results_schema,
             vocabulary_schema=vocabulary_schema,
+            use_persistent_cache=use_persistent_cache,
         )
 
     ctx = make_execution_context(
@@ -69,14 +70,7 @@ def build_cohort(
         codeset_table=codeset_table,
     )
 
-    # Ibis SQL compilation for large cohorts may exceed the default recursion
-    # limit when walking deeply nested expression trees (e.g. 100-way UNION).
-    prev_limit = sys.getrecursionlimit()
-    sys.setrecursionlimit(max(prev_limit, 5000))
-    try:
-        return build_cohort_table(normalized, ctx, cohort_id=cohort_id, materialize=materialize)
-    finally:
-        sys.setrecursionlimit(prev_limit)
+    return build_cohort_table(normalized, ctx, cohort_id=cohort_id, materialize=materialize)
 
 
 def write_relation(
