@@ -35,9 +35,7 @@ class _Context:
 
     def concept_set_table(self, codeset_id: int) -> ibis.Table:
         ids = self.codesets.get(codeset_id, ())
-        return ibis.memtable(
-            {"concept_id": list(ids)}, schema={"concept_id": "int64"}
-        )
+        return ibis.memtable({"concept_id": list(ids)}, schema={"concept_id": "int64"})
 
     def table(self, name: str):
         if self.conn is None:
@@ -64,6 +62,7 @@ def _events_table(conn):
                 ],
                 VISIT_OCCURRENCE_ID: [100, 101, 200],
                 "concept_id": [1, 2, 3],
+                "care_site_id": [10, 20, 30],
                 "text_value": ["alpha", "beta", "gamma"],
             }
         ),
@@ -215,10 +214,34 @@ def test_apply_step_covers_keep_first_person_filter_and_error_paths():
     table = _events_table(conn)
     conn.create_table(
         "person",
-        obj=ibis_mod.memtable(
+        obj=ibis.memtable(
             {
                 PERSON_ID: [1, 2],
                 "gender_concept_id": [8507, 8532],
+            }
+        ),
+        overwrite=True,
+    )
+    # location_history is needed by FilterByCareSiteLocationRegion
+    conn.create_table(
+        "location_history",
+        obj=ibis.memtable(
+            {
+                "entity_id": [1],
+                "location_id": [1],
+                "domain_id": ["CARE_SITE"],
+                "start_date": ["2020-01-01"],
+                "end_date": ["2020-12-31"],
+            }
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "location",
+        obj=ibis.memtable(
+            {
+                "location_id": [1],
+                "region_concept_id": [123],
             }
         ),
         overwrite=True,

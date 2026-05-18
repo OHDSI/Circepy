@@ -49,9 +49,11 @@ class ExecutionContext:
         References the database-resident batch codeset table.  No Python memory
         is used for concept IDs -- filtering happens via SQL joins at execution time.
         """
-        return self.codeset_table.filter(
-            self.codeset_table.codeset_id == codeset_id
-        ).select("concept_id").distinct()
+        return (
+            self.codeset_table.filter(self.codeset_table.codeset_id == codeset_id)
+            .select("concept_id")
+            .distinct()
+        )
 
 
 def _build_codeset_memtable(

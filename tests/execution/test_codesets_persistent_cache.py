@@ -5,9 +5,9 @@ import pytest
 from circe.execution.ibis.codesets import (
     _CACHE_TABLE_NAME,
     _compute_cache_key,
-    build_batch_codeset_table,
     _read_codeset_cache,
     _write_codeset_cache,
+    build_batch_codeset_table,
 )
 from circe.execution.normalize.cohort import NormalizedConceptSet, NormalizedConceptSetItem
 
@@ -48,8 +48,9 @@ def test_build_batch_codeset_table_round_trip():
         obj=ibis.memtable(
             {
                 "concept_id": [111, 222, 333],
-                "invalid_reason": [None, None, None],
-            }
+                "invalid_reason": ["X", None, None],
+            },
+            schema={"concept_id": "int64", "invalid_reason": "string"},
         ),
         overwrite=True,
     )
@@ -57,7 +58,11 @@ def test_build_batch_codeset_table_round_trip():
     concept_sets = {
         1: NormalizedConceptSet(
             set_id=1,
-            items=(NormalizedConceptSetItem(concept_id=111, is_excluded=False),),
+            items=(
+                NormalizedConceptSetItem(
+                    concept_id=111, is_excluded=False, include_descendants=False, include_mapped=False
+                ),
+            ),
         ),
     }
 
@@ -98,5 +103,3 @@ def test_persistent_cache_miss_returns_none():
 
     result = _read_codeset_cache(conn, cache_key="nonexistent", schema=None, table_name=_CACHE_TABLE_NAME)
     assert result is None
-    if conn.exists_table(_CACHE_TABLE_NAME):
-        conn.drop_table(_CACHE_TABLE_NAME, force=True)

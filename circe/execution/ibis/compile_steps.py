@@ -137,9 +137,7 @@ def _filter_visit_concepts(table, ctx: ExecutionContext, *, step: FilterByVisit)
         concept_table = ctx.concept_set_table(step.codeset_id)
         joined = joined.join(concept_table, joined._visit_concept_id == concept_table.concept_id)
     elif step.concept_ids:
-        concept_table = ibis.memtable(
-            {"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"}
-        )
+        concept_table = ibis.memtable({"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"})
         joined = joined.join(concept_table, joined._visit_concept_id == concept_table.concept_id)
     # If neither codeset_id nor concept_ids, no filtering needed
 
@@ -172,9 +170,7 @@ def _filter_provider_specialty(
         concept_table = ctx.concept_set_table(step.codeset_id)
         joined = joined.join(concept_table, joined._specialty_concept_id == concept_table.concept_id)
     elif step.concept_ids:
-        concept_table = ibis.memtable(
-            {"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"}
-        )
+        concept_table = ibis.memtable({"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"})
         joined = joined.join(concept_table, joined._specialty_concept_id == concept_table.concept_id)
 
     if step.exclude:
@@ -201,9 +197,7 @@ def _filter_care_site(table, ctx: ExecutionContext, *, step: FilterByCareSite):
         concept_table = ctx.concept_set_table(step.codeset_id)
         joined = joined.join(concept_table, joined._place_of_service_concept_id == concept_table.concept_id)
     elif step.concept_ids:
-        concept_table = ibis.memtable(
-            {"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"}
-        )
+        concept_table = ibis.memtable({"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"})
         joined = joined.join(concept_table, joined._place_of_service_concept_id == concept_table.concept_id)
 
     if step.exclude:
@@ -279,19 +273,13 @@ def apply_step(step, *, table, source, ctx: ExecutionContext):
 
     if isinstance(step, FilterByCodeset):
         concept_table = ctx.concept_set_table(step.codeset_id)
-        return _filter_by_concept_table(
-            table, concept_table, column=step.column, exclude=step.exclude
-        )
+        return _filter_by_concept_table(table, concept_table, column=step.column, exclude=step.exclude)
 
     if isinstance(step, FilterByConceptSet):
         if not step.concept_ids:
             return table if step.exclude else table.limit(0)
-        concept_table = ibis.memtable(
-            {"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"}
-        )
-        return _filter_by_concept_table(
-            table, concept_table, column=step.column, exclude=step.exclude
-        )
+        concept_table = ibis.memtable({"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"})
+        return _filter_by_concept_table(table, concept_table, column=step.column, exclude=step.exclude)
 
     if isinstance(step, FilterByVisit):
         return _filter_visit_concepts(table, ctx, step=step)

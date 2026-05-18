@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from typing import Literal
 
 from ..cohortdefinition import CohortExpression
@@ -43,15 +44,14 @@ def build_cohort(
     (e.g. unit tests that only verify the expression tree can be built).
 
     When *codeset_table* is provided (from a batch-generation caller), it is
-    used directly.  Otherwise one is auto-created for this single cohort and
-    dropped after the pipeline runs.
+    used directly.  Otherwise one is auto-created for this single cohort.
     """
     maybe_apply_databricks_post_connect_workaround(backend)
 
     normalized = normalize_cohort(expression)
 
     if codeset_table is not None:
-        own_table = False
+        pass
     else:
         codeset_table = build_single_codeset_table(
             backend=backend,
@@ -60,7 +60,6 @@ def build_cohort(
             results_schema=results_schema,
             vocabulary_schema=vocabulary_schema,
         )
-        own_table = True
 
     ctx = make_execution_context(
         backend=backend,
@@ -69,7 +68,15 @@ def build_cohort(
         vocabulary_schema=vocabulary_schema,
         codeset_table=codeset_table,
     )
-    return build_cohort_table(normalized, ctx, cohort_id=cohort_id, materialize=materialize)
+
+    # Ibis SQL compilation for large cohorts may exceed the default recursion
+    # limit when walking deeply nested expression trees (e.g. 100-way UNION).
+    prev_limit = sys.getrecursionlimit()
+    sys.setrecursionlimit(max(prev_limit, 5000))
+    try:
+        return build_cohort_table(normalized, ctx, cohort_id=cohort_id, materialize=materialize)
+    finally:
+        sys.setrecursionlimit(prev_limit)
 
 
 def write_relation(

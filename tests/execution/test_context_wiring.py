@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import ibis
 import pytest
 
 from circe.execution.ibis.codesets import build_single_codeset_table
 from circe.execution.ibis.context import ExecutionContext, make_execution_context
+from circe.execution.normalize.cohort import NormalizedConceptSet, NormalizedConceptSetItem
 
 
 def _make_codeset_table(backend):
@@ -54,23 +54,13 @@ def test_codeset_table_returns_filtered_view():
     _ = pytest.importorskip("duckdb")
 
     conn = ibis_mod.duckdb.connect()
-    conn.create_table(
-        "concept",
-        obj=ibis.memtable(
-            {
-                "concept_id": [111, 222],
-                "invalid_reason": [None, None],
-            }
-        ),
-        overwrite=True,
-    )
 
     concept_sets = {
-        1: ibis_mod.execution.normalize.cohort.NormalizedConceptSet(
+        1: NormalizedConceptSet(
             set_id=1,
             items=(
-                ibis_mod.execution.normalize.cohort.NormalizedConceptSetItem(
-                    concept_id=111, is_excluded=False
+                NormalizedConceptSetItem(
+                    concept_id=111, is_excluded=False, include_descendants=False, include_mapped=False
                 ),
             ),
         ),

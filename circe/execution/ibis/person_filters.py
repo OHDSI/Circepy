@@ -63,16 +63,15 @@ def apply_person_gender_filter(
 ):
     if codeset_id is not None:
         concept_table = ctx.concept_set_table(codeset_id)
+        concept_table = concept_table.select(concept_table.concept_id.name("_pconcept_id"))
     elif concept_ids:
-        concept_table = ibis.memtable(
-            {"concept_id": list(concept_ids)}, schema={"concept_id": "int64"}
-        )
+        concept_table = ibis.memtable({"_pconcept_id": list(concept_ids)}, schema={"_pconcept_id": "int64"})
     else:
         return table
 
     person = ctx.table("person").select(PERSON_ID, "gender_concept_id")
     joined = table.join(person, table[PERSON_ID] == person[PERSON_ID])
-    filtered = joined.join(concept_table, joined.gender_concept_id == concept_table.concept_id)
+    filtered = joined.join(concept_table, joined.gender_concept_id == concept_table._pconcept_id)
     return filtered.select(*[filtered[c] for c in table.columns])
 
 
@@ -86,16 +85,15 @@ def _apply_person_concept_filter(
 ):
     if codeset_id is not None:
         concept_table = ctx.concept_set_table(codeset_id)
+        concept_table = concept_table.select(concept_table.concept_id.name("_pconcept_id"))
     elif concept_ids:
-        concept_table = ibis.memtable(
-            {"concept_id": list(concept_ids)}, schema={"concept_id": "int64"}
-        )
+        concept_table = ibis.memtable({"_pconcept_id": list(concept_ids)}, schema={"_pconcept_id": "int64"})
     else:
         return table
 
     person = ctx.table("person").select(PERSON_ID, person_column)
     joined = table.join(person, table[PERSON_ID] == person[PERSON_ID])
-    filtered = joined.join(concept_table, joined[person_column] == concept_table.concept_id)
+    filtered = joined.join(concept_table, joined[person_column] == concept_table._pconcept_id)
     return filtered.select(*[filtered[c] for c in table.columns])
 
 

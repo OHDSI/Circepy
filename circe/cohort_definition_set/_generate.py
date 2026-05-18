@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Literal
 
 from ..execution.api import build_cohort, write_cohort
 from ..execution.ibis.codesets import _CODESET_TABLE, build_batch_codeset_table, drop_codeset_table
-from ..execution.ibis.context import make_execution_context
 from ..execution.normalize.cohort import normalize_cohort
 from ._checksum_store import load_checksums, upsert_generation_history
 from ._core import CohortDefinition, CohortDefinitionSet, CohortGenerationResult
@@ -26,7 +25,7 @@ _backend_lock = threading.Lock()
 
 def _collect_concept_sets(
     cohort_definition_set: CohortDefinitionSet,
-) -> dict[int: NormalizedConceptSet]:  # type: ignore
+) -> dict:
     """Normalize all cohort expressions and merge concept sets."""
     from ..execution.normalize.cohort import NormalizedConceptSet  # noqa: F401
 
@@ -48,7 +47,6 @@ def _build_and_return_batch_codesets(
     results_table_name: str,
 ) -> Table:
     """Build batch codeset table. Called inside a thread."""
-    from ..execution.typing import Table as TableType
 
     return build_batch_codeset_table(
         backend=backend,
@@ -168,6 +166,7 @@ async def async_generate_cohort_set(
     else:
         # No concept sets -- create empty memtable to satisfy ExecutionContext
         import ibis  # noqa: PLC0415
+
         codeset_table = ibis.memtable(
             {"codeset_id": [], "concept_id": []},
             schema={"codeset_id": "int64", "concept_id": "int64"},
@@ -323,9 +322,7 @@ async def async_generate_cohort_set(
             schema = results_schema or cdm_schema
             for stage in ("primary", "qualified", "included", "ended"):
                 with contextlib.suppress(Exception):
-                    backend.drop_table(
-                        f"__cg_{cohort.cohort_id}_{stage}", database=schema, force=True
-                    )
+                    backend.drop_table(f"__cg_{cohort.cohort_id}_{stage}", database=schema, force=True)
 
             results.append(
                 CohortGenerationResult(

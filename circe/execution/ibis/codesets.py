@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 from collections.abc import Callable, Mapping
@@ -11,6 +12,7 @@ from ..errors import CompilationError
 from ..normalize.cohort import NormalizedConceptSet, NormalizedConceptSetItem
 from ..plan.schema import CONCEPT_ID
 from ..typing import IbisBackendLike, Table
+from .operations import create_table as _create_table_impl
 
 _CODESET_TABLE = "__cg_codesets"
 _CACHE_TABLE_NAME = "_circe_codeset_cache"
@@ -19,8 +21,7 @@ _CACHE_TABLE_NAME = "_circe_codeset_cache"
 def _compute_cache_key(items: tuple[NormalizedConceptSetItem, ...]) -> str:
     """Deterministic SHA-256 hash of sorted concept set items."""
     canonical = sorted(
-        (item.concept_id, item.is_excluded, item.include_descendants, item.include_mapped)
-        for item in items
+        (item.concept_id, item.is_excluded, item.include_descendants, item.include_mapped) for item in items
     )
     payload = json.dumps(canonical, separators=(",", ":"))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
@@ -165,7 +166,9 @@ def build_concept_set_expression(
     # that are then excluded via anti-join.
     # For simplicity and correctness, let me handle excludes uniformly via anti-join.
 
-    return _build_codeset_expression(concept_set, table_getter=table_getter, vocabulary_schema=vocabulary_schema)
+    return _build_codeset_expression(
+        concept_set, table_getter=table_getter, vocabulary_schema=vocabulary_schema
+    )
 
 
 def _build_codeset_expression(
@@ -186,8 +189,14 @@ def _build_codeset_expression(
 
         # Build base expression for this item
         if item.include_descendants:
-            base = _descendant_expression(
+            desc = _descendant_expression(
                 direct, table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+            base = _union_all_tables(
+                [
+                    ibis.memtable({"concept_id": [int(item.concept_id)]}, schema={"concept_id": "int64"}),
+                    desc,
+                ]
             )
         else:
             base = ibis.memtable({"concept_id": [int(item.concept_id)]}, schema={"concept_id": "int64"})
@@ -226,15 +235,20 @@ def _build_codeset_expression(
 
 
 def _union_all_tables(tables: list[Table]) -> Table:
-    """Union multiple single-column ibis tables."""
+    """Union multiple single-column ibis tables using binary-tree merge.
+
+    Binary-tree merge caps expression-tree depth at O(log n) instead of
+    O(n), avoiding deeply nested UNION ALL chains for large numbers of
+    tables (e.g. 100+ concept sets).
+    """
     if not tables:
         raise ValueError("_union_all_tables requires at least one table")
     if len(tables) == 1:
         return tables[0]
-    result = tables[0]
-    for t in tables[1:]:
-        result = result.union(t, distinct=False)
-    return result
+    mid = len(tables) // 2
+    left = _union_all_tables(tables[:mid])
+    right = _union_all_tables(tables[mid:])
+    return left.union(right, distinct=False)
 
 
 def _drop_table(
@@ -243,10 +257,8 @@ def _drop_table(
     schema: str | None,
 ) -> None:
     """Safely drop a backend table."""
-    try:
+    with contextlib.suppress(Exception):
         backend.drop_table(table_name, database=schema, force=True)
-    except Exception:
-        pass
 
 
 def _table_getter_from_backend(
@@ -321,17 +333,33 @@ def build_batch_codeset_table(
             )
             parts.append(tbl)
 
-    # Cache misses: build lazy expansion expressions
+    # Split uncached into simple (direct IDs only) and complex (needs expansion)
+    simple_rows: list[dict[str, Any]] = []
+    complex_csets: list[tuple[int, NormalizedConceptSet]] = []
     for cid, cset in uncached:
         if not cset.items:
             continue
-        expr = _build_codeset_expression(
-            cset, table_getter=table_getter, vocabulary_schema=vocabulary_schema
+        if _needs_vocabulary_expansion({cid: cset}):
+            complex_csets.append((cid, cset))
+        else:
+            for item in cset.items:
+                if not item.is_excluded and item.concept_id is not None:
+                    simple_rows.append({"codeset_id": int(cid), "concept_id": int(item.concept_id)})
+
+    # Batch all simple IDs into one memtable
+    if simple_rows:
+        parts.append(
+            ibis.memtable(
+                simple_rows,
+                schema={"codeset_id": "int64", "concept_id": "int64"},
+            )
         )
+
+    # Complex concept sets: build lazy expansion expressions
+    for cid, cset in complex_csets:
+        expr = _build_codeset_expression(cset, table_getter=table_getter, vocabulary_schema=vocabulary_schema)
         labeled = expr.mutate(codeset_id=ibis.literal(cid, type="int64")).select("codeset_id", CONCEPT_ID)
         parts.append(labeled)
-
-        # Write to persistent cache after materialization (done below)
 
     if not parts:
         # No concept sets at all -- create empty table
@@ -339,22 +367,20 @@ def build_batch_codeset_table(
             {"codeset_id": [], "concept_id": []},
             schema={"codeset_id": "int64", "concept_id": "int64"},
         )
-        create_table_op(
-            backend, table_name=batch_table_name, schema=results_schema, obj=empty, overwrite=True, temp=temporary
+        _create_table_impl(
+            backend,
+            table_name=batch_table_name,
+            schema=results_schema,
+            obj=empty,
+            overwrite=True,
+            temp=temporary,
         )
         return _read_table(backend, table_name=batch_table_name, schema=results_schema)
 
     # Union all parts and materialize
-    if len(parts) == 1:
-        combined = parts[0]
-    else:
-        combined = parts[0]
-        for p in parts[1:]:
-            combined = combined.union(p, distinct=False)
+    combined = _union_all_tables(parts)
 
-    from .operations import create_table as create_table_op
-
-    create_table_op(
+    _create_table_impl(
         backend,
         table_name=batch_table_name,
         schema=results_schema,
@@ -373,12 +399,7 @@ def build_batch_codeset_table(
                 continue
             # Read back from the table to get resolved IDs for this codeset
             ref = _read_table(backend, table_name=batch_table_name, schema=results_schema)
-            resolved = (
-                ref.filter(ref.codeset_id == cid)
-                .select(CONCEPT_ID)
-                .distinct()
-                .execute()
-            )
+            resolved = ref.filter(ref.codeset_id == cid).select(CONCEPT_ID).distinct().execute()
             cids = _extract_column(resolved, CONCEPT_ID)
             if cids:
                 _write_codeset_cache(
@@ -393,6 +414,15 @@ def build_batch_codeset_table(
     return ref
 
 
+def _needs_vocabulary_expansion(concept_sets: Mapping[int, NormalizedConceptSet]) -> bool:
+    """Return True if any concept set requires vocabulary-table queries."""
+    for cset in concept_sets.values():
+        for item in cset.items:
+            if item.include_descendants or item.include_mapped:
+                return True
+    return False
+
+
 def build_single_codeset_table(
     *,
     backend: IbisBackendLike,
@@ -401,12 +431,35 @@ def build_single_codeset_table(
     results_schema: str | None = None,
     vocabulary_schema: str | None = None,
 ) -> Table:
-    """Build a single-cohort codeset table as a temporary database table.
+    """Build a codeset table for a single cohort.
 
-    Like :func:`build_batch_codeset_table` but without persistent cache
-    support and creates a temporary table.  Used as the auto-creation
-    fallback in ``build_cohort()`` when no batch table is provided.
+    When all concept sets use only direct concept IDs (no descendant or
+    mapped expansion needed), builds a simple memtable -- no vocabulary
+    tables required.  Falls back to full expansion otherwise.
     """
+    if not _needs_vocabulary_expansion(concept_sets):
+        rows: list[dict[str, Any]] = []
+        for cid, cset in concept_sets.items():
+            for item in cset.items:
+                if not item.is_excluded and item.concept_id is not None:
+                    rows.append({"codeset_id": int(cid), "concept_id": int(item.concept_id)})
+        if rows:
+            data = ibis.memtable(rows, schema={"codeset_id": "int64", "concept_id": "int64"})
+        else:
+            data = ibis.memtable(
+                {"codeset_id": [], "concept_id": []},
+                schema={"codeset_id": "int64", "concept_id": "int64"},
+            )
+        _create_table_impl(
+            backend,
+            table_name=batch_table_name,
+            schema=results_schema,
+            obj=data,
+            overwrite=True,
+            temp=True,
+        )
+        return _read_table(backend, table_name=batch_table_name, schema=results_schema)
+
     return build_batch_codeset_table(
         backend=backend,
         concept_sets=concept_sets,
@@ -474,7 +527,7 @@ def _write_codeset_cache(
     table_name: str,
 ) -> None:
     """Persist resolved concept IDs to the cache table."""
-    from .operations import create_table as create_table_op, insert_relation, table_exists
+    from .operations import insert_relation, table_exists
 
     if not concept_ids:
         return
@@ -485,7 +538,7 @@ def _write_codeset_cache(
             schema={"cache_key": "string", "concept_id": "int64"},
         )
         if not table_exists(backend, table_name=table_name, schema=schema):
-            create_table_op(backend, table_name=table_name, schema=schema, obj=data)
+            _create_table_impl(backend, table_name=table_name, schema=schema, obj=data)
             return
         insert_relation(data, backend=backend, target_table=table_name, target_schema=schema)
     except Exception:

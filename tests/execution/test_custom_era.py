@@ -350,7 +350,9 @@ def test_compute_drug_eras_matches_java_sql_logic():
 
     ctx = SimpleNamespace(
         table=lambda name: conn.table(name),
-        concept_ids_for_codeset=lambda cid: (222,) if cid == 2 else (),
+        concept_set_table=lambda cid: ibis.memtable(
+            {"concept_id": [222] if cid == 2 else []}, schema={"concept_id": "int64"}
+        ),
     )
 
     # --- ibis path ---

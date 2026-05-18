@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ibis
 import pytest
 
 from circe.execution.errors import CompilationError
@@ -21,8 +22,9 @@ class _PersonFilterContext:
     def table(self, name: str):
         return self.conn.table(name)
 
-    def concept_ids_for_codeset(self, codeset_id: int) -> tuple[int, ...]:
-        return self.codesets.get(codeset_id, ())
+    def concept_set_table(self, codeset_id: int):
+        ids = self.codesets.get(codeset_id, ())
+        return ibis.memtable({"concept_id": list(ids)}, schema={"concept_id": "int64"})
 
 
 def _seed_person_tables(conn, ibis):

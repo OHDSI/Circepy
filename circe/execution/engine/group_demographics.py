@@ -3,36 +3,7 @@ from __future__ import annotations
 import ibis
 
 from ..errors import UnsupportedFeatureError
-from ..normalize.groups import NormalizedDemographicCriteria
-from ..plan.schema import EVENT_ID, PERSON_ID
-from ..typing import Table
-from .group_keys import event_keys
 from ..ibis.context import ExecutionContext
-
-
-def _apply_numeric_predicate(expr, predicate):
-    ...
-
-
-def _apply_date_predicate(date_expr, predicate):
-    ...
-
-
-def _demographic_concept_table(
-    *,
-    explicit_ids: tuple[int, ...],
-    codeset_id: int | None,
-    ctx: ExecutionContext,
-) -> Table | None:
-    """Return an ibis Table with a single 'concept_id' column, or None if empty."""
-    if codeset_id is not None:
-        return ctx.concept_set_table(codeset_id)
-    elif explicit_ids:
-        return ibis.memtable(
-            {"concept_id": list(explicit_ids)},
-            schema={"concept_id": "int64"},
-        )
-    return None
 from ..normalize.groups import NormalizedDemographicCriteria
 from ..plan.schema import EVENT_ID, PERSON_ID
 from ..typing import Table
@@ -72,7 +43,7 @@ def _apply_numeric_predicate(expr, predicate):
     )
 
 
-def _apply_date_predicate(expr, predicate):
+def _apply_date_predicate(date_expr, predicate):
     op = (predicate.op or "eq").lower()
     value = predicate.value
     extent = predicate.extent
@@ -81,19 +52,19 @@ def _apply_date_predicate(expr, predicate):
         return ibis.literal(True)
 
     value_expr = ibis.literal(value).cast("date")
-    date_expr = expr.cast("date")
+
     if op in {"eq", "="}:
-        return date_expr == value_expr
+        return date_expr.cast("date") == value_expr
     if op in {"neq", "!=", "ne"}:
-        return date_expr != value_expr
+        return date_expr.cast("date") != value_expr
     if op in {"gt", ">"}:
-        return date_expr > value_expr
+        return date_expr.cast("date") > value_expr
     if op in {"gte", ">="}:
-        return date_expr >= value_expr
+        return date_expr.cast("date") >= value_expr
     if op in {"lt", "<"}:
-        return date_expr < value_expr
+        return date_expr.cast("date") < value_expr
     if op in {"lte", "<="}:
-        return date_expr <= value_expr
+        return date_expr.cast("date") <= value_expr
     if op in {"bt", "between"}:
         if extent is None:
             raise UnsupportedFeatureError(
@@ -103,10 +74,31 @@ def _apply_date_predicate(expr, predicate):
         extent_expr = ibis.literal(extent).cast("date")
         lower = ibis.least(value_expr, extent_expr)
         upper = ibis.greatest(value_expr, extent_expr)
-        return (date_expr >= lower) & (date_expr <= upper)
+        return (date_expr.cast("date") >= lower) & (date_expr.cast("date") <= upper)
     raise UnsupportedFeatureError(
         f"Ibis executor group evaluation error: unsupported demographic date range op {predicate.op!r}."
     )
+
+
+def _demographic_concept_ids(
+    *,
+    explicit_ids: tuple[int, ...],
+    codeset_id: int | None,
+    ctx: ExecutionContext,
+) -> tuple[int, ...]:
+    """Resolve concept IDs for a demographic filter.
+
+    Returns a Python tuple of concept IDs.  Demographic sets are tiny (1-5
+    IDs) so this is cheap and avoids join complexity.
+    """
+    all_ids = list(explicit_ids)
+    if codeset_id is not None:
+        t = ctx.concept_set_table(codeset_id)
+        for row in t.select("concept_id").distinct().to_pandas().itertuples():
+            cid = row.concept_id
+            if cid not in all_ids:
+                all_ids.append(cid)
+    return tuple(all_ids)
 
 
 def demographic_match_keys(
@@ -130,29 +122,29 @@ def demographic_match_keys(
         age_years = event_date.year() - joined.year_of_birth
         predicates.append(_apply_numeric_predicate(age_years, demographic.age))
 
-    gender_table = _demographic_concept_table(
+    gender_ids = _demographic_concept_ids(
         explicit_ids=demographic.gender_concept_ids,
         codeset_id=demographic.gender_codeset_id,
         ctx=ctx,
     )
-    if gender_table is not None:
-        joined = joined.join(gender_table, joined.gender_concept_id == gender_table.concept_id)
+    if gender_ids:
+        predicates.append(joined.gender_concept_id.isin(gender_ids))
 
-    race_table = _demographic_concept_table(
+    race_ids = _demographic_concept_ids(
         explicit_ids=demographic.race_concept_ids,
         codeset_id=demographic.race_codeset_id,
         ctx=ctx,
     )
-    if race_table is not None:
-        joined = joined.join(race_table, joined.race_concept_id == race_table.concept_id)
+    if race_ids:
+        predicates.append(joined.race_concept_id.isin(race_ids))
 
-    ethnicity_table = _demographic_concept_table(
+    ethnicity_ids = _demographic_concept_ids(
         explicit_ids=demographic.ethnicity_concept_ids,
         codeset_id=demographic.ethnicity_codeset_id,
         ctx=ctx,
     )
-    if ethnicity_table is not None:
-        joined = joined.join(ethnicity_table, joined.ethnicity_concept_id == ethnicity_table.concept_id)
+    if ethnicity_ids:
+        predicates.append(joined.ethnicity_concept_id.isin(ethnicity_ids))
 
     if demographic.occurrence_start_date is not None:
         predicates.append(
