@@ -6,6 +6,7 @@ import asyncio
 import contextlib
 import logging
 import threading
+import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
@@ -22,6 +23,18 @@ logger = logging.getLogger(__name__)
 _backend_lock = threading.Lock()
 
 
+def _drop_tables_by_prefix(backend: IbisBackendLike, prefix: str, schema: str | None) -> None:
+    """Drop all tables in *schema* whose name starts with *prefix*."""
+    try:
+        tables = backend.list_tables(database=schema)
+    except Exception:
+        tables = backend.list_tables()
+    for table_name in tables:
+        if table_name.startswith(prefix):
+            with contextlib.suppress(Exception):
+                backend.drop_table(table_name, database=schema, force=True)
+
+
 def _process_single_cohort(
     cohort: CohortDefinition,
     *,
@@ -30,14 +43,12 @@ def _process_single_cohort(
     results_schema: str | None,
     vocabulary_schema: str | None,
     cohort_table: str,
+    session_prefix: str,
 ) -> tuple[datetime, datetime]:
     """Build and write a single cohort. Thread-safe via ``_backend_lock``.
 
-    Each cohort gets its own per-cohort codeset temp table populated and
+    Each cohort gets its own per-cohort codeset table populated and
     dropped as it runs, mirroring the Java ``#Codesets`` pattern.
-
-    Returns ``(start_time, end_time)`` of the database-materialization
-    phase so the caller can compute execution duration.
     """
     with _backend_lock:
         start_time = datetime.now()
@@ -49,6 +60,7 @@ def _process_single_cohort(
             vocabulary_schema=vocabulary_schema,
             cohort_id=cohort.cohort_id,
             cohort_table=cohort_table,
+            session_prefix=session_prefix,
         )
         projected = project_to_ohdsi_cohort_table(new_rows, cohort_id=cohort.cohort_id)
         write_cohort(
@@ -112,6 +124,8 @@ async def async_generate_cohort_set(
 
     _COMPILED_CORRELATED_EVENTS.clear()
 
+    session_prefix = f"__s_{uuid.uuid4().hex[:8]}_"
+
     if checksum_table is None:
         checksum_table = f"{cohort_table}_checksum"
 
@@ -171,6 +185,7 @@ async def async_generate_cohort_set(
                     results_schema=results_schema,
                     vocabulary_schema=vocabulary_schema,
                     cohort_table=cohort_table,
+                    session_prefix=session_prefix,
                 ),
                 timeout=compile_timeout,
             )
@@ -263,13 +278,7 @@ async def async_generate_cohort_set(
                 raise
             continue
 
-        # Clean up staging tables created by the materialized pipeline
-        schema = results_schema or cdm_schema
-        for stage in ("codesets", "primary", "qualified", "included", "ended"):
-            with contextlib.suppress(Exception):
-                backend.drop_table(
-                    f"__{cohort_table}_{cohort.cohort_id}_{stage}", database=schema, force=True
-                )
+        # Individual staging tables are cleaned by prefix at batch end
 
         results.append(
             CohortGenerationResult(
@@ -299,6 +308,14 @@ async def async_generate_cohort_set(
         summary["COMPLETE"],
         summary["SKIPPED"],
         summary["FAILED"],
+    )
+
+    # Drop all staging tables from this batch run
+    await asyncio.to_thread(
+        _drop_tables_by_prefix,
+        backend,
+        session_prefix,
+        results_schema or cdm_schema,
     )
 
     return results

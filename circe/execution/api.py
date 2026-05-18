@@ -34,16 +34,16 @@ def build_cohort(
     materialize: bool = True,
     codeset_table: Table | None = None,
     cohort_table: str = "cohort",
+    session_prefix: str = "",
 ) -> Table:
     """Normalize, compile, and assemble a cohort relation.
 
     Paths through stage-by-stage temp tables when *cohort_id* is provided
     and *materialize* is True, so that the ibis expression tree never grows
-    too large to compile.  Set *materialize=False* for compile-only use
-    (e.g. unit tests that only verify the expression tree can be built).
+    too large to compile.  Set *materialize=False* for compile-only use.
 
-    When *codeset_table* is provided (from a batch-generation caller), it is
-    used directly.  Otherwise a per-cohort codeset temp table is auto-created.
+    When *codeset_table* is provided it is used directly.  Otherwise a
+    per-cohort codeset table is auto-created.
     """
     maybe_apply_databricks_post_connect_workaround(backend)
 
@@ -56,6 +56,7 @@ def build_cohort(
             batch_table_name=f"__{cohort_table}_{cohort_id}_codesets",
             results_schema=results_schema,
             vocabulary_schema=vocabulary_schema,
+            session_prefix=session_prefix,
         )
 
     ctx = make_execution_context(
@@ -67,7 +68,12 @@ def build_cohort(
     )
 
     return build_cohort_table(
-        normalized, ctx, cohort_id=cohort_id, materialize=materialize, cohort_table=cohort_table
+        normalized,
+        ctx,
+        cohort_id=cohort_id,
+        materialize=materialize,
+        cohort_table=cohort_table,
+        session_prefix=session_prefix,
     )
 
 

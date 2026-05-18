@@ -25,18 +25,10 @@ def _materialize(
     stage: str,
     schema: str | None,
     cohort_table: str = "cohort",
+    session_prefix: str = "",
 ) -> Table:
-    """Write *table* to a backend staging table and return a fresh reference.
-
-    Without this step every pipeline stage accumulates on top of the previous
-    ibis expression tree.  For cohorts with many primary criteria the tree
-    grows too large for the ibis SQL compiler to traverse in reasonable time.
-
-    Materialising at each pipeline boundary keeps the expression tree sent
-    to the compiler shallow — each stage only builds on a simple
-    ``DatabaseTable`` reference.
-    """
-    name = f"__{cohort_table}_{cohort_id}_{stage}"
+    """Write *table* to a backend staging table and return a fresh reference."""
+    name = f"{session_prefix}__{cohort_table}_{cohort_id}_{stage}"
     create_table(ctx.backend, table_name=name, schema=schema, obj=table, overwrite=True)
     return read_table(ctx.backend, table_name=name, schema=schema)
 
@@ -46,10 +38,11 @@ def _drop_staging_tables(
     cohort_id: int,
     schema: str | None,
     cohort_table: str = "cohort",
+    session_prefix: str = "",
 ) -> None:
     """Remove all staging tables for *cohort_id* from the database."""
     for stage in ("codesets", "primary", "qualified", "included", "ended"):
-        name = f"__{cohort_table}_{cohort_id}_{stage}"
+        name = f"{session_prefix}__{cohort_table}_{cohort_id}_{stage}"
         with contextlib.suppress(Exception):
             ctx.backend.drop_table(name, database=schema, force=True)
 
@@ -61,6 +54,7 @@ def build_cohort_table(
     cohort_id: int = 0,
     materialize: bool = True,
     cohort_table: str = "cohort",
+    session_prefix: str = "",
 ) -> Table:
     primary_plans = tuple(
         PrimaryEventInput(
@@ -88,6 +82,7 @@ def build_cohort_table(
             cohort_id=cohort_id,
             stage="primary",
             schema=schema,
+            session_prefix=session_prefix,
             cohort_table=cohort_table,
         )
 
@@ -102,6 +97,7 @@ def build_cohort_table(
             cohort_id=cohort_id,
             stage="qualified",
             schema=schema,
+            session_prefix=session_prefix,
             cohort_table=cohort_table,
         )
 
@@ -121,6 +117,7 @@ def build_cohort_table(
                 cohort_id=cohort_id,
                 stage="included",
                 schema=schema,
+                session_prefix=session_prefix,
                 cohort_table=cohort_table,
             )
         included_events = apply_result_limit(included_events, cohort_plan.expression_limit_type)
@@ -134,6 +131,7 @@ def build_cohort_table(
                 cohort_id=cohort_id,
                 stage="included",
                 schema=schema,
+                session_prefix=session_prefix,
                 cohort_table=cohort_table,
             )
 
@@ -146,6 +144,7 @@ def build_cohort_table(
             cohort_id=cohort_id,
             stage="ended",
             schema=schema,
+            session_prefix=session_prefix,
             cohort_table=cohort_table,
         )
 

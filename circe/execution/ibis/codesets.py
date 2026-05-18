@@ -13,6 +13,30 @@ from ..typing import IbisBackendLike, Table
 from .operations import create_table as _create_table_impl
 
 
+def _literal_select(**columns: int) -> Table:
+    """Return an ibis table expression that selects literal values.
+
+    Builds ``SELECT val1 AS col1, val2 AS col2`` using ``as_table()`` and
+    ``mutate()`` so no memtable or local-file staging is required.
+    """
+    items = list(columns.items())
+    t = ibis.literal(items[0][1], type="int64").name(items[0][0]).as_table()
+    for name, val in items[1:]:
+        t = t.mutate(**{name: ibis.literal(val, type="int64")})
+    return t
+
+
+def _empty_table(*, columns: tuple[tuple[str, int], ...]) -> Table:
+    """Return an ibis expression for an empty table with the given column types.
+
+    Produces ``SELECT ... WHERE FALSE`` -- no local files.
+    """
+    if not columns:
+        raise ValueError("_empty_table requires at least one column")
+    t = _literal_select(**dict(columns))
+    return t.filter(ibis.literal(False))
+
+
 def _vocabulary_table(
     table_name: str,
     *,
@@ -74,6 +98,8 @@ def _build_codeset_expression(
 
     Handles descendants, mapped codes, and exclusions via ibis JOINs.
     The database engine performs the expansion at execution time.
+    Never uses ``ibis.memtable`` -- all leaf values use ``as_table().mutate()``
+    to avoid local-file staging on Databricks.
     """
     include_parts: list[Table] = []
     exclude_parts: list[Table] = []
@@ -90,12 +116,12 @@ def _build_codeset_expression(
             )
             base = _union_all_tables(
                 [
-                    ibis.memtable({"concept_id": [int(item.concept_id)]}, schema={"concept_id": "int64"}),
+                    _literal_select(concept_id=int(item.concept_id)),
                     desc,
                 ]
             )
         else:
-            base = ibis.memtable({"concept_id": [int(item.concept_id)]}, schema={"concept_id": "int64"})
+            base = _literal_select(concept_id=int(item.concept_id))
 
         if item.include_mapped:
             mapped = _mapped_expression(
@@ -109,7 +135,7 @@ def _build_codeset_expression(
             include_parts.append(base)
 
     if not include_parts:
-        return ibis.memtable({"concept_id": []}, schema={"concept_id": "int64"})
+        return _empty_table(columns=(("concept_id", 0),))
 
     if len(include_parts) == 1:
         result = include_parts[0]
@@ -222,45 +248,40 @@ def build_single_codeset_table(
     batch_table_name: str,
     results_schema: str | None = None,
     vocabulary_schema: str | None = None,
+    session_prefix: str = "",
 ) -> Table:
-    """Build a per-cohort codeset temp table ``(codeset_id, concept_id)``.
+    """Build a per-cohort codeset table ``(codeset_id, concept_id)``.
 
-    Like the Java ``#Codesets`` table: a per-cohort temp table populated
-    with concept set IDs, used by criteria via JOIN, then dropped.
+    Like the Java ``#Codesets`` table.  All work stays in the database --
+    no ``ibis.memtable``, no local-file staging, no ``temp`` tables
+    (which Databricks / Oracle / BigQuery do not support).
     """
+    name = f"{session_prefix}{batch_table_name}"
+
     if not concept_sets:
-        empty = ibis.memtable(
-            {"codeset_id": [], "concept_id": []},
-            schema={"codeset_id": "int64", "concept_id": "int64"},
-        )
-        _create_table_impl(
-            backend, table_name=batch_table_name, schema=results_schema, obj=empty, overwrite=True, temp=True
-        )
-        return _read_table(backend, table_name=batch_table_name, schema=results_schema)
+        empty = _empty_table(columns=(("codeset_id", 0), ("concept_id", 0)))
+        _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=True)
+        return _read_table(backend, table_name=name, schema=results_schema)
 
     needs_vocab = _needs_vocabulary_expansion(concept_sets)
 
     if not needs_vocab:
-        rows: list[dict[str, Any]] = []
+        parts: list[Table] = []
         for cid, cset in concept_sets.items():
             for item in cset.items:
                 if not item.is_excluded and item.concept_id is not None:
-                    rows.append({"codeset_id": int(cid), "concept_id": int(item.concept_id)})
-        data = (
-            ibis.memtable(rows, schema={"codeset_id": "int64", "concept_id": "int64"})
-            if rows
-            else ibis.memtable(
-                {"codeset_id": [], "concept_id": []}, schema={"codeset_id": "int64", "concept_id": "int64"}
-            )
-        )
-        _create_table_impl(
-            backend, table_name=batch_table_name, schema=results_schema, obj=data, overwrite=True, temp=True
-        )
-        return _read_table(backend, table_name=batch_table_name, schema=results_schema)
+                    parts.append(_literal_select(codeset_id=int(cid), concept_id=int(item.concept_id)))
+        if not parts:
+            empty = _empty_table(columns=(("codeset_id", 0), ("concept_id", 0)))
+            _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=True)
+            return _read_table(backend, table_name=name, schema=results_schema)
+        combined = _union_all_tables(parts)
+        _create_table_impl(backend, table_name=name, schema=results_schema, obj=combined, overwrite=True)
+        return _read_table(backend, table_name=name, schema=results_schema)
 
     table_getter = _table_getter_from_backend(backend, vocabulary_schema or "")
 
-    parts: list[Table] = []
+    parts = []
     for cid, cset in concept_sets.items():
         if not cset.items:
             continue
@@ -276,27 +297,16 @@ def build_single_codeset_table(
         else:
             for item in cset.items:
                 if not item.is_excluded and item.concept_id is not None:
-                    parts.append(
-                        ibis.memtable(
-                            [{"codeset_id": int(cid), "concept_id": int(item.concept_id)}],
-                            schema={"codeset_id": "int64", "concept_id": "int64"},
-                        )
-                    )
+                    parts.append(_literal_select(codeset_id=int(cid), concept_id=int(item.concept_id)))
 
     if not parts:
-        empty = ibis.memtable(
-            {"codeset_id": [], "concept_id": []}, schema={"codeset_id": "int64", "concept_id": "int64"}
-        )
-        _create_table_impl(
-            backend, table_name=batch_table_name, schema=results_schema, obj=empty, overwrite=True, temp=True
-        )
-        return _read_table(backend, table_name=batch_table_name, schema=results_schema)
+        empty = _empty_table(columns=(("codeset_id", 0), ("concept_id", 0)))
+        _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=True)
+        return _read_table(backend, table_name=name, schema=results_schema)
 
     combined = _union_all_tables(parts)
-    _create_table_impl(
-        backend, table_name=batch_table_name, schema=results_schema, obj=combined, overwrite=True, temp=True
-    )
-    return _read_table(backend, table_name=batch_table_name, schema=results_schema)
+    _create_table_impl(backend, table_name=name, schema=results_schema, obj=combined, overwrite=True)
+    return _read_table(backend, table_name=name, schema=results_schema)
 
 
 def drop_codeset_table(
