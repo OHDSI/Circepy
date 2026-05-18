@@ -39,28 +39,32 @@ def _staging_table(cohort_table: str, cohort_id: int, stage: str) -> str:
 def ensure_codeset_cache(
     backend: IbisBackendLike, *, cohort_table: str, results_schema: str | None = None
 ) -> None:
-    """Create the codeset cache table with an empty schema if it doesn't exist.
-
-    Matches the pattern used by ``upsert_generation_history`` in the checksum
-    store: create with a simple ibis memtable, then insert data separately.
+    """Create the codeset cache table with columns defined by schema.
+    
+    Uses a plain ``CREATE TABLE`` with an ibis schema -- no memtable or
+    local file operations, so it works on Databricks without
+    ``staging_allowed_local_path`` constraints.
     """
     from ..ibis.operations import table_exists
+    import ibis.expr.datatypes as dt
 
     cache_name = _codeset_cache_table(cohort_table)
     if table_exists(backend, table_name=cache_name, schema=results_schema):
         return
 
-    empty = ibis.memtable(
-        {"cache_key": [], CONCEPT_ID: []},
-        schema={"cache_key": "string", CONCEPT_ID: "int64"},
-    )
-    _create_table_impl(
-        backend,
-        table_name=cache_name,
-        schema=results_schema,
-        obj=empty,
-        overwrite=False,
-    )
+    schema = ibis.schema({"cache_key": dt.string, "concept_id": dt.int64})
+    try:
+        if results_schema is not None:
+            backend.create_table(cache_name, schema=schema, database=results_schema, overwrite=False)
+        else:
+            backend.create_table(cache_name, schema=schema, overwrite=False)
+    except Exception:
+        # Fallback for backends that require an ``obj`` parameter
+        empty = ibis.memtable(
+            {"cache_key": [], "concept_id": []},
+            schema={"cache_key": "string", "concept_id": "int64"},
+        )
+        backend.create_table(cache_name, obj=empty, database=results_schema, overwrite=False)
 
 
 def _compute_cache_key(items: tuple[NormalizedConceptSetItem, ...]) -> str:
