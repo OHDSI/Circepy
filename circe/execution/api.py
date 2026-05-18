@@ -30,7 +30,6 @@ def build_cohort(
     cdm_schema: str,
     results_schema: str | None = None,
     vocabulary_schema: str | None = None,
-    use_persistent_cache: bool = False,
     cohort_id: int = 0,
     materialize: bool = True,
     codeset_table: Table | None = None,
@@ -44,9 +43,7 @@ def build_cohort(
     (e.g. unit tests that only verify the expression tree can be built).
 
     When *codeset_table* is provided (from a batch-generation caller), it is
-    used directly.  Otherwise a per-cohort codeset table is auto-created.
-    With *use_persistent_cache=True*, concept sets are cached in a table
-    named from *cohort_table* via ``_codeset_cache_table()``.
+    used directly.  Otherwise a per-cohort codeset temp table is auto-created.
     """
     maybe_apply_databricks_post_connect_workaround(backend)
 
@@ -59,8 +56,6 @@ def build_cohort(
             batch_table_name=f"__{cohort_table}_{cohort_id}_codesets",
             results_schema=results_schema,
             vocabulary_schema=vocabulary_schema,
-            use_persistent_cache=use_persistent_cache,
-            cohort_table=cohort_table,
         )
 
     ctx = make_execution_context(
@@ -125,7 +120,6 @@ def write_cohort(
     results_schema: str | None = None,
     vocabulary_schema: str | None = None,
     if_exists: Literal["fail", "replace"] = "fail",
-    use_persistent_cache: bool = False,
 ) -> None:
     """Build cohort rows and materialize them with cohort-scoped semantics.
 
@@ -167,7 +161,6 @@ def write_cohort(
             cdm_schema=cdm_schema,
             results_schema=results_schema,
             vocabulary_schema=vocabulary_schema,
-            use_persistent_cache=use_persistent_cache,
             cohort_id=cohort_id,
         )
         new_rows = project_to_ohdsi_cohort_table(new_rows, cohort_id=cohort_id)

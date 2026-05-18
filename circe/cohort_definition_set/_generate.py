@@ -10,7 +10,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
 from ..execution.api import build_cohort, write_cohort
-from ..execution.ibis.codesets import ensure_codeset_cache
 from ..execution.ibis.materialize import project_to_ohdsi_cohort_table
 from ._checksum_store import load_checksums, upsert_generation_history
 from ._core import CohortDefinition, CohortDefinitionSet, CohortGenerationResult
@@ -31,13 +30,11 @@ def _process_single_cohort(
     results_schema: str | None,
     vocabulary_schema: str | None,
     cohort_table: str,
-    use_persistent_cache: bool,
 ) -> tuple[datetime, datetime]:
     """Build and write a single cohort. Thread-safe via ``_backend_lock``.
 
-    Each cohort uses its own per-cohort codeset table built from the
-    codeset cache (named from *cohort_table*) when *use_persistent_cache*
-    is True, allowing checksum-keyed concept set reuse.
+    Each cohort gets its own per-cohort codeset temp table populated and
+    dropped as it runs, mirroring the Java ``#Codesets`` pattern.
 
     Returns ``(start_time, end_time)`` of the database-materialization
     phase so the caller can compute execution duration.
@@ -50,7 +47,6 @@ def _process_single_cohort(
             cdm_schema=cdm_schema,
             results_schema=results_schema,
             vocabulary_schema=vocabulary_schema,
-            use_persistent_cache=use_persistent_cache,
             cohort_id=cohort.cohort_id,
             cohort_table=cohort_table,
         )
@@ -119,17 +115,6 @@ async def async_generate_cohort_set(
     if checksum_table is None:
         checksum_table = f"{cohort_table}_checksum"
 
-    # Ensure the persistent codeset cache table exists before any cohort
-    # processing, so that every cohort can INSERT/read from it without
-    # checking for existence on each call.
-    if incremental:
-        await asyncio.to_thread(
-            ensure_codeset_cache,
-            backend,
-            cohort_table=cohort_table,
-            results_schema=results_schema,
-        )
-
     previous_checksums: dict[int, str] = {}
     if incremental:
         previous_checksums = await asyncio.to_thread(
@@ -186,7 +171,6 @@ async def async_generate_cohort_set(
                     results_schema=results_schema,
                     vocabulary_schema=vocabulary_schema,
                     cohort_table=cohort_table,
-                    use_persistent_cache=incremental,
                 ),
                 timeout=compile_timeout,
             )

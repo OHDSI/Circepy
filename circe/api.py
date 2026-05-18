@@ -266,31 +266,6 @@ def write_cohort(
     )
 
 
-def resolve_concept_sets(
-    concept_sets: Any,
-    *,
-    backend: IbisBackendLike,
-    results_schema: Optional[str] = None,
-    vocabulary_schema: Optional[str] = None,
-    cohort_table: str = "cohort",
-) -> set[str]:
-    """Resolve concept sets into the persistent codeset cache table.
-
-    The cache table name is derived from *cohort_table*.  Cache hits are
-    skipped; cache misses are resolved via a single batch query and stored
-    permanently.  Independent of cohort generation.
-    """
-    from .execution import resolve_concept_sets as _resolve
-
-    return _resolve(
-        concept_sets,
-        backend=backend,
-        results_schema=results_schema,
-        vocabulary_schema=vocabulary_schema,
-        cohort_table=cohort_table,
-    )
-
-
 def cohort_print_friendly(
     expression: CohortExpression,
     concept_sets: Optional[list[ConceptSet]] = None,
@@ -298,8 +273,6 @@ def cohort_print_friendly(
     include_concept_sets: bool = False,
 ) -> str:
     """Generate human-readable Markdown from a cohort expression.
-
-    This is equivalent to R CirceR's `cohortPrintFriendly()` function.
 
     Args:
         expression: CohortExpression instance
