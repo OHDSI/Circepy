@@ -36,37 +36,29 @@ def _staging_table(cohort_table: str, cohort_id: int, stage: str) -> str:
     return f"__{cohort_table}_{cohort_id}_{stage}"
 
 
-def ensure_codeset_cache(backend: IbisBackendLike, *, cohort_table: str, results_schema: str | None = None) -> None:
+def ensure_codeset_cache(
+    backend: IbisBackendLike, *, cohort_table: str, results_schema: str | None = None
+) -> None:
     """Create the codeset cache table if it doesn't exist.
 
-    The cache table name is derived from *cohort_table*.  Creating it
-    up front avoids per-cohort ``table_exists`` checks and ensures the
-    table is always available for INSERT by ``resolve_concept_sets``.
+    The cache table name is derived from *cohort_table*.  Created up front
+    so that every cohort can INSERT into it without checking existence.
     """
+    from contextlib import suppress
+
     cache_name = _codeset_cache_table(cohort_table)
-    has_schema = results_schema is not None
-    try:
-        if has_schema:
-            tables = backend.list_tables(database=results_schema)
-        else:
-            tables = backend.list_tables()
-    except Exception:
-        tables = None
-
-    if tables is not None and cache_name in tables:
-        return
-
-    empty = ibis.memtable(
-        {"cache_key": [], CONCEPT_ID: []},
-        schema={"cache_key": "string", CONCEPT_ID: "int64"},
-    )
-    _create_table_impl(
-        backend,
-        table_name=cache_name,
-        schema=results_schema,
-        obj=empty,
-        overwrite=False,
-    )
+    with suppress(Exception):
+        empty = ibis.memtable(
+            {"cache_key": [], CONCEPT_ID: []},
+            schema={"cache_key": "string", CONCEPT_ID: "int64"},
+        )
+        _create_table_impl(
+            backend,
+            table_name=cache_name,
+            schema=results_schema,
+            obj=empty,
+            overwrite=False,
+        )
 
 
 def _compute_cache_key(items: tuple[NormalizedConceptSetItem, ...]) -> str:
@@ -664,22 +656,8 @@ def build_single_codeset_table(
             cohort_table=cohort_table,
         )
 
-        # Ensure cache table exists — if ALL concept sets were already cached
-        # and the cache table was somehow missing, create a placeholder.
+        # Build per-cohort table from cache
         cache_name = _codeset_cache_table(cohort_table)
-        if not table_exists(backend, table_name=cache_name, schema=results_schema):
-            empty = ibis.memtable(
-                {"cache_key": [], CONCEPT_ID: []},
-                schema={"cache_key": "string", CONCEPT_ID: "int64"},
-            )
-            _create_table_impl(
-                backend,
-                table_name=cache_name,
-                schema=results_schema,
-                obj=empty,
-                overwrite=False,
-            )
-
         cache_ref = _read_table(backend, table_name=cache_name, schema=results_schema)
 
         parts: list[Table] = []
