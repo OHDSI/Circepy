@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+import ibis
 import pytest
 
 from circe.execution.engine.group_demographics import (
     _apply_date_predicate,
-    _demographic_concept_ids,
+    _demographic_concept_table,
     demographic_match_keys,
 )
 from circe.execution.errors import UnsupportedFeatureError
 from circe.execution.normalize.groups import NormalizedDemographicCriteria
 from circe.execution.normalize.windows import NormalizedDateRange, NormalizedNumericRange
+from circe.execution.ibis.context import ExecutionContext
 
 
 class _DemographicContext:
@@ -20,8 +22,11 @@ class _DemographicContext:
     def table(self, name: str):
         return self.conn.table(name)
 
-    def concept_ids_for_codeset(self, codeset_id: int) -> tuple[int, ...]:
-        return self.codesets.get(codeset_id, ())
+    def concept_set_table(self, codeset_id: int) -> ibis.Table:
+        ids = self.codesets.get(codeset_id, ())
+        return ibis.memtable(
+            {"concept_id": list(ids)}, schema={"concept_id": "int64"}
+        )
 
 
 def _seed_demographic_tables(conn, ibis):
@@ -68,10 +73,17 @@ def test_apply_date_predicate_rejects_invalid_between_and_op():
         )
 
 
-def test_demographic_concept_ids_merge_codesets_without_duplicates():
+def test_demographic_concept_table_returns_table():
     ctx = _DemographicContext(None, codesets={1: (8507, 8532)})
+    tbl = _demographic_concept_table(explicit_ids=(8507,), codeset_id=1, ctx=ctx)
+    assert tbl is not None
+    assert list(tbl.execute()["concept_id"]) == [8507, 8532]
 
-    assert _demographic_concept_ids(explicit_ids=(8507,), codeset_id=1, ctx=ctx) == (8507, 8532)
+
+def test_demographic_concept_table_returns_none_when_empty():
+    ctx = _DemographicContext(None)
+    tbl = _demographic_concept_table(explicit_ids=(), codeset_id=None, ctx=ctx)
+    assert tbl is None
 
 
 def test_demographic_match_keys_applies_all_supported_filters():

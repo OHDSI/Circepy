@@ -3,7 +3,36 @@ from __future__ import annotations
 import ibis
 
 from ..errors import UnsupportedFeatureError
+from ..normalize.groups import NormalizedDemographicCriteria
+from ..plan.schema import EVENT_ID, PERSON_ID
+from ..typing import Table
+from .group_keys import event_keys
 from ..ibis.context import ExecutionContext
+
+
+def _apply_numeric_predicate(expr, predicate):
+    ...
+
+
+def _apply_date_predicate(date_expr, predicate):
+    ...
+
+
+def _demographic_concept_table(
+    *,
+    explicit_ids: tuple[int, ...],
+    codeset_id: int | None,
+    ctx: ExecutionContext,
+) -> Table | None:
+    """Return an ibis Table with a single 'concept_id' column, or None if empty."""
+    if codeset_id is not None:
+        return ctx.concept_set_table(codeset_id)
+    elif explicit_ids:
+        return ibis.memtable(
+            {"concept_id": list(explicit_ids)},
+            schema={"concept_id": "int64"},
+        )
+    return None
 from ..normalize.groups import NormalizedDemographicCriteria
 from ..plan.schema import EVENT_ID, PERSON_ID
 from ..typing import Table
@@ -80,20 +109,6 @@ def _apply_date_predicate(expr, predicate):
     )
 
 
-def _demographic_concept_ids(
-    *,
-    explicit_ids: tuple[int, ...],
-    codeset_id: int | None,
-    ctx: ExecutionContext,
-) -> tuple[int, ...]:
-    all_ids = list(explicit_ids)
-    if codeset_id is not None:
-        for concept_id in ctx.concept_ids_for_codeset(codeset_id):
-            if concept_id not in all_ids:
-                all_ids.append(concept_id)
-    return tuple(all_ids)
-
-
 def demographic_match_keys(
     index_events: Table,
     demographic: NormalizedDemographicCriteria,
@@ -115,29 +130,29 @@ def demographic_match_keys(
         age_years = event_date.year() - joined.year_of_birth
         predicates.append(_apply_numeric_predicate(age_years, demographic.age))
 
-    gender_ids = _demographic_concept_ids(
+    gender_table = _demographic_concept_table(
         explicit_ids=demographic.gender_concept_ids,
         codeset_id=demographic.gender_codeset_id,
         ctx=ctx,
     )
-    if gender_ids:
-        predicates.append(joined.gender_concept_id.isin(gender_ids))
+    if gender_table is not None:
+        joined = joined.join(gender_table, joined.gender_concept_id == gender_table.concept_id)
 
-    race_ids = _demographic_concept_ids(
+    race_table = _demographic_concept_table(
         explicit_ids=demographic.race_concept_ids,
         codeset_id=demographic.race_codeset_id,
         ctx=ctx,
     )
-    if race_ids:
-        predicates.append(joined.race_concept_id.isin(race_ids))
+    if race_table is not None:
+        joined = joined.join(race_table, joined.race_concept_id == race_table.concept_id)
 
-    ethnicity_ids = _demographic_concept_ids(
+    ethnicity_table = _demographic_concept_table(
         explicit_ids=demographic.ethnicity_concept_ids,
         codeset_id=demographic.ethnicity_codeset_id,
         ctx=ctx,
     )
-    if ethnicity_ids:
-        predicates.append(joined.ethnicity_concept_id.isin(ethnicity_ids))
+    if ethnicity_table is not None:
+        joined = joined.join(ethnicity_table, joined.ethnicity_concept_id == ethnicity_table.concept_id)
 
     if demographic.occurrence_start_date is not None:
         predicates.append(

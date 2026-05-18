@@ -11,7 +11,6 @@ from circe.execution.errors import CompilationError, UnsupportedFeatureError
 from circe.execution.ibis.compile_steps import (
     _apply_date_predicate,
     _apply_numeric_predicate,
-    _resolve_concept_ids,
     apply_step,
 )
 from circe.execution.normalize.windows import NormalizedWindow, NormalizedWindowBound
@@ -34,8 +33,11 @@ class _Context:
         self.conn = conn
         self.codesets = codesets or {}
 
-    def concept_ids_for_codeset(self, codeset_id: int) -> tuple[int, ...]:
-        return self.codesets.get(codeset_id, ())
+    def concept_set_table(self, codeset_id: int) -> ibis.Table:
+        ids = self.codesets.get(codeset_id, ())
+        return ibis.memtable(
+            {"concept_id": list(ids)}, schema={"concept_id": "int64"}
+        )
 
     def table(self, name: str):
         if self.conn is None:
@@ -129,11 +131,6 @@ def test_apply_date_predicate_rejects_invalid_ranges():
 
     with pytest.raises(CompilationError, match="unsupported date range op"):
         _apply_date_predicate(expr, DateRangePredicate(op="weird", value="2020-01-01", extent=None))
-
-
-def test_resolve_concept_ids_deduplicates_codeset_ids():
-    ctx = _Context(codesets={1: (2, 3, 4)})
-    assert _resolve_concept_ids(direct_ids=(1, 2), codeset_id=1, ctx=ctx) == (1, 2, 3, 4)
 
 
 def test_apply_step_covers_text_codeset_concept_and_adjustment_paths():

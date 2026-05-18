@@ -83,7 +83,7 @@ def compute_drug_eras(
     days_supply_override: int | None,
     cohort_person_ids=None,
 ):
-    concept_ids = ctx.concept_ids_for_codeset(drug_codeset_id)
+    concept_ids = tuple(sorted(int(i) for i in ctx.concept_set_table(drug_codeset_id).execute().iloc[:, 0]))
 
     if not concept_ids:
         de = ctx.table("drug_exposure")

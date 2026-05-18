@@ -93,12 +93,26 @@ def build_cohort_table(
         )
 
     # ── Inclusion rules ─────────────────────────────────────────────────
-    included_events = apply_inclusion_rules(qualified_events, normalized.inclusion_rules, ctx)
-    included_events = apply_result_limit(included_events, cohort_plan.expression_limit_type)
-    if materialize:
-        included_events = _materialize(
-            included_events, ctx=ctx, cohort_id=cohort_id, stage="included", schema=schema
-        )
+    # Materialise after every inclusion rule so that the ibis expression tree
+    # never grows deeper than one rule's worth of operations.  Without this a
+    # cohort with N rules builds an N-level tree that, when compiled into a
+    # single SQL statement, produces query plans too large for some backends
+    # (e.g. Databricks Spark) to execute without resource exhaustion.
+    if materialize and normalized.inclusion_rules:
+        included_events = qualified_events
+        for rule in normalized.inclusion_rules:
+            included_events = apply_additional_criteria(included_events, rule.expression, ctx)
+            included_events = _materialize(
+                included_events, ctx=ctx, cohort_id=cohort_id, stage="included", schema=schema
+            )
+        included_events = apply_result_limit(included_events, cohort_plan.expression_limit_type)
+    else:
+        included_events = apply_inclusion_rules(qualified_events, normalized.inclusion_rules, ctx)
+        included_events = apply_result_limit(included_events, cohort_plan.expression_limit_type)
+        if materialize:
+            included_events = _materialize(
+                included_events, ctx=ctx, cohort_id=cohort_id, stage="included", schema=schema
+            )
 
     # ── End strategy ────────────────────────────────────────────────────
     ended_events = apply_end_strategy(included_events, normalized.end_strategy, ctx)

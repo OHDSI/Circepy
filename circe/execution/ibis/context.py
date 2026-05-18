@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import Any
+
+import ibis
 
 from .._dataclass import frozen_slots_dataclass
 from ..normalize.cohort import NormalizedConceptSet
 from ..typing import IbisBackendLike, Table
-from .codesets import CachedConceptSetResolver
 
 
 def _table_with_schema_fallback(
@@ -27,7 +29,7 @@ class ExecutionContext:
     cdm_schema: str
     results_schema: str | None
     vocabulary_schema: str | None
-    codeset_resolver: CachedConceptSetResolver
+    codeset_table: Table
 
     def table(self, table_name: str) -> Table:
         return self._table_from_schema(table_name, self.cdm_schema)
@@ -41,37 +43,61 @@ class ExecutionContext:
     def _table_from_schema(self, table_name: str, schema: str | None) -> Table:
         return _table_with_schema_fallback(self.backend, table_name, schema)
 
-    def concept_ids_for_codeset(self, codeset_id: int) -> tuple[int, ...]:
-        return self.codeset_resolver.resolve_codeset(codeset_id)
+    def concept_set_table(self, codeset_id: int) -> Table:
+        """Return an ibis Table with a single 'concept_id' column for this codeset.
+
+        References the database-resident batch codeset table.  No Python memory
+        is used for concept IDs -- filtering happens via SQL joins at execution time.
+        """
+        return self.codeset_table.filter(
+            self.codeset_table.codeset_id == codeset_id
+        ).select("concept_id").distinct()
+
+
+def _build_codeset_memtable(
+    concept_sets: Mapping[int, NormalizedConceptSet],
+) -> Table:
+    """Build a simple memtable for concept sets with known concept IDs.
+
+    Only handles simple includes (no descendant/mapped expansion needed).
+    This is a fallback for backward-compatible test usage.
+    """
+    rows: list[dict[str, Any]] = []
+    for cid, cset in concept_sets.items():
+        for item in cset.items:
+            if not item.is_excluded and item.concept_id is not None:
+                rows.append({"codeset_id": int(cid), "concept_id": int(item.concept_id)})
+    if rows:
+        return ibis.memtable(rows, schema={"codeset_id": "int64", "concept_id": "int64"})
+    return ibis.memtable(
+        {"codeset_id": [], "concept_id": []},
+        schema={"codeset_id": "int64", "concept_id": "int64"},
+    )
 
 
 def make_execution_context(
     *,
     backend: IbisBackendLike,
     cdm_schema: str,
-    concept_sets: Mapping[int, NormalizedConceptSet],
+    codeset_table: Table | None = None,
+    concept_sets: Mapping[int, NormalizedConceptSet] | None = None,
     results_schema: str | None = None,
     vocabulary_schema: str | None = None,
-    use_persistent_cache: bool = False,
 ) -> ExecutionContext:
-    """Construct an executor context from API-level wiring arguments."""
+    """Construct an executor context from API-level wiring arguments.
+
+    Provide *codeset_table* (preferred) for a database-resident codeset
+    table, or *concept_sets* for backward-compatible single-cohort use.
+    """
     vocabulary_schema = vocabulary_schema or cdm_schema
 
-    def _table_getter(table_name: str, schema: str | None) -> Table:
-        return _table_with_schema_fallback(backend, table_name, schema)
+    if codeset_table is None:
+        codeset_table = _build_codeset_memtable(concept_sets or {})
 
-    resolver = CachedConceptSetResolver(
-        table_getter=_table_getter,
-        vocabulary_schema=vocabulary_schema,
-        concept_sets=concept_sets,
-        backend=backend if use_persistent_cache else None,
-        results_schema=results_schema if use_persistent_cache else None,
-        use_persistent_cache=use_persistent_cache,
-    )
     return ExecutionContext(
         backend=backend,
         cdm_schema=cdm_schema,
         results_schema=results_schema,
         vocabulary_schema=vocabulary_schema,
-        codeset_resolver=resolver,
+        codeset_table=codeset_table,
     )

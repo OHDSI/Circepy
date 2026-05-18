@@ -102,22 +102,20 @@ def _apply_date_predicate(expr, predicate: DateRangePredicate):
     raise CompilationError(f"Ibis executor compilation error: unsupported date range op {predicate.op!r}.")
 
 
-def _resolve_concept_ids(
-    *,
-    direct_ids: tuple[int, ...],
-    codeset_id: int | None,
-    ctx: ExecutionContext,
-) -> tuple[int, ...]:
-    all_ids = list(direct_ids)
-    if codeset_id is not None:
-        for cid in ctx.concept_ids_for_codeset(codeset_id):
-            if cid not in all_ids:
-                all_ids.append(cid)
-    return tuple(all_ids)
-
-
 def _select_original_columns(table, joined):
     return joined.select(*[joined[c] for c in table.columns])
+
+
+def _filter_by_concept_table(table, concept_table, *, column, exclude=False):
+    """Semi-join (include) or anti-join (exclude) *table* against *concept_table*."""
+    if not exclude:
+        joined = table.join(concept_table, table[column] == concept_table.concept_id)
+        return _select_original_columns(table, joined)
+    else:
+        marked = concept_table.mutate(_cm=ibis.literal(1, type="int64"))
+        joined = table.join(marked, table[column] == marked.concept_id, how="left")
+        filtered = joined.filter(joined._cm.isnull())
+        return _select_original_columns(table, filtered)
 
 
 def _filter_visit_concepts(table, ctx: ExecutionContext, *, step: FilterByVisit):
@@ -134,14 +132,24 @@ def _filter_visit_concepts(table, ctx: ExecutionContext, *, step: FilterByVisit)
             table[PERSON_ID] == visit_lookup._visit_person_id,
         ],
     )
-    concept_ids = _resolve_concept_ids(
-        direct_ids=step.concept_ids,
-        codeset_id=step.codeset_id,
-        ctx=ctx,
-    )
-    predicate = joined._visit_concept_id.isin(concept_ids)
-    filtered = joined.filter(~predicate if step.exclude else predicate)
-    return _select_original_columns(table, filtered)
+
+    if step.codeset_id is not None:
+        concept_table = ctx.concept_set_table(step.codeset_id)
+        joined = joined.join(concept_table, joined._visit_concept_id == concept_table.concept_id)
+    elif step.concept_ids:
+        concept_table = ibis.memtable(
+            {"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"}
+        )
+        joined = joined.join(concept_table, joined._visit_concept_id == concept_table.concept_id)
+    # If neither codeset_id nor concept_ids, no filtering needed
+
+    if step.exclude:
+        marked = concept_table.mutate(_cm=ibis.literal(1, type="int64"))
+        joined = joined.join(marked, joined._visit_concept_id == marked.concept_id, how="left")
+        joined = joined.filter(joined._cm.isnull())
+        return _select_original_columns(table, joined)
+
+    return _select_original_columns(table, joined)
 
 
 def _filter_provider_specialty(
@@ -159,14 +167,23 @@ def _filter_provider_specialty(
         provider_lookup,
         predicates=[table[step.provider_id_column] == provider_lookup._provider_id],
     )
-    concept_ids = _resolve_concept_ids(
-        direct_ids=step.concept_ids,
-        codeset_id=step.codeset_id,
-        ctx=ctx,
-    )
-    predicate = joined._specialty_concept_id.isin(concept_ids)
-    filtered = joined.filter(~predicate if step.exclude else predicate)
-    return _select_original_columns(table, filtered)
+
+    if step.codeset_id is not None:
+        concept_table = ctx.concept_set_table(step.codeset_id)
+        joined = joined.join(concept_table, joined._specialty_concept_id == concept_table.concept_id)
+    elif step.concept_ids:
+        concept_table = ibis.memtable(
+            {"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"}
+        )
+        joined = joined.join(concept_table, joined._specialty_concept_id == concept_table.concept_id)
+
+    if step.exclude:
+        marked = concept_table.mutate(_cm=ibis.literal(1, type="int64"))
+        joined = joined.join(marked, joined._specialty_concept_id == marked.concept_id, how="left")
+        joined = joined.filter(joined._cm.isnull())
+        return _select_original_columns(table, joined)
+
+    return _select_original_columns(table, joined)
 
 
 def _filter_care_site(table, ctx: ExecutionContext, *, step: FilterByCareSite):
@@ -179,14 +196,23 @@ def _filter_care_site(table, ctx: ExecutionContext, *, step: FilterByCareSite):
         care_site_lookup,
         predicates=[table[step.care_site_id_column] == care_site_lookup._care_site_id],
     )
-    concept_ids = _resolve_concept_ids(
-        direct_ids=step.concept_ids,
-        codeset_id=step.codeset_id,
-        ctx=ctx,
-    )
-    predicate = joined._place_of_service_concept_id.isin(concept_ids)
-    filtered = joined.filter(~predicate if step.exclude else predicate)
-    return _select_original_columns(table, filtered)
+
+    if step.codeset_id is not None:
+        concept_table = ctx.concept_set_table(step.codeset_id)
+        joined = joined.join(concept_table, joined._place_of_service_concept_id == concept_table.concept_id)
+    elif step.concept_ids:
+        concept_table = ibis.memtable(
+            {"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"}
+        )
+        joined = joined.join(concept_table, joined._place_of_service_concept_id == concept_table.concept_id)
+
+    if step.exclude:
+        marked = concept_table.mutate(_cm=ibis.literal(1, type="int64"))
+        joined = joined.join(marked, joined._place_of_service_concept_id == marked.concept_id, how="left")
+        joined = joined.filter(joined._cm.isnull())
+        return _select_original_columns(table, joined)
+
+    return _select_original_columns(table, joined)
 
 
 def _filter_care_site_location_region(
@@ -195,9 +221,7 @@ def _filter_care_site_location_region(
     *,
     step: FilterByCareSiteLocationRegion,
 ):
-    region_ids = ctx.concept_ids_for_codeset(step.codeset_id)
-    if not region_ids:
-        return table.limit(0)
+    concept_table = ctx.concept_set_table(step.codeset_id)
 
     location_history = ctx.table("location_history")
     history_lookup = location_history.select(
@@ -233,8 +257,9 @@ def _filter_care_site_location_region(
         location_lookup,
         predicates=[joined_history._history_location_id == location_lookup._location_id],
     )
-    filtered = joined.filter(joined._region_concept_id.isin(region_ids))
-    return _select_original_columns(table, filtered)
+
+    joined = joined.join(concept_table, joined._region_concept_id == concept_table.concept_id)
+    return _select_original_columns(table, joined)
 
 
 def apply_step(step, *, table, source, ctx: ExecutionContext):
@@ -253,17 +278,20 @@ def apply_step(step, *, table, source, ctx: ExecutionContext):
         )
 
     if isinstance(step, FilterByCodeset):
-        concept_ids = ctx.concept_ids_for_codeset(step.codeset_id)
-        if not concept_ids:
-            return table if step.exclude else table.limit(0)
-        predicate = table[step.column].isin(concept_ids)
-        return table.filter(~predicate if step.exclude else predicate)
+        concept_table = ctx.concept_set_table(step.codeset_id)
+        return _filter_by_concept_table(
+            table, concept_table, column=step.column, exclude=step.exclude
+        )
 
     if isinstance(step, FilterByConceptSet):
         if not step.concept_ids:
             return table if step.exclude else table.limit(0)
-        predicate = table[step.column].isin(step.concept_ids)
-        return table.filter(~predicate if step.exclude else predicate)
+        concept_table = ibis.memtable(
+            {"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"}
+        )
+        return _filter_by_concept_table(
+            table, concept_table, column=step.column, exclude=step.exclude
+        )
 
     if isinstance(step, FilterByVisit):
         return _filter_visit_concepts(table, ctx, step=step)

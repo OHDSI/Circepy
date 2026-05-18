@@ -6,6 +6,7 @@ from ..cohortdefinition import CohortExpression
 from .databricks_compat import maybe_apply_databricks_post_connect_workaround
 from .engine.cohort import build_cohort_table
 from .errors import ExecutionError
+from .ibis.codesets import build_single_codeset_table
 from .ibis.context import make_execution_context
 from .ibis.materialize import project_to_ohdsi_cohort_table
 from .ibis.operations import (
@@ -32,6 +33,7 @@ def build_cohort(
     use_persistent_cache: bool = False,
     cohort_id: int = 0,
     materialize: bool = True,
+    codeset_table: Table | None = None,
 ) -> Table:
     """Normalize, compile, and assemble a cohort relation.
 
@@ -39,20 +41,34 @@ def build_cohort(
     and *materialize* is True, so that the ibis expression tree never grows
     too large to compile.  Set *materialize=False* for compile-only use
     (e.g. unit tests that only verify the expression tree can be built).
+
+    When *codeset_table* is provided (from a batch-generation caller), it is
+    used directly.  Otherwise one is auto-created for this single cohort and
+    dropped after the pipeline runs.
     """
     maybe_apply_databricks_post_connect_workaround(backend)
 
     normalized = normalize_cohort(expression)
+
+    if codeset_table is not None:
+        own_table = False
+    else:
+        codeset_table = build_single_codeset_table(
+            backend=backend,
+            concept_sets=normalized.concept_sets,
+            batch_table_name=f"__cg_{cohort_id}_codesets",
+            results_schema=results_schema,
+            vocabulary_schema=vocabulary_schema,
+        )
+        own_table = True
 
     ctx = make_execution_context(
         backend=backend,
         cdm_schema=cdm_schema,
         results_schema=results_schema,
         vocabulary_schema=vocabulary_schema,
-        concept_sets=normalized.concept_sets,
-        use_persistent_cache=use_persistent_cache,
+        codeset_table=codeset_table,
     )
-
     return build_cohort_table(normalized, ctx, cohort_id=cohort_id, materialize=materialize)
 
 
