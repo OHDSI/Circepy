@@ -39,26 +39,28 @@ def _staging_table(cohort_table: str, cohort_id: int, stage: str) -> str:
 def ensure_codeset_cache(
     backend: IbisBackendLike, *, cohort_table: str, results_schema: str | None = None
 ) -> None:
-    """Create the codeset cache table if it doesn't exist.
+    """Create the codeset cache table with an empty schema if it doesn't exist.
 
-    The cache table name is derived from *cohort_table*.  Created up front
-    so that every cohort can INSERT into it without checking existence.
+    Matches the pattern used by ``upsert_generation_history`` in the checksum
+    store: create with a simple ibis memtable, then insert data separately.
     """
-    from contextlib import suppress
+    from ..ibis.operations import table_exists
 
     cache_name = _codeset_cache_table(cohort_table)
-    with suppress(Exception):
-        empty = ibis.memtable(
-            {"cache_key": [], CONCEPT_ID: []},
-            schema={"cache_key": "string", CONCEPT_ID: "int64"},
-        )
-        _create_table_impl(
-            backend,
-            table_name=cache_name,
-            schema=results_schema,
-            obj=empty,
-            overwrite=False,
-        )
+    if table_exists(backend, table_name=cache_name, schema=results_schema):
+        return
+
+    empty = ibis.memtable(
+        {"cache_key": [], CONCEPT_ID: []},
+        schema={"cache_key": "string", CONCEPT_ID: "int64"},
+    )
+    _create_table_impl(
+        backend,
+        table_name=cache_name,
+        schema=results_schema,
+        obj=empty,
+        overwrite=False,
+    )
 
 
 def _compute_cache_key(items: tuple[NormalizedConceptSetItem, ...]) -> str:
@@ -466,7 +468,6 @@ def _find_existing_checksums(
     """Return the subset of *checksums* that already exist in the cache table."""
     if not checksums:
         return set()
-    from .operations import table_exists
 
     if not table_exists(backend, table_name=cache_table_name, schema=schema):
         return set()
@@ -485,22 +486,10 @@ def _populate_cache_batch(
 ) -> None:
     """Insert a batch of concept set expansions into the codeset cache table.
 
-    The expression must have ``(cache_key TEXT, concept_id INT64)`` columns.
-    If the cache table does not exist it is created; otherwise rows are
-    appended.  When the backend does not support ``insert`` (e.g.
-    Databricks), the table is recreated by UNION-ing existing cache data
-    with the new expression.
+    The table must already exist (created by :func:`ensure_codeset_cache`).
+    When the backend does not support ``insert``, the table is recreated
+    by UNION-ing existing cache data with the new expression.
     """
-    if not table_exists(backend, table_name=cache_table_name, schema=schema):
-        _create_table_impl(
-            backend,
-            table_name=cache_table_name,
-            schema=schema,
-            obj=expression,
-            overwrite=False,
-        )
-        return
-
     try:
         insert_relation(
             expression,
@@ -772,7 +761,6 @@ def _read_codeset_cache(
     table_name: str,
 ) -> tuple[int, ...] | None:
     """Read cached concept IDs for a cache key from the persistent cache table."""
-    from .operations import table_exists
 
     try:
         if not table_exists(backend, table_name=table_name, schema=schema):
@@ -794,7 +782,7 @@ def _write_codeset_cache(
     table_name: str,
 ) -> None:
     """Persist resolved concept IDs to the cache table."""
-    from .operations import insert_relation, table_exists
+    from .operations import insert_relation
 
     if not concept_ids:
         return
