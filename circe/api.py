@@ -266,6 +266,41 @@ def write_cohort(
     )
 
 
+def resolve_concept_sets(
+    concept_sets: Any,
+    *,
+    backend: IbisBackendLike,
+    results_schema: Optional[str] = None,
+    vocabulary_schema: Optional[str] = None,
+) -> set[str]:
+    """Resolve concept sets into the persistent ``_circe_codeset_cache`` table.
+
+    Concept sets are keyed by SHA-256 checksum of their items.  Cache hits
+    are skipped; cache misses are resolved via a single batch query per
+    vocabulary table and stored permanently.
+
+    This is independent of cohort generation and can be called at any time
+    to pre-populate the cache.
+
+    Args:
+        concept_sets: Mapping of ``codeset_id -> NormalizedConceptSet``.
+        backend: Ibis backend connection.
+        results_schema: Schema for the cache table.
+        vocabulary_schema: Schema for vocabulary tables.
+
+    Returns:
+        Set of checksums that were resolved (cache hits excluded).
+    """
+    from .execution import resolve_concept_sets as _resolve
+
+    return _resolve(
+        concept_sets,
+        backend=backend,
+        results_schema=results_schema,
+        vocabulary_schema=vocabulary_schema,
+    )
+
+
 def cohort_print_friendly(
     expression: CohortExpression,
     concept_sets: Optional[list[ConceptSet]] = None,

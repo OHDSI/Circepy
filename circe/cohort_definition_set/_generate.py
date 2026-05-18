@@ -265,7 +265,7 @@ async def async_generate_cohort_set(
 
         # Clean up staging tables created by the materialized pipeline
         schema = results_schema or cdm_schema
-        for stage in ("primary", "qualified", "included", "ended"):
+        for stage in ("codesets", "primary", "qualified", "included", "ended"):
             with contextlib.suppress(Exception):
                 backend.drop_table(f"__cg_{cohort.cohort_id}_{stage}", database=schema, force=True)
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
+import logging
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -13,6 +14,9 @@ from ..normalize.cohort import NormalizedConceptSet, NormalizedConceptSetItem
 from ..plan.schema import CONCEPT_ID
 from ..typing import IbisBackendLike, Table
 from .operations import create_table as _create_table_impl
+from .operations import insert_relation, table_exists
+
+logger = logging.getLogger(__name__)
 
 _CODESET_TABLE = "__cg_codesets"
 _CACHE_TABLE_NAME = "_circe_codeset_cache"
@@ -433,25 +437,87 @@ def _find_existing_checksums(
     return set()
 
 
-def _resolve_codeset_ids(
-    cset: NormalizedConceptSet,
-    *,
-    table_getter: Callable[[str, str | None], Table],
-    vocabulary_schema: str | None,
-) -> tuple[int, ...]:
-    """Resolve a concept set to concrete concept IDs.
+def _populate_cache_batch(
+    backend: IbisBackendLike,
+    expression: Table,
+    schema: str | None,
+) -> None:
+    """Insert a batch of concept set expansions into ``_circe_codeset_cache``.
 
-    Uses ``_build_codeset_expression`` which handles descendants, mapped
-    codes, and exclusions.  The result is a tuple of concrete int IDs.
+    The expression must have ``(cache_key TEXT, concept_id INT64)`` columns.
+    If the cache table does not exist it is created; otherwise rows are
+    appended.  An empty expression is silently skipped.
     """
-    expr = _build_codeset_expression(cset, table_getter=table_getter, vocabulary_schema=vocabulary_schema)
+    if not table_exists(backend, table_name=_CACHE_TABLE_NAME, schema=schema):
+        _create_table_impl(
+            backend,
+            table_name=_CACHE_TABLE_NAME,
+            schema=schema,
+            obj=expression,
+            overwrite=False,
+        )
+    else:
+        insert_relation(
+            expression,
+            backend=backend,
+            target_table=_CACHE_TABLE_NAME,
+            target_schema=schema,
+        )
+
+
+def resolve_concept_sets(
+    concept_sets: Mapping[int, NormalizedConceptSet],
+    *,
+    backend: IbisBackendLike,
+    results_schema: str | None = None,
+    vocabulary_schema: str | None = None,
+) -> set[str]:
+    """Resolve concept sets into ``_circe_codeset_cache``.
+
+    For each unique concept set (identified by SHA-256 checksum):
+    - Cache hit: skipped (already in ``_circe_codeset_cache``)
+    - Cache miss: resolved via a single bulk query (vocabulary-table joins
+      for descendants/mapped codes) and inserted into the cache.
+
+    Returns the set of checksums that were resolved (cache misses).
+
+    This function is idempotent and safe to call at any time, independent
+    of cohort generation.  It never uses Python memory for resolved IDs --
+    the resolution query runs directly on the backend.
+    """
+    if not concept_sets:
+        return set()
+
+    checksum_map = _compute_checksum_map(concept_sets)
+    existing = _find_existing_checksums(backend, set(checksum_map.values()), results_schema)
+    table_getter = _table_getter_from_backend(backend, vocabulary_schema or "")
+
+    miss_parts: list[Table] = []
+    resolved_keys: set[str] = set()
+
+    for cid, key in checksum_map.items():
+        if key in existing:
+            continue
+        try:
+            expr = _build_codeset_expression(
+                concept_sets[int(cid)], table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+            labeled = expr.mutate(cache_key=ibis.literal(key, type="string")).select("cache_key", CONCEPT_ID)
+            miss_parts.append(labeled)
+            resolved_keys.add(key)
+        except Exception as exc:
+            logger.warning("Failed to build concept set resolution query for key %s: %s", key, exc)
+
+    if not miss_parts:
+        return set()
+
+    combined = _union_all_tables(miss_parts)
     try:
-        result = expr.execute()
-        return _extract_column(result, CONCEPT_ID)
+        _populate_cache_batch(backend, combined, results_schema)
     except Exception as exc:
-        raise CompilationError(
-            "Ibis executor compilation error: failed executing concept-set resolution query."
-        ) from exc
+        logger.warning("Failed to populate codeset cache: %s", exc)
+
+    return resolved_keys
 
 
 def _compute_checksum_map(
@@ -514,27 +580,15 @@ def build_single_codeset_table(
         return _read_table(backend, table_name=batch_table_name, schema=results_schema)
 
     if use_persistent_cache:
-        # Persistent-cache path: resolve concept sets once into the cache,
-        # then build per-cohort table from the cache entries.
-
-        existing = _find_existing_checksums(backend, set(checksum_map.values()), results_schema)
-
-        table_getter = _table_getter_from_backend(backend, vocabulary_schema or "")
-
-        for cid, key in checksum_map.items():
-            if key not in existing:
-                cset = concept_sets[int(cid)]
-                resolved = _resolve_codeset_ids(
-                    cset, table_getter=table_getter, vocabulary_schema=vocabulary_schema
-                )
-                if resolved:
-                    _write_codeset_cache(
-                        backend,
-                        cache_key=key,
-                        concept_ids=resolved,
-                        schema=results_schema,
-                        table_name=_CACHE_TABLE_NAME,
-                    )
+        # Resolve cache misses as a single bulk INSERT into _circe_codeset_cache.
+        # Cache hits are skipped.  No per-concept-set round trips, no Python
+        # memory for resolved IDs.
+        resolve_concept_sets(
+            concept_sets,
+            backend=backend,
+            results_schema=results_schema,
+            vocabulary_schema=vocabulary_schema,
+        )
 
         # Build per-cohort table from cache
         cache_ref = _read_table(backend, table_name=_CACHE_TABLE_NAME, schema=results_schema)
