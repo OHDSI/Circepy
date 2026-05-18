@@ -24,6 +24,7 @@ def _materialize(
     cohort_id: int,
     stage: str,
     schema: str | None,
+    cohort_table: str = "cohort",
 ) -> Table:
     """Write *table* to a backend staging table and return a fresh reference.
 
@@ -35,7 +36,7 @@ def _materialize(
     to the compiler shallow — each stage only builds on a simple
     ``DatabaseTable`` reference.
     """
-    name = f"__cg_{cohort_id}_{stage}"
+    name = f"__{cohort_table}_{cohort_id}_{stage}"
     create_table(ctx.backend, table_name=name, schema=schema, obj=table, overwrite=True)
     return read_table(ctx.backend, table_name=name, schema=schema)
 
@@ -44,10 +45,11 @@ def _drop_staging_tables(
     ctx: ExecutionContext,
     cohort_id: int,
     schema: str | None,
+    cohort_table: str = "cohort",
 ) -> None:
     """Remove all staging tables for *cohort_id* from the database."""
-    for stage in ("primary", "qualified", "included", "ended"):
-        name = f"__cg_{cohort_id}_{stage}"
+    for stage in ("codesets", "primary", "qualified", "included", "ended"):
+        name = f"__{cohort_table}_{cohort_id}_{stage}"
         with contextlib.suppress(Exception):
             ctx.backend.drop_table(name, database=schema, force=True)
 
@@ -58,6 +60,7 @@ def build_cohort_table(
     *,
     cohort_id: int = 0,
     materialize: bool = True,
+    cohort_table: str = "cohort",
 ) -> Table:
     primary_plans = tuple(
         PrimaryEventInput(
@@ -80,7 +83,12 @@ def build_cohort_table(
     primary_events = build_primary_events(cohort_plan, ctx)
     if materialize:
         primary_events = _materialize(
-            primary_events, ctx=ctx, cohort_id=cohort_id, stage="primary", schema=schema
+            primary_events,
+            ctx=ctx,
+            cohort_id=cohort_id,
+            stage="primary",
+            schema=schema,
+            cohort_table=cohort_table,
         )
 
     # ── Additional (correlated) criteria ────────────────────────────────
@@ -89,7 +97,12 @@ def build_cohort_table(
         qualified_events = apply_result_limit(qualified_events, cohort_plan.qualified_limit_type)
     if materialize:
         qualified_events = _materialize(
-            qualified_events, ctx=ctx, cohort_id=cohort_id, stage="qualified", schema=schema
+            qualified_events,
+            ctx=ctx,
+            cohort_id=cohort_id,
+            stage="qualified",
+            schema=schema,
+            cohort_table=cohort_table,
         )
 
     # ── Inclusion rules ─────────────────────────────────────────────────
@@ -103,7 +116,12 @@ def build_cohort_table(
         for rule in normalized.inclusion_rules:
             included_events = apply_additional_criteria(included_events, rule.expression, ctx)
             included_events = _materialize(
-                included_events, ctx=ctx, cohort_id=cohort_id, stage="included", schema=schema
+                included_events,
+                ctx=ctx,
+                cohort_id=cohort_id,
+                stage="included",
+                schema=schema,
+                cohort_table=cohort_table,
             )
         included_events = apply_result_limit(included_events, cohort_plan.expression_limit_type)
     else:
@@ -111,13 +129,25 @@ def build_cohort_table(
         included_events = apply_result_limit(included_events, cohort_plan.expression_limit_type)
         if materialize:
             included_events = _materialize(
-                included_events, ctx=ctx, cohort_id=cohort_id, stage="included", schema=schema
+                included_events,
+                ctx=ctx,
+                cohort_id=cohort_id,
+                stage="included",
+                schema=schema,
+                cohort_table=cohort_table,
             )
 
     # ── End strategy ────────────────────────────────────────────────────
     ended_events = apply_end_strategy(included_events, normalized.end_strategy, ctx)
     if materialize:
-        ended_events = _materialize(ended_events, ctx=ctx, cohort_id=cohort_id, stage="ended", schema=schema)
+        ended_events = _materialize(
+            ended_events,
+            ctx=ctx,
+            cohort_id=cohort_id,
+            stage="ended",
+            schema=schema,
+            cohort_table=cohort_table,
+        )
 
     # ── Censoring + collapse (final stage — no materialize after) ──────
     censored_events = apply_censoring(

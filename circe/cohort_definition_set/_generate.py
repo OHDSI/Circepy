@@ -35,8 +35,8 @@ def _process_single_cohort(
     """Build and write a single cohort. Thread-safe via ``_backend_lock``.
 
     Each cohort uses its own per-cohort codeset table built from the
-    ``_circe_codeset_cache`` when *use_persistent_cache* is True, allowing
-    checksum-keyed concept set reuse across cohorts and runs.
+    codeset cache (named from *cohort_table*) when *use_persistent_cache*
+    is True, allowing checksum-keyed concept set reuse.
 
     Returns ``(start_time, end_time)`` of the database-materialization
     phase so the caller can compute execution duration.
@@ -51,6 +51,7 @@ def _process_single_cohort(
             vocabulary_schema=vocabulary_schema,
             use_persistent_cache=use_persistent_cache,
             cohort_id=cohort.cohort_id,
+            cohort_table=cohort_table,
         )
         projected = project_to_ohdsi_cohort_table(new_rows, cohort_id=cohort.cohort_id)
         write_cohort(
@@ -76,7 +77,7 @@ async def async_generate_cohort_set(
     results_schema: str | None = None,
     vocabulary_schema: str | None = None,
     incremental: bool = False,
-    checksum_table: str = "cohort_checksum",
+    checksum_table: str | None = None,
     stop_on_error: bool = True,
     compile_timeout: float | None = None,
 ) -> list[CohortGenerationResult]:
@@ -113,6 +114,9 @@ async def async_generate_cohort_set(
     from ..execution.engine.group_operators import _COMPILED_CORRELATED_EVENTS
 
     _COMPILED_CORRELATED_EVENTS.clear()
+
+    if checksum_table is None:
+        checksum_table = f"{cohort_table}_checksum"
 
     previous_checksums: dict[int, str] = {}
     if incremental:
@@ -267,7 +271,9 @@ async def async_generate_cohort_set(
         schema = results_schema or cdm_schema
         for stage in ("codesets", "primary", "qualified", "included", "ended"):
             with contextlib.suppress(Exception):
-                backend.drop_table(f"__cg_{cohort.cohort_id}_{stage}", database=schema, force=True)
+                backend.drop_table(
+                    f"__{cohort_table}_{cohort.cohort_id}_{stage}", database=schema, force=True
+                )
 
         results.append(
             CohortGenerationResult(
@@ -311,7 +317,7 @@ def generate_cohort_set(
     results_schema: str | None = None,
     vocabulary_schema: str | None = None,
     incremental: bool = False,
-    checksum_table: str = "cohort_checksum",
+    checksum_table: str | None = None,
     stop_on_error: bool = True,
 ) -> list[CohortGenerationResult]:
     """Generate all cohorts in a CohortDefinitionSet and write them to a shared table.

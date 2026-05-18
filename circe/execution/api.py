@@ -34,6 +34,7 @@ def build_cohort(
     cohort_id: int = 0,
     materialize: bool = True,
     codeset_table: Table | None = None,
+    cohort_table: str = "cohort",
 ) -> Table:
     """Normalize, compile, and assemble a cohort relation.
 
@@ -44,9 +45,8 @@ def build_cohort(
 
     When *codeset_table* is provided (from a batch-generation caller), it is
     used directly.  Otherwise a per-cohort codeset table is auto-created.
-    With *use_persistent_cache=True*, concept sets are stored in
-    ``_circe_codeset_cache`` keyed by SHA-256 checksum, enabling reuse
-    across cohorts and runs.
+    With *use_persistent_cache=True*, concept sets are cached in a table
+    named from *cohort_table* via ``_codeset_cache_table()``.
     """
     maybe_apply_databricks_post_connect_workaround(backend)
 
@@ -56,10 +56,11 @@ def build_cohort(
         codeset_table = build_single_codeset_table(
             backend=backend,
             concept_sets=normalized.concept_sets,
-            batch_table_name=f"__cg_{cohort_id}_codesets",
+            batch_table_name=f"__{cohort_table}_{cohort_id}_codesets",
             results_schema=results_schema,
             vocabulary_schema=vocabulary_schema,
             use_persistent_cache=use_persistent_cache,
+            cohort_table=cohort_table,
         )
 
     ctx = make_execution_context(
@@ -70,7 +71,9 @@ def build_cohort(
         codeset_table=codeset_table,
     )
 
-    return build_cohort_table(normalized, ctx, cohort_id=cohort_id, materialize=materialize)
+    return build_cohort_table(
+        normalized, ctx, cohort_id=cohort_id, materialize=materialize, cohort_table=cohort_table
+    )
 
 
 def write_relation(

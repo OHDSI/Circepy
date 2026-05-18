@@ -22,6 +22,20 @@ _CODESET_TABLE = "__cg_codesets"
 _CACHE_TABLE_NAME = "_circe_codeset_cache"
 
 
+def _codeset_cache_table(cohort_table: str) -> str:
+    """Return the codeset cache table name derived from the cohort table name.
+
+    Two cohort tables in the same schema get separate caches, avoiding
+    collisions when multiple CDMs share a results schema.
+    """
+    return f"_{cohort_table}_codeset_cache"
+
+
+def _staging_table(cohort_table: str, cohort_id: int, stage: str) -> str:
+    """Return a staging table name derived from the cohort table and id."""
+    return f"__{cohort_table}_{cohort_id}_{stage}"
+
+
 def _compute_cache_key(items: tuple[NormalizedConceptSetItem, ...]) -> str:
     """Deterministic SHA-256 hash of sorted concept set items."""
     canonical = sorted(
@@ -291,6 +305,7 @@ def build_batch_codeset_table(
     vocabulary_schema: str | None = None,
     use_persistent_cache: bool = False,
     temporary: bool = False,
+    cohort_table: str = "cohort",
 ) -> Table:
     """Populate a database table ``batch_table_name`` with all concept set IDs.
 
@@ -300,11 +315,10 @@ def build_batch_codeset_table(
     concept_relationship -- the database engine performs the expansion.
 
     When *use_persistent_cache* is True, previously-resolved checksums are
-    loaded from ``_circe_codeset_cache`` so that already-expanded concept
-    sets skip the vocabulary-table queries.
-
-    Returns an ibis Table reference to the batch table.
+    loaded from the codeset cache (named from *cohort_table*) so that
+    already-expanded concept sets skip the vocabulary-table queries.
     """
+    cache_table_name = _codeset_cache_table(cohort_table)
     table_getter = _table_getter_from_backend(backend, vocabulary_schema or "")
 
     # Collect cache keys and check persistent cache
@@ -316,7 +330,7 @@ def build_batch_codeset_table(
                 continue
             key = _compute_cache_key(cset.items)
             cached = _read_codeset_cache(
-                backend, cache_key=key, schema=results_schema, table_name=_CACHE_TABLE_NAME
+                backend, cache_key=key, schema=results_schema, table_name=cache_table_name
             )
             if cached is not None:
                 cache_hits[cid] = list(cached)
@@ -411,7 +425,7 @@ def build_batch_codeset_table(
                     cache_key=key,
                     concept_ids=cids,
                     schema=results_schema,
-                    table_name=_CACHE_TABLE_NAME,
+                    table_name=cache_table_name,
                 )
 
     ref = _read_table(backend, table_name=batch_table_name, schema=results_schema)
@@ -422,15 +436,16 @@ def _find_existing_checksums(
     backend: IbisBackendLike,
     checksums: set[str],
     schema: str | None,
+    cache_table_name: str = _CACHE_TABLE_NAME,
 ) -> set[str]:
-    """Return the subset of *checksums* that already exist in ``_circe_codeset_cache``."""
+    """Return the subset of *checksums* that already exist in the cache table."""
     if not checksums:
         return set()
     from .operations import table_exists
 
-    if not table_exists(backend, table_name=_CACHE_TABLE_NAME, schema=schema):
+    if not table_exists(backend, table_name=cache_table_name, schema=schema):
         return set()
-    tbl = _read_table(backend, table_name=_CACHE_TABLE_NAME, schema=schema)
+    tbl = _read_table(backend, table_name=cache_table_name, schema=schema)
     existing = tbl.filter(tbl.cache_key.isin(tuple(checksums))).select("cache_key").distinct().execute()
     if hasattr(existing, "columns"):
         return {str(v) for v in existing["cache_key"].tolist() if v is not None}
@@ -441,17 +456,18 @@ def _populate_cache_batch(
     backend: IbisBackendLike,
     expression: Table,
     schema: str | None,
+    cache_table_name: str = _CACHE_TABLE_NAME,
 ) -> None:
-    """Insert a batch of concept set expansions into ``_circe_codeset_cache``.
+    """Insert a batch of concept set expansions into the codeset cache table.
 
     The expression must have ``(cache_key TEXT, concept_id INT64)`` columns.
     If the cache table does not exist it is created; otherwise rows are
     appended.  An empty expression is silently skipped.
     """
-    if not table_exists(backend, table_name=_CACHE_TABLE_NAME, schema=schema):
+    if not table_exists(backend, table_name=cache_table_name, schema=schema):
         _create_table_impl(
             backend,
-            table_name=_CACHE_TABLE_NAME,
+            table_name=cache_table_name,
             schema=schema,
             obj=expression,
             overwrite=False,
@@ -460,7 +476,7 @@ def _populate_cache_batch(
         insert_relation(
             expression,
             backend=backend,
-            target_table=_CACHE_TABLE_NAME,
+            target_table=cache_table_name,
             target_schema=schema,
         )
 
@@ -471,11 +487,16 @@ def resolve_concept_sets(
     backend: IbisBackendLike,
     results_schema: str | None = None,
     vocabulary_schema: str | None = None,
+    cohort_table: str = "cohort",
 ) -> set[str]:
-    """Resolve concept sets into ``_circe_codeset_cache``.
+    """Resolve concept sets into the persistent codeset cache table.
+
+    The cache table name is derived from *cohort_table* via
+    ``_codeset_cache_table()`` so that separate cohort tables in the same
+    schema get separate caches.
 
     For each unique concept set (identified by SHA-256 checksum):
-    - Cache hit: skipped (already in ``_circe_codeset_cache``)
+    - Cache hit: skipped (already in the cache)
     - Cache miss: resolved via a single bulk query (vocabulary-table joins
       for descendants/mapped codes) and inserted into the cache.
 
@@ -487,9 +508,9 @@ def resolve_concept_sets(
     """
     if not concept_sets:
         return set()
-
+    cache_table_name = _codeset_cache_table(cohort_table)
     checksum_map = _compute_checksum_map(concept_sets)
-    existing = _find_existing_checksums(backend, set(checksum_map.values()), results_schema)
+    existing = _find_existing_checksums(backend, set(checksum_map.values()), results_schema, cache_table_name)
     table_getter = _table_getter_from_backend(backend, vocabulary_schema or "")
 
     miss_parts: list[Table] = []
@@ -513,7 +534,7 @@ def resolve_concept_sets(
 
     combined = _union_all_tables(miss_parts)
     try:
-        _populate_cache_batch(backend, combined, results_schema)
+        _populate_cache_batch(backend, combined, results_schema, cache_table_name)
     except Exception as exc:
         logger.warning("Failed to populate codeset cache: %s", exc)
 
@@ -539,14 +560,15 @@ def build_single_codeset_table(
     results_schema: str | None = None,
     vocabulary_schema: str | None = None,
     use_persistent_cache: bool = False,
+    cohort_table: str = "cohort",
 ) -> Table:
     """Build a codeset table for a single cohort.
 
-    When *use_persistent_cache* is True, concept sets are stored in
-    ``_circe_codeset_cache`` keyed by SHA-256 checksum of the concept set
-    items.  Cache misses are resolved and inserted.  The per-cohort table
-    is then built by selecting from the cache -- identical concept sets
-    across cohorts share the same cache entry and need only one resolution.
+    When *use_persistent_cache* is True, concept sets are stored in a
+    persistent cache table keyed by SHA-256 checksum.  The cache table
+    name is derived from *cohort_table* via ``_codeset_cache_table()``.
+    Cache misses are resolved and inserted.  The per-cohort table is
+    then built by selecting from the cache.
 
     When *use_persistent_cache* is False and all concept sets are simple
     (no descendant or mapped expansion), builds a lightweight memtable
@@ -580,7 +602,7 @@ def build_single_codeset_table(
         return _read_table(backend, table_name=batch_table_name, schema=results_schema)
 
     if use_persistent_cache:
-        # Resolve cache misses as a single bulk INSERT into _circe_codeset_cache.
+        # Resolve cache misses as a single bulk INSERT into the codeset cache.
         # Cache hits are skipped.  No per-concept-set round trips, no Python
         # memory for resolved IDs.
         resolve_concept_sets(
@@ -588,10 +610,12 @@ def build_single_codeset_table(
             backend=backend,
             results_schema=results_schema,
             vocabulary_schema=vocabulary_schema,
+            cohort_table=cohort_table,
         )
 
         # Build per-cohort table from cache
-        cache_ref = _read_table(backend, table_name=_CACHE_TABLE_NAME, schema=results_schema)
+        cache_name = _codeset_cache_table(cohort_table)
+        cache_ref = _read_table(backend, table_name=cache_name, schema=results_schema)
 
         parts: list[Table] = []
         for cid, key in checksum_map.items():
