@@ -3,12 +3,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-import ibis
-
 from .._dataclass import frozen_slots_dataclass
+from ..ibis_compat import literal_rows_relation
 from ..normalize.cohort import NormalizedConceptSet
 from ..typing import IbisBackendLike, Table
-from ..ibis_compat import literal_rows_relation
 
 
 def _table_with_schema_fallback(

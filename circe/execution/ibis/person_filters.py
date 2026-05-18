@@ -3,10 +3,10 @@ from __future__ import annotations
 import ibis
 
 from ..errors import CompilationError
+from ..ibis_compat import literal_column_relation
 from ..plan.predicates import NumericRangePredicate
 from ..plan.schema import PERSON_ID
 from .context import ExecutionContext
-from ..ibis_compat import literal_column_relation
 
 
 def _apply_numeric_predicate(expr, predicate: NumericRangePredicate):

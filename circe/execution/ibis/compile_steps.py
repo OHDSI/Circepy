@@ -3,6 +3,7 @@ from __future__ import annotations
 import ibis
 
 from ..errors import CompilationError, UnsupportedFeatureError
+from ..ibis_compat import literal_column_relation
 from ..plan.events import (
     ApplyDateAdjustment,
     FilterByCareSite,
@@ -26,7 +27,6 @@ from ..plan.events import (
 from ..plan.predicates import DateRangePredicate, NumericRangePredicate
 from ..plan.schema import END_DATE, PERSON_ID, START_DATE
 from .context import ExecutionContext
-from ..ibis_compat import literal_column_relation
 from .person_filters import (
     apply_person_age_filter,
     apply_person_ethnicity_filter,
@@ -136,19 +136,19 @@ def _filter_visit_concepts(table, ctx: ExecutionContext, *, step: FilterByVisit)
 
     if step.codeset_id is not None:
         concept_table = ctx.concept_set_table(step.codeset_id)
-        joined = joined.join(concept_table, joined._visit_concept_id == concept_table.concept_id)
     elif step.concept_ids:
         concept_table = literal_column_relation(step.concept_ids, column_name="concept_id", dtype="int64")
-        joined = joined.join(concept_table, joined._visit_concept_id == concept_table.concept_id)
-    # If neither codeset_id nor concept_ids, no filtering needed
+    else:
+        return _select_original_columns(table, joined)
 
-    if step.exclude:
+    if not step.exclude:
+        joined = joined.join(concept_table, joined._visit_concept_id == concept_table.concept_id)
+        return _select_original_columns(table, joined)
+    else:
         marked = concept_table.mutate(_cm=ibis.literal(1, type="int64"))
         joined = joined.join(marked, joined._visit_concept_id == marked.concept_id, how="left")
         joined = joined.filter(joined._cm.isnull())
         return _select_original_columns(table, joined)
-
-    return _select_original_columns(table, joined)
 
 
 def _filter_provider_specialty(
@@ -169,18 +169,19 @@ def _filter_provider_specialty(
 
     if step.codeset_id is not None:
         concept_table = ctx.concept_set_table(step.codeset_id)
-        joined = joined.join(concept_table, joined._specialty_concept_id == concept_table.concept_id)
     elif step.concept_ids:
         concept_table = literal_column_relation(step.concept_ids, column_name="concept_id", dtype="int64")
-        joined = joined.join(concept_table, joined._specialty_concept_id == concept_table.concept_id)
+    else:
+        return _select_original_columns(table, joined)
 
-    if step.exclude:
+    if not step.exclude:
+        joined = joined.join(concept_table, joined._specialty_concept_id == concept_table.concept_id)
+        return _select_original_columns(table, joined)
+    else:
         marked = concept_table.mutate(_cm=ibis.literal(1, type="int64"))
         joined = joined.join(marked, joined._specialty_concept_id == marked.concept_id, how="left")
         joined = joined.filter(joined._cm.isnull())
         return _select_original_columns(table, joined)
-
-    return _select_original_columns(table, joined)
 
 
 def _filter_care_site(table, ctx: ExecutionContext, *, step: FilterByCareSite):
@@ -196,18 +197,19 @@ def _filter_care_site(table, ctx: ExecutionContext, *, step: FilterByCareSite):
 
     if step.codeset_id is not None:
         concept_table = ctx.concept_set_table(step.codeset_id)
-        joined = joined.join(concept_table, joined._place_of_service_concept_id == concept_table.concept_id)
     elif step.concept_ids:
         concept_table = literal_column_relation(step.concept_ids, column_name="concept_id", dtype="int64")
-        joined = joined.join(concept_table, joined._place_of_service_concept_id == concept_table.concept_id)
+    else:
+        return _select_original_columns(table, joined)
 
-    if step.exclude:
+    if not step.exclude:
+        joined = joined.join(concept_table, joined._place_of_service_concept_id == concept_table.concept_id)
+        return _select_original_columns(table, joined)
+    else:
         marked = concept_table.mutate(_cm=ibis.literal(1, type="int64"))
         joined = joined.join(marked, joined._place_of_service_concept_id == marked.concept_id, how="left")
         joined = joined.filter(joined._cm.isnull())
         return _select_original_columns(table, joined)
-
-    return _select_original_columns(table, joined)
 
 
 def _filter_care_site_location_region(
