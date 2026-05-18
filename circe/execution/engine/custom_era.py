@@ -96,7 +96,7 @@ def compute_drug_eras(
     de = ctx.table("drug_exposure")
     if cohort_person_ids is not None:
         de = de.semi_join(
-            cohort_person_ids.select(cohort_person_ids.person_id).distinct(),
+            cohort_person_ids,
             predicates=[de.person_id == cohort_person_ids.person_id],
         )
 
@@ -157,7 +157,7 @@ def apply_custom_era_strategy(events, strategy, ctx):
 
     event_window = ibis.window(
         group_by=[joined.person_id, joined.event_id],
-        order_by=[joined.era_end_date.desc()],
+        order_by=[joined.era_end_date.asc()],
     )
     ranked = joined.mutate(_rn=ibis.row_number().over(event_window))
     one_per_event = ranked.filter(ranked._rn == 0)
