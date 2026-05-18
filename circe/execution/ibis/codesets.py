@@ -36,6 +36,39 @@ def _staging_table(cohort_table: str, cohort_id: int, stage: str) -> str:
     return f"__{cohort_table}_{cohort_id}_{stage}"
 
 
+def ensure_codeset_cache(backend: IbisBackendLike, *, cohort_table: str, results_schema: str | None = None) -> None:
+    """Create the codeset cache table if it doesn't exist.
+
+    The cache table name is derived from *cohort_table*.  Creating it
+    up front avoids per-cohort ``table_exists`` checks and ensures the
+    table is always available for INSERT by ``resolve_concept_sets``.
+    """
+    cache_name = _codeset_cache_table(cohort_table)
+    has_schema = results_schema is not None
+    try:
+        if has_schema:
+            tables = backend.list_tables(database=results_schema)
+        else:
+            tables = backend.list_tables()
+    except Exception:
+        tables = None
+
+    if tables is not None and cache_name in tables:
+        return
+
+    empty = ibis.memtable(
+        {"cache_key": [], CONCEPT_ID: []},
+        schema={"cache_key": "string", CONCEPT_ID: "int64"},
+    )
+    _create_table_impl(
+        backend,
+        table_name=cache_name,
+        schema=results_schema,
+        obj=empty,
+        overwrite=False,
+    )
+
+
 def _compute_cache_key(items: tuple[NormalizedConceptSetItem, ...]) -> str:
     """Deterministic SHA-256 hash of sorted concept set items."""
     canonical = sorted(
@@ -462,7 +495,9 @@ def _populate_cache_batch(
 
     The expression must have ``(cache_key TEXT, concept_id INT64)`` columns.
     If the cache table does not exist it is created; otherwise rows are
-    appended.  An empty expression is silently skipped.
+    appended.  When the backend does not support ``insert`` (e.g.
+    Databricks), the table is recreated by UNION-ing existing cache data
+    with the new expression.
     """
     if not table_exists(backend, table_name=cache_table_name, schema=schema):
         _create_table_impl(
@@ -472,12 +507,28 @@ def _populate_cache_batch(
             obj=expression,
             overwrite=False,
         )
-    else:
+        return
+
+    try:
         insert_relation(
             expression,
             backend=backend,
             target_table=cache_table_name,
             target_schema=schema,
+        )
+    except Exception:
+        logger.info(
+            "Backend does not support insert for %s — recreating table via UNION",
+            cache_table_name,
+        )
+        existing = _read_table(backend, table_name=cache_table_name, schema=schema)
+        merged = existing.union(expression, distinct=False)
+        _create_table_impl(
+            backend,
+            table_name=cache_table_name,
+            schema=schema,
+            obj=merged,
+            overwrite=True,
         )
 
 
@@ -613,8 +664,22 @@ def build_single_codeset_table(
             cohort_table=cohort_table,
         )
 
-        # Build per-cohort table from cache
+        # Ensure cache table exists — if ALL concept sets were already cached
+        # and the cache table was somehow missing, create a placeholder.
         cache_name = _codeset_cache_table(cohort_table)
+        if not table_exists(backend, table_name=cache_name, schema=results_schema):
+            empty = ibis.memtable(
+                {"cache_key": [], CONCEPT_ID: []},
+                schema={"cache_key": "string", CONCEPT_ID: "int64"},
+            )
+            _create_table_impl(
+                backend,
+                table_name=cache_name,
+                schema=results_schema,
+                obj=empty,
+                overwrite=False,
+            )
+
         cache_ref = _read_table(backend, table_name=cache_name, schema=results_schema)
 
         parts: list[Table] = []

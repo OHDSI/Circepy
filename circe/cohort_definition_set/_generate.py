@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
 from ..execution.api import build_cohort, write_cohort
+from ..execution.ibis.codesets import ensure_codeset_cache
 from ..execution.ibis.materialize import project_to_ohdsi_cohort_table
 from ._checksum_store import load_checksums, upsert_generation_history
 from ._core import CohortDefinition, CohortDefinitionSet, CohortGenerationResult
@@ -117,6 +118,17 @@ async def async_generate_cohort_set(
 
     if checksum_table is None:
         checksum_table = f"{cohort_table}_checksum"
+
+    # Ensure the persistent codeset cache table exists before any cohort
+    # processing, so that every cohort can INSERT/read from it without
+    # checking for existence on each call.
+    if incremental:
+        await asyncio.to_thread(
+            ensure_codeset_cache,
+            backend,
+            cohort_table=cohort_table,
+            results_schema=results_schema,
+        )
 
     previous_checksums: dict[int, str] = {}
     if incremental:
