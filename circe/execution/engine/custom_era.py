@@ -83,15 +83,7 @@ def compute_drug_eras(
     days_supply_override: int | None,
     cohort_person_ids=None,
 ):
-    concept_ids = tuple(sorted(int(i) for i in ctx.concept_set_table(drug_codeset_id).execute().iloc[:, 0]))
-
-    if not concept_ids:
-        de = ctx.table("drug_exposure")
-        return de.filter(ibis.literal(False)).select(
-            de.person_id.cast("int64").name(PERSON_ID),
-            ibis.null().cast("date").name("era_start_date"),
-            ibis.null().cast("date").name("era_end_date"),
-        )
+    concept_table = ctx.concept_set_table(drug_codeset_id)
 
     de = ctx.table("drug_exposure")
     if cohort_person_ids is not None:
@@ -100,12 +92,11 @@ def compute_drug_eras(
             predicates=[de.person_id == cohort_person_ids.person_id],
         )
 
-    if "drug_source_concept_id" in de.columns:
-        filtered = de.filter(
-            de.drug_concept_id.isin(concept_ids) | de.drug_source_concept_id.isin(concept_ids)
-        )
-    else:
-        filtered = de.filter(de.drug_concept_id.isin(concept_ids))
+    has_source = "drug_source_concept_id" in de.columns
+    filtered = de.semi_join(concept_table, de.drug_concept_id == concept_table.concept_id)
+    if has_source:
+        source_matches = de.semi_join(concept_table, de.drug_source_concept_id == concept_table.concept_id)
+        filtered = filtered.union(source_matches, distinct=True)
 
     prepared = filtered.select(
         filtered.person_id.cast("int64").name("person_id"),

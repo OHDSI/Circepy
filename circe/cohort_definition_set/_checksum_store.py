@@ -27,9 +27,7 @@ from typing import TYPE_CHECKING
 from ..execution.ibis.operations import create_table, read_table, table_exists
 
 if TYPE_CHECKING:
-    import pandas as pd
-
-    from ..execution.typing import IbisBackendLike
+    from ..execution.typing import IbisBackendLike, Table
 
 
 def load_checksums(
@@ -56,23 +54,29 @@ def load_checksums(
     if not table_exists(backend, table_name=table_name, schema=schema):
         return {}
 
-    table = read_table(backend, table_name=table_name, schema=schema)
-    rows = table.execute()
-    if rows.empty:
-        return {}
+    import ibis
 
-    time_col = "end_time" if "end_time" in rows.columns else "generation_end_time"
-    has_status = "status" in rows.columns
+    table = read_table(backend, table_name=table_name, schema=schema)
+    column_names = table.schema().names
+    has_status = "status" in column_names
+    has_end_time = "end_time" in column_names
+    has_gen_end_time = "generation_end_time" in column_names
+    time_col = "end_time" if has_end_time else ("generation_end_time" if has_gen_end_time else None)
 
     if has_status:
-        rows = rows[rows["status"] == "COMPLETE"]
-        if rows.empty:
-            return {}
+        table = table.filter(table.status == ibis.literal("COMPLETE", type="str"))
 
-    if time_col in rows.columns:
-        rows = rows.sort_values(time_col, ascending=False)
-        rows = rows.drop_duplicates(subset=["cohort_definition_id"], keep="first")
+    if time_col is not None:
+        w = ibis.window(
+            group_by=table.cohort_definition_id,
+            order_by=ibis.desc(table[time_col]),
+        )
+        ranked = table.mutate(_rn=ibis.row_number().over(w))
+        table = ranked.filter(ranked._rn == 0)
 
+    rows = table.select("cohort_definition_id", "checksum").execute()
+    if rows.empty:
+        return {}
     return {int(row["cohort_definition_id"]): str(row["checksum"]) for _, row in rows.iterrows()}
 
 
@@ -81,13 +85,13 @@ def load_generation_history(
     *,
     schema: str | None,
     table_name: str,
-) -> pd.DataFrame | None:
+) -> Table | None:
     """Load the full generation history from the history table.
 
-    Returns all columns (cohort_definition_id, checksum, status, start_time,
-    end_time) for every recorded generation.  Returns ``None`` if the table
-    does not exist or was created with the v1 schema that lacks timing
-    columns.
+    Returns an ibis Table expression with all columns (cohort_definition_id,
+    checksum, status, start_time, end_time) for every recorded generation.
+    Returns ``None`` if the table does not exist or was created with the v1
+    schema that lacks timing columns.
 
     Args:
         backend: Ibis backend connection.
@@ -95,20 +99,17 @@ def load_generation_history(
         table_name: Name of the generation history table.
 
     Returns:
-        DataFrame with per-cohort history, or ``None`` if unavailable.
+        ibis Table with per-cohort history, or ``None`` if unavailable.
     """
     if not table_exists(backend, table_name=table_name, schema=schema):
         return None
 
     table = read_table(backend, table_name=table_name, schema=schema)
-    rows = table.execute()
-    if rows.empty:
+    column_names = table.schema().names
+    if "start_time" not in column_names or "status" not in column_names:
         return None
 
-    if "start_time" not in rows.columns or "status" not in rows.columns:
-        return None
-
-    return rows
+    return table
 
 
 def save_checksums(
@@ -176,27 +177,24 @@ def save_generation_history(
         return
 
     import ibis
-    import pandas as pd
 
-    new_rows_df = pd.DataFrame(
-        [
-            {
-                "cohort_definition_id": cohort_id,
-                "checksum": checksum,
-                "status": status,
-                "start_time": start_time,
-                "end_time": end_time,
-            }
-            for cohort_id, (checksum, status, start_time, end_time) in generated.items()
-        ]
-    )
-    new_rows_df["cohort_definition_id"] = new_rows_df["cohort_definition_id"].astype("int64")
-    new_rows_df["checksum"] = new_rows_df["checksum"].astype(str)
-    new_rows_df["status"] = new_rows_df["status"].astype(str)
-    new_rows_df["start_time"] = pd.to_datetime(new_rows_df["start_time"])
-    new_rows_df["end_time"] = pd.to_datetime(new_rows_df["end_time"])
+    def _checksum_row(cid, checksum, status, start_time, end_time):
+        return (
+            ibis.literal(int(cid), type="int64")
+            .name("cohort_definition_id")
+            .as_table()
+            .mutate(
+                checksum=ibis.literal(str(checksum), type="str"),
+                status=ibis.literal(str(status), type="str"),
+                start_time=ibis.literal(start_time, type="timestamp"),
+                end_time=ibis.literal(end_time, type="timestamp"),
+            )
+        )
 
-    new_relation = ibis.memtable(new_rows_df)
+    items = list(generated.items())
+    new_relation = _checksum_row(items[0][0], *items[0][1])
+    for cid, vals in items[1:]:
+        new_relation = new_relation.union(_checksum_row(cid, *vals), distinct=False)
 
     if not table_exists(backend, table_name=table_name, schema=schema):
         create_table(backend, table_name=table_name, schema=schema, obj=new_relation, overwrite=False)
@@ -262,21 +260,18 @@ def upsert_generation_history(
     row = [int(cohort_id), str(checksum), str(status), start_time, end_time]
 
     if not table_exists(backend, table_name=table_name, schema=schema):
-        create_table(
-            backend,
-            table_name=table_name,
-            schema=schema,
-            obj=ibis.memtable(
-                {
-                    "cohort_definition_id": [int(cohort_id)],
-                    "checksum": [str(checksum)],
-                    "status": [str(status)],
-                    "start_time": [start_time],
-                    "end_time": [end_time],
-                }
-            ),
-            overwrite=False,
+        new_row = (
+            ibis.literal(int(cohort_id), type="int64")
+            .name("cohort_definition_id")
+            .as_table()
+            .mutate(
+                checksum=ibis.literal(str(checksum), type="str"),
+                status=ibis.literal(str(status), type="str"),
+                start_time=ibis.literal(start_time, type="timestamp"),
+                end_time=ibis.literal(end_time, type="timestamp"),
+            )
         )
+        create_table(backend, table_name=table_name, schema=schema, obj=new_row, overwrite=False)
         return
 
     delete_cohort_rows(

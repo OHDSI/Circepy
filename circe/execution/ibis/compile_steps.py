@@ -26,6 +26,7 @@ from ..plan.events import (
 from ..plan.predicates import DateRangePredicate, NumericRangePredicate
 from ..plan.schema import END_DATE, PERSON_ID, START_DATE
 from .context import ExecutionContext
+from ..ibis_compat import literal_column_relation
 from .person_filters import (
     apply_person_age_filter,
     apply_person_ethnicity_filter,
@@ -137,7 +138,7 @@ def _filter_visit_concepts(table, ctx: ExecutionContext, *, step: FilterByVisit)
         concept_table = ctx.concept_set_table(step.codeset_id)
         joined = joined.join(concept_table, joined._visit_concept_id == concept_table.concept_id)
     elif step.concept_ids:
-        concept_table = ibis.memtable({"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"})
+        concept_table = literal_column_relation(step.concept_ids, column_name="concept_id", dtype="int64")
         joined = joined.join(concept_table, joined._visit_concept_id == concept_table.concept_id)
     # If neither codeset_id nor concept_ids, no filtering needed
 
@@ -170,7 +171,7 @@ def _filter_provider_specialty(
         concept_table = ctx.concept_set_table(step.codeset_id)
         joined = joined.join(concept_table, joined._specialty_concept_id == concept_table.concept_id)
     elif step.concept_ids:
-        concept_table = ibis.memtable({"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"})
+        concept_table = literal_column_relation(step.concept_ids, column_name="concept_id", dtype="int64")
         joined = joined.join(concept_table, joined._specialty_concept_id == concept_table.concept_id)
 
     if step.exclude:
@@ -197,7 +198,7 @@ def _filter_care_site(table, ctx: ExecutionContext, *, step: FilterByCareSite):
         concept_table = ctx.concept_set_table(step.codeset_id)
         joined = joined.join(concept_table, joined._place_of_service_concept_id == concept_table.concept_id)
     elif step.concept_ids:
-        concept_table = ibis.memtable({"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"})
+        concept_table = literal_column_relation(step.concept_ids, column_name="concept_id", dtype="int64")
         joined = joined.join(concept_table, joined._place_of_service_concept_id == concept_table.concept_id)
 
     if step.exclude:
@@ -278,7 +279,7 @@ def apply_step(step, *, table, source, ctx: ExecutionContext):
     if isinstance(step, FilterByConceptSet):
         if not step.concept_ids:
             return table if step.exclude else table.limit(0)
-        concept_table = ibis.memtable({"concept_id": list(step.concept_ids)}, schema={"concept_id": "int64"})
+        concept_table = literal_column_relation(step.concept_ids, column_name="concept_id", dtype="int64")
         return _filter_by_concept_table(table, concept_table, column=step.column, exclude=step.exclude)
 
     if isinstance(step, FilterByVisit):

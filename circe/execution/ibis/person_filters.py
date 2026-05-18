@@ -6,6 +6,7 @@ from ..errors import CompilationError
 from ..plan.predicates import NumericRangePredicate
 from ..plan.schema import PERSON_ID
 from .context import ExecutionContext
+from ..ibis_compat import literal_column_relation
 
 
 def _apply_numeric_predicate(expr, predicate: NumericRangePredicate):
@@ -65,7 +66,7 @@ def apply_person_gender_filter(
         concept_table = ctx.concept_set_table(codeset_id)
         concept_table = concept_table.select(concept_table.concept_id.name("_pconcept_id"))
     elif concept_ids:
-        concept_table = ibis.memtable({"_pconcept_id": list(concept_ids)}, schema={"_pconcept_id": "int64"})
+        concept_table = literal_column_relation(concept_ids, column_name="_pconcept_id", dtype="int64")
     else:
         return table
 
@@ -87,7 +88,7 @@ def _apply_person_concept_filter(
         concept_table = ctx.concept_set_table(codeset_id)
         concept_table = concept_table.select(concept_table.concept_id.name("_pconcept_id"))
     elif concept_ids:
-        concept_table = ibis.memtable({"_pconcept_id": list(concept_ids)}, schema={"_pconcept_id": "int64"})
+        concept_table = literal_column_relation(concept_ids, column_name="_pconcept_id", dtype="int64")
     else:
         return table
 

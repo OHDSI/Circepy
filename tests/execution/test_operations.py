@@ -96,6 +96,14 @@ class _CohortColumn:
         return ("ne", other)
 
 
+class _CountExpr:
+    def __init__(self, rows):
+        self._rows = rows
+
+    def execute(self):
+        return len(self._rows)
+
+
 class _CohortRelation:
     cohort_definition_id = _CohortColumn()
 
@@ -110,6 +118,9 @@ class _CohortRelation:
 
     def limit(self, _count):
         return self
+
+    def count(self):
+        return _CountExpr(self.rows)
 
     def execute(self):
         return self.rows

@@ -8,6 +8,7 @@ import ibis
 from .._dataclass import frozen_slots_dataclass
 from ..normalize.cohort import NormalizedConceptSet
 from ..typing import IbisBackendLike, Table
+from ..ibis_compat import literal_rows_relation
 
 
 def _table_with_schema_fallback(
@@ -59,22 +60,18 @@ class ExecutionContext:
 def _build_codeset_memtable(
     concept_sets: Mapping[int, NormalizedConceptSet],
 ) -> Table:
-    """Build a simple memtable for concept sets with known concept IDs.
+    """Build a simple table for concept sets with known concept IDs.
 
     Only handles simple includes (no descendant/mapped expansion needed).
     This is a fallback for backward-compatible test usage.
+    Uses ``literal_rows_relation`` to avoid ``ibis.memtable()``.
     """
     rows: list[dict[str, Any]] = []
     for cid, cset in concept_sets.items():
         for item in cset.items:
             if not item.is_excluded and item.concept_id is not None:
                 rows.append({"codeset_id": int(cid), "concept_id": int(item.concept_id)})
-    if rows:
-        return ibis.memtable(rows, schema={"codeset_id": "int64", "concept_id": "int64"})
-    return ibis.memtable(
-        {"codeset_id": [], "concept_id": []},
-        schema={"codeset_id": "int64", "concept_id": "int64"},
-    )
+    return literal_rows_relation(rows, schema={"codeset_id": "int64", "concept_id": "int64"})
 
 
 def make_execution_context(

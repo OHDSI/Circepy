@@ -83,7 +83,7 @@ def cohort_rows_exist(
         table = read_table(backend, table_name=cohort_table, schema=results_schema)
         cohort_id_expr = ibis.literal(int(cohort_id), type="int64")
         matching = table.filter(table.cohort_definition_id.cast("int64") == cohort_id_expr)
-        return len(matching.limit(1).execute()) > 0
+        return matching.limit(1).count().execute() > 0
     except Exception as exc:
         raise ExecutionError(
             f"Ibis executor write error: failed checking existing rows for cohort_id={cohort_id}."

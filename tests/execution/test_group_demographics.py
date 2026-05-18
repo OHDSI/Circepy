@@ -71,15 +71,21 @@ def test_apply_date_predicate_rejects_invalid_between_and_op():
 
 
 def test_demographic_concept_table_returns_table():
-    ctx = _DemographicContext(None, codesets={1: (8507, 8532)})
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+    conn = ibis.duckdb.connect()
+    ctx = _DemographicContext(conn, codesets={1: (8507, 8532)})
     result = _demographic_concept_ids(explicit_ids=(8507,), codeset_id=1, ctx=ctx)
-    assert result == (8507, 8532)
+    assert result is not None
+    conn.create_table("_test_demo_concepts", result, temp=True, overwrite=True)
+    rows = conn.table("_test_demo_concepts").execute()
+    assert sorted(rows["concept_id"].tolist()) == [8507, 8532]
 
 
 def test_demographic_concept_table_returns_empty_when_empty():
     ctx = _DemographicContext(None)
     result = _demographic_concept_ids(explicit_ids=(), codeset_id=None, ctx=ctx)
-    assert result == ()
+    assert result is None
 
 
 def test_demographic_match_keys_applies_all_supported_filters():

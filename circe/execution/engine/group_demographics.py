@@ -80,25 +80,41 @@ def _apply_date_predicate(date_expr, predicate):
     )
 
 
+def _explicit_ids_table(concept_ids: tuple[int, ...]) -> Table:
+    """Build a single-column ibis Table from explicit concept IDs, no memtable.
+
+    Uses ``ibis.literal().name().as_table()`` with ``union()`` — generates
+    ``SELECT id1 AS concept_id UNION ALL SELECT id2 AS concept_id ...``.
+    """
+    first = ibis.literal(int(concept_ids[0]), type="int64").name("concept_id").as_table()
+    for cid in concept_ids[1:]:
+        t = ibis.literal(int(cid), type="int64").name("concept_id").as_table()
+        first = first.union(t, distinct=False)
+    return first
+
+
 def _demographic_concept_ids(
     *,
     explicit_ids: tuple[int, ...],
     codeset_id: int | None,
     ctx: ExecutionContext,
-) -> tuple[int, ...]:
+) -> Table | None:
     """Resolve concept IDs for a demographic filter.
 
-    Returns a Python tuple of concept IDs.  Demographic sets are tiny (1-5
-    IDs) so this is cheap and avoids join complexity.
+    Returns an ibis Table with a single ``concept_id`` column, or ``None``
+    if neither explicit IDs nor a codeset is provided (meaning no filter).
     """
-    all_ids = list(explicit_ids)
+    if not explicit_ids and codeset_id is None:
+        return None
+    parts: list[Table] = []
+    if explicit_ids:
+        parts.append(_explicit_ids_table(explicit_ids))
     if codeset_id is not None:
-        t = ctx.concept_set_table(codeset_id)
-        for row in t.select("concept_id").distinct().to_pandas().itertuples():
-            cid = row.concept_id
-            if cid not in all_ids:
-                all_ids.append(cid)
-    return tuple(all_ids)
+        parts.append(ctx.concept_set_table(codeset_id).select("concept_id").distinct())
+    result = parts[0]
+    for part in parts[1:]:
+        result = result.union(part, distinct=True)
+    return result
 
 
 def demographic_match_keys(
@@ -127,24 +143,24 @@ def demographic_match_keys(
         codeset_id=demographic.gender_codeset_id,
         ctx=ctx,
     )
-    if gender_ids:
-        predicates.append(joined.gender_concept_id.isin(gender_ids))
+    if gender_ids is not None:
+        predicates.append(joined.gender_concept_id.isin(gender_ids.concept_id))
 
     race_ids = _demographic_concept_ids(
         explicit_ids=demographic.race_concept_ids,
         codeset_id=demographic.race_codeset_id,
         ctx=ctx,
     )
-    if race_ids:
-        predicates.append(joined.race_concept_id.isin(race_ids))
+    if race_ids is not None:
+        predicates.append(joined.race_concept_id.isin(race_ids.concept_id))
 
     ethnicity_ids = _demographic_concept_ids(
         explicit_ids=demographic.ethnicity_concept_ids,
         codeset_id=demographic.ethnicity_codeset_id,
         ctx=ctx,
     )
-    if ethnicity_ids:
-        predicates.append(joined.ethnicity_concept_id.isin(ethnicity_ids))
+    if ethnicity_ids is not None:
+        predicates.append(joined.ethnicity_concept_id.isin(ethnicity_ids.concept_id))
 
     if demographic.occurrence_start_date is not None:
         predicates.append(

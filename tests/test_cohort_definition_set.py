@@ -558,11 +558,12 @@ def test_load_generation_history():
 
     history = load_generation_history(conn, schema="main", table_name=CHECKSUM_TABLE)
     assert history is not None
-    assert not history.empty
-    assert "start_time" in history.columns
-    assert "end_time" in history.columns
-    assert "status" in history.columns
-    assert history.iloc[0]["status"] == "COMPLETE"
+    rows = history.execute()
+    assert not rows.empty
+    assert "start_time" in rows.columns
+    assert "end_time" in rows.columns
+    assert "status" in rows.columns
+    assert rows.iloc[0]["status"] == "COMPLETE"
 
     # Non-existent table returns None
     none_result = load_generation_history(conn, schema="main", table_name="nonexistent_table")
