@@ -140,8 +140,9 @@ def _build_codeset_expression(
     result = _union_all_tables(include_parts)
     result = result.distinct()
 
-    for e in exclude_parts:
-        marked = e.mutate(_cm=ibis.literal(1, type="int64"))
+    if exclude_parts:
+        exclude_relation = _union_all_tables(exclude_parts).distinct()
+        marked = exclude_relation.mutate(_cm=ibis.literal(1, type="int64"))
         result = result.join(marked, result.concept_id == marked.concept_id, how="left")
         result = result.filter(result._cm.isnull()).drop("_cm")
         result = result.select(result.concept_id.name(CONCEPT_ID))
