@@ -53,7 +53,7 @@ def build_cohort(
         codeset_table = build_single_codeset_table(
             backend=backend,
             concept_sets=normalized.concept_sets,
-            batch_table_name=f"__{cohort_table}_{cohort_id}_codesets",
+            batch_table_name="__codesets",
             results_schema=results_schema,
             vocabulary_schema=vocabulary_schema,
             session_prefix=session_prefix,

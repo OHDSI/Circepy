@@ -27,24 +27,30 @@ def _materialize(
     cohort_table: str = "cohort",
     session_prefix: str = "",
 ) -> Table:
-    """Write *table* to a backend staging table and return a fresh reference."""
-    name = f"{session_prefix}__{cohort_table}_{cohort_id}_{stage}"
+    """Write *table* to a backend staging table and return a fresh reference.
+
+    Uses a single session-scoped table per stage (not per cohort) since cohorts
+    are processed sequentially. The table is overwritten for each cohort.
+    """
+    name = f"{session_prefix}__staging_{stage}"
     create_table(ctx.backend, table_name=name, schema=schema, obj=table, overwrite=True)
     return read_table(ctx.backend, table_name=name, schema=schema)
 
 
 def _drop_staging_tables(
     ctx: ExecutionContext,
-    cohort_id: int,
     schema: str | None,
-    cohort_table: str = "cohort",
     session_prefix: str = "",
 ) -> None:
-    """Remove all staging tables for *cohort_id* from the database."""
-    for stage in ("codesets", "primary", "qualified", "included", "ended"):
-        name = f"{session_prefix}__{cohort_table}_{cohort_id}_{stage}"
+    """Remove all session-scoped staging tables from the database."""
+    for stage in ("primary", "qualified", "included", "ended"):
+        name = f"{session_prefix}__staging_{stage}"
         with contextlib.suppress(Exception):
             ctx.backend.drop_table(name, database=schema, force=True)
+    # Also drop the session-scoped codeset table
+    codeset_name = f"{session_prefix}__codesets"
+    with contextlib.suppress(Exception):
+        ctx.backend.drop_table(codeset_name, database=schema, force=True)
 
 
 def build_cohort_table(
