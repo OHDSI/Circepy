@@ -137,13 +137,7 @@ def _build_codeset_expression(
     if not include_parts:
         return _empty_table(columns=(("concept_id", 0),))
 
-    if len(include_parts) == 1:
-        result = include_parts[0]
-    else:
-        result = include_parts[0]
-        for part in include_parts[1:]:
-            result = result.union(part, distinct=False)
-
+    result = _union_all_tables(include_parts)
     result = result.distinct()
 
     for e in exclude_parts:

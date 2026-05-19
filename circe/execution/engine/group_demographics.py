@@ -80,19 +80,6 @@ def _apply_date_predicate(date_expr, predicate):
     )
 
 
-def _explicit_ids_table(concept_ids: tuple[int, ...]) -> Table:
-    """Build a single-column ibis Table from explicit concept IDs, no memtable.
-
-    Uses ``ibis.literal().name().as_table()`` with ``union()`` — generates
-    ``SELECT id1 AS concept_id UNION ALL SELECT id2 AS concept_id ...``.
-    """
-    first = ibis.literal(int(concept_ids[0]), type="int64").name("concept_id").as_table()
-    for cid in concept_ids[1:]:
-        t = ibis.literal(int(cid), type="int64").name("concept_id").as_table()
-        first = first.union(t, distinct=False)
-    return first
-
-
 def _demographic_concept_ids(
     *,
     explicit_ids: tuple[int, ...],
@@ -108,13 +95,14 @@ def _demographic_concept_ids(
         return None
     parts: list[Table] = []
     if explicit_ids:
-        parts.append(_explicit_ids_table(explicit_ids))
+        from ..ibis_compat import literal_column_relation
+
+        parts.append(literal_column_relation(explicit_ids, column_name="concept_id", dtype="int64"))
     if codeset_id is not None:
         parts.append(ctx.concept_set_table(codeset_id).select("concept_id").distinct())
-    result = parts[0]
-    for part in parts[1:]:
-        result = result.union(part, distinct=True)
-    return result
+    if len(parts) == 1:
+        return parts[0]
+    return parts[0].union(parts[1], distinct=True)
 
 
 def demographic_match_keys(
