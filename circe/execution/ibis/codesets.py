@@ -169,10 +169,19 @@ def _build_codeset_expression(
     if not include_parts:
         return _empty_table(columns=(("concept_id", 0),))
 
+    # Normalize column nullability for union compatibility across backends.
+    # _literal_select produces nullable int64 while vocabulary table columns
+    # (e.g. Databricks concept_ancestor.descendant_concept_id) may be non-nullable.
+    # Strict backends require exact schema match for UNION ALL.
+    if len(include_parts) > 1:
+        include_parts = [p.select(p.concept_id.cast("int64").name(CONCEPT_ID)) for p in include_parts]
+
     result = _union_all_tables(include_parts)
     result = result.distinct()
 
     if exclude_parts:
+        if len(exclude_parts) > 1:
+            exclude_parts = [p.select(p.concept_id.cast("int64").name(CONCEPT_ID)) for p in exclude_parts]
         exclude_relation = _union_all_tables(exclude_parts).distinct()
         marked = exclude_relation.mutate(_cm=ibis.literal(1, type="int64"))
         result = result.join(marked, result.concept_id == marked.concept_id, how="left")
@@ -331,6 +340,15 @@ def build_single_codeset_table(
         empty = _empty_table(columns=(("codeset_id", 0), ("concept_id", 0)))
         _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=True)
         return _read_table(backend, table_name=name, schema=results_schema)
+
+    # Normalize column nullability for union compatibility across backends.
+    if len(parts) > 1:
+        parts = [
+            p.select(
+                p.codeset_id.cast("int64").name("codeset_id"), p.concept_id.cast("int64").name(CONCEPT_ID)
+            )
+            for p in parts
+        ]
 
     combined = _union_all_tables(parts)
     _create_table_impl(backend, table_name=name, schema=results_schema, obj=combined, overwrite=True)
