@@ -62,6 +62,7 @@ class NormalizedCriterion:
     source_concept_column: str | None
     visit_occurrence_column: str | None
     codeset_id: int | None
+    source_codeset_id: int | None
     first: bool
     occurrence_start_date: NormalizedDateRange | None
     occurrence_end_date: NormalizedDateRange | None
@@ -119,6 +120,7 @@ def _build_normalized_criterion(
     source_concept_column: str | None,
     visit_occurrence_column: str | None,
     codeset_id: int | None,
+    source_codeset_id: int | None = None,
     first: bool,
     occurrence_start_date: NormalizedDateRange | None,
     occurrence_end_date: NormalizedDateRange | None,
@@ -135,6 +137,7 @@ def _build_normalized_criterion(
         source_concept_column=source_concept_column,
         visit_occurrence_column=visit_occurrence_column,
         codeset_id=codeset_id,
+        source_codeset_id=source_codeset_id,
         first=first,
         occurrence_start_date=occurrence_start_date,
         occurrence_end_date=occurrence_end_date,
@@ -156,6 +159,7 @@ def _normalize_condition_occurrence(criteria: ConditionOccurrence) -> Normalized
         source_concept_column="condition_source_concept_id",
         visit_occurrence_column="visit_occurrence_id",
         codeset_id=criteria.codeset_id,
+        source_codeset_id=criteria.condition_source_concept,
         first=bool(criteria.first),
         occurrence_start_date=normalize_date_range(criteria.occurrence_start_date),
         occurrence_end_date=normalize_date_range(criteria.occurrence_end_date),
@@ -176,6 +180,7 @@ def _normalize_drug_exposure(criteria: DrugExposure) -> NormalizedCriterion:
         source_concept_column="drug_source_concept_id",
         visit_occurrence_column="visit_occurrence_id",
         codeset_id=criteria.codeset_id,
+        source_codeset_id=criteria.drug_source_concept,
         first=bool(criteria.first),
         occurrence_start_date=normalize_date_range(criteria.occurrence_start_date),
         occurrence_end_date=normalize_date_range(criteria.occurrence_end_date),
@@ -196,6 +201,7 @@ def _normalize_visit_occurrence(criteria: VisitOccurrence) -> NormalizedCriterio
         source_concept_column="visit_source_concept_id",
         visit_occurrence_column="visit_occurrence_id",
         codeset_id=criteria.codeset_id,
+        source_codeset_id=criteria.visit_source_concept,
         first=bool(criteria.first),
         occurrence_start_date=normalize_date_range(criteria.occurrence_start_date),
         occurrence_end_date=normalize_date_range(criteria.occurrence_end_date),
@@ -216,6 +222,7 @@ def _normalize_measurement(criteria: Measurement) -> NormalizedCriterion:
         source_concept_column="measurement_source_concept_id",
         visit_occurrence_column="visit_occurrence_id",
         codeset_id=criteria.codeset_id,
+        source_codeset_id=criteria.measurement_source_concept,
         first=bool(criteria.first),
         occurrence_start_date=normalize_date_range(criteria.occurrence_start_date),
         occurrence_end_date=normalize_date_range(criteria.occurrence_end_date),
@@ -238,6 +245,7 @@ def _normalize_procedure_occurrence(
         source_concept_column="procedure_source_concept_id",
         visit_occurrence_column="visit_occurrence_id",
         codeset_id=criteria.codeset_id,
+        source_codeset_id=criteria.procedure_source_concept,
         first=bool(criteria.first),
         occurrence_start_date=normalize_date_range(criteria.occurrence_start_date),
         occurrence_end_date=normalize_date_range(criteria.occurrence_end_date),
@@ -258,6 +266,7 @@ def _normalize_observation(criteria: Observation) -> NormalizedCriterion:
         source_concept_column="observation_source_concept_id",
         visit_occurrence_column="visit_occurrence_id",
         codeset_id=criteria.codeset_id,
+        source_codeset_id=criteria.observation_source_concept,
         first=bool(criteria.first),
         occurrence_start_date=normalize_date_range(criteria.occurrence_start_date),
         occurrence_end_date=normalize_date_range(criteria.occurrence_end_date),
@@ -278,6 +287,7 @@ def _normalize_visit_detail(criteria: VisitDetail) -> NormalizedCriterion:
         source_concept_column="visit_detail_source_concept_id",
         visit_occurrence_column="visit_occurrence_id",
         codeset_id=criteria.codeset_id,
+        source_codeset_id=criteria.visit_detail_source_concept,
         first=bool(criteria.first),
         occurrence_start_date=normalize_date_range(criteria.visit_detail_start_date),
         occurrence_end_date=normalize_date_range(criteria.visit_detail_end_date),
@@ -298,6 +308,7 @@ def _normalize_device_exposure(criteria: DeviceExposure) -> NormalizedCriterion:
         source_concept_column="device_source_concept_id",
         visit_occurrence_column="visit_occurrence_id",
         codeset_id=criteria.codeset_id,
+        source_codeset_id=criteria.device_source_concept,
         first=bool(criteria.first),
         occurrence_start_date=normalize_date_range(criteria.occurrence_start_date),
         occurrence_end_date=normalize_date_range(criteria.occurrence_end_date),
@@ -318,6 +329,7 @@ def _normalize_specimen(criteria: Specimen) -> NormalizedCriterion:
         source_concept_column="specimen_source_concept_id",
         visit_occurrence_column="visit_occurrence_id",
         codeset_id=criteria.codeset_id,
+        source_codeset_id=criteria.specimen_source_concept,
         first=bool(criteria.first),
         occurrence_start_date=normalize_date_range(criteria.occurrence_start_date),
         occurrence_end_date=normalize_date_range(criteria.occurrence_end_date),
@@ -338,6 +350,7 @@ def _normalize_death(criteria: Death) -> NormalizedCriterion:
         source_concept_column="cause_source_concept_id",
         visit_occurrence_column=None,
         codeset_id=criteria.codeset_id,
+        source_codeset_id=criteria.death_source_concept,
         first=False,
         occurrence_start_date=normalize_date_range(criteria.occurrence_start_date),
         occurrence_end_date=None,
