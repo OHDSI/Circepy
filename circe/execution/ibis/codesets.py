@@ -100,39 +100,71 @@ def _build_codeset_expression(
     The database engine performs the expansion at execution time.
     Never uses ``ibis.memtable`` -- all leaf values use ``as_table().mutate()``
     to avoid local-file staging on Databricks.
+
+    Batches all ancestor lookups within one concept set into a single
+    ``concept_ancestor`` JOIN (mirrors Java's ``IN (id1, ..., idN)`` pattern)
+    rather than issuing one JOIN per item.
     """
-    include_parts: list[Table] = []
-    exclude_parts: list[Table] = []
+    # Separate items by (is_excluded) and collect IDs for batched lookups.
+    include_direct: list[int] = []
+    include_desc: list[int] = []
+    include_mapped: list[int] = []
+    exclude_direct: list[int] = []
+    exclude_desc: list[int] = []
+    exclude_mapped: list[int] = []
 
     for item in concept_set.items:
         if item.concept_id is None:
             continue
-
-        direct: tuple[int, ...] = (int(item.concept_id),)
-
-        if item.include_descendants:
-            desc = _descendant_expression(
-                direct, table_getter=table_getter, vocabulary_schema=vocabulary_schema
-            )
-            base = _union_all_tables(
-                [
-                    _literal_select(concept_id=int(item.concept_id)),
-                    desc,
-                ]
-            )
-        else:
-            base = _literal_select(concept_id=int(item.concept_id))
-
-        if item.include_mapped:
-            mapped = _mapped_expression(
-                direct, table_getter=table_getter, vocabulary_schema=vocabulary_schema
-            )
-            base = _union_all_tables([base, mapped])
-
+        cid = int(item.concept_id)
         if item.is_excluded:
-            exclude_parts.append(base)
+            exclude_direct.append(cid)
+            if item.include_descendants:
+                exclude_desc.append(cid)
+            if item.include_mapped:
+                exclude_mapped.append(cid)
         else:
-            include_parts.append(base)
+            include_direct.append(cid)
+            if item.include_descendants:
+                include_desc.append(cid)
+            if item.include_mapped:
+                include_mapped.append(cid)
+
+    # Build include expression parts with batched vocabulary lookups.
+    include_parts: list[Table] = []
+    if include_direct:
+        for cid in include_direct:
+            include_parts.append(_literal_select(concept_id=cid))
+    if include_desc:
+        include_parts.append(
+            _descendant_expression(
+                tuple(include_desc), table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+        )
+    if include_mapped:
+        include_parts.append(
+            _mapped_expression(
+                tuple(include_mapped), table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+        )
+
+    # Build exclude expression parts with batched vocabulary lookups.
+    exclude_parts: list[Table] = []
+    if exclude_direct:
+        for cid in exclude_direct:
+            exclude_parts.append(_literal_select(concept_id=cid))
+    if exclude_desc:
+        exclude_parts.append(
+            _descendant_expression(
+                tuple(exclude_desc), table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+        )
+    if exclude_mapped:
+        exclude_parts.append(
+            _mapped_expression(
+                tuple(exclude_mapped), table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+        )
 
     if not include_parts:
         return _empty_table(columns=(("concept_id", 0),))

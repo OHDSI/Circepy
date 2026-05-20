@@ -81,7 +81,10 @@ def build_cohort_table(
 
     # ── Primary events ──────────────────────────────────────────────────
     primary_events = build_primary_events(cohort_plan, ctx)
-    if materialize:
+    has_additional_criteria = (
+        normalized.additional_criteria is not None and not normalized.additional_criteria.is_empty()
+    )
+    if materialize and has_additional_criteria:
         primary_events = _materialize(
             primary_events,
             ctx=ctx,
@@ -94,7 +97,7 @@ def build_cohort_table(
 
     # ── Additional (correlated) criteria ────────────────────────────────
     qualified_events = apply_additional_criteria(primary_events, normalized.additional_criteria, ctx)
-    if normalized.additional_criteria is not None and not normalized.additional_criteria.is_empty():
+    if has_additional_criteria:
         qualified_events = apply_result_limit(qualified_events, cohort_plan.qualified_limit_type)
     if materialize:
         qualified_events = _materialize(
