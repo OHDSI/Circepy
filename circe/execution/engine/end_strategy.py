@@ -3,10 +3,19 @@ from __future__ import annotations
 import ibis
 
 from ..errors import UnsupportedFeatureError
-from ..plan.schema import END_DATE, PERSON_ID, START_DATE
+from ..plan.schema import END_DATE, OP_END_DATE, OP_START_DATE, PERSON_ID, START_DATE
 
 
 def attach_observation_bounds(events, ctx):
+    """Attach observation period bounds to events.
+
+    If events already carry op_start_date/op_end_date from the primary events
+    stage, use those directly (avoiding a re-join that creates duplicates when
+    overlapping OPs exist). Falls back to a re-join only if the columns are missing.
+    """
+    if OP_START_DATE in events.columns and OP_END_DATE in events.columns:
+        return events
+
     observation_period = ctx.table("observation_period").select(
         PERSON_ID,
         "observation_period_start_date",
@@ -20,8 +29,8 @@ def attach_observation_bounds(events, ctx):
     )
     return joined.select(
         *[joined[c] for c in events.columns],
-        observation_period.observation_period_start_date.cast("date").name("op_start_date"),
-        observation_period.observation_period_end_date.cast("date").name("op_end_date"),
+        observation_period.observation_period_start_date.cast("date").name(OP_START_DATE),
+        observation_period.observation_period_end_date.cast("date").name(OP_END_DATE),
     ).distinct()
 
 
@@ -39,7 +48,7 @@ def _apply_date_offset_strategy(with_bounds, strategy):
         )
 
     candidate = base_date + ibis.interval(days=offset)
-    return ibis.least(candidate, with_bounds.op_end_date)
+    return ibis.least(candidate, with_bounds[OP_END_DATE])
 
 
 def _replace_end_date(events, with_bounds, new_end_expr):
@@ -57,7 +66,7 @@ def apply_end_strategy(events, strategy, ctx):
     with_bounds = attach_observation_bounds(events, ctx)
 
     if strategy is None:
-        return _replace_end_date(events, with_bounds, with_bounds.op_end_date)
+        return _replace_end_date(events, with_bounds, with_bounds[OP_END_DATE])
 
     if strategy.kind == "date_offset":
         end_date_expr = _apply_date_offset_strategy(with_bounds, strategy)
@@ -69,4 +78,4 @@ def apply_end_strategy(events, strategy, ctx):
         return apply_custom_era_strategy(events, strategy, ctx)
 
     # Fallback: preserve default semantics of op_end_date clipping.
-    return _replace_end_date(events, with_bounds, with_bounds.op_end_date)
+    return _replace_end_date(events, with_bounds, with_bounds[OP_END_DATE])

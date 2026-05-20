@@ -4,7 +4,7 @@ import ibis
 
 from ..ibis.context import ExecutionContext
 from ..normalize.groups import NormalizedCriteriaGroup
-from ..plan.schema import EVENT_ID, PERSON_ID
+from ..plan.schema import EVENT_ID, OP_END_DATE, OP_START_DATE, PERSON_ID
 from ..typing import Table
 from .group_demographics import demographic_match_keys
 from .group_keys import event_keys, union_all
@@ -94,7 +94,12 @@ def apply_additional_criteria(
     if group is None or group.is_empty():
         return events
 
-    index_events = attach_observation_period(events, ctx)
+    # Use pre-existing OP bounds from primary events if available,
+    # avoiding a re-join that creates duplicates when overlapping OPs exist.
+    if OP_START_DATE in events.columns and OP_END_DATE in events.columns:
+        index_events = events
+    else:
+        index_events = attach_observation_period(events, ctx)
     matched_keys = _evaluate_group(index_events, group, ctx)
 
     filtered = events.join(

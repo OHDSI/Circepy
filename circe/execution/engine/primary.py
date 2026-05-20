@@ -7,7 +7,7 @@ from ..ibis.compiler import compile_event_plan
 from ..ibis.context import ExecutionContext
 from ..normalize.windows import NormalizedObservationWindow
 from ..plan.cohort import CohortPlan
-from ..plan.schema import DOMAIN, EVENT_ID, PERSON_ID, START_DATE
+from ..plan.schema import DOMAIN, EVENT_ID, OP_END_DATE, OP_START_DATE, PERSON_ID, START_DATE
 from ..typing import Table
 from .groups import apply_additional_criteria
 from .limits import apply_result_limit
@@ -54,7 +54,39 @@ def _apply_observation_window(
     lower = joined.observation_period_start_date + ibis.interval(days=window.prior_days)
     upper = joined.observation_period_end_date - ibis.interval(days=window.post_days)
     filtered = joined.filter((joined[START_DATE] >= lower) & (joined[START_DATE] <= upper))
-    return filtered.select(*[filtered[c] for c in events.columns])
+    # Carry OP bounds through the pipeline (matching Java behavior).
+    # Drop any pre-existing op_ columns from earlier stages before re-attaching.
+    base_cols = [c for c in events.columns if c not in (OP_START_DATE, OP_END_DATE)]
+    return filtered.select(
+        *[filtered[c] for c in base_cols],
+        filtered.observation_period_start_date.cast("date").name(OP_START_DATE),
+        filtered.observation_period_end_date.cast("date").name(OP_END_DATE),
+    )
+
+
+def _attach_op_bounds(events, ctx: ExecutionContext):
+    """Attach observation period bounds to events without applying an observation window filter.
+
+    This mirrors the Java/R behavior where op_start_date and op_end_date are
+    always present on primary events for use by end strategy and window constraints.
+    """
+    observation_period = ctx.table("observation_period").select(
+        PERSON_ID,
+        "observation_period_start_date",
+        "observation_period_end_date",
+    )
+    joined = events.join(
+        observation_period,
+        (events[PERSON_ID] == observation_period[PERSON_ID])
+        & (events[START_DATE] >= observation_period.observation_period_start_date.cast("date"))
+        & (events[START_DATE] <= observation_period.observation_period_end_date.cast("date")),
+    )
+    base_cols = [c for c in events.columns if c not in (OP_START_DATE, OP_END_DATE)]
+    return joined.select(
+        *[joined[c] for c in base_cols],
+        observation_period.observation_period_start_date.cast("date").name(OP_START_DATE),
+        observation_period.observation_period_end_date.cast("date").name(OP_END_DATE),
+    )
 
 
 def build_primary_events(plan: CohortPlan, ctx: ExecutionContext) -> Table:
@@ -74,6 +106,10 @@ def build_primary_events(plan: CohortPlan, ctx: ExecutionContext) -> Table:
 
     if plan.observation_window is not None:
         events = _apply_observation_window(events, ctx, plan.observation_window)
+    else:
+        # Always attach OP bounds even without an observation window,
+        # matching Java behavior where op_end_date is always available.
+        events = _attach_op_bounds(events, ctx)
 
     events = apply_result_limit(events, plan.primary_limit_type)
     return events

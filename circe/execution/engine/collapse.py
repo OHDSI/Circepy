@@ -2,7 +2,15 @@ from __future__ import annotations
 
 import ibis
 
-from ..plan.schema import END_DATE, PERSON_ID, START_DATE
+from ..plan.schema import END_DATE, OP_END_DATE, OP_START_DATE, PERSON_ID, START_DATE
+
+
+def _strip_op_columns(events):
+    """Remove internal observation period columns from final output."""
+    cols_to_drop = [c for c in events.columns if c in (OP_START_DATE, OP_END_DATE)]
+    if cols_to_drop:
+        return events.drop(*cols_to_drop)
+    return events
 
 
 def _apply_censor_window(events, censor_window):
@@ -71,11 +79,11 @@ def _collapse_era(intervals, era_pad: int):
 
 def collapse_events(events, collapse_settings, censor_window):
     if collapse_settings is None:
-        return _apply_censor_window(events, censor_window)
+        return _strip_op_columns(_apply_censor_window(events, censor_window))
 
     collapse_type = (collapse_settings.collapse_type or "era").lower()
     if collapse_type == "no_collapse":
-        return _apply_censor_window(events, censor_window)
+        return _strip_op_columns(_apply_censor_window(events, censor_window))
 
     intervals = events.select(
         events.person_id.cast("int64").name(PERSON_ID),
