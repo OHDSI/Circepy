@@ -1,0 +1,465 @@
+---
+title: "CircePy vs CohortGenerator: Databricks Execution Time Benchmark"
+format:
+  html:
+    toc: true
+    code-fold: true
+    theme: cosmo
+    self-contained: true
+execute:
+  warning: false
+  message: false
+---
+
+## CIRCE Expression Model
+
+The CIRCE cohort expression schema defines a declarative structure for specifying
+patient cohorts on the OMOP CDM. CircePy implements this schema as a typed Python
+class hierarchy mirroring the Java original.
+
+```{mermaid}
+classDiagram
+    direction TB
+
+    class CohortExpression {
+        +concept_sets: list~ConceptSet~
+        +primary_criteria: PrimaryCriteria
+        +additional_criteria: CriteriaGroup
+        +inclusion_rules: list~InclusionRule~
+        +end_strategy: EndStrategy
+        +collapse_settings: CollapseSettings
+        +censoring_criteria: list~Criteria~
+    }
+
+    class PrimaryCriteria {
+        +criteria_list: list~Criteria~
+        +observation_window: ObservationFilter
+        +primary_limit: ResultLimit
+    }
+
+    class Criteria {
+        <<abstract>>
+        +codeset_id: int
+        +date_adjustment: DateAdjustment
+        +correlated_criteria: CriteriaGroup
+    }
+
+    class ConditionOccurrence {
+        +condition_type: list~Concept~
+        +stop_reason: TextFilter
+        +condition_status: list~Concept~
+    }
+
+    class DrugExposure {
+        +drug_type: list~Concept~
+        +refills: NumericRange
+        +days_supply: NumericRange
+        +route_concept: list~Concept~
+    }
+
+    class VisitOccurrence {
+        +visit_type: list~Concept~
+        +visit_length: NumericRange
+    }
+
+    class CriteriaGroup {
+        +type: ALL | ANY | AT_LEAST | AT_MOST
+        +criteria_list: list~CorelatedCriteria~
+        +groups: list~CriteriaGroup~
+        +demographic_criteria_list: list~DemographicCriteria~
+    }
+
+    class CorelatedCriteria {
+        +criteria: Criteria
+        +start_window: Window
+        +end_window: Window
+        +occurrence: Occurrence
+    }
+
+    class Window {
+        +start: WindowBound
+        +end: WindowBound
+        +use_event_end: bool
+        +use_index_end: bool
+    }
+
+    class InclusionRule {
+        +name: str
+        +expression: CriteriaGroup
+    }
+
+    class EndStrategy {
+        <<abstract>>
+    }
+
+    class DateOffsetStrategy {
+        +date_field: str
+        +offset: int
+    }
+
+    class CustomEraStrategy {
+        +drug_codeset_id: int
+        +gap_days: int
+        +offset: int
+    }
+
+    class ConceptSet {
+        +id: int
+        +name: str
+        +expression: ConceptSetExpression
+    }
+
+    class CollapseSettings {
+        +collapse_type: ERA | NO_COLLAPSE
+        +era_pad: int
+    }
+
+    CohortExpression *-- PrimaryCriteria
+    CohortExpression *-- CriteriaGroup : additional_criteria
+    CohortExpression *-- InclusionRule
+    CohortExpression *-- EndStrategy
+    CohortExpression *-- CollapseSettings
+    CohortExpression *-- ConceptSet
+
+    PrimaryCriteria *-- Criteria
+
+    Criteria <|-- ConditionOccurrence
+    Criteria <|-- DrugExposure
+    Criteria <|-- VisitOccurrence
+
+    EndStrategy <|-- DateOffsetStrategy
+    EndStrategy <|-- CustomEraStrategy
+
+    InclusionRule *-- CriteriaGroup
+    CriteriaGroup *-- CorelatedCriteria
+    CriteriaGroup *-- CriteriaGroup : nested groups
+    CorelatedCriteria *-- Criteria
+    CorelatedCriteria *-- Window
+```
+
+The model supports 16 OMOP CDM domain criteria (only three shown above for brevity),
+each inheriting from the abstract `Criteria` base class. Temporal relationships between
+events are expressed through `CorelatedCriteria` with `Window` bounds, enabling
+arbitrary time-relative logic.
+
+## Overview
+
+This report compares SQL execution times between the R (CohortGenerator) and Python
+(CircePy) implementations of the OHDSI CIRCE cohort expression compiler, both
+executing against the same Databricks SQL Warehouse on the Merative CCAE CDM
+(~150M patients).
+
+Both implementations:
+
+- Compile identical CIRCE JSON cohort definitions into SQL
+- Execute against the same Databricks SQL Warehouse endpoint
+- Write results to the same `scratch.scratch_jgilber2` schema
+- Produce row-level identical output (verified separately)
+
+```{python}
+import pandas as pd
+import numpy as np
+from pathlib import Path
+
+# Load data
+times = pd.read_csv(Path("execution_times.csv"))
+counts = pd.read_csv(Path("cohort_row_counts.csv"))
+
+# Pivot to wide format for paired comparison
+r_times = times[times.implementation == "R"].rename(columns={"duration_s": "r_seconds"})
+py_times = times[times.implementation == "Python"].rename(columns={"duration_s": "py_seconds"})
+
+paired = pd.merge(
+    r_times[["cohort_definition_id", "r_seconds"]],
+    py_times[["cohort_definition_id", "py_seconds"]],
+    on="cohort_definition_id",
+)
+paired = pd.merge(paired, counts, on="cohort_definition_id", how="left")
+paired["speedup"] = paired["r_seconds"] / paired["py_seconds"]
+paired["diff_seconds"] = paired["py_seconds"] - paired["r_seconds"]
+paired["pct_diff"] = (paired["diff_seconds"] / paired["r_seconds"]) * 100
+```
+
+## Summary Statistics
+
+```{python}
+#| label: tbl-summary
+#| tbl-cap: "Aggregate execution time comparison (707 shared cohorts)"
+
+summary = pd.DataFrame({
+    "Metric": [
+        "Total wall-clock time",
+        "Mean per cohort",
+        "Median per cohort",
+        "Std dev",
+        "Min",
+        "Max",
+        "Cohorts where Python faster",
+    ],
+    "R (CohortGenerator)": [
+        f"{paired.r_seconds.sum():,.0f}s ({paired.r_seconds.sum()/3600:.1f}h)",
+        f"{paired.r_seconds.mean():.1f}s",
+        f"{paired.r_seconds.median():.1f}s",
+        f"{paired.r_seconds.std():.1f}s",
+        f"{paired.r_seconds.min():.1f}s",
+        f"{paired.r_seconds.max():.1f}s",
+        "",
+    ],
+    "Python (CircePy)": [
+        f"{paired.py_seconds.sum():,.0f}s ({paired.py_seconds.sum()/3600:.1f}h)",
+        f"{paired.py_seconds.mean():.1f}s",
+        f"{paired.py_seconds.median():.1f}s",
+        f"{paired.py_seconds.std():.1f}s",
+        f"{paired.py_seconds.min():.1f}s",
+        f"{paired.py_seconds.max():.1f}s",
+        f"{(paired.py_seconds < paired.r_seconds).sum()} / {len(paired)} ({(paired.py_seconds < paired.r_seconds).mean()*100:.0f}%)",
+    ],
+})
+
+summary.style.hide(axis="index")
+```
+
+```{python}
+#| label: tbl-ratio
+#| tbl-cap: "Speed ratio distribution (R time / Python time)"
+
+quantiles = paired.speedup.quantile([0.05, 0.25, 0.5, 0.75, 0.95])
+ratio_summary = pd.DataFrame({
+    "Percentile": ["5th", "25th", "Median", "75th", "95th"],
+    "R/Python ratio": [f"{v:.2f}" for v in quantiles.values],
+    "Interpretation": [
+        f"Python {1/quantiles.iloc[0]:.1f}x slower" if quantiles.iloc[0] > 1 else f"Python {quantiles.iloc[0]:.1f}x faster",
+        f"Python {1/quantiles.iloc[1]:.1f}x slower" if quantiles.iloc[1] > 1 else f"Python {quantiles.iloc[1]:.1f}x faster",
+        f"Python {1/quantiles.iloc[2]:.1f}x slower" if quantiles.iloc[2] > 1 else f"Python {quantiles.iloc[2]:.1f}x faster",
+        f"Python {1/quantiles.iloc[3]:.1f}x slower" if quantiles.iloc[3] > 1 else f"Python {quantiles.iloc[3]:.1f}x faster",
+        f"Python {1/quantiles.iloc[4]:.1f}x slower" if quantiles.iloc[4] > 1 else f"Python {quantiles.iloc[4]:.1f}x faster",
+    ],
+})
+ratio_summary.style.hide(axis="index")
+```
+
+## Execution Time Distribution
+
+```{python}
+#| label: fig-distribution
+#| fig-cap: "Distribution of per-cohort execution times by implementation"
+#| fig-width: 10
+#| fig-height: 5
+
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+
+# Histogram
+axes[0].hist(paired.r_seconds, bins=50, alpha=0.6, label="R", color="#2196F3")
+axes[0].hist(paired.py_seconds, bins=50, alpha=0.6, label="Python", color="#FF9800")
+axes[0].set_xlabel("Execution time (seconds)")
+axes[0].set_ylabel("Number of cohorts")
+axes[0].set_title("Execution Time Distribution")
+axes[0].legend()
+
+# Log-scale box plot
+data_box = pd.DataFrame({
+    "R": paired.r_seconds,
+    "Python": paired.py_seconds,
+})
+axes[1].boxplot([paired.r_seconds, paired.py_seconds], labels=["R", "Python"])
+axes[1].set_ylabel("Execution time (seconds)")
+axes[1].set_title("Execution Time (Box Plot)")
+axes[1].set_yscale("log")
+
+plt.tight_layout()
+plt.show()
+```
+
+## Paired Comparison (Scatter)
+
+```{python}
+#| label: fig-scatter
+#| fig-cap: "Per-cohort execution time: R vs Python (each point = one cohort definition)"
+#| fig-width: 8
+#| fig-height: 7
+
+fig, ax = plt.subplots(figsize=(8, 7))
+
+max_val = max(paired.r_seconds.max(), paired.py_seconds.max()) * 1.05
+
+ax.scatter(paired.r_seconds, paired.py_seconds, alpha=0.4, s=15, color="#455A64")
+ax.plot([0, max_val], [0, max_val], "k--", linewidth=1, label="y = x (equal time)")
+ax.set_xlabel("R execution time (seconds)")
+ax.set_ylabel("Python execution time (seconds)")
+ax.set_title("Per-Cohort Execution Time: R vs Python")
+ax.legend()
+ax.set_xlim(0, max_val)
+ax.set_ylim(0, max_val)
+ax.set_aspect("equal")
+
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+#| label: fig-scatter-log
+#| fig-cap: "Same comparison on log-log scale to reveal patterns across magnitudes"
+#| fig-width: 8
+#| fig-height: 7
+
+fig, ax = plt.subplots(figsize=(8, 7))
+
+ax.scatter(paired.r_seconds, paired.py_seconds, alpha=0.4, s=15, color="#455A64")
+
+lims = [
+    min(paired.r_seconds.min(), paired.py_seconds.min()) * 0.8,
+    max(paired.r_seconds.max(), paired.py_seconds.max()) * 1.2,
+]
+ax.plot(lims, lims, "k--", linewidth=1, label="y = x (equal time)")
+ax.set_xlabel("R execution time (seconds)")
+ax.set_ylabel("Python execution time (seconds)")
+ax.set_title("Per-Cohort Execution Time: R vs Python (Log Scale)")
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.legend()
+
+plt.tight_layout()
+plt.show()
+```
+
+## Speed Ratio Distribution
+
+```{python}
+#| label: fig-speedup
+#| fig-cap: "Distribution of R/Python speed ratio (>1 means R is faster)"
+#| fig-width: 9
+#| fig-height: 5
+
+fig, ax = plt.subplots(figsize=(9, 5))
+
+ax.hist(paired.speedup, bins=50, color="#607D8B", edgecolor="white", linewidth=0.5)
+ax.axvline(x=1.0, color="red", linestyle="--", linewidth=1.5, label="Equal speed")
+ax.axvline(x=paired.speedup.median(), color="#FF9800", linestyle="-", linewidth=1.5,
+           label=f"Median = {paired.speedup.median():.2f}")
+ax.set_xlabel("Speed ratio (R seconds / Python seconds)")
+ax.set_ylabel("Number of cohorts")
+ax.set_title("Speed Ratio Distribution")
+ax.legend()
+
+plt.tight_layout()
+plt.show()
+```
+
+## Per-Cohort Detail
+
+```{python}
+#| label: fig-waterfall
+#| fig-cap: "Per-cohort time difference (Python − R), sorted by magnitude"
+#| fig-width: 10
+#| fig-height: 6
+
+sorted_diff = paired.sort_values("diff_seconds").reset_index(drop=True)
+
+fig, ax = plt.subplots(figsize=(10, 6))
+colors = ["#4CAF50" if d < 0 else "#F44336" for d in sorted_diff.diff_seconds]
+ax.bar(range(len(sorted_diff)), sorted_diff.diff_seconds, color=colors, width=1.0)
+ax.axhline(y=0, color="black", linewidth=0.5)
+ax.set_xlabel("Cohort (sorted by time difference)")
+ax.set_ylabel("Time difference: Python − R (seconds)")
+ax.set_title("Per-Cohort Time Difference (green = Python faster, red = R faster)")
+
+plt.tight_layout()
+plt.show()
+```
+
+## Execution Time vs Cohort Size
+
+```{python}
+#| label: fig-size-vs-time
+#| fig-cap: "Relationship between cohort output size and execution time"
+#| fig-width: 10
+#| fig-height: 5
+
+has_counts = paired.dropna(subset=["n_rows"])
+
+if len(has_counts) > 0:
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+
+    axes[0].scatter(has_counts.n_rows, has_counts.r_seconds, alpha=0.3, s=10, label="R", color="#2196F3")
+    axes[0].scatter(has_counts.n_rows, has_counts.py_seconds, alpha=0.3, s=10, label="Python", color="#FF9800")
+    axes[0].set_xlabel("Cohort output rows")
+    axes[0].set_ylabel("Execution time (seconds)")
+    axes[0].set_xscale("log")
+    axes[0].set_yscale("log")
+    axes[0].set_title("Execution Time vs Cohort Size")
+    axes[0].legend()
+
+    axes[1].scatter(has_counts.n_rows, has_counts.speedup, alpha=0.3, s=10, color="#455A64")
+    axes[1].axhline(y=1.0, color="red", linestyle="--", linewidth=1)
+    axes[1].set_xlabel("Cohort output rows")
+    axes[1].set_ylabel("R/Python speed ratio")
+    axes[1].set_xscale("log")
+    axes[1].set_title("Speed Ratio vs Cohort Size")
+
+    plt.tight_layout()
+    plt.show()
+```
+
+## Slowest Cohorts
+
+```{python}
+#| label: tbl-slowest
+#| tbl-cap: "Top 20 slowest cohorts (by Python execution time)"
+
+top20 = paired.nlargest(20, "py_seconds")[
+    ["cohort_definition_id", "r_seconds", "py_seconds", "diff_seconds", "speedup", "n_rows"]
+].copy()
+top20.columns = ["Cohort ID", "R (s)", "Python (s)", "Diff (s)", "R/Py Ratio", "Output Rows"]
+top20["R (s)"] = top20["R (s)"].round(1)
+top20["Python (s)"] = top20["Python (s)"].round(1)
+top20["Diff (s)"] = top20["Diff (s)"].round(1)
+top20["R/Py Ratio"] = top20["R/Py Ratio"].round(2)
+top20["Output Rows"] = top20["Output Rows"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "N/A")
+top20.style.hide(axis="index")
+```
+
+## Largest Python Advantage
+
+```{python}
+#| label: tbl-py-faster
+#| tbl-cap: "Top 20 cohorts where Python is fastest relative to R"
+
+py_wins = paired.nlargest(20, "speedup")[
+    ["cohort_definition_id", "r_seconds", "py_seconds", "speedup", "n_rows"]
+].copy()
+py_wins.columns = ["Cohort ID", "R (s)", "Python (s)", "R/Py Ratio", "Output Rows"]
+py_wins["R (s)"] = py_wins["R (s)"].round(1)
+py_wins["Python (s)"] = py_wins["Python (s)"].round(1)
+py_wins["R/Py Ratio"] = py_wins["R/Py Ratio"].round(2)
+py_wins["Output Rows"] = py_wins["Output Rows"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "N/A")
+py_wins.style.hide(axis="index")
+```
+
+## Largest R Advantage
+
+```{python}
+#| label: tbl-r-faster
+#| tbl-cap: "Top 20 cohorts where R is fastest relative to Python"
+
+r_wins = paired.nsmallest(20, "speedup")[
+    ["cohort_definition_id", "r_seconds", "py_seconds", "speedup", "n_rows"]
+].copy()
+r_wins.columns = ["Cohort ID", "R (s)", "Python (s)", "R/Py Ratio", "Output Rows"]
+r_wins["R (s)"] = r_wins["R (s)"].round(1)
+r_wins["Python (s)"] = r_wins["Python (s)"].round(1)
+r_wins["R/Py Ratio"] = r_wins["R/Py Ratio"].round(2)
+r_wins["Output Rows"] = r_wins["Output Rows"].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "N/A")
+r_wins.style.hide(axis="index")
+```
+
+## Methodology
+
+- **CDM**: Merative CCAE v3909 (~150M patients)
+- **Backend**: Databricks SQL Warehouse (shared endpoint)
+- **R stack**: CohortGenerator → DatabaseConnector → JDBC → Spark SQL
+- **Python stack**: CircePy → ibis-framework → databricks-sql-connector → Spark SQL
+- **Timing**: Wall-clock time from checksum table (`end_time - start_time`) — includes SQL compilation, network round-trips, and warehouse execution
+- **Cohort definitions**: 707 PhenotypeLibrary phenotypes compiled and executed by both implementations
+- **Correctness**: Row-level output verified identical between implementations
