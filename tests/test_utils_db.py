@@ -89,10 +89,6 @@ class DuckDBTestHelper:
 
         return self.con.execute(translated)
 
-    def execute_raw(self, sql: str):
-        """Execute DuckDB SQL directly, no T-SQL transpilation."""
-        return self.con.execute(sql)
-
     def query(self, sql: str) -> list[Any]:
         """Execute and return results."""
         return self.execute_query(sql).fetchall()

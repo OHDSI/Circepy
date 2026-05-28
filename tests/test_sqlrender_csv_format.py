@@ -7,6 +7,7 @@ from circe.sqlrender.patterns import _safe_split
 
 
 class TestCsvFormat:
+
     def test_csv_has_valid_format(self):
         from importlib.resources import files
 
@@ -23,20 +24,23 @@ class TestCsvFormat:
                 assert columns[1] == "Pattern"
                 assert columns[2] == "Replacement"
                 continue
-            assert len(columns) >= 3, f"Row {i} has {len(columns)} columns (expected at least 3): {columns}"
+            assert len(columns) >= 3, (
+                f"Row {i} has {len(columns)} columns (expected at least 3): {columns}"
+            )
 
     def test_all_patterns_can_be_parsed(self):
-        from circe.sqlrender.patterns import load_patterns
         from circe.sqlrender.translator import parse_search_pattern
+        from circe.sqlrender.patterns import load_patterns
 
         patterns = load_patterns()
         for dialect, pairs in patterns.items():
-            for pattern, _replacement in pairs:
+            for pattern, replacement in pairs:
                 try:
                     parse_search_pattern(pattern)
                 except Exception as e:
                     pytest.fail(
-                        f"Failed to parse pattern for dialect '{dialect}': pattern={pattern!r}, error={e}"
+                        f"Failed to parse pattern for dialect '{dialect}': "
+                        f"pattern={pattern!r}, error={e}"
                     )
 
     def test_duckdb_and_postgresql_can_translate_simple_sql(self):
