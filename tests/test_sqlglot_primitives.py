@@ -355,62 +355,99 @@ class TestRowNumberAcrossBuilders:
 
 
 class TestCodesetsBuilder:
-    """Test concept set resolution queries."""
+    """Test concept set resolution matching T-SQL ConceptSetExpressionQueryBuilder."""
+
+    def _build(self, concept_sets):
+        from circe.cohortdefinition.sqlglot_builders.codesets import build_codeset_query
+
+        return build_codeset_query(concept_sets)
 
     def test_empty_concept_sets(self):
-        from circe.cohortdefinition.sqlglot_builders.codesets import build_codeset_query
-
-        assert build_codeset_query([]) is None
+        assert self._build([]) is None
 
     def test_simple_concept_set(self):
-        from circe.cohortdefinition.sqlglot_builders.codesets import build_codeset_query
+        from circe.vocabulary.concept import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
+
+        cs = ConceptSet(
+            id=1, expression=ConceptSetExpression(items=[ConceptSetItem(concept=Concept(concept_id=123))])
+        )
+        query = self._build([cs])
+        assert query is not None
+        sql = query.sql(dialect="tsql")
+        assert "123" in sql
+        assert "DISTINCT" in sql
+        assert "LEFT JOIN" not in sql  # no excludes
+
+    def test_include_and_exclude(self):
         from circe.vocabulary.concept import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
         cs = ConceptSet(
             id=1,
-            name="test",
-            expression=ConceptSetExpression(items=[ConceptSetItem(concept=Concept(concept_id=123))]),
+            expression=ConceptSetExpression(
+                items=[
+                    ConceptSetItem(concept=Concept(concept_id=100), is_excluded=False),
+                    ConceptSetItem(concept=Concept(concept_id=200), is_excluded=True),
+                ]
+            ),
         )
-        query = build_codeset_query([cs])
-        assert query is not None
-        sql = query.sql(dialect="duckdb")
-        assert "123" in sql
-        assert "concept" in sql.lower()
+        query = self._build([cs])
+        sql = query.sql(dialect="tsql")
+        assert "LEFT JOIN" in sql
+        assert "IS NULL" in sql
+        assert "DISTINCT" in sql
 
-    def test_concept_set_with_descendants(self):
-        from circe.cohortdefinition.sqlglot_builders.codesets import build_codeset_query
+    def test_include_descendants(self):
         from circe.vocabulary.concept import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
         cs = ConceptSet(
-            id=2,
-            name="test",
+            id=1,
             expression=ConceptSetExpression(
-                items=[ConceptSetItem(concept=Concept(concept_id=456), include_descendants=True)]
+                items=[
+                    ConceptSetItem(
+                        concept=Concept(concept_id=10), is_excluded=False, include_descendants=True
+                    ),
+                ]
             ),
         )
-        query = build_codeset_query([cs])
-        assert query is not None
-        sql = query.sql(dialect="duckdb")
-        assert "descendant" in sql.lower() or "ancestor" in sql.lower()
+        query = self._build([cs])
+        sql = query.sql(dialect="tsql")
+        assert "CONCEPT_ANCESTOR" in sql
+        assert "invalid_reason" in sql
 
-    def test_concept_set_with_mapped(self):
-        from circe.cohortdefinition.sqlglot_builders.codesets import build_codeset_query
+    def test_include_mapped(self):
         from circe.vocabulary.concept import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
         cs = ConceptSet(
-            id=3,
-            name="test",
+            id=1,
             expression=ConceptSetExpression(
-                items=[ConceptSetItem(concept=Concept(concept_id=789), include_mapped=True)]
+                items=[
+                    ConceptSetItem(concept=Concept(concept_id=1), is_excluded=False, include_mapped=True),
+                ]
             ),
         )
-        query = build_codeset_query([cs])
-        assert query is not None
-        sql = query.sql(dialect="duckdb")
-        assert "relationship" in sql.lower() or "mapped" in sql.lower()
+        query = self._build([cs])
+        sql = query.sql(dialect="tsql")
+        assert "concept_relationship" in sql
+        assert "Maps to" in sql
 
-    def test_multiple_concept_sets(self):
-        from circe.cohortdefinition.sqlglot_builders.codesets import build_codeset_query
+    def test_exclude_only_no_includes(self):
+        from circe.vocabulary.concept import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
+
+        cs = ConceptSet(
+            id=1,
+            expression=ConceptSetExpression(
+                items=[
+                    ConceptSetItem(concept=Concept(concept_id=99), is_excluded=True),
+                ]
+            ),
+        )
+        query = self._build([cs])
+        sql = query.sql(dialect="tsql")
+        assert "LEFT JOIN" in sql
+        assert "IS NULL" in sql
+        assert "1 = 0" in sql or "0=1" in sql or "FALSE" in sql
+
+    def test_multiple_concept_sets_union_all(self):
         from circe.vocabulary.concept import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
         cs1 = ConceptSet(
@@ -419,24 +456,37 @@ class TestCodesetsBuilder:
         cs2 = ConceptSet(
             id=2, expression=ConceptSetExpression(items=[ConceptSetItem(concept=Concept(concept_id=2))])
         )
-        query = build_codeset_query([cs1, cs2])
-        assert query is not None
-        sql = query.sql(dialect="duckdb")
-        assert "UNION" in sql.upper()
+        query = self._build([cs1, cs2])
+        sql = query.sql(dialect="tsql")
+        assert "UNION ALL" in sql.upper() or "UNION" in sql.upper()
 
     def test_concept_set_with_no_items(self):
-        from circe.cohortdefinition.sqlglot_builders.codesets import build_codeset_query
         from circe.vocabulary.concept import ConceptSet, ConceptSetExpression
 
-        cs = ConceptSet(id=1, name="empty", expression=ConceptSetExpression(items=[]))
-        assert build_codeset_query([cs]) is None
+        cs = ConceptSet(id=1, expression=ConceptSetExpression(items=[]))
+        assert self._build([cs]) is None
 
     def test_concept_set_without_expression(self):
-        from circe.cohortdefinition.sqlglot_builders.codesets import build_codeset_query
         from circe.vocabulary.concept import ConceptSet
 
         cs = ConceptSet(id=1, name="noexpr")
-        assert build_codeset_query([cs]) is None
+        assert self._build([cs]) is None
+
+    def test_no_double_join(self):
+        from circe.vocabulary.concept import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
+
+        cs = ConceptSet(
+            id=1,
+            expression=ConceptSetExpression(
+                items=[
+                    ConceptSetItem(concept=Concept(concept_id=1), is_excluded=True, include_descendants=True),
+                    ConceptSetItem(concept=Concept(concept_id=2), is_excluded=False, include_mapped=True),
+                ]
+            ),
+        )
+        query = self._build([cs])
+        sql = query.sql(dialect="tsql")
+        assert "JOIN JOIN" not in sql, "Double JOIN found"
 
 
 class TestCrossDialect:
