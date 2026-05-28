@@ -1,12 +1,9 @@
 """Test SQL splitting - ported from OHDSI SqlRender test-splitSql.R"""
 
-import pytest
-
 from circe.sqlrender import split_sql
 
 
 class TestSplitSql:
-
     def test_split_simple_statements(self):
         parts = split_sql("SELECT * INTO a FROM b; USE x; DROP TABLE c;")
         assert parts == ["SELECT * INTO a FROM b", "USE x", "DROP TABLE c"]
@@ -16,18 +13,14 @@ class TestSplitSql:
         assert parts == ["BEGIN\nSELECT * INTO a FROM b;\nEND;", "USE x"]
 
     def test_split_with_case_end(self):
-        parts = split_sql(
-            "SELECT CASE WHEN x=1 THEN 0 ELSE 1 END AS x INTO a FROM b;\nUSE x;"
-        )
+        parts = split_sql("SELECT CASE WHEN x=1 THEN 0 ELSE 1 END AS x INTO a FROM b;\nUSE x;")
         assert parts == [
             "SELECT CASE WHEN x=1 THEN 0 ELSE 1 END AS x INTO a FROM b",
             "USE x",
         ]
 
     def test_split_with_end_in_quoted_text(self):
-        parts = split_sql(
-            "insert into a (x) values ('end');\n insert into a (x) values ('begin');"
-        )
+        parts = split_sql("insert into a (x) values ('end');\n insert into a (x) values ('begin');")
         assert parts == [
             "insert into a (x) values ('end')",
             "insert into a (x) values ('begin')",
@@ -52,12 +45,8 @@ class TestSplitSql:
         assert parts == ["SELECT * FROM table"]
 
     def test_split_with_hint_at_start(self):
-        parts = split_sql(
-            "--HINT DISTRIBUTE_ON_KEY(analysis_id)\nCREATE TABLE results.achilles_results_dist"
-        )
-        assert parts == [
-            "--HINT DISTRIBUTE_ON_KEY(analysis_id)\nCREATE TABLE results.achilles_results_dist"
-        ]
+        parts = split_sql("--HINT DISTRIBUTE_ON_KEY(analysis_id)\nCREATE TABLE results.achilles_results_dist")
+        assert parts == ["--HINT DISTRIBUTE_ON_KEY(analysis_id)\nCREATE TABLE results.achilles_results_dist"]
 
     def test_split_with_hint_in_second_statement(self):
         parts = split_sql(
