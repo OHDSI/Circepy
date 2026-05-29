@@ -8,8 +8,13 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+from typing import TYPE_CHECKING, Optional
+
 from ..cohortdefinition.builders.utils import BuilderUtils
-from .concept import Concept, ConceptSetExpression
+from .concept import Concept, ConceptExpressionItem, ConceptSetExpression
+
+if TYPE_CHECKING:
+    from .predicate_sql_compiler import PredicateSQLCompiler
 
 
 class ConceptSetExpressionQueryBuilder:
@@ -113,66 +118,91 @@ WHERE E.concept_id is null"""
 
         return concept_set_query
 
-    def build_expression_query(self, expression: ConceptSetExpression) -> str:
+    def build_expression_query(
+        self,
+        expression: ConceptSetExpression,
+        predicate_compiler: Optional["PredicateSQLCompiler"] = None,
+    ) -> str:
         """Build expression query for concept set.
+
+        Supports both traditional ConceptExpressionItem and ConceptPredicateItem.
+        Predicate items require a PredicateSQLCompiler to be provided.
 
         Java equivalent: buildExpressionQuery()
         """
-        # Handle included concepts
+
+        from .predicate_item import ConceptPredicateItem
+
         include_concepts = []
         include_descendant_concepts = []
         include_mapped_concepts = []
         include_mapped_descendant_concepts = []
+        include_predicate_queries = []
 
-        # Handle excluded concepts
         exclude_concepts = []
         exclude_descendant_concepts = []
         exclude_mapped_concepts = []
         exclude_mapped_descendant_concepts = []
+        exclude_predicate_queries = []
 
-        # Populate each sub-set of concepts from the flags set in each concept set item
         for item in expression.items:
-            if not item.is_excluded:
-                include_concepts.append(item.concept)
-
-                if item.include_descendants:
-                    include_descendant_concepts.append(item.concept)
-
-                if item.include_mapped:
-                    include_mapped_concepts.append(item.concept)
+            if isinstance(item, ConceptPredicateItem):
+                if predicate_compiler is None:
+                    raise ValueError("ConceptPredicateItem requires a PredicateSQLCompiler")
+                sql = predicate_compiler.compile_expression(item.expression)
+                if item.is_excluded:
+                    exclude_predicate_queries.append(sql)
+                else:
+                    include_predicate_queries.append(sql)
+            elif isinstance(item, ConceptExpressionItem):
+                if not item.is_excluded:
+                    include_concepts.append(item.concept)
                     if item.include_descendants:
-                        include_mapped_descendant_concepts.append(item.concept)
-            else:
-                exclude_concepts.append(item.concept)
-                if item.include_descendants:
-                    exclude_descendant_concepts.append(item.concept)
-                if item.include_mapped:
-                    exclude_mapped_concepts.append(item.concept)
+                        include_descendant_concepts.append(item.concept)
+                    if item.include_mapped:
+                        include_mapped_concepts.append(item.concept)
+                        if item.include_descendants:
+                            include_mapped_descendant_concepts.append(item.concept)
+                else:
+                    exclude_concepts.append(item.concept)
                     if item.include_descendants:
-                        exclude_mapped_descendant_concepts.append(item.concept)
+                        exclude_descendant_concepts.append(item.concept)
+                    if item.include_mapped:
+                        exclude_mapped_concepts.append(item.concept)
+                        if item.include_descendants:
+                            exclude_mapped_descendant_concepts.append(item.concept)
 
-        # Build the main concept set query
-        concept_set_query = self.CONCEPT_SET_INCLUDE_TEMPLATE.replace(
-            "@includeQuery",
-            self.build_concept_set_query(
-                include_concepts,
-                include_descendant_concepts,
-                include_mapped_concepts,
-                include_mapped_descendant_concepts,
-            ),
+        concept_set_query = self.build_concept_set_query(
+            include_concepts,
+            include_descendant_concepts,
+            include_mapped_concepts,
+            include_mapped_descendant_concepts,
         )
 
-        # Add exclusion query if needed
-        if exclude_concepts:
-            exclude_query = self.CONCEPT_SET_EXCLUDE_TEMPLATE.replace(
-                "@excludeQuery",
-                self.build_concept_set_query(
-                    exclude_concepts,
-                    exclude_descendant_concepts,
-                    exclude_mapped_concepts,
-                    exclude_mapped_descendant_concepts,
-                ),
+        if include_predicate_queries:
+            predicate_union = " UNION ".join(include_predicate_queries)
+            if concept_set_query != "select concept_id from @vocabulary_database_schema.CONCEPT where 0=1":
+                concept_set_query += " UNION " + predicate_union
+            else:
+                concept_set_query = predicate_union
+
+        concept_set_query = self.CONCEPT_SET_INCLUDE_TEMPLATE.replace("@includeQuery", concept_set_query)
+
+        exclude_query_parts = []
+        if exclude_concepts or include_mapped_concepts or include_mapped_descendant_concepts:
+            eq = self.build_concept_set_query(
+                exclude_concepts,
+                exclude_descendant_concepts,
+                exclude_mapped_concepts,
+                exclude_mapped_descendant_concepts,
             )
-            concept_set_query += exclude_query
+            if eq != "select concept_id from @vocabulary_database_schema.CONCEPT where 0=1":
+                exclude_query_parts.append(eq)
+        if exclude_predicate_queries:
+            exclude_query_parts.extend(exclude_predicate_queries)
+
+        if exclude_query_parts:
+            combined = " UNION ".join(exclude_query_parts)
+            concept_set_query += self.CONCEPT_SET_EXCLUDE_TEMPLATE.replace("@excludeQuery", combined)
 
         return concept_set_query

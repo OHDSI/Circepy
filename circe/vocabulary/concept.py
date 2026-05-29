@@ -9,9 +9,16 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    AliasChoices,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 
 class Concept(BaseModel):
@@ -100,6 +107,7 @@ class ConceptExpressionItem(BaseModel):
     with legacy JSON files that don't have this field.
     """
 
+    type: str = "concept_item"
     concept: Concept
     is_excluded: bool = Field(default=False, alias="isExcluded")
     include_descendants: bool = Field(default=False, alias="includeDescendants")
@@ -119,15 +127,29 @@ class ConceptSetExpression(BaseModel):
 
     Note: isExcluded, includeMapped, includeDescendants may not be present in all Java JSONs
     (they're sometimes only on the items), so we provide defaults.
+
+    Items may be ConceptExpressionItem (traditional) or ConceptPredicateItem (declarative).
     """
 
     concept: Optional[Concept] = None
     is_excluded: bool = Field(default=False, alias="isExcluded")
     include_mapped: bool = Field(default=False, alias="includeMapped")
     include_descendants: bool = Field(default=False, alias="includeDescendants")
-    items: Optional[list[ConceptExpressionItem]] = None
+    items: Optional[list[Union["ConceptExpressionItem", "ConceptPredicateItem"]]] = None
 
     model_config = ConfigDict(populate_by_name=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def ensure_item_type(cls, data: Any) -> Any:
+        """Add 'type' discriminator to items missing it (backward compat with legacy JSON)."""
+        if isinstance(data, dict):
+            items = data.get("items")
+            if isinstance(items, list):
+                for item in items:
+                    if isinstance(item, dict) and "type" not in item:
+                        item["type"] = "concept_item"
+        return data
 
 
 class ConceptSet(BaseModel):
@@ -241,6 +263,10 @@ class ConceptSet(BaseModel):
                     raise ValueError(f"Each tag must be 1-100 characters, got: {tag}")
         return v
 
+
+# Import ConceptPredicateItem for the discriminated union in ConceptSetExpression
+# Import is deferred to avoid circular issues
+from .predicate_item import ConceptPredicateItem  # noqa: E402, F811
 
 # Forward references will be resolved when all classes are imported
 ConceptSet.model_rebuild()
