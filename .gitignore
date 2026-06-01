@@ -185,3 +185,4 @@ debug_app/test_results.json
 benchmark_output/
 renv.lock
 eunomia_data/
+renv/
