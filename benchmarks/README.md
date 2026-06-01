@@ -22,6 +22,12 @@ Install the Python package with DuckDB support:
 pip install -e ".[dev]"
 ```
 
+For Databricks benchmarks, install the Databricks backend extra as well:
+
+```bash
+pip install -e ".[dev,ibis-databricks]"
+```
+
 ## Quick Start
 
 ```bash
@@ -37,6 +43,29 @@ python benchmarks/benchmark_run_py.py
 # 4. Analyze and compare results
 python benchmarks/benchmark_analyze_duckdb.py
 ```
+
+## Databricks
+
+The benchmark scripts can also run against a Databricks SQL warehouse. Set the
+connection and schema environment variables referenced by
+`benchmark_db_config.yaml`, then run the same entry points with
+`--backend databricks`:
+
+```bash
+export DATABRICKS_HOST="adb-<workspace>.<region>.databricks.net"
+export DATABRICKS_HTTP_PATH="/sql/1.0/warehouses/<warehouse-id>"
+export DATABRICKS_TOKEN="..."
+export DATABRICKS_CDM_SCHEMA="catalog.schema"
+export DATABRICKS_VOCABULARY_SCHEMA="catalog.schema"
+export DATABRICKS_RESULTS_SCHEMA="catalog.schema"
+
+Rscript benchmarks/benchmark_run_r.R --backend databricks
+python benchmarks/benchmark_run_py.py --backend databricks
+python benchmarks/benchmark_analyze_duckdb.py --backend databricks
+```
+
+If you use Unity Catalog defaults, you can also set `DATABRICKS_CATALOG` and
+`DATABRICKS_DATABASE` for the Python Ibis connection.
 
 ## Files
 

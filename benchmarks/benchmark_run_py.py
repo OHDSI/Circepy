@@ -36,6 +36,17 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
+logging.getLogger("circe").setLevel(logging.INFO)
+
+for logger_name in (
+    "databricks",
+    "databricks.sql",
+    "databricks.sql.client",
+    "databricks.sql.http",
+    "urllib3",
+):
+    logging.getLogger(logger_name).setLevel(logging.WARNING)
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = REPO_ROOT / "benchmark_output"
 JSON_DIR = OUTPUT_DIR / "phenotype_jsons"

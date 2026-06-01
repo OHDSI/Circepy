@@ -42,6 +42,84 @@ Sys.setenv(EUNOMIA_DATA_FOLDER = EUNOMIA_DATA_DIR)
 
 DUCKDB_PATH <- file.path(OUTPUT_DIR, "eunomia.duckdb")
 
+cfg_value <- function(value, default = "") {
+  if (is.null(value) || identical(value, "")) {
+    return(default)
+  }
+  value
+}
+
+trim_quotes <- function(value) {
+  sub("^(['\"])", "", sub("(['\"])$", "", trimws(value)))
+}
+
+expand_env_vars <- function(value) {
+  matches <- gregexpr("\\$\\{([A-Za-z0-9_]+)\\}", value, perl = TRUE)
+  tokens <- regmatches(value, matches)[[1]]
+  if (length(tokens) == 0) {
+    return(value)
+  }
+
+  expanded <- value
+  for (token in unique(tokens)) {
+    var_name <- sub("^\\$\\{", "", sub("\\}$", "", token))
+    expanded <- gsub(token, Sys.getenv(var_name, unset = ""), expanded, fixed = TRUE)
+  }
+  expanded
+}
+
+load_databricks_config <- function(config_path) {
+  if (!file.exists(config_path)) {
+    stop(sprintf("Config not found: %s", config_path))
+  }
+
+  lines <- readLines(config_path, warn = FALSE)
+  section_started <- FALSE
+  current_group <- NULL
+  values <- list()
+
+  for (line in lines) {
+    if (grepl("^\\s*$", line) || grepl("^\\s*#", line)) {
+      next
+    }
+
+    if (!section_started) {
+      if (grepl("^databricks:\\s*$", line)) {
+        section_started <- TRUE
+      }
+      next
+    }
+
+    if (grepl("^[A-Za-z0-9_-]+:\\s*$", line)) {
+      break
+    }
+
+    if (grepl("^  [A-Za-z0-9_-]+:\\s*$", line)) {
+      current_group <- sub("^  ([A-Za-z0-9_-]+):\\s*$", "\\1", line)
+      if (is.null(values[[current_group]])) {
+        values[[current_group]] <- list()
+      }
+      next
+    }
+
+    if (grepl("^  [A-Za-z0-9_-]+:\\s*", line)) {
+      key <- sub("^  ([A-Za-z0-9_-]+):.*$", "\\1", line)
+      raw_value <- sub("^  [A-Za-z0-9_-]+:\\s*", "", line)
+      values[[key]] <- expand_env_vars(trim_quotes(raw_value))
+      current_group <- NULL
+      next
+    }
+
+    if (!is.null(current_group) && grepl("^    [A-Za-z0-9_-]+:\\s*", line)) {
+      key <- sub("^    ([A-Za-z0-9_-]+):.*$", "\\1", line)
+      raw_value <- sub("^    [A-Za-z0-9_-]+:\\s*", "", line)
+      values[[current_group]][[key]] <- expand_env_vars(trim_quotes(raw_value))
+    }
+  }
+
+  values
+}
+
 # ---------------------------------------------------------------------------
 # 1. Load phenotype definitions from PhenotypeLibrary
 # ---------------------------------------------------------------------------
@@ -101,46 +179,35 @@ if (backend == "duckdb") {
 
   cat("Setting up Databricks connection...\n")
 
-  # Read YAML config
   config_path <- file.path(dirname(script_path), "benchmark_db_config.yaml")
-  if (!file.exists(config_path)) {
-    stop(sprintf("Config not found: %s", config_path))
-  }
+  cfg <- load_databricks_config(config_path)
+  conn_cfg <- cfg$connection
 
-  # Simple YAML reader — extracts top-level key's connection block
-  yaml_txt <- readLines(config_path, warn = FALSE)
-  yaml_txt <- yaml_txt[!grepl("^\\s*#", yaml_txt)]  # strip comments
-
-  extract_yaml <- function(key) {
-    pattern <- sprintf("^\\s*%s\\s*:\\s*[\"']?(.+?)[\"']?\\s*$", key)
-    line <- grep(pattern, yaml_txt, value = TRUE)
-    if (length(line) == 0) return("")
-    sub(pattern, "\\1", line[1])
-  }
-
-  resolve_env <- function(val) {
-    # Expand ${VAR} placeholders
-    gsub("\\$\\{(\\w+)\\}", function(m) {
-      v <- Sys.getenv(gsub("[${}]", "", m), unset = "")
-      v
-    }, val, perl = TRUE)
-  }
-
-  server_hostname <- resolve_env(extract_yaml("server_hostname"))
-  http_path       <- resolve_env(extract_yaml("http_path"))
-  databricks_token <- resolve_env(extract_yaml("personal_access_token"))
+  server_hostname <- cfg_value(conn_cfg$server_hostname)
+  http_path <- cfg_value(conn_cfg$http_path)
+  databricks_token <- cfg_value(conn_cfg$personal_access_token)
 
   if (server_hostname == "" || http_path == "" || databricks_token == "") {
-    stop("Databricks credentials not found. Set DATABRICKS_HOST, DATABRICKS_HTTP_PATH, and DATABRICKS_TOKEN environment variables.")
+    stop(
+      paste(
+        "Databricks credentials not found in benchmarks/benchmark_db_config.yaml.",
+        "Set DATABRICKS_HOST, DATABRICKS_HTTP_PATH, and DATABRICKS_TOKEN",
+        "before running the benchmarks."
+      )
+    )
   }
 
-  CDM_SCHEMA <- resolve_env(extract_yaml("cdm_schema"))
-  if (CDM_SCHEMA == "") CDM_SCHEMA <- "hive_metastore.omop_cdm"
+  CDM_SCHEMA <- cfg_value(cfg$cdm_schema)
+  RESULTS_SCHEMA <- cfg_value(cfg$results_schema)
+  VOCABULARY_SCHEMA <- cfg_value(cfg$vocabulary_schema, CDM_SCHEMA)
+  if (CDM_SCHEMA == "") {
+    stop("Databricks cdm_schema is required. Set DATABRICKS_CDM_SCHEMA in the environment or update the benchmark config.")
+  }
+  if (RESULTS_SCHEMA == "") {
+    stop("Databricks results_schema is required. Set DATABRICKS_RESULTS_SCHEMA in the environment or update the benchmark config.")
+  }
 
-  RESULTS_SCHEMA <- resolve_env(extract_yaml("results_schema"))
-  if (RESULTS_SCHEMA == "") RESULTS_SCHEMA <- "hive_metastore.results"
-
-  COHORT_TABLE <- "cohort_r"
+  COHORT_TABLE <- cfg_value(cfg$r_cohort_table, "cohort")
   TEMP_EMULATION_SCHEMA <- RESULTS_SCHEMA  # Databricks needs a real schema for temp
 
   conn_string <- paste0(
@@ -160,6 +227,9 @@ if (backend == "duckdb") {
 }
 
 cat(sprintf("CDM schema     : %s\n", CDM_SCHEMA))
+if (backend == "databricks") {
+  cat(sprintf("Vocabulary schema: %s\n", VOCABULARY_SCHEMA))
+}
 cat(sprintf("Results schema : %s\n", RESULTS_SCHEMA))
 cat(sprintf("Cohort table   : %s\n", COHORT_TABLE))
 

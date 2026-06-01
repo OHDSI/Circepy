@@ -37,14 +37,58 @@ PY_CHECKSUM_TABLE = "cohort_py_checksum"
 R_CSV = OUTPUT_DIR / "r_checksum_times.csv"
 PY_CSV = OUTPUT_DIR / "py_checksum_times.csv"
 
+ENV_PATH = REPO_ROOT / ".env"
+
+
+def _strip_wrapping_quotes(value: str) -> str:
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        return value[1:-1]
+    return value
+
+
+def _load_env_file() -> None:
+    """Load repo-local environment variables without overriding the shell."""
+    if not ENV_PATH.exists():
+        return
+
+    for raw_line in ENV_PATH.read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not key or key in os.environ:
+            continue
+
+        os.environ[key] = _strip_wrapping_quotes(value.strip())
+
+
+_load_env_file()
+
 
 def _expandvars(text: str) -> str:
     """Expand ``${ENV_VAR}`` patterns in *text*, falling back to an empty string."""
     return re.sub(
         r"\$\{(\w+)\}",
-        lambda m: os.environ.get(m.group(1), ""),
+        lambda m: _get_env_var(m.group(1)),
         text,
     )
+
+
+def _get_env_var(name: str) -> str:
+    """Return an environment variable, including benchmark-specific aliases."""
+    value = os.environ.get(name)
+    if value:
+        return value
+
+    aliases = {
+        "DATABRICKS_RESULTS_SCHEMA": "DATABRICKS_SCRATCH_SCHEMA",
+    }
+    alias = aliases.get(name)
+    if alias is None:
+        return ""
+    return os.environ.get(alias, "")
 
 
 def _expandvars_recursive(obj: Any) -> Any:
@@ -56,6 +100,51 @@ def _expandvars_recursive(obj: Any) -> Any:
     if isinstance(obj, list):
         return [_expandvars_recursive(v) for v in obj]
     return obj
+
+
+def _require_config_value(cfg: dict[str, Any], path: tuple[str, ...], env_var: str | None = None) -> str:
+    """Return a non-empty configuration value or raise a helpful error."""
+    current: Any = cfg
+    for key in path:
+        if not isinstance(current, dict):
+            current = None
+            break
+        current = current.get(key)
+
+    if isinstance(current, str) and current:
+        return current
+
+    dotted = ".".join(path)
+    if env_var is not None:
+        raise ValueError(
+            f"Missing Databricks config value '{dotted}'. Set {env_var} or update {CONFIG_PATH}."
+        )
+    raise ValueError(f"Missing Databricks config value '{dotted}' in {CONFIG_PATH}.")
+
+
+def _split_catalog_schema(qualified_schema: str | None) -> tuple[str | None, str | None]:
+    """Split a qualified Databricks schema into catalog and schema parts."""
+    if not qualified_schema:
+        return None, None
+
+    parts = [part for part in qualified_schema.split(".") if part]
+    if len(parts) >= 2:
+        return parts[0], parts[1]
+    return None, parts[0] if parts else None
+
+
+def _infer_databricks_namespace(cfg: dict[str, Any]) -> tuple[str | None, str | None]:
+    """Infer a sensible catalog/schema for the initial Databricks connection."""
+    conn_cfg = cfg.get("connection", {})
+    if conn_cfg.get("catalog") or conn_cfg.get("schema"):
+        return conn_cfg.get("catalog"), conn_cfg.get("schema")
+
+    for key in ("results_schema", "cdm_schema", "vocabulary_schema"):
+        catalog, schema = _split_catalog_schema(cfg.get(key))
+        if catalog or schema:
+            return catalog, schema
+
+    return None, None
 
 
 @dataclass
@@ -123,24 +212,34 @@ def connect_backend(backend_name: str) -> BackendConnection:
                 "pip install 'ibis-framework[databricks]'"
             )
 
-        conn_cfg = cfg["connection"]
+        catalog, schema = _infer_databricks_namespace(cfg)
         db_cfg: dict[str, Any] = {
-            "host": conn_cfg["server_hostname"],
-            "http_path": conn_cfg["http_path"],
+            "server_hostname": _require_config_value(
+                cfg, ("connection", "server_hostname"), env_var="DATABRICKS_HOST"
+            ),
+            "http_path": _require_config_value(
+                cfg, ("connection", "http_path"), env_var="DATABRICKS_HTTP_PATH"
+            ),
         }
-        if conn_cfg.get("personal_access_token"):
-            db_cfg["token"] = conn_cfg["personal_access_token"]
-        if conn_cfg.get("catalog"):
-            db_cfg["catalog"] = conn_cfg["catalog"]
-        if conn_cfg.get("schema"):
-            db_cfg["schema"] = conn_cfg["schema"]
+        token = _require_config_value(
+            cfg, ("connection", "personal_access_token"), env_var="DATABRICKS_TOKEN"
+        )
+        if token:
+            db_cfg["access_token"] = token
+        if catalog:
+            db_cfg["catalog"] = catalog
+        if schema:
+            db_cfg["schema"] = schema
 
         backend = ibis.databricks.connect(**db_cfg)
         return BackendConnection(
             backend=backend,
-            cdm_schema=cfg["cdm_schema"],
-            results_schema=cfg["results_schema"],
-            vocabulary_schema=cfg.get("vocabulary_schema", cfg["cdm_schema"]),
+            cdm_schema=_require_config_value(cfg, ("cdm_schema",), env_var="DATABRICKS_CDM_SCHEMA"),
+            results_schema=_require_config_value(
+                cfg, ("results_schema",), env_var="DATABRICKS_RESULTS_SCHEMA"
+            ),
+            vocabulary_schema=cfg.get("vocabulary_schema")
+            or _require_config_value(cfg, ("cdm_schema",), env_var="DATABRICKS_CDM_SCHEMA"),
             r_cohort_table=cfg.get("r_cohort_table", R_COHORT_TABLE),
             py_cohort_table=cfg.get("py_cohort_table", PY_COHORT_TABLE),
             r_checksum_table=cfg.get("r_checksum_table", R_CHECKSUM_TABLE),
