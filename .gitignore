@@ -186,3 +186,4 @@ benchmark_output/
 renv.lock
 eunomia_data/
 renv/
+.Rprofile
