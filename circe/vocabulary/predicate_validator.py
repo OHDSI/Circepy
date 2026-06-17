@@ -11,7 +11,13 @@ from typing import Literal
 
 from circe.vocabulary.concept import ConceptExpressionItem, ConceptSetExpression
 from circe.vocabulary.predicate_expressions import (
+    ConceptCodeFilter,
+    ConceptDateFilter,
+    ConceptIdRange,
+    ConceptSynonymFilter,
+    HierarchyAscend,
     HierarchyDescend,
+    ImmediateChildren,
     PredicateExpression,
     SetOperationNode,
     StringFilter,
@@ -108,6 +114,77 @@ class PredicateValidator:
                         f"StringFilter pattern '{expr.pattern}' is very short "
                         f"with no scope — may match many concepts",
                         f"{path}.expression.pattern",
+                    )
+                )
+
+        elif isinstance(expr, ConceptCodeFilter):
+            if not expr.codes:
+                warnings.append(
+                    ValidationWarning(
+                        "error",
+                        "ConceptCodeFilter codes list is empty",
+                        f"{path}.expression.codes",
+                    )
+                )
+            elif expr.match_type in ("LIKE", "ILIKE"):
+                for code in expr.codes:
+                    if code in ("%", "%%", ""):
+                        warnings.append(
+                            ValidationWarning(
+                                "error",
+                                f"ConceptCodeFilter code '{code}' is empty or bare wildcard",
+                                f"{path}.expression.codes",
+                            )
+                        )
+
+        elif isinstance(expr, ConceptSynonymFilter):
+            if not expr.pattern.strip():
+                warnings.append(
+                    ValidationWarning(
+                        "error",
+                        "ConceptSynonymFilter pattern is empty",
+                        f"{path}.expression.pattern",
+                    )
+                )
+            elif expr.pattern in ("%", "%%"):
+                warnings.append(
+                    ValidationWarning(
+                        "error",
+                        "ConceptSynonymFilter pattern is a bare wildcard",
+                        f"{path}.expression.pattern",
+                    )
+                )
+
+        elif isinstance(expr, HierarchyAscend):
+            if expr.max_depth is not None and expr.max_depth < 1:
+                warnings.append(
+                    ValidationWarning(
+                        "error",
+                        "HierarchyAscend.max_depth must be >= 1",
+                        f"{path}.expression.max_depth",
+                    )
+                )
+
+        elif isinstance(expr, ImmediateChildren):
+            pass  # No additional validation needed
+
+        elif isinstance(expr, ConceptIdRange):
+            if expr.min_id is None and expr.max_id is None:
+                warnings.append(
+                    ValidationWarning(
+                        "error",
+                        "ConceptIdRange requires at least one of min_id or max_id",
+                        f"{path}.expression",
+                    )
+                )
+
+        elif isinstance(expr, ConceptDateFilter):
+            if expr.valid_on_date is None and expr.valid_start_date is None and expr.valid_end_date is None:
+                warnings.append(
+                    ValidationWarning(
+                        "error",
+                        "ConceptDateFilter requires at least one date constraint",
+                        f"{path}.expression",
                     )
                 )
 

@@ -17,7 +17,6 @@ from circe.vocabulary.concept import (
 from circe.vocabulary.predicate_compat import ConceptSetCompat, ManifestGenerator
 from circe.vocabulary.predicate_expressions import (
     HierarchyDescend,
-    StringFilter,
     VocabularyScope,
 )
 from circe.vocabulary.predicate_item import ConceptPredicateItem
@@ -120,21 +119,15 @@ class TestManifestGenerator(unittest.TestCase):
             "INSERT INTO vocab.concept VALUES (316139, 'Heart failure', 'Condition', 'SNOMED', "
             "'Clinical Finding', 'S', '84114007', NULL)"
         )
-        cls.conn.execute(
-            "INSERT INTO vocab.concept_ancestor VALUES (201820, 201820, 0, 0)"
-        )
-        cls.conn.execute(
-            "INSERT INTO vocab.concept_ancestor VALUES (316139, 316139, 0, 0)"
-        )
+        cls.conn.execute("INSERT INTO vocab.concept_ancestor VALUES (201820, 201820, 0, 0)")
+        cls.conn.execute("INSERT INTO vocab.concept_ancestor VALUES (316139, 316139, 0, 0)")
 
         class DuckDBConnection:
             def __init__(self, conn):
                 self.conn = conn
 
             def execute(self, sql):
-                return self.conn.execute(
-                    sql.replace("@vocabulary_database_schema", "vocab")
-                ).fetchall()
+                return self.conn.execute(sql.replace("@vocabulary_database_schema", "vocab")).fetchall()
 
         cls.db = DuckDBConnection(cls.conn)
         cls.resolver = ConceptSetResolver(cls.db, cls.compiler)

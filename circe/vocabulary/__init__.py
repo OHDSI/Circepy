@@ -12,7 +12,13 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 from .concept import Concept, ConceptExpressionItem, ConceptSet, ConceptSetExpression, ConceptSetItem
 from .predicate_compat import ConceptSetCompat, ManifestGenerator, ResolutionManifest
 from .predicate_expressions import (
+    ConceptCodeFilter,
+    ConceptDateFilter,
+    ConceptIdRange,
+    ConceptSynonymFilter,
+    HierarchyAscend,
     HierarchyDescend,
+    ImmediateChildren,
     PredicateExpression,
     SetOperation,
     SetOperationNode,
@@ -37,7 +43,13 @@ __all__ = [
     "PredicateExpression",
     "VocabularyScope",
     "HierarchyDescend",
+    "HierarchyAscend",
+    "ImmediateChildren",
     "StringFilter",
+    "ConceptCodeFilter",
+    "ConceptSynonymFilter",
+    "ConceptIdRange",
+    "ConceptDateFilter",
     "SetOperationNode",
     "SetOperation",
     "PredicateSQLCompiler",

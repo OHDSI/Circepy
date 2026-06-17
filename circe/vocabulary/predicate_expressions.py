@@ -39,7 +39,48 @@ class HierarchyDescend(BaseModel):
 class StringFilter(BaseModel):
     type: Literal["string_filter"] = "string_filter"
     pattern: str
-    match_type: Literal["LIKE", "ILIKE"] = "ILIKE"
+    match_type: Literal["LIKE", "ILIKE", "REGEX"] = "ILIKE"
+    scope: VocabularyScope | None = None
+
+
+class ConceptCodeFilter(BaseModel):
+    type: Literal["concept_code_filter"] = "concept_code_filter"
+    codes: list[str]
+    match_type: Literal["exact", "LIKE", "ILIKE", "REGEX"] = "exact"
+    scope: VocabularyScope | None = None
+
+
+class ConceptSynonymFilter(BaseModel):
+    type: Literal["concept_synonym_filter"] = "concept_synonym_filter"
+    pattern: str
+    match_type: Literal["LIKE", "ILIKE", "REGEX"] = "ILIKE"
+    scope: VocabularyScope | None = None
+
+
+class HierarchyAscend(BaseModel):
+    type: Literal["hierarchy_ascend"] = "hierarchy_ascend"
+    descendant_concept_id: int
+    include_descendant: bool = True
+    max_depth: int | None = None
+
+
+class ImmediateChildren(BaseModel):
+    type: Literal["immediate_children"] = "immediate_children"
+    ancestor_concept_id: int
+
+
+class ConceptIdRange(BaseModel):
+    type: Literal["concept_id_range"] = "concept_id_range"
+    min_id: int | None = None
+    max_id: int | None = None
+    scope: VocabularyScope | None = None
+
+
+class ConceptDateFilter(BaseModel):
+    type: Literal["concept_date_filter"] = "concept_date_filter"
+    valid_on_date: str | None = None
+    valid_start_date: str | None = None
+    valid_end_date: str | None = None
     scope: VocabularyScope | None = None
 
 
@@ -53,6 +94,12 @@ PredicateExpression = Union[
     VocabularyScope,
     HierarchyDescend,
     StringFilter,
+    ConceptCodeFilter,
+    ConceptSynonymFilter,
+    HierarchyAscend,
+    ImmediateChildren,
+    ConceptIdRange,
+    ConceptDateFilter,
     SetOperationNode,
 ]
 

@@ -52,22 +52,65 @@ def create_test_vocab(conn):
 
     concepts = [
         # Diabetes concepts (SNOMED, Condition)
-        (201820, "Type 2 diabetes mellitus", "Condition", "SNOMED", "Clinical Finding", "S", "44054006", None),
-        (443238, "Type 1 diabetes mellitus", "Condition", "SNOMED", "Clinical Finding", "S", "46635009", None),
+        (
+            201820,
+            "Type 2 diabetes mellitus",
+            "Condition",
+            "SNOMED",
+            "Clinical Finding",
+            "S",
+            "44054006",
+            None,
+        ),
+        (
+            443238,
+            "Type 1 diabetes mellitus",
+            "Condition",
+            "SNOMED",
+            "Clinical Finding",
+            "S",
+            "46635009",
+            None,
+        ),
         (193323, "Diabetic ketoacidosis", "Condition", "SNOMED", "Clinical Finding", "S", "397774000", None),
-        (40484648, "Diabetes mellitus in pregnancy", "Condition", "SNOMED", "Clinical Finding", "S", "1168702002", None),
-        (4058243, "Gestational diabetes mellitus", "Condition", "SNOMED", "Clinical Finding", "S", "1168702002", None),
+        (
+            40484648,
+            "Diabetes mellitus in pregnancy",
+            "Condition",
+            "SNOMED",
+            "Clinical Finding",
+            "S",
+            "1168702002",
+            None,
+        ),
+        (
+            4058243,
+            "Gestational diabetes mellitus",
+            "Condition",
+            "SNOMED",
+            "Clinical Finding",
+            "S",
+            "1168702002",
+            None,
+        ),
         # Heart failure concepts (SNOMED, Condition)
         (316139, "Heart failure", "Condition", "SNOMED", "Clinical Finding", "S", "84114007", None),
-        (315295, "Congestive rheumatic heart failure", "Condition", "SNOMED", "Clinical Finding", "S", "82523003", None),
+        (
+            315295,
+            "Congestive rheumatic heart failure",
+            "Condition",
+            "SNOMED",
+            "Clinical Finding",
+            "S",
+            "82523003",
+            None,
+        ),
         # Non-condition concepts that should be excluded by domain filter
         (19067763, "Metformin", "Drug", "RxNorm", "Ingredient", "S", "6809", None),
         (21600712, "Insulin glargine", "Drug", "RxNorm", "Ingredient", "S", "284387", None),
     ]
     for c in concepts:
-        conn.execute(
-            "INSERT INTO vocab.concept VALUES (?, ?, ?, ?, ?, ?, ?, ?)", c
-        )
+        conn.execute("INSERT INTO vocab.concept VALUES (?, ?, ?, ?, ?, ?, ?, ?)", c)
 
     # Ancestor relationships: 201820 (T2DM) -> children
     ancestors = [
@@ -81,9 +124,7 @@ def create_test_vocab(conn):
         (315295, 315295, 0, 0),  # self
     ]
     for a in ancestors:
-        conn.execute(
-            "INSERT INTO vocab.concept_ancestor VALUES (?, ?, ?, ?)", a
-        )
+        conn.execute("INSERT INTO vocab.concept_ancestor VALUES (?, ?, ?, ?)", a)
 
 
 @unittest.skipIf(not HAS_DUCKDB, "duckdb not installed")
@@ -161,9 +202,7 @@ class TestConceptSetResolverIntegration(unittest.TestCase):
     def test_resolve_set_minus(self):
         diabetes = HierarchyDescend(ancestor_concept_id=201820)
         gestational = HierarchyDescend(ancestor_concept_id=4058243)
-        expr = SetOperationNode(
-            operation=SetOperation.MINUS, operands=[diabetes, gestational]
-        )
+        expr = SetOperationNode(operation=SetOperation.MINUS, operands=[diabetes, gestational])
         result = self.resolver.resolve_expression(expr)
         self.assertIn(201820, result)
         self.assertNotIn(4058243, result)
@@ -171,9 +210,7 @@ class TestConceptSetResolverIntegration(unittest.TestCase):
     def test_resolve_set_intersect(self):
         diabetes = HierarchyDescend(ancestor_concept_id=201820, include_ancestor=False)
         expr = StringFilter(pattern="%diabetes%")
-        intersect = SetOperationNode(
-            operation=SetOperation.INTERSECT, operands=[diabetes, expr]
-        )
+        intersect = SetOperationNode(operation=SetOperation.INTERSECT, operands=[diabetes, expr])
         result = self.resolver.resolve_expression(intersect)
         # Only concepts that are both diabetes descendants AND have 'diabetes' in name
         for c in result:

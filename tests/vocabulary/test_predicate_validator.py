@@ -4,7 +4,13 @@ import unittest
 
 from circe.vocabulary.concept import ConceptSetExpression
 from circe.vocabulary.predicate_expressions import (
+    ConceptCodeFilter,
+    ConceptDateFilter,
+    ConceptIdRange,
+    ConceptSynonymFilter,
+    HierarchyAscend,
     HierarchyDescend,
+    ImmediateChildren,
     SetOperation,
     SetOperationNode,
     StringFilter,
@@ -36,12 +42,8 @@ class TestPredicateValidator(unittest.TestCase):
         self.assertTrue(any(w.level == "warning" and "all items" in w.message.lower() for w in warnings))
 
     def test_mixed_included_and_excluded_no_warning(self):
-        inc = ConceptPredicateItem(
-            expression=VocabularyScope(vocabulary_id="SNOMED"), isExcluded=False
-        )
-        exc = ConceptPredicateItem(
-            expression=VocabularyScope(vocabulary_id="ICD10CM"), isExcluded=True
-        )
+        inc = ConceptPredicateItem(expression=VocabularyScope(vocabulary_id="SNOMED"), isExcluded=False)
+        exc = ConceptPredicateItem(expression=VocabularyScope(vocabulary_id="ICD10CM"), isExcluded=True)
         cs = ConceptSetExpression(items=[inc, exc])
         warnings = self.validator.validate(cs)
         self.assertFalse(any("all items" in w.message.lower() for w in warnings))
@@ -141,10 +143,132 @@ class TestPredicateValidator(unittest.TestCase):
         self.assertFalse(any("operands" in w.message.lower() for w in warnings))
 
     def test_valid_predicate_no_warnings(self):
-        expr = VocabularyScope(vocabulary_id="SNOMED", domain_id="Condition", concept_class_id="Clinical Finding")
+        expr = VocabularyScope(
+            vocabulary_id="SNOMED", domain_id="Condition", concept_class_id="Clinical Finding"
+        )
         item = ConceptPredicateItem(expression=expr, isExcluded=False)
         item2 = ConceptPredicateItem(expression=StringFilter(pattern="%diabetes%"), isExcluded=False)
         cs = ConceptSetExpression(items=[item, item2])
+        warnings = self.validator.validate(cs)
+        errors = [w for w in warnings if w.level == "error"]
+        self.assertEqual(len(errors), 0)
+
+    # --- ConceptCodeFilter validation ---
+
+    def test_concept_code_filter_empty_error(self):
+        expr = ConceptCodeFilter(codes=[])
+        item = ConceptPredicateItem(expression=expr)
+        cs = ConceptSetExpression(items=[item])
+        warnings = self.validator.validate(cs)
+        self.assertTrue(any("empty" in w.message.lower() and w.level == "error" for w in warnings))
+
+    def test_concept_code_filter_bare_wildcard_error(self):
+        expr = ConceptCodeFilter(codes=["%"], match_type="LIKE")
+        item = ConceptPredicateItem(expression=expr)
+        cs = ConceptSetExpression(items=[item])
+        warnings = self.validator.validate(cs)
+        self.assertTrue(any("wildcard" in w.message.lower() and w.level == "error" for w in warnings))
+
+    def test_concept_code_filter_valid_no_warning(self):
+        expr = ConceptCodeFilter(codes=["E11.9", "E10.0"])
+        item = ConceptPredicateItem(expression=expr)
+        cs = ConceptSetExpression(items=[item])
+        warnings = self.validator.validate(cs)
+        errors = [w for w in warnings if w.level == "error"]
+        self.assertEqual(len(errors), 0)
+
+    # --- ConceptSynonymFilter validation ---
+
+    def test_concept_synonym_filter_empty_error(self):
+        expr = ConceptSynonymFilter(pattern="")
+        item = ConceptPredicateItem(expression=expr)
+        cs = ConceptSetExpression(items=[item])
+        warnings = self.validator.validate(cs)
+        self.assertTrue(any("empty" in w.message.lower() and w.level == "error" for w in warnings))
+
+    def test_concept_synonym_filter_wildcard_error(self):
+        expr = ConceptSynonymFilter(pattern="%")
+        item = ConceptPredicateItem(expression=expr)
+        cs = ConceptSetExpression(items=[item])
+        warnings = self.validator.validate(cs)
+        self.assertTrue(any("wildcard" in w.message.lower() and w.level == "error" for w in warnings))
+
+    def test_concept_synonym_filter_valid_no_warning(self):
+        expr = ConceptSynonymFilter(pattern="%heart attack%")
+        item = ConceptPredicateItem(expression=expr)
+        cs = ConceptSetExpression(items=[item])
+        warnings = self.validator.validate(cs)
+        errors = [w for w in warnings if w.level == "error"]
+        self.assertEqual(len(errors), 0)
+
+    # --- HierarchyAscend validation ---
+
+    def test_hierarchy_ascend_negative_depth_error(self):
+        expr = HierarchyAscend(descendant_concept_id=201820, max_depth=0)
+        item = ConceptPredicateItem(expression=expr)
+        cs = ConceptSetExpression(items=[item])
+        warnings = self.validator.validate(cs)
+        self.assertTrue(any("max_depth" in w.message.lower() and w.level == "error" for w in warnings))
+
+    def test_hierarchy_ascend_valid_depth_no_warning(self):
+        expr = HierarchyAscend(descendant_concept_id=201820, max_depth=1)
+        item = ConceptPredicateItem(expression=expr)
+        cs = ConceptSetExpression(items=[item])
+        warnings = self.validator.validate(cs)
+        self.assertFalse(any("max_depth" in w.message.lower() for w in warnings))
+
+    # --- ImmediateChildren validation (no specific validation needed) ---
+
+    def test_immediate_children_valid(self):
+        expr = ImmediateChildren(ancestor_concept_id=201820)
+        item = ConceptPredicateItem(expression=expr)
+        cs = ConceptSetExpression(items=[item])
+        warnings = self.validator.validate(cs)
+        errors = [w for w in warnings if w.level == "error"]
+        self.assertEqual(len(errors), 0)
+
+    # --- ConceptIdRange validation ---
+
+    def test_concept_id_range_no_bounds_error(self):
+        expr = ConceptIdRange()
+        item = ConceptPredicateItem(expression=expr)
+        cs = ConceptSetExpression(items=[item])
+        warnings = self.validator.validate(cs)
+        self.assertTrue(
+            any("requires at least one" in w.message.lower() and w.level == "error" for w in warnings)
+        )
+
+    def test_concept_id_range_valid_no_warning(self):
+        expr = ConceptIdRange(min_id=1, max_id=100)
+        item = ConceptPredicateItem(expression=expr)
+        cs = ConceptSetExpression(items=[item])
+        warnings = self.validator.validate(cs)
+        errors = [w for w in warnings if w.level == "error"]
+        self.assertEqual(len(errors), 0)
+
+    def test_concept_id_range_min_only_valid(self):
+        expr = ConceptIdRange(min_id=1000)
+        item = ConceptPredicateItem(expression=expr)
+        cs = ConceptSetExpression(items=[item])
+        warnings = self.validator.validate(cs)
+        errors = [w for w in warnings if w.level == "error"]
+        self.assertEqual(len(errors), 0)
+
+    # --- ConceptDateFilter validation ---
+
+    def test_concept_date_filter_no_dates_error(self):
+        expr = ConceptDateFilter()
+        item = ConceptPredicateItem(expression=expr)
+        cs = ConceptSetExpression(items=[item])
+        warnings = self.validator.validate(cs)
+        self.assertTrue(
+            any("requires at least one" in w.message.lower() and w.level == "error" for w in warnings)
+        )
+
+    def test_concept_date_filter_valid_no_warning(self):
+        expr = ConceptDateFilter(valid_on_date="2024-01-01")
+        item = ConceptPredicateItem(expression=expr)
+        cs = ConceptSetExpression(items=[item])
         warnings = self.validator.validate(cs)
         errors = [w for w in warnings if w.level == "error"]
         self.assertEqual(len(errors), 0)
