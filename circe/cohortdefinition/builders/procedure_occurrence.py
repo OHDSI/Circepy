@@ -9,7 +9,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional
 
 from ..criteria import Criteria
 from .base import CriteriaSqlBuilder
@@ -129,7 +128,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
     def resolve_select_clauses(
         self,
         criteria: Criteria,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve select clauses for criteria.
 
@@ -183,7 +182,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
 
         return select_cols
 
-    def resolve_join_clauses(self, criteria: Criteria, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_join_clauses(self, criteria: Criteria, options: BuilderOptions | None = None) -> list[str]:
         """Resolve join clauses for criteria.
 
         Java equivalent: ProcedureOccurrenceSqlBuilder.resolveJoinClauses()
@@ -221,7 +220,7 @@ class ProcedureOccurrenceSqlBuilder(CriteriaSqlBuilder[Criteria]):
     def resolve_where_clauses(
         self,
         criteria: Criteria,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve where clauses for criteria.
 

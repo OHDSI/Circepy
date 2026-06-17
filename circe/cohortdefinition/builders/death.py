@@ -8,7 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional
 
 from ..criteria import Death
 from .base import CriteriaSqlBuilder
@@ -81,7 +80,7 @@ FROM
         """
         return query
 
-    def resolve_select_clauses(self, criteria: Death, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_select_clauses(self, criteria: Death, options: BuilderOptions | None = None) -> list[str]:
         """Resolve select clauses for death criteria."""
         select_cols = ["d.person_id", "d.cause_concept_id"]
 
@@ -106,7 +105,7 @@ FROM
 
         return select_cols
 
-    def resolve_join_clauses(self, criteria: Death, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_join_clauses(self, criteria: Death, options: BuilderOptions | None = None) -> list[str]:
         """Resolve join clauses for death criteria."""
         joins = []
 
@@ -120,7 +119,7 @@ FROM
 
         return joins
 
-    def resolve_where_clauses(self, criteria: Death, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_where_clauses(self, criteria: Death, options: BuilderOptions | None = None) -> list[str]:
         """Resolve where clauses for death criteria."""
         where_clauses = super().resolve_where_clauses(criteria)
 

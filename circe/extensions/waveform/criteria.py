@@ -1,4 +1,3 @@
-from typing import Optional
 
 from pydantic import AliasChoices, Field
 
@@ -20,52 +19,52 @@ class WaveformOccurrence(Criteria):
     """
 
     # Core concept - type of waveform recording
-    waveform_occurrence_concept_id: Optional[list[Concept]] = Field(
+    waveform_occurrence_concept_id: list[Concept] | None = Field(
         default=None,
         validation_alias=AliasChoices("WaveformOccurrenceConceptId", "waveformOccurrenceConceptId"),
         serialization_alias="WaveformOccurrenceConceptId",
     )
 
     # Temporal bounds
-    occurrence_start_datetime: Optional[DateRange] = Field(
+    occurrence_start_datetime: DateRange | None = Field(
         default=None,
         validation_alias=AliasChoices("OccurrenceStartDatetime", "occurrenceStartDatetime"),
         serialization_alias="OccurrenceStartDatetime",
     )
-    occurrence_end_datetime: Optional[DateRange] = Field(
+    occurrence_end_datetime: DateRange | None = Field(
         default=None,
         validation_alias=AliasChoices("OccurrenceEndDatetime", "occurrenceEndDatetime"),
         serialization_alias="OccurrenceEndDatetime",
     )
 
     # Visit context
-    visit_occurrence_id: Optional[NumericRange] = Field(
+    visit_occurrence_id: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("VisitOccurrenceId", "visitOccurrenceId"),
         serialization_alias="VisitOccurrenceId",
     )
-    visit_detail_id: Optional[NumericRange] = Field(
+    visit_detail_id: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("VisitDetailId", "visitDetailId"),
         serialization_alias="VisitDetailId",
     )
 
     # File metadata
-    num_of_files: Optional[NumericRange] = Field(
+    num_of_files: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("NumOfFiles", "numOfFiles"),
         serialization_alias="NumOfFiles",
     )
 
     # Source identifiers
-    waveform_occurrence_source_value: Optional[TextFilter] = Field(
+    waveform_occurrence_source_value: TextFilter | None = Field(
         default=None,
         validation_alias=AliasChoices("WaveformOccurrenceSourceValue", "waveformOccurrenceSourceValue"),
         serialization_alias="WaveformOccurrenceSourceValue",
     )
 
     # Sequence/chain filtering
-    preceding_waveform_occurrence_id: Optional[NumericRange] = Field(
+    preceding_waveform_occurrence_id: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("PrecedingWaveformOccurrenceId", "precedingWaveformOccurrenceId"),
         serialization_alias="PrecedingWaveformOccurrenceId",
@@ -84,43 +83,43 @@ class WaveformRegistry(Criteria):
     """
 
     # Link to parent occurrence
-    waveform_occurrence_id: Optional[NumericRange] = Field(
+    waveform_occurrence_id: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("WaveformOccurrenceId", "waveformOccurrenceId"),
         serialization_alias="WaveformOccurrenceId",
     )
 
     # File temporal bounds
-    file_start_datetime: Optional[DateRange] = Field(
+    file_start_datetime: DateRange | None = Field(
         default=None,
         validation_alias=AliasChoices("FileStartDatetime", "fileStartDatetime"),
         serialization_alias="FileStartDatetime",
     )
-    file_end_datetime: Optional[DateRange] = Field(
+    file_end_datetime: DateRange | None = Field(
         default=None,
         validation_alias=AliasChoices("FileEndDatetime", "fileEndDatetime"),
         serialization_alias="FileEndDatetime",
     )
 
     # File format
-    file_extension_concept_id: Optional[list[Concept]] = Field(
+    file_extension_concept_id: list[Concept] | None = Field(
         default=None,
         validation_alias=AliasChoices("FileExtensionConceptId", "fileExtensionConceptId"),
         serialization_alias="FileExtensionConceptId",
     )
-    file_extension_source_value: Optional[TextFilter] = Field(
+    file_extension_source_value: TextFilter | None = Field(
         default=None,
         validation_alias=AliasChoices("FileExtensionSourceValue", "fileExtensionSourceValue"),
         serialization_alias="FileExtensionSourceValue",
     )
 
     # Visit context (denormalized for easier querying)
-    visit_occurrence_id: Optional[NumericRange] = Field(
+    visit_occurrence_id: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("VisitOccurrenceId", "visitOccurrenceId"),
         serialization_alias="VisitOccurrenceId",
     )
-    visit_detail_id: Optional[NumericRange] = Field(
+    visit_detail_id: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("VisitDetailId", "visitDetailId"),
         serialization_alias="VisitDetailId",
@@ -140,62 +139,62 @@ class WaveformChannelMetadata(Criteria):
     """
 
     # Link to registry file
-    waveform_registry_id: Optional[NumericRange] = Field(
+    waveform_registry_id: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("WaveformRegistryId", "waveformRegistryId"),
         serialization_alias="WaveformRegistryId",
     )
 
     # Channel identification
-    channel_concept_id: Optional[list[Concept]] = Field(
+    channel_concept_id: list[Concept] | None = Field(
         default=None,
         validation_alias=AliasChoices("ChannelConceptId", "channelConceptId"),
         serialization_alias="ChannelConceptId",
     )
-    waveform_channel_source_value: Optional[TextFilter] = Field(
+    waveform_channel_source_value: TextFilter | None = Field(
         default=None,
         validation_alias=AliasChoices("WaveformChannelSourceValue", "waveformChannelSourceValue"),
         serialization_alias="WaveformChannelSourceValue",
     )
 
     # Metadata type (e.g., sampling rate, gain, offset)
-    metadata_concept_id: Optional[list[Concept]] = Field(
+    metadata_concept_id: list[Concept] | None = Field(
         default=None,
         validation_alias=AliasChoices("MetadataConceptId", "metadataConceptId"),
         serialization_alias="MetadataConceptId",
     )
-    metadata_source_value: Optional[TextFilter] = Field(
+    metadata_source_value: TextFilter | None = Field(
         default=None,
         validation_alias=AliasChoices("MetadataSourceValue", "metadataSourceValue"),
         serialization_alias="MetadataSourceValue",
     )
 
     # Metadata values (at least one must be populated)
-    value_as_number: Optional[NumericRange] = Field(
+    value_as_number: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("ValueAsNumber", "valueAsNumber"),
         serialization_alias="ValueAsNumber",
     )
-    value_as_concept_id: Optional[list[Concept]] = Field(
+    value_as_concept_id: list[Concept] | None = Field(
         default=None,
         validation_alias=AliasChoices("ValueAsConceptId", "valueAsConceptId"),
         serialization_alias="ValueAsConceptId",
     )
 
     # Units for numeric values
-    unit_concept_id: Optional[list[Concept]] = Field(
+    unit_concept_id: list[Concept] | None = Field(
         default=None,
         validation_alias=AliasChoices("UnitConceptId", "unitConceptId"),
         serialization_alias="UnitConceptId",
     )
 
     # Device/procedure linkage
-    device_exposure_id: Optional[NumericRange] = Field(
+    device_exposure_id: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("DeviceExposureId", "deviceExposureId"),
         serialization_alias="DeviceExposureId",
     )
-    procedure_occurrence_id: Optional[NumericRange] = Field(
+    procedure_occurrence_id: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("ProcedureOccurrenceId", "procedureOccurrenceId"),
         serialization_alias="ProcedureOccurrenceId",
@@ -215,79 +214,79 @@ class WaveformFeature(Criteria):
     """
 
     # Parent links
-    waveform_occurrence_id: Optional[NumericRange] = Field(
+    waveform_occurrence_id: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("WaveformOccurrenceId", "waveformOccurrenceId"),
         serialization_alias="WaveformOccurrenceId",
     )
-    waveform_registry_id: Optional[NumericRange] = Field(
+    waveform_registry_id: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("WaveformRegistryId", "waveformRegistryId"),
         serialization_alias="WaveformRegistryId",
     )
-    waveform_channel_metadata_id: Optional[NumericRange] = Field(
+    waveform_channel_metadata_id: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("WaveformChannelMetadataId", "waveformChannelMetadataId"),
         serialization_alias="WaveformChannelMetadataId",
     )
 
     # Feature type (e.g., heart rate, SpO2, QRS detection)
-    feature_concept_id: Optional[list[Concept]] = Field(
+    feature_concept_id: list[Concept] | None = Field(
         default=None,
         validation_alias=AliasChoices("FeatureConceptId", "featureConceptId"),
         serialization_alias="FeatureConceptId",
     )
 
     # Algorithm used to derive feature
-    algorithm_concept_id: Optional[list[Concept]] = Field(
+    algorithm_concept_id: list[Concept] | None = Field(
         default=None,
         validation_alias=AliasChoices("AlgorithmConceptId", "algorithmConceptId"),
         serialization_alias="AlgorithmConceptId",
     )
-    algorithm_source_value: Optional[TextFilter] = Field(
+    algorithm_source_value: TextFilter | None = Field(
         default=None,
         validation_alias=AliasChoices("AlgorithmSourceValue", "algorithmSourceValue"),
         serialization_alias="AlgorithmSourceValue",
     )
 
     # Temporal window for feature
-    feature_start_timestamp: Optional[DateRange] = Field(
+    feature_start_timestamp: DateRange | None = Field(
         default=None,
         validation_alias=AliasChoices("FeatureStartTimestamp", "featureStartTimestamp"),
         serialization_alias="FeatureStartTimestamp",
     )
-    feature_end_timestamp: Optional[DateRange] = Field(
+    feature_end_timestamp: DateRange | None = Field(
         default=None,
         validation_alias=AliasChoices("FeatureEndTimestamp", "featureEndTimestamp"),
         serialization_alias="FeatureEndTimestamp",
     )
 
     # Feature values (at least one must be populated)
-    value_as_number: Optional[NumericRange] = Field(
+    value_as_number: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("ValueAsNumber", "valueAsNumber"),
         serialization_alias="ValueAsNumber",
     )
-    value_as_concept_id: Optional[list[Concept]] = Field(
+    value_as_concept_id: list[Concept] | None = Field(
         default=None,
         validation_alias=AliasChoices("ValueAsConceptId", "valueAsConceptId"),
         serialization_alias="ValueAsConceptId",
     )
 
     # Units for numeric values
-    unit_concept_id: Optional[list[Concept]] = Field(
+    unit_concept_id: list[Concept] | None = Field(
         default=None,
         validation_alias=AliasChoices("UnitConceptId", "unitConceptId"),
         serialization_alias="UnitConceptId",
     )
 
     # Links to standard OMOP tables
-    measurement_id: Optional[NumericRange] = Field(
+    measurement_id: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("MeasurementId", "measurementId"),
         serialization_alias="MeasurementId",
     )
-    observation_id: Optional[NumericRange] = Field(
+    observation_id: NumericRange | None = Field(
         default=None,
         validation_alias=AliasChoices("ObservationId", "observationId"),
         serialization_alias="ObservationId",

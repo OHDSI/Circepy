@@ -8,7 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional
 
 from ..criteria import PayerPlanPeriod
 from .base import CriteriaSqlBuilder
@@ -77,7 +76,7 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
     def get_criteria_sql_with_options(
         self,
         criteria: PayerPlanPeriod,
-        options: Optional[BuilderOptions],
+        options: BuilderOptions | None,
     ) -> str:
         """Get SQL query for criteria with builder options."""
         query = super().get_criteria_sql_with_options(criteria, options)
@@ -115,7 +114,7 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
     def resolve_select_clauses(
         self,
         criteria: PayerPlanPeriod,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve select clauses for payer plan period criteria."""
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
@@ -184,7 +183,7 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
     def resolve_join_clauses(
         self,
         criteria: PayerPlanPeriod,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve join clauses for payer plan period criteria."""
         join_clauses = []
@@ -202,7 +201,7 @@ class PayerPlanPeriodSqlBuilder(CriteriaSqlBuilder[PayerPlanPeriod]):
     def resolve_where_clauses(
         self,
         criteria: PayerPlanPeriod,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve where clauses for payer plan period criteria."""
         where_clauses = []

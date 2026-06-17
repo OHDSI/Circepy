@@ -528,7 +528,7 @@ def test_generate_cohort_set_history_table_failed():
     assert statuses[2] == "COMPLETE"
 
     history = conn.table(CHECKSUM_TABLE, database="main").execute()
-    history_statuses = dict(zip(history["cohort_definition_id"], history["status"]))
+    history_statuses = dict(zip(history["cohort_definition_id"], history["status"], strict=True))
     assert history_statuses[1] == "FAILED"
     assert history_statuses[2] == "COMPLETE"
 

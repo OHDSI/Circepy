@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import sys
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, TypeVar, cast, overload
+from typing import Any, TypeVar, cast, overload
 
 from typing_extensions import dataclass_transform
 
@@ -29,10 +29,7 @@ def frozen_slots_dataclass(
     """
 
     def wrap(cls: type[T]) -> type[T]:
-        dataclass_factory = cast(Any, dataclass)
-        if sys.version_info >= (3, 10):
-            return cast(type[T], dataclass_factory(frozen=True, slots=True, **kwargs)(cls))
-        return cast(type[T], dataclass_factory(frozen=True, **kwargs)(cls))
+        return cast(type[T], dataclass(frozen=True, slots=True, **kwargs)(cls))
 
     if _cls is None:
         return wrap

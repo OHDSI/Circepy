@@ -8,7 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional
 
 from ..criteria import VisitOccurrence
 from .base import CriteriaSqlBuilder
@@ -74,7 +73,7 @@ from
     def resolve_select_clauses(
         self,
         criteria: VisitOccurrence,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve select clauses for visit occurrence criteria."""
         # Default select columns that are always returned
@@ -125,7 +124,7 @@ from
     def resolve_join_clauses(
         self,
         criteria: VisitOccurrence,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve join clauses for visit occurrence criteria."""
         join_clauses = []
@@ -162,7 +161,7 @@ from
     def resolve_where_clauses(
         self,
         criteria: VisitOccurrence,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve where clauses for visit occurrence criteria."""
         where_clauses = super().resolve_where_clauses(criteria, options)

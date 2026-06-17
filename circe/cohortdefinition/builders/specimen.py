@@ -8,7 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional
 
 from ..criteria import Specimen
 from .base import CriteriaSqlBuilder
@@ -82,7 +81,7 @@ FROM
             query = query.replace("@ordinalExpression", "")
         return query
 
-    def resolve_join_clauses(self, criteria: Specimen, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_join_clauses(self, criteria: Specimen, options: BuilderOptions | None = None) -> list[str]:
         """Resolve join clauses for specimen criteria."""
         joins = []
 
@@ -99,7 +98,7 @@ FROM
     def resolve_where_clauses(
         self,
         criteria: Specimen,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve where clauses for specimen criteria."""
         where_clauses = []

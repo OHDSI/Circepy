@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 import json
-from typing import Any, Optional, Union
+from typing import Any
 
 from circe.extensions import get_registry
 
@@ -69,12 +69,12 @@ class BuildExpressionQueryOptions:
     """
 
     def __init__(self):
-        self.cohort_id_field_name: Optional[str] = None
-        self.cohort_id: Optional[int] = None
-        self.cdm_schema: Optional[str] = None
-        self.target_table: Optional[str] = None
-        self.result_schema: Optional[str] = None
-        self.vocabulary_schema: Optional[str] = None
+        self.cohort_id_field_name: str | None = None
+        self.cohort_id: int | None = None
+        self.cdm_schema: str | None = None
+        self.target_table: str | None = None
+        self.result_schema: str | None = None
+        self.vocabulary_schema: str | None = None
         self.generate_stats: bool = False
 
     @classmethod
@@ -592,7 +592,7 @@ JOIN (
     def get_primary_events_query(
         self,
         primary_criteria: PrimaryCriteria,
-        subquery: Optional[str] = None,
+        subquery: str | None = None,
     ) -> str:
         """Get primary events query.
 
@@ -652,7 +652,7 @@ JOIN (
 
         return query
 
-    def get_final_cohort_query(self, censor_window: Optional[Period]) -> str:
+    def get_final_cohort_query(self, censor_window: Period | None) -> str:
         """Get final cohort query.
 
         Java equivalent: getFinalCohortQuery()
@@ -780,7 +780,7 @@ DROP TABLE #inclusion_rules;
 
     def build_expression_query(
         self,
-        expression: Union[str, CohortExpression],
+        expression: str | CohortExpression,
         options: BuildExpressionQueryOptions,
     ) -> str:
         """Build expression query from CohortExpression object or JSON string.
@@ -1170,7 +1170,7 @@ DROP TABLE #inclusion_rules;
         sql_template: str,
         criteria: Any,
         event_table: str,
-        options: Optional[BuilderOptions],
+        options: BuilderOptions | None,
     ) -> str:
         """Get windowed criteria query (internal method with all parameters).
 
@@ -1365,7 +1365,7 @@ DROP TABLE #inclusion_rules;
         self,
         criteria: Any,
         event_table: str,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> str:
         """Get windowed criteria query.
 
@@ -1465,7 +1465,7 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
 
         return query
 
-    def get_criteria_sql(self, criteria: Criteria, options: Optional[BuilderOptions] = None) -> str:
+    def get_criteria_sql(self, criteria: Criteria, options: BuilderOptions | None = None) -> str:
         """Get criteria SQL for any criteria type.
 
         Java equivalent: Various getCriteriaSql methods
@@ -1614,7 +1614,7 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
         self,
         builder: Any,
         criteria: Criteria,
-        options: Optional[BuilderOptions],
+        options: BuilderOptions | None,
     ) -> str:
         """Generic method to get criteria SQL from builder."""
         query = builder.get_criteria_sql_with_options(criteria, options)
@@ -1637,7 +1637,7 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
 
     def get_strategy_sql(
         self,
-        strategy: Union[DateOffsetStrategy, CustomEraStrategy],
+        strategy: DateOffsetStrategy | CustomEraStrategy,
         event_table: str,
     ) -> str:
         """Get strategy SQL for date offset or custom era strategy."""

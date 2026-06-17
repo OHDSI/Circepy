@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Protocol
-
-from typing_extensions import TypeAlias
+from typing import Any, Protocol, TypeAlias
 
 # Ibis does not currently ship usable type information for its table expressions.
 # Treat them as `Any` at the compatibility boundary rather than propagating

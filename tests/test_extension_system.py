@@ -1,5 +1,4 @@
 import json
-from typing import Optional
 
 from pydantic import AliasChoices, Field
 
@@ -26,12 +25,12 @@ class WeatherCondition(Criteria):
     Imagine a CDM extension where weather data is linked to persons.
     """
 
-    weather_concept_id: Optional[list[Concept]] = Field(
+    weather_concept_id: list[Concept] | None = Field(
         default=None,
         validation_alias=AliasChoices("WeatherConceptId", "weatherConceptId"),
         serialization_alias="WeatherConceptId",
     )
-    temperature_celsius: Optional[float] = Field(
+    temperature_celsius: float | None = Field(
         default=None,
         validation_alias=AliasChoices("TemperatureCelsius", "temperatureCelsius"),
         serialization_alias="TemperatureCelsius",

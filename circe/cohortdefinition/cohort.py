@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 import contextlib
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from pydantic import (
     AliasChoices,
@@ -87,38 +87,38 @@ class CohortExpression(CirceBaseModel):
         validation_alias=AliasChoices("ConceptSets", "conceptSets"),
         serialization_alias="ConceptSets",
     )
-    qualified_limit: Optional[ResultLimit] = Field(
+    qualified_limit: ResultLimit | None = Field(
         default=None,
         validation_alias=AliasChoices("QualifiedLimit", "qualifiedLimit"),
         serialization_alias="QualifiedLimit",
     )
-    additional_criteria: Optional[CriteriaGroup] = Field(
+    additional_criteria: CriteriaGroup | None = Field(
         default=None,
         validation_alias=AliasChoices("AdditionalCriteria", "additionalCriteria"),
         serialization_alias="AdditionalCriteria",
     )
-    end_strategy: Optional[Union[EndStrategy, DateOffsetStrategy, CustomEraStrategy]] = Field(
+    end_strategy: EndStrategy | DateOffsetStrategy | CustomEraStrategy | None = Field(
         default=None,
         validation_alias=AliasChoices("EndStrategy", "endStrategy"),
         serialization_alias="EndStrategy",
     )
-    cdm_version_range: Optional[str] = Field(default=None, alias="cdmVersionRange")
-    primary_criteria: Optional[PrimaryCriteria] = Field(
+    cdm_version_range: str | None = Field(default=None, alias="cdmVersionRange")
+    primary_criteria: PrimaryCriteria | None = Field(
         default=None,
         validation_alias=AliasChoices("PrimaryCriteria", "primaryCriteria"),
         serialization_alias="PrimaryCriteria",
     )
-    expression_limit: Optional[ResultLimit] = Field(
+    expression_limit: ResultLimit | None = Field(
         default=None,
         validation_alias=AliasChoices("ExpressionLimit", "expressionLimit"),
         serialization_alias="ExpressionLimit",
     )
-    collapse_settings: Optional[CollapseSettings] = Field(
+    collapse_settings: CollapseSettings | None = Field(
         default=None,
         validation_alias=AliasChoices("CollapseSettings", "collapseSettings"),
         serialization_alias="CollapseSettings",
     )
-    title: Optional[str] = Field(
+    title: str | None = Field(
         default=None,
         validation_alias=AliasChoices("Title", "title"),
         serialization_alias="Title",
@@ -128,7 +128,7 @@ class CohortExpression(CirceBaseModel):
         validation_alias=AliasChoices("InclusionRules", "inclusionRules"),
         serialization_alias="InclusionRules",
     )
-    censor_window: Optional[Period] = Field(
+    censor_window: Period | None = Field(
         default=None,
         validation_alias=AliasChoices("CensorWindow", "censorWindow"),
         serialization_alias="CensorWindow",
@@ -534,7 +534,7 @@ class CohortExpression(CirceBaseModel):
         """
         return self.end_strategy is not None
 
-    def get_end_strategy_type(self) -> Optional[str]:
+    def get_end_strategy_type(self) -> str | None:
         """Get the type of end strategy.
 
         Returns:
@@ -573,7 +573,7 @@ class CohortExpression(CirceBaseModel):
 
         return self.primary_criteria.observation_window is not None
 
-    def get_primary_limit_type(self) -> Optional[str]:
+    def get_primary_limit_type(self) -> str | None:
         """Get the primary limit type.
 
         Returns:

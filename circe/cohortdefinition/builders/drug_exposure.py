@@ -9,7 +9,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional
 
 from ..criteria import DrugExposure
 from .base import CriteriaSqlBuilder
@@ -122,7 +121,7 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
     def resolve_select_clauses(
         self,
         criteria: DrugExposure,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve select clauses for drug exposure criteria.
 
@@ -192,7 +191,7 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
     def resolve_join_clauses(
         self,
         criteria: DrugExposure,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve join clauses for drug exposure criteria.
 
@@ -223,7 +222,7 @@ class DrugExposureSqlBuilder(CriteriaSqlBuilder[DrugExposure]):
     def resolve_where_clauses(
         self,
         criteria: DrugExposure,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve where clauses for drug exposure criteria.
 

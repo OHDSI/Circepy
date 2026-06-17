@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Union
+from typing import Any
 
 from .._dataclass import frozen_slots_dataclass
 from .predicates import DateRangePredicate, NumericRangePredicate
@@ -148,27 +148,27 @@ class StandardizeEventShape:
     end_with: str = "end_date"
 
 
-PlanStep = Union[
-    FilterByCodeset,
-    FilterByConceptSet,
-    FilterByDateRange,
-    FilterByNumericRange,
-    FilterByText,
-    JoinLocationRegion,
-    FilterByVisit,
-    FilterByVisitDetail,
-    FilterByProviderSpecialty,
-    FilterByCareSite,
-    FilterByCareSiteLocationRegion,
-    FilterByPersonAge,
-    FilterByPersonGender,
-    FilterByPersonRace,
-    FilterByPersonEthnicity,
-    KeepFirstPerPerson,
-    ApplyDateAdjustment,
-    RestrictToCorrelatedWindow,
-    StandardizeEventShape,
-]
+PlanStep = (
+    FilterByCodeset
+    | FilterByConceptSet
+    | FilterByDateRange
+    | FilterByNumericRange
+    | FilterByText
+    | JoinLocationRegion
+    | FilterByVisit
+    | FilterByVisitDetail
+    | FilterByProviderSpecialty
+    | FilterByCareSite
+    | FilterByCareSiteLocationRegion
+    | FilterByPersonAge
+    | FilterByPersonGender
+    | FilterByPersonRace
+    | FilterByPersonEthnicity
+    | KeepFirstPerPerson
+    | ApplyDateAdjustment
+    | RestrictToCorrelatedWindow
+    | StandardizeEventShape
+)
 
 
 @frozen_slots_dataclass

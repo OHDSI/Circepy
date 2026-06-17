@@ -8,7 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional
 
 from ..criteria import LocationRegion
 from .base import CriteriaSqlBuilder
@@ -80,7 +79,7 @@ class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
     def resolve_select_clauses(
         self,
         criteria: LocationRegion,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve select clauses for location region criteria."""
         # Default select columns that are always returned
@@ -101,7 +100,7 @@ class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
     def resolve_join_clauses(
         self,
         criteria: LocationRegion,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve join clauses for location region criteria."""
         return []
@@ -109,7 +108,7 @@ class LocationRegionSqlBuilder(CriteriaSqlBuilder[LocationRegion]):
     def resolve_where_clauses(
         self,
         criteria: LocationRegion,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve where clauses for location region criteria."""
         return []

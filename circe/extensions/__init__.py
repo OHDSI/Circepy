@@ -25,11 +25,12 @@ classes automatically, rather than calling the registry methods directly::
         ...
 """
 
+from collections.abc import Callable
 from pathlib import Path
 
 # Forward references to avoid circular imports
 # Actual imports happen inside methods or with TYPE_CHECKING
-from typing import TYPE_CHECKING, Callable, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from ..cohortdefinition.builders.base import CriteriaSqlBuilder
@@ -143,7 +144,7 @@ class ExtensionRegistry:
         """
         return self._lowerers.get(criteria_cls)
 
-    def get_normalizer(self, criteria_cls: type["Criteria"]) -> Optional[NormalizerFn]:
+    def get_normalizer(self, criteria_cls: type["Criteria"]) -> NormalizerFn | None:
         """Get the normalizer function for a criteria type.
 
         Args:
@@ -154,7 +155,7 @@ class ExtensionRegistry:
         """
         return self._normalizers.get(criteria_cls)
 
-    def get_template(self, criteria: "Criteria") -> Optional[str]:
+    def get_template(self, criteria: "Criteria") -> str | None:
         """Get the markdown template name for a criteria instance.
 
         Args:
@@ -165,7 +166,7 @@ class ExtensionRegistry:
         """
         return self._markdown_templates.get(type(criteria))
 
-    def get_criteria_class(self, name: str) -> Optional[type["Criteria"]]:
+    def get_criteria_class(self, name: str) -> type["Criteria"] | None:
         """Get a registered criteria class by name.
 
         Args:
@@ -301,7 +302,7 @@ def markdown_template(criteria_cls: "type['Criteria']", template_name: str) -> "
     return decorator
 
 
-def template_path(path: Union[str, Path]) -> None:
+def template_path(path: str | Path) -> None:
     """Register a directory as a template search path.
 
     This is a convenience function (not a decorator) that adds *path* to the
