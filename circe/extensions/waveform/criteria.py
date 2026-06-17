@@ -1,4 +1,3 @@
-
 from pydantic import AliasChoices, Field
 
 from circe.cohortdefinition.core import DateRange, NumericRange, TextFilter
