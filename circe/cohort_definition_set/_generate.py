@@ -10,8 +10,6 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
-from ..execution.api import build_cohort, write_cohort
-from ..execution.ibis.materialize import project_to_ohdsi_cohort_table
 from ._checksum_store import load_checksums, upsert_generation_history
 from ._core import CohortDefinition, CohortDefinitionSet, CohortGenerationResult
 
@@ -50,6 +48,9 @@ def _process_single_cohort(
     Each cohort gets its own per-cohort codeset table populated and
     dropped as it runs, mirroring the Java ``#Codesets`` pattern.
     """
+    from ..execution.api import build_cohort, write_cohort
+    from ..execution.ibis.materialize import project_to_ohdsi_cohort_table
+
     with _backend_lock:
         start_time = datetime.now()
         new_rows = build_cohort(
