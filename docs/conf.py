@@ -13,8 +13,8 @@ sys.path.insert(0, os.path.abspath(".."))
 project = "OHDSI CIRCE Python"
 copyright = "2024, OHDSI Community"
 author = "CIRCE Python Implementation Team"
-release = "0.2.0"
-version = "0.2.0"
+release = "0.3.0"
+version = "0.3.0"
 
 # -- General configuration ---------------------------------------------------
 extensions = [
