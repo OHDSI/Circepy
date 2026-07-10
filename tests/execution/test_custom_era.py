@@ -541,27 +541,26 @@ def test_full_cohort_custom_era_matches_sql_end_dates():
     #   then the earliest valid end_date per (person_id, event_id) is selected:
     #     ROW_NUMBER() OVER (PARTITION BY person_id, event_id ORDER BY CE.end_date)
     #     WHERE CE.end_date >= I.start_date
-    gap = 30
-    sql = f"""
+    sql = """
     WITH drug_eras AS (
         SELECT
             person_id,
             MIN(start_date) AS era_start_date,
-            MAX(padded_end) - {gap} AS era_end_date
+            MAX(exposure_end) AS era_end_date
         FROM (
             SELECT
-                person_id, start_date, padded_end,
+                person_id, start_date, exposure_end, padded_end,
                 SUM(is_new) OVER (
                     PARTITION BY person_id
                     ORDER BY start_date, is_new DESC, padded_end DESC
                 ) AS era_id
             FROM (
                 SELECT
-                    person_id, start_date, padded_end,
+                    person_id, start_date, exposure_end, padded_end,
                     CASE WHEN prev_max IS NULL OR prev_max < start_date THEN 1 ELSE 0 END AS is_new
                 FROM (
                     SELECT
-                        person_id, start_date, padded_end,
+                        person_id, start_date, exposure_end, padded_end,
                         MAX(padded_end) OVER (
                             PARTITION BY person_id ORDER BY start_date, padded_end DESC
                             ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
@@ -574,7 +573,12 @@ def test_full_cohort_custom_era_matches_sql_end_dates():
                                 de.drug_exposure_end_date::DATE,
                                 de.drug_exposure_start_date::DATE + de.days_supply::INTEGER,
                                 de.drug_exposure_start_date::DATE + 1
-                            ) + {gap} AS padded_end
+                            ) AS exposure_end,
+                            COALESCE(
+                                de.drug_exposure_end_date::DATE,
+                                de.drug_exposure_start_date::DATE + de.days_supply::INTEGER,
+                                de.drug_exposure_start_date::DATE + 1
+                            ) + 30 AS padded_end
                         FROM drug_exposure de
                         WHERE de.drug_concept_id = 222
                     ) raw_ends
