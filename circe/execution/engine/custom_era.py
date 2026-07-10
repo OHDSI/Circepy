@@ -64,13 +64,13 @@ def _compute_eras(exposures, *, gap_days: int, offset: int):
 
     collapsed = era_indexed.group_by(era_indexed.person_id, era_indexed._era_id).aggregate(
         era_start_date=era_indexed.start_date.min(),
-        _max_padded_end=era_indexed._padded_end.max(),
+        _max_exposure_end=era_indexed._exposure_end.max(),
     )
 
     return collapsed.select(
         collapsed.person_id.cast("int64").name(PERSON_ID),
         collapsed.era_start_date.cast("date").name("era_start_date"),
-        (collapsed._max_padded_end - ibis.interval(days=int(gap_days))).cast("date").name("era_end_date"),
+        (collapsed._max_exposure_end + ibis.interval(days=int(offset))).cast("date").name("era_end_date"),
     )
 
 
