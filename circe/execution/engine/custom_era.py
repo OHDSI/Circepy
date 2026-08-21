@@ -115,8 +115,7 @@ def apply_custom_era_strategy(events, strategy, ctx):
     days_supply_override = payload.get("days_supply_override")
 
     if drug_codeset_id is None:
-        with_bounds = attach_observation_bounds(events, ctx)
-        return _replace_end_date(events, with_bounds, with_bounds.op_end_date)
+        raise RuntimeError("Drug Codeset ID cannot be NULL.")
 
     cohort_person_ids = events.select(events.person_id).distinct()
 

@@ -1662,7 +1662,12 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
         if strategy.drug_codeset_id is None:
             raise RuntimeError("Drug Codeset ID cannot be NULL.")
 
-        drug_exposure_end_date_expression = self.DEFAULT_DRUG_EXPOSURE_END_DATE_EXPRESSION
+        if strategy.days_supply_override is not None:
+            drug_exposure_end_date_expression = (
+                f"DATEADD(day,{strategy.days_supply_override},DRUG_EXPOSURE_START_DATE)"
+            )
+        else:
+            drug_exposure_end_date_expression = self.DEFAULT_DRUG_EXPOSURE_END_DATE_EXPRESSION
 
         strategy_sql = self.CUSTOM_ERA_STRATEGY_TEMPLATE.replace("@eventTable", event_table)
         strategy_sql = strategy_sql.replace("@drugCodesetId", str(strategy.drug_codeset_id))
