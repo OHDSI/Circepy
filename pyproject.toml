@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ohdsi-circe-python-alpha"
-version = "0.2.0"
+name = "ohdsi-circe"
+version = "0.3.0"
 description = "Python implementation of OHDSI CIRCE-BE for cohort definition and SQL generation"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {text = "Apache-2.0"}
@@ -16,13 +16,12 @@ maintainers = [
 ]
 keywords = ["ohdsi", "circe", "cohort", "sql", "omop", "cdm", "healthcare", "observational-health"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Healthcare Industry",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -32,32 +31,47 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.0.0",
     "typing-extensions>=4.0.0",
-    "jinja2>=3.1.0"
+    "jinja2>=3.1.0",
+    "PyYAML>=6.0",
+    "ibis-framework[duckdb]>=11.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
-    "black>=22.0.0",
-    "isort>=5.0.0",
-    "flake8>=5.0.0",
     "mypy>=1.0.0",
+    "pre-commit>=4.0.0",
+    "ruff>=0.1.0",
     "sqlglot>=23.0.0",
     "duckdb>=0.9.0",
+    "ibis-framework[duckdb]>=11.0.0",
+    "polars>=0.20.0",
+    "deepdiff>=8.6.0",
+    "javalang>=0.13.0",
 ]
 docs = [
     "sphinx>=5.0.0",
     "sphinx-rtd-theme>=1.0.0",
+    "myst-parser>=0.18.0",
+]
+ibis-postgres = [
+    "ibis-framework[postgres]>=11.0.0; python_version >= '3.10'",
+]
+ibis-databricks = [
+    "ibis-framework[databricks]>=11.0.0; python_version >= '3.10'",
+]
+waveform = [
+    "pydantic>=2.0.0",
 ]
 
 [project.urls]
 Homepage = "https://github.com/OHDSI/Circepy"
-Documentation = "https://ohdsi-circe-python-alpha.readthedocs.io/"
+Documentation = "https://ohdsi-circe.readthedocs.io/"
 Repository = "https://github.com/OHDSI/Circepy.git"
 Issues = "https://github.com/OHDSI/Circepy/issues"
 Changelog = "https://github.com/OHDSI/Circepy/blob/main/CHANGELOG.md"
@@ -74,33 +88,11 @@ exclude = ["circe.tests*"]
 
 [tool.setuptools.package-data]
 circe = ["py.typed"]
-
-[tool.black]
-line-length = 88
-target-version = ['py38']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-line_length = 88
-known_first_party = ["circe"]
+"circe.sqlrender" = ["replacementPatterns.csv"]
+"circe.extensions.waveform" = ["templates/*.j2"]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -113,6 +105,29 @@ warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
 strict_equality = true
+
+[[tool.mypy.overrides]]
+module = "ibis.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["litellm.*", "dotenv.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["circe.chat", "circe.prompt_builder"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+    "circe.execution.ibis.*",
+    "circe.execution.engine.*",
+    "circe.execution.ibis_compat",
+    "circe.execution.databricks_compat",
+]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+warn_return_any = false
 
 [tool.coverage.run]
 source = ["circe"]
@@ -155,3 +170,48 @@ markers = [
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
 ]
+
+[tool.ruff]
+# Allow longer lines for code and docstrings.
+line-length = 110
+
+# Exclude directories
+extend-exclude = [
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".tox",
+    ".venv",
+    "build",
+    "dist",
+    "circe-be",
+]
+
+[tool.ruff.lint]
+# Enable pycodestyle (`E`), Pyflakes (`F`), isort (`I`), and other useful rules
+select = [
+    "E",   # pycodestyle errors
+    "F",   # Pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # Line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["circe"]
+
+[tool.ruff.format]
+# Use double quotes for strings.
+quote-style = "double"
+# Indent with spaces, rather than tabs.
+indent-style = "space"
+# Respect magic trailing commas.
+skip-magic-trailing-comma = false
+# Automatically detect the appropriate line ending.
+line-ending = "auto"

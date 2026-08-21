@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from ..utils.criteria_name_helper import CriteriaNameHelper
 from ..warning_severity import WarningSeverity
@@ -66,7 +66,7 @@ class CriteriaContradictionsCheck(BaseCorelatedCriteriaCheck):
     def __init__(self):
         """Initialize the criteria contradictions check."""
         super().__init__()
-        self._criteria_list: List[CriteriaInfo] = []
+        self._criteria_list: list[CriteriaInfo] = []
 
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.
@@ -77,7 +77,10 @@ class CriteriaContradictionsCheck(BaseCorelatedCriteriaCheck):
         return WarningSeverity.WARNING
 
     def _check_criteria(
-        self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter
+        self,
+        criteria: "CorelatedCriteria",
+        group_name: str,
+        reporter: WarningReporter,
     ) -> None:
         """Collect criteria information.
 
@@ -89,9 +92,7 @@ class CriteriaContradictionsCheck(BaseCorelatedCriteriaCheck):
         name = f"{group_name} {CriteriaNameHelper.get_criteria_name(criteria.criteria)}"
         self._criteria_list.append(CriteriaInfo(name, criteria))
 
-    def _after_check(
-        self, reporter: WarningReporter, expression: "CohortExpression"
-    ) -> None:
+    def _after_check(self, reporter: WarningReporter, expression: "CohortExpression") -> None:
         """Check for contradictions after all criteria have been collected.
 
         Args:
@@ -105,14 +106,10 @@ class CriteriaContradictionsCheck(BaseCorelatedCriteriaCheck):
                 for other_info in self._criteria_list[i + 1 :]:
                     if Comparisons.compare_criteria(
                         info.criteria.criteria, other_info.criteria.criteria
-                    ) and self._check_contradiction(
-                        info.criteria.occurrence, other_info.criteria.occurrence
-                    ):
+                    ) and self._check_contradiction(info.criteria.occurrence, other_info.criteria.occurrence):
                         reporter(self.WARNING, info.name, other_info.name)
 
-    def _check_contradiction(
-        self, o1: Optional["Occurrence"], o2: Optional["Occurrence"]
-    ) -> bool:
+    def _check_contradiction(self, o1: Optional["Occurrence"], o2: Optional["Occurrence"]) -> bool:
         """Check if two occurrences contradict each other.
 
         Args:
@@ -131,7 +128,7 @@ class CriteriaContradictionsCheck(BaseCorelatedCriteriaCheck):
         # Check if ranges overlap
         return not self._ranges_overlap(range1, range2)
 
-    def _get_occurrence_range(self, occurrence: "Occurrence") -> Tuple[int, int]:
+    def _get_occurrence_range(self, occurrence: "Occurrence") -> tuple[int, int]:
         """Get the range of valid occurrence counts.
 
         Args:
@@ -150,7 +147,7 @@ class CriteriaContradictionsCheck(BaseCorelatedCriteriaCheck):
         else:
             return (float("-inf"), float("inf"))
 
-    def _ranges_overlap(self, range1: Tuple[int, int], range2: Tuple[int, int]) -> bool:
+    def _ranges_overlap(self, range1: tuple[int, int], range2: tuple[int, int]) -> bool:
         """Check if two ranges overlap.
 
         Args:

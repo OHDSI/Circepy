@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from collections import Counter
-from typing import List, Optional
+from typing import Optional
 
 from ..utils.criteria_name_helper import CriteriaNameHelper
 from ..warning_severity import WarningSeverity
@@ -73,7 +73,7 @@ class TimePatternCheck(BaseCorelatedCriteriaCheck):
     def __init__(self):
         """Initialize the time pattern check."""
         super().__init__()
-        self._time_window_info_list: List[TimeWindowInfo] = []
+        self._time_window_info_list: list[TimeWindowInfo] = []
 
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.
@@ -84,7 +84,10 @@ class TimePatternCheck(BaseCorelatedCriteriaCheck):
         return WarningSeverity.INFO
 
     def _check_criteria(
-        self, criteria: "CorelatedCriteria", group_name: str, reporter: WarningReporter
+        self,
+        criteria: "CorelatedCriteria",
+        group_name: str,
+        reporter: WarningReporter,
     ) -> None:
         """Collect time window information.
 
@@ -94,13 +97,9 @@ class TimePatternCheck(BaseCorelatedCriteriaCheck):
             reporter: The warning reporter to use
         """
         name = f"{CriteriaNameHelper.get_criteria_name(criteria.criteria)} criteria at {group_name}"
-        self._time_window_info_list.append(
-            TimeWindowInfo(name, criteria.start_window, criteria.end_window)
-        )
+        self._time_window_info_list.append(TimeWindowInfo(name, criteria.start_window, criteria.end_window))
 
-    def _after_check(
-        self, reporter: WarningReporter, expression: "CohortExpression"
-    ) -> None:
+    def _after_check(self, reporter: WarningReporter, expression: "CohortExpression") -> None:
         """Check for inconsistent time window patterns.
 
         Args:
@@ -111,9 +110,7 @@ class TimePatternCheck(BaseCorelatedCriteriaCheck):
             return
 
         # Calculate start days for each time window
-        start_days = [
-            self._start_days(info.start) for info in self._time_window_info_list
-        ]
+        start_days = [self._start_days(info.start) for info in self._time_window_info_list]
 
         # Count frequency of each start day value
         freq = Counter(start_days)

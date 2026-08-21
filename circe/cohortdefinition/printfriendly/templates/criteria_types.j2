@@ -11,7 +11,12 @@
    ============================================ #}
 {%- macro Criteria(c, level=0, isPlural=true, countCriteria={}, indexLabel="cohort entry") -%}
   {%- set type_name = c.__class__.__name__ -%}
-  {%- if type_name == "ConditionEra" -%}{{ ConditionEra(c, level, isPlural, countCriteria, indexLabel) }}
+  {%- set custom_template = get_template_for_criteria(c) -%}
+  {%- if custom_template -%}
+    {%- with criteria=c, level=level, isPlural=isPlural, countCriteria=countCriteria, indexLabel=indexLabel -%}
+      {%- include custom_template -%}
+    {%- endwith -%}
+  {%- elif type_name == "ConditionEra" -%}{{ ConditionEra(c, level, isPlural, countCriteria, indexLabel) }}
   {%- elif type_name == "ConditionOccurrence" -%}{{ ConditionOccurrence(c, level, isPlural, countCriteria, indexLabel) }}
   {%- elif type_name == "Death" -%}{{ Death(c, level, isPlural, countCriteria, indexLabel) }}
   {%- elif type_name == "DeviceExposure" -%}{{ DeviceExposure(c, level, isPlural, countCriteria, indexLabel) }}

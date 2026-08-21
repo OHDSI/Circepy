@@ -1,0 +1,37 @@
+{
+  "id": 1,
+  "name": "Type 2 Diabetes Mellitus",
+  "expression": {
+    "items": [
+      {
+        "concept": {
+          "conceptId": 201826,
+          "conceptName": "Type 2 diabetes mellitus",
+          "domainId": "Condition",
+          "vocabularyId": "SNOMED",
+          "conceptClassId": "Clinical Finding",
+          "standardConcept": "S",
+          "conceptCode": "44054006"
+        },
+        "isExcluded": false,
+        "includeDescendants": true,
+        "includeMapped": false
+      },
+      {
+        "concept": {
+          "conceptId": 443238,
+          "conceptName": "Malignant neoplasm of pancreas",
+          "domainId": "Condition",
+          "vocabularyId": "SNOMED",
+          "conceptClassId": "Clinical Finding",
+          "standardConcept": "S",
+          "conceptCode": "363418001"
+        },
+        "isExcluded": true,
+        "includeDescendants": true,
+        "includeMapped": false
+      }
+    ]
+  }
+}
+

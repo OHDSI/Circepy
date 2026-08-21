@@ -10,7 +10,6 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from abc import ABC, abstractmethod
-from typing import Protocol
 
 
 class Warning(ABC):

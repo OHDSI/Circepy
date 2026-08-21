@@ -9,8 +9,9 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+import contextlib
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from .warning import Warning
 
@@ -18,10 +19,8 @@ if TYPE_CHECKING:
     from ..cohortdefinition.cohort import CohortExpression
 else:
     # Import at runtime to avoid circular dependencies
-    try:
+    with contextlib.suppress(ImportError):
         from ..cohortdefinition.cohort import CohortExpression
-    except ImportError:
-        pass
 
 
 class Check(ABC):
@@ -34,7 +33,7 @@ class Check(ABC):
     """
 
     @abstractmethod
-    def check(self, expression: "CohortExpression") -> List[Warning]:
+    def check(self, expression: "CohortExpression") -> list[Warning]:
         """Check a cohort expression and return any warnings.
 
         Args:

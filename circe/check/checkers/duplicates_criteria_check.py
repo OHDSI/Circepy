@@ -8,8 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List, Tuple
-
 from ..utils.criteria_name_helper import CriteriaNameHelper
 from ..warning_severity import WarningSeverity
 from .base_criteria_check import BaseCriteriaCheck
@@ -38,11 +36,9 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
     def __init__(self):
         """Initialize the duplicates criteria check."""
         super().__init__()
-        self._criteria_list: List[Tuple[str, "Criteria"]] = []
+        self._criteria_list: list[tuple[str, Criteria]] = []
 
-    def _after_check(
-        self, reporter: WarningReporter, expression: "CohortExpression"
-    ) -> None:
+    def _after_check(self, reporter: WarningReporter, expression: "CohortExpression") -> None:
         """Check for duplicates after all criteria have been collected.
 
         Args:
@@ -79,7 +75,7 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
         Returns:
             True if the criteria are duplicates, False otherwise
         """
-        if type(c1) != type(c2):
+        if type(c1) is not type(c2):
             return False
 
         # Import here to avoid circular dependencies
@@ -105,22 +101,20 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
             return c1.codeset_id == c2.codeset_id
         elif isinstance(c1, ConditionOccurrence):
             return (
-                c1.codeset_id == c2.codeset_id
-                and c1.condition_source_concept == c2.condition_source_concept
+                c1.codeset_id == c2.codeset_id and c1.condition_source_concept == c2.condition_source_concept
             )
-        elif isinstance(c1, Death):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DeviceExposure):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DoseEra):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DrugEra):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DrugExposure):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, Measurement):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, Observation):
+        elif isinstance(
+            c1,
+            (
+                Death,
+                DeviceExposure,
+                DoseEra,
+                DrugEra,
+                DrugExposure,
+                Measurement,
+                Observation,
+            ),
+        ):
             return c1.codeset_id == c2.codeset_id
         elif isinstance(c1, ObservationPeriod):
             # For ObservationPeriod, compare all fields
@@ -129,13 +123,7 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
                 and self._compare_objects(c1.period_end_date, c2.period_end_date)
                 and self._compare_objects(c1.period_length, c2.period_length)
             )
-        elif isinstance(c1, ProcedureOccurrence):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, Specimen):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, VisitOccurrence):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, VisitDetail):
+        elif isinstance(c1, (ProcedureOccurrence, Specimen, VisitOccurrence, VisitDetail)):
             return c1.codeset_id == c2.codeset_id
         elif isinstance(c1, PayerPlanPeriod):
             return (
@@ -176,9 +164,7 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
         """
         return obj1 == obj2
 
-    def _check_criteria(
-        self, criteria: "Criteria", group_name: str, reporter: WarningReporter
-    ) -> None:
+    def _check_criteria(self, criteria: "Criteria", group_name: str, reporter: WarningReporter) -> None:
         """Collect criteria for duplicate checking.
 
         Args:
@@ -186,9 +172,5 @@ class DuplicatesCriteriaCheck(BaseCriteriaCheck):
             group_name: The name of the group containing this criteria
             reporter: The warning reporter to use (not used here, but kept for interface)
         """
-        criteria_name = (
-            CriteriaNameHelper.get_criteria_name(criteria)
-            + " criteria in "
-            + group_name
-        )
+        criteria_name = CriteriaNameHelper.get_criteria_name(criteria) + " criteria in " + group_name
         self._criteria_list.append((criteria_name, criteria))

@@ -24,7 +24,6 @@ The package automatically handles both camelCase and snake_case field names.
 Where can I get help?
 ----------------------
 
-* GitHub Issues: https://github.com/OHDSI/circe-be-python/issues
-* GitHub Discussions: https://github.com/OHDSI/circe-be-python/discussions
+* GitHub Issues: https://github.com/OHDSI/Circepy/issues
+* GitHub Discussions: https://github.com/OHDSI/Circepy/discussions
 * OHDSI Forums: https://forums.ohdsi.org/
-

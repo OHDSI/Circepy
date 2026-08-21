@@ -21,14 +21,17 @@ This document summarizes the enhancements made to the `circe.cohort_builder` flu
 from circe.cohort_builder import Cohort
 
 cohort = (
-    Cohort('Complex Cohort')
+    Cohort("Complex Cohort")
     .with_condition(1)
     .any_of()
-        .require_drug(10).anytime_before()
-        .all_of()
-            .require_procedure(20).same_day()
-            .require_measurement(30).anytime_after()
-        .end_group()
+    .require_drug(10)
+    .anytime_before()
+    .all_of()
+    .require_procedure(20)
+    .same_day()
+    .require_measurement(30)
+    .anytime_after()
+    .end_group()
     .end_group()
     .build()
 )
@@ -55,7 +58,7 @@ cohort = (
 **Example**:
 ```python
 cohort = (
-    Cohort('Adults Only')
+    Cohort("Adults Only")
     .with_condition(1)
     .require_age(18, 65)
     .require_gender(8507)  # Male
@@ -75,12 +78,13 @@ cohort = (
 **Example**:
 ```python
 cohort = (
-    Cohort('Multi-Rule Cohort')
+    Cohort("Multi-Rule Cohort")
     .with_condition(1)
-    .begin_rule('Age Criteria')
+    .begin_rule("Age Criteria")
     .require_age(18, 65)
-    .begin_rule('Drug Exposure')
-    .require_drug(10).anytime_before()
+    .begin_rule("Drug Exposure")
+    .require_drug(10)
+    .anytime_before()
     .build()
 )
 ```
@@ -110,12 +114,12 @@ cohort = (
 **Example**:
 ```python
 cohort = (
-    Cohort('Inpatient Drug Exposure')
+    Cohort("Inpatient Drug Exposure")
     .with_condition(1)
     .require_drug(10)
-        .with_visit_type(9201)  # Inpatient
-        .restrict_to_visit()
-        .anytime_before()
+    .with_visit_type(9201)  # Inpatient
+    .restrict_to_visit()
+    .anytime_before()
     .build()
 )
 ```

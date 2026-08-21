@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.3.0] - 2026-08-21
+
+### Added
+- Experimental Ibis execution engine for building and writing cohorts as relational expressions (`build_cohort()`, `write_cohort()`)
+- Custom era end strategy (`CustomEraStrategy`) in the Ibis execution engine, with parity to Java CIRCE-BE
+- SQL rendering and dialect translation module (`circe.sqlrender`) supporting Oracle, PostgreSQL, DuckDB, BigQuery, and Spark dialects
+- Cohort definition set batch generation (`CohortDefinitionSet`, `generate_cohort_set()`) with checksum-based incremental skipping
+- CDM extension registration system with `@criteria_class`, `@sql_builder`, and `@markdown_template` decorators
+- Waveform extension (WaveformOccurrence, WaveformFeature, WaveformRegistry, WaveformChannelMetadata) as a reference extension
+- Support for snake_case YAML cohort definitions via `cohort_expression_from_yaml()`
+- Persistent caching of concept set resolution in the IBIS execution layer
+- `load_expression()` helper for loading cohort expressions from JSON, YAML, dict, or file paths
+
+### Fixed
+- ERA collapse ordering made deterministic across repeated executions
+- Collapse tie handling aligned with Java CIRCE-BE semantics
+- Era filter semantics restored with correct observation filtering
+- Nested correlated criteria now correctly applied within criteria groups
+- Custom era strategy now honors `days_supply_override` in both the SQL builder and Ibis execution engine
+- Package now importable without ibis installed
+- Pydantic deprecation warnings resolved
+
+### Changed
+- Dropped Python 3.8/3.9 support (minimum version is now 3.10)
+- Added PyYAML as a core dependency
+- Added `ibis`, `ibis-duckdb`, `ibis-postgres`, and `ibis-databricks` optional dependency groups
+
 ## [0.2.0] - 2026-02-25
 
 ### Added
@@ -17,58 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-01-23
 
 ### Added
-
 - Initial Alpha Release of the CIRCE Python implementation.
 - Full parity with OHDSI CIRCE-BE Java library for cohort definition and SQL generation.
 - Expanded test suite with 3,400+ tests including parity checks.
 - Comprehensive documentation and GitHub Actions release workflows.
-
-## [Unreleased]
-
-### Planned
-- Performance optimizations for large cohort definitions
-- Additional output formats (JSON schema, XML)
-- Integration examples with common OMOP tools
----
-
-### Features
-
-- Support for Python 3.8, 3.9, 3.10, 3.11, and 3.12
-- Full OMOP CDM v5.x compatibility
-- Type hints throughout the codebase
-- Concept set expression handling with include/exclude logic
-- Window criteria for temporal relationships
-- Correlated criteria for complex cohort logic
-- Date adjustment strategies (DateOffsetStrategy)
-- Custom era strategies for drug exposures
-- Observation period and demographic criteria
-- Inclusion rules and censoring criteria
-- Result limits and ordinal expressions
-- Comprehensive error messages and validation warnings
-- Builder pattern for SQL generation
-- Pydantic models for data validation and serialization
-
-### Documentation
-
-- Complete README with installation instructions
-- Comprehensive CLI usage documentation
-- Python API examples and quick start guide
-- Contributing guidelines with development setup
-- Java class mapping reference for interoperability
-- Package structure documentation
-- Troubleshooting and FAQ sections
-
-### Technical Details
-
-- Built with Pydantic v2.0+ for robust validation
-- Uses typing-extensions for backward compatibility
-- Modular architecture matching Java CIRCE-BE structure
-- Extensive test coverage across all modules
-- Black, isort, flake8, and mypy for code quality
-- pytest with coverage reporting
-
-### Known Limitations
-
-- Negative control cohort classes yet implemented
-- Documentation website under development
-- Performance not yet optimized for extremely large cohorts (1000+ criteria)

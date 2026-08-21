@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from ...cohortdefinition.core import DateRange, NumericRange, Period
 from ...vocabulary.concept import Concept, ConceptSet
@@ -49,7 +49,7 @@ class Comparisons:
             return False
 
         # Import here to avoid circular dependencies
-        from ...cohortdefinition.core import DateRange, NumericRange, Period
+        from ...cohortdefinition.core import NumericRange
 
         if isinstance(range_val, NumericRange):
             if range_val.value is None or range_val.extent is None:
@@ -76,7 +76,7 @@ class Comparisons:
         return False
 
     @staticmethod
-    def is_date_valid(date: Optional[str]) -> bool:
+    def is_date_valid(date: str | None) -> bool:
         """Check if a date string is valid.
 
         Args:
@@ -119,7 +119,7 @@ class Comparisons:
             An integer representing the comparison result
         """
         if filter_val is None or window is None:
-            return 0
+            return 0  # type: ignore[unreachable]
 
         range1 = filter_val.post_days + filter_val.prior_days
         range2_start = 0
@@ -144,10 +144,8 @@ class Comparisons:
             True if the window is before, False otherwise
         """
         if window is None:
-            return False
-        return Comparisons.is_before_endpoint(
-            window.start
-        ) and not Comparisons.is_after_endpoint(window.end)
+            return False  # type: ignore[unreachable]
+        return Comparisons.is_before_endpoint(window.start) and not Comparisons.is_after_endpoint(window.end)
 
     @staticmethod
     def is_before_endpoint(endpoint: Optional["Window.Endpoint"]) -> bool:
@@ -191,18 +189,19 @@ class Comparisons:
         def compare_func(concept_set: "ConceptSet") -> bool:
             if concept_set.expression == source.expression:
                 return True
-            if concept_set.expression and source.expression:
-                if len(concept_set.expression.items) == len(source.expression.items):
-                    source_concepts = [item.concept for item in source.expression.items]
-                    return all(
-                        any(
-                            Comparisons.compare_concept(concept)(source_concept)
-                            for source_concept in source_concepts
-                        )
-                        for concept in [
-                            item.concept for item in concept_set.expression.items
-                        ]
+            if (
+                concept_set.expression
+                and source.expression
+                and len(concept_set.expression.items) == len(source.expression.items)
+            ):
+                source_concepts = [item.concept for item in source.expression.items]
+                return all(
+                    any(
+                        Comparisons.compare_concept(concept)(source_concept)
+                        for source_concept in source_concepts
                     )
+                    for concept in [item.concept for item in concept_set.expression.items]
+                )
             return False
 
         return compare_func
@@ -238,7 +237,7 @@ class Comparisons:
         Returns:
             True if the criteria are the same type and have the same codeset ID
         """
-        if type(c1) != type(c2):
+        if type(c1) is not type(c2):
             return False
 
         # Import here to avoid circular dependencies
@@ -258,31 +257,24 @@ class Comparisons:
             VisitOccurrence,
         )
 
-        if isinstance(c1, ConditionEra):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, ConditionOccurrence):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, Death):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DeviceExposure):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DoseEra):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DrugEra):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, DrugExposure):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, Measurement):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, Observation):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, ProcedureOccurrence):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, Specimen):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, VisitOccurrence):
-            return c1.codeset_id == c2.codeset_id
-        elif isinstance(c1, VisitDetail):
+        if isinstance(
+            c1,
+            (
+                ConditionEra,
+                ConditionOccurrence,
+                Death,
+                DeviceExposure,
+                DoseEra,
+                DrugEra,
+                DrugExposure,
+                Measurement,
+                Observation,
+                ProcedureOccurrence,
+                Specimen,
+                VisitOccurrence,
+                VisitDetail,
+            ),
+        ):
             return c1.codeset_id == c2.codeset_id
 
         return False

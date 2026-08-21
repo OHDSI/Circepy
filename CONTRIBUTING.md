@@ -10,7 +10,7 @@ This project follows the [OHDSI Code of Conduct](https://www.ohdsi.org/web/wiki/
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.10 or higher
 - Git
 - Basic understanding of the OMOP Common Data Model
 - Familiarity with the Java CIRCE-BE implementation (recommended)
@@ -18,7 +18,7 @@ This project follows the [OHDSI Code of Conduct](https://www.ohdsi.org/web/wiki/
 ### Development Setup
 
 > [!NOTE]
-> This is a private development repository. Ensure you have access before attempting to clone.
+> The recommended contributor workflow uses `uv` and the checked-in `uv.lock` for a reproducible environment.
 
 1. Clone the repository
    ```bash
@@ -26,14 +26,19 @@ This project follows the [OHDSI Code of Conduct](https://www.ohdsi.org/web/wiki/
    cd Circepy
    ```
 
-2. Install the package in development mode:
+2. Create the development environment:
    ```bash
-   pip install -e ".[dev]"
+   uv sync --extra dev
    ```
 
-3. Run tests to ensure everything is working:
+3. Install Git hooks:
    ```bash
-   pytest
+   uv run pre-commit install
+   ```
+
+4. Run tests to ensure everything is working:
+   ```bash
+   uv run pytest
    ```
 
 ## Development Guidelines
@@ -42,18 +47,15 @@ This project follows the [OHDSI Code of Conduct](https://www.ohdsi.org/web/wiki/
 
 We use the following tools to maintain code quality:
 
-- **Black** for code formatting
-- **isort** for import sorting
-- **flake8** for linting
-- **mypy** for type checking
+- **Ruff** for linting and formatting
+- **pre-commit** for running repository hooks before commit
 
 Run these tools before committing:
 
 ```bash
-black circe/
-isort circe/
-flake8 circe/
-mypy circe/
+uv run ruff check .
+uv run ruff format .
+uv run pre-commit run --all-files
 ```
 
 ### Type Hints
@@ -62,6 +64,7 @@ All functions and methods should include type hints. Use `typing` module for com
 
 ```python
 from typing import List, Optional, Dict, Any
+
 
 def process_cohort(cohort: CohortExpression) -> Optional[str]:
     """Process a cohort expression and return SQL."""
@@ -94,6 +97,10 @@ class TestCohortExpression:
         """Test cohort expression validation."""
         pass
 ```
+
+## Use of AI Tools
+
+Contributors may use AI tools to assist with development. If AI materially influenced a PR, please mention it in the PR description. Do not share secrets or sensitive data. Contributors remain responsible for correctness and license compliance.
 
 ## Pull Request Process
 
@@ -217,8 +224,8 @@ We follow [Semantic Versioning](https://semver.org/):
    - Update version in `pyproject.toml`
    - Update version in `circe/__init__.py`
    - Update `CHANGELOG.md` with release notes
-   - Ensure all tests pass: `pytest`
-   - Verify coverage is adequate: `pytest --cov`
+   - Ensure all tests pass: `uv run pytest`
+   - Verify coverage is adequate: `uv run pytest --cov`
 
 2. **Build the Package**
    ```bash
@@ -238,7 +245,7 @@ We follow [Semantic Versioning](https://semver.org/):
    twine upload --repository testpypi dist/*
    
    # Test installation
-   pip install --index-url https://test.pypi.org/simple/ ohdsi-circepy
+   pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ ohdsi-circe
    ```
 
 4. **Create Git Tag**
@@ -259,7 +266,7 @@ We follow [Semantic Versioning](https://semver.org/):
 
 ### Detailed Release Checklist
 
-See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for a comprehensive checklist covering:
+See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) for a comprehensive checklist covering:
 - Pre-release quality checks
 - Build and test procedures
 - TestPyPI validation

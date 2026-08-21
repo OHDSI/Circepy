@@ -1,0 +1,42 @@
+{%- import 'input_types.j2' as inputTypes -%}
+
+{%- macro WaveformFeature(c, level, isPlural=true, countCriteria={}, indexLabel="cohort entry") -%}
+  {%- set attrs = [] -%}
+  
+  {%- if c.feature_concept_id -%}
+    {%- set temp -%}feature type: {{ inputTypes.ConceptList(c.feature_concept_id) }}{%- endset -%}
+    {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+
+  {%- if c.algorithm_concept_id -%}
+    {%- set temp -%}detected by {{ inputTypes.ConceptList(c.algorithm_concept_id) }}{%- endset -%}
+    {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+
+  {%- if c.value_as_number -%}
+    {%- set temp -%}value {{ inputTypes.NumericRange(c.value_as_number) }}{%- endset -%}
+    {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+
+  {%- if c.unit_concept_id -%}
+    {%- set temp -%}units: {{ inputTypes.ConceptList(c.unit_concept_id) }}{%- endset -%}
+    {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+
+  {%- if c.feature_start_timestamp -%}
+      {%- set temp -%}starting {{ inputTypes.DateRange(c.feature_start_timestamp) }}{%- endset -%}
+      {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+  
+  {%- if c.feature_end_timestamp -%}
+      {%- set temp -%}ending {{ inputTypes.DateRange(c.feature_end_timestamp) }}{%- endset -%}
+      {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+
+  waveform-derived feature{% if isPlural and not c.first %}s{% endif %}
+  {%- if c.first %} for the first time in the person's history{% endif -%}
+  {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
+  .
+{%- endmacro -%}
+
+{{ WaveformFeature(criteria, level, isPlural, countCriteria, indexLabel) }}

@@ -1,0 +1,382 @@
+from __future__ import annotations
+
+import contextlib
+from collections.abc import Callable, Mapping
+from typing import Any
+
+import ibis
+
+from ..errors import CompilationError
+from ..normalize.cohort import NormalizedConceptSet
+from ..plan.schema import CONCEPT_ID
+from ..typing import IbisBackendLike, Table
+from .operations import create_table as _create_table_impl
+
+
+def _literal_select(**columns: int) -> Table:
+    """Return an ibis table expression that selects literal values.
+
+    Builds ``SELECT val1 AS col1, val2 AS col2`` using ``as_table()`` and
+    ``mutate()`` so no memtable or local-file staging is required.
+    """
+    items = list(columns.items())
+    t = ibis.literal(items[0][1], type="int64").name(items[0][0]).as_table()
+    for name, val in items[1:]:
+        t = t.mutate(**{name: ibis.literal(val, type="int64")})
+    return t
+
+
+def _empty_table(*, columns: tuple[tuple[str, int], ...]) -> Table:
+    """Return an ibis expression for an empty table with the given column types.
+
+    Produces ``SELECT ... WHERE FALSE`` -- no local files.
+    """
+    if not columns:
+        raise ValueError("_empty_table requires at least one column")
+    t = _literal_select(**dict(columns))
+    return t.filter(ibis.literal(False))
+
+
+def _vocabulary_table(
+    table_name: str,
+    *,
+    vocabulary_schema: str | None,
+    table_getter: Callable[[str, str | None], Table],
+) -> Table:
+    try:
+        return table_getter(table_name, vocabulary_schema)
+    except Exception as exc:
+        raise CompilationError(
+            f"Ibis executor compilation error: failed to access vocabulary table '{table_name}'."
+        ) from exc
+
+
+def _descendant_expression(
+    ancestor_ids: tuple[int, ...],
+    *,
+    table_getter: Callable[[str, str | None], Table],
+    vocabulary_schema: str | None,
+) -> Table:
+    concept = _vocabulary_table("concept", vocabulary_schema=vocabulary_schema, table_getter=table_getter)
+    concept_ancestor = _vocabulary_table(
+        "concept_ancestor", vocabulary_schema=vocabulary_schema, table_getter=table_getter
+    )
+    return (
+        concept_ancestor.join(concept, concept_ancestor.descendant_concept_id == concept.concept_id)
+        .filter(concept_ancestor.ancestor_concept_id.isin(ancestor_ids))
+        .filter(concept.invalid_reason.isnull())
+        .select(concept_ancestor.descendant_concept_id.name(CONCEPT_ID))
+        .distinct()
+    )
+
+
+def _mapped_expression(
+    concept_ids: tuple[int, ...],
+    *,
+    table_getter: Callable[[str, str | None], Table],
+    vocabulary_schema: str | None,
+) -> Table:
+    concept_relationship = _vocabulary_table(
+        "concept_relationship", vocabulary_schema=vocabulary_schema, table_getter=table_getter
+    )
+    return (
+        concept_relationship.filter(concept_relationship.concept_id_2.isin(concept_ids))
+        .filter(concept_relationship.relationship_id == "Maps to")
+        .filter(concept_relationship.invalid_reason.isnull())
+        .select(concept_relationship.concept_id_1.name(CONCEPT_ID))
+        .distinct()
+    )
+
+
+def _build_codeset_expression(
+    concept_set: NormalizedConceptSet,
+    *,
+    table_getter: Callable[[str, str | None], Table],
+    vocabulary_schema: str | None,
+) -> Table:
+    """Build a lazy ibis expression for a concept set with include/exclude logic.
+
+    Handles descendants, mapped codes, and exclusions via ibis JOINs.
+    The database engine performs the expansion at execution time.
+    Never uses ``ibis.memtable`` -- all leaf values use ``as_table().mutate()``
+    to avoid local-file staging on Databricks.
+
+    Batches all ancestor lookups within one concept set into a single
+    ``concept_ancestor`` JOIN (mirrors Java's ``IN (id1, ..., idN)`` pattern)
+    rather than issuing one JOIN per item.
+    """
+    # Separate items by (is_excluded) and collect IDs for batched lookups.
+    include_direct: list[int] = []
+    include_desc: list[int] = []
+    include_mapped: list[int] = []
+    exclude_direct: list[int] = []
+    exclude_desc: list[int] = []
+    exclude_mapped: list[int] = []
+
+    for item in concept_set.items:
+        if item.concept_id is None:
+            continue
+        cid = int(item.concept_id)
+        if item.is_excluded:
+            exclude_direct.append(cid)
+            if item.include_descendants:
+                exclude_desc.append(cid)
+            if item.include_mapped:
+                exclude_mapped.append(cid)
+        else:
+            include_direct.append(cid)
+            if item.include_descendants:
+                include_desc.append(cid)
+            if item.include_mapped:
+                include_mapped.append(cid)
+
+    # Build include expression parts with batched vocabulary lookups.
+    include_parts: list[Table] = []
+    if include_direct:
+        for cid in include_direct:
+            include_parts.append(_literal_select(concept_id=cid))
+    if include_desc:
+        include_parts.append(
+            _descendant_expression(
+                tuple(include_desc), table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+        )
+    if include_mapped:
+        include_parts.append(
+            _mapped_expression(
+                tuple(include_mapped), table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+        )
+
+    # Build exclude expression parts with batched vocabulary lookups.
+    exclude_parts: list[Table] = []
+    if exclude_direct:
+        for cid in exclude_direct:
+            exclude_parts.append(_literal_select(concept_id=cid))
+    if exclude_desc:
+        exclude_parts.append(
+            _descendant_expression(
+                tuple(exclude_desc), table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+        )
+    if exclude_mapped:
+        exclude_parts.append(
+            _mapped_expression(
+                tuple(exclude_mapped), table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+        )
+
+    if not include_parts:
+        return _empty_table(columns=(("concept_id", 0),))
+
+    # Normalize column nullability for union compatibility across backends.
+    # _literal_select produces nullable int64 while vocabulary table columns
+    # (e.g. Databricks concept_ancestor.descendant_concept_id) may be non-nullable.
+    # Strict backends require exact schema match for UNION ALL.
+    if len(include_parts) > 1:
+        include_parts = [p.select(p.concept_id.cast("int64").name(CONCEPT_ID)) for p in include_parts]
+
+    result = _union_all_tables(include_parts)
+    result = result.distinct()
+
+    if exclude_parts:
+        if len(exclude_parts) > 1:
+            exclude_parts = [p.select(p.concept_id.cast("int64").name(CONCEPT_ID)) for p in exclude_parts]
+        exclude_relation = _union_all_tables(exclude_parts).distinct()
+        marked = exclude_relation.mutate(_cm=ibis.literal(1, type="int64"))
+        result = result.join(marked, result.concept_id == marked.concept_id, how="left")
+        result = result.filter(result._cm.isnull()).drop("_cm")
+        result = result.select(result.concept_id.name(CONCEPT_ID))
+
+    return result.select(result.concept_id.name(CONCEPT_ID))
+
+
+def _union_all_tables(tables: list[Table]) -> Table:
+    """Union multiple single-column ibis tables using binary-tree merge."""
+    if not tables:
+        raise ValueError("_union_all_tables requires at least one table")
+    if len(tables) == 1:
+        return tables[0]
+    mid = len(tables) // 2
+    left = _union_all_tables(tables[:mid])
+    right = _union_all_tables(tables[mid:])
+    return left.union(right, distinct=False)
+
+
+def _needs_vocabulary_expansion(concept_sets: Mapping[int, NormalizedConceptSet]) -> bool:
+    for cset in concept_sets.values():
+        for item in cset.items:
+            if item.include_descendants or item.include_mapped:
+                return True
+    return False
+
+
+def build_batch_codeset_table(
+    *,
+    backend: IbisBackendLike,
+    concept_sets: Mapping[int, NormalizedConceptSet],
+    batch_table_name: str,
+    results_schema: str | None = None,
+    vocabulary_schema: str | None = None,
+    temporary: bool = False,
+) -> Table:
+    """Build a ``(codeset_id, concept_id)`` table from multiple concept sets."""
+    return build_single_codeset_table(
+        backend=backend,
+        concept_sets=concept_sets,
+        batch_table_name=batch_table_name,
+        results_schema=results_schema,
+        vocabulary_schema=vocabulary_schema,
+    )
+
+
+def _table_getter_from_backend(
+    backend: IbisBackendLike,
+    schema: str,
+) -> Callable[[str, str | None], Table]:
+    def _getter(table_name: str, table_schema: str | None) -> Table:
+        try:
+            if table_schema is not None:
+                return backend.table(table_name, database=table_schema)
+        except TypeError:
+            pass
+        return backend.table(table_name)
+
+    return _getter
+
+
+def _read_table(
+    backend: IbisBackendLike,
+    *,
+    table_name: str,
+    schema: str | None,
+) -> Table:
+    try:
+        if schema is not None:
+            return backend.table(table_name, database=schema)
+    except TypeError:
+        pass
+    return backend.table(table_name)
+
+
+def _extract_column(result: Any, col_name: str) -> tuple[int, ...]:
+    if hasattr(result, "columns"):
+        values = result[col_name].tolist() if col_name in result.columns else result.iloc[:, 0].tolist()
+    elif isinstance(result, (list, tuple, set)):
+        values = list(result)
+    else:
+        values = [result] if result is not None else []
+    return tuple(int(v) for v in values if v is not None)
+
+
+def _drop_table(
+    backend: IbisBackendLike,
+    table_name: str,
+    schema: str | None,
+) -> None:
+    with contextlib.suppress(Exception):
+        backend.drop_table(table_name, database=schema, force=True)
+
+
+def build_single_codeset_table(
+    *,
+    backend: IbisBackendLike,
+    concept_sets: Mapping[int, NormalizedConceptSet],
+    batch_table_name: str,
+    results_schema: str | None = None,
+    vocabulary_schema: str | None = None,
+    session_prefix: str = "",
+) -> Table:
+    """Build a per-cohort codeset table ``(codeset_id, concept_id)``.
+
+    Like the Java ``#Codesets`` table.  All work stays in the database --
+    no ``ibis.memtable``, no local-file staging, no ``temp`` tables
+    (which Databricks / Oracle / BigQuery do not support).
+    """
+    name = f"{session_prefix}{batch_table_name}"
+
+    if not concept_sets:
+        empty = _empty_table(columns=(("codeset_id", 0), ("concept_id", 0)))
+        _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=True)
+        return _read_table(backend, table_name=name, schema=results_schema)
+
+    needs_vocab = _needs_vocabulary_expansion(concept_sets)
+
+    if not needs_vocab:
+        parts: list[Table] = []
+        for cid, cset in concept_sets.items():
+            for item in cset.items:
+                if not item.is_excluded and item.concept_id is not None:
+                    parts.append(_literal_select(codeset_id=int(cid), concept_id=int(item.concept_id)))
+        if not parts:
+            empty = _empty_table(columns=(("codeset_id", 0), ("concept_id", 0)))
+            _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=True)
+            return _read_table(backend, table_name=name, schema=results_schema)
+        combined = _union_all_tables(parts)
+        _create_table_impl(backend, table_name=name, schema=results_schema, obj=combined, overwrite=True)
+        return _read_table(backend, table_name=name, schema=results_schema)
+
+    table_getter = _table_getter_from_backend(backend, vocabulary_schema or "")
+
+    parts = []
+    for cid, cset in concept_sets.items():
+        if not cset.items:
+            continue
+        has_vocab = any(item.include_descendants or item.include_mapped for item in cset.items)
+        if has_vocab:
+            expr = _build_codeset_expression(
+                cset, table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+            labeled = expr.mutate(codeset_id=ibis.literal(int(cid), type="int64")).select(
+                "codeset_id", CONCEPT_ID
+            )
+            parts.append(labeled)
+        else:
+            for item in cset.items:
+                if not item.is_excluded and item.concept_id is not None:
+                    parts.append(_literal_select(codeset_id=int(cid), concept_id=int(item.concept_id)))
+
+    if not parts:
+        empty = _empty_table(columns=(("codeset_id", 0), ("concept_id", 0)))
+        _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=True)
+        return _read_table(backend, table_name=name, schema=results_schema)
+
+    # Normalize column nullability for union compatibility across backends.
+    if len(parts) > 1:
+        parts = [
+            p.select(
+                p.codeset_id.cast("int64").name("codeset_id"), p.concept_id.cast("int64").name(CONCEPT_ID)
+            )
+            for p in parts
+        ]
+
+    combined = _union_all_tables(parts)
+    _create_table_impl(backend, table_name=name, schema=results_schema, obj=combined, overwrite=True)
+    return _read_table(backend, table_name=name, schema=results_schema)
+
+
+def drop_codeset_table(
+    backend: IbisBackendLike,
+    *,
+    batch_table_name: str,
+    results_schema: str | None = None,
+) -> None:
+    _drop_table(backend, batch_table_name, results_schema)
+
+
+def _filter_by_concept_table(
+    table: Table,
+    concept_table: Table,
+    *,
+    column: str,
+    exclude: bool = False,
+) -> Table:
+    """Semi-join (include) or anti-join (exclude) *table* against *concept_table*."""
+    if not exclude:
+        joined = table.join(concept_table, table[column] == concept_table.concept_id)
+        return joined.select(*[joined[c] for c in table.columns])
+    else:
+        marked = concept_table.mutate(_cm=ibis.literal(1, type="int64"))
+        joined = table.join(marked, table[column] == marked.concept_id, how="left")
+        filtered = joined.filter(joined._cm.isnull())
+        return filtered.select(*[filtered[c] for c in table.columns])

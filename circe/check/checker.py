@@ -9,8 +9,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import List
-
 from .check import Check
 from .warning import Warning
 
@@ -33,7 +31,7 @@ class Checker(Check):
     cohort expression and collects all warnings.
     """
 
-    def _get_checks(self) -> List[Check]:
+    def _get_checks(self) -> list[Check]:
         """Get the list of all checks to run.
 
         Returns:
@@ -67,7 +65,7 @@ class Checker(Check):
         from .checkers.time_window_check import TimeWindowCheck
         from .checkers.unused_concepts_check import UnusedConceptsCheck
 
-        checks: List[Check] = [
+        checks: list[Check] = [
             UnusedConceptsCheck(),
             ExitCriteriaCheck(),
             ExitCriteriaDaysOffsetCheck(),
@@ -96,7 +94,7 @@ class Checker(Check):
 
         return checks
 
-    def check(self, expression: "CohortExpression") -> List[Warning]:
+    def check(self, expression: "CohortExpression") -> list[Warning]:
         """Run all validation checks against a cohort expression.
 
         Args:
@@ -105,7 +103,7 @@ class Checker(Check):
         Returns:
             A list of all warnings found by all checks.
         """
-        result: List[Warning] = []
+        result: list[Warning] = []
         for check in self._get_checks():
             result.extend(check.check(expression))
         return result

@@ -161,14 +161,12 @@ pip install -e ".[dev]"
 circe --help
 ```
 
-See [../INSTALLATION.md](../INSTALLATION.md) for detailed installation instructions.
+See [../docs/installation.md](../docs/installation.md) for detailed installation instructions.
 
-**PyPI Installation (Coming Soon):**
+**PyPI Installation:**
 
-> [!NOTE]
-> PyPI package is not yet available. Once released:
 > ```bash
-> pip install ohdsi-circepy
+> pip install ohdsi-circe
 > ```
 
 ### Run All Examples
@@ -207,7 +205,7 @@ For the best learning experience, run the examples in this order:
 ```python
 from circe import cohort_expression_from_json
 
-with open('my_cohort.json', 'r') as f:
+with open("my_cohort.json", "r") as f:
     json_data = f.read()
 
 cohort = cohort_expression_from_json(json_data)
@@ -218,12 +216,7 @@ cohort = cohort_expression_from_json(json_data)
 ```python
 from circe.api import build_cohort_query
 
-sql = build_cohort_query(
-    cohort,
-    cdm_schema="my_cdm_schema",
-    vocab_schema="my_vocab_schema",
-    cohort_id=1
-)
+sql = build_cohort_query(cohort, cdm_schema="my_cdm_schema", vocab_schema="my_vocab_schema", cohort_id=1)
 ```
 
 ### Validating a Cohort
@@ -262,7 +255,7 @@ These examples generate SQL for the OMOP Common Data Model. To use the generated
 
 ## Getting Help
 
-- **Documentation**: See the main [README.md](../README.md) and [INSTALLATION.md](../INSTALLATION.md)
+- **Documentation**: See the main [README.md](../README.md) and [docs/installation.md](../docs/installation.md)
 - **API Reference**: Use `help()` in Python: `help(CohortExpression)`
 - **Issues**: Report problems at https://github.com/OHDSI/Circepy/issues
 

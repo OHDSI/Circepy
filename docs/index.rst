@@ -1,9 +1,9 @@
 OHDSI CIRCE Python Documentation
 ==================================
 
-.. image:: https://img.shields.io/badge/python-3.8%2B-blue
+.. image:: https://img.shields.io/badge/python-3.10%2B-blue
    :target: https://www.python.org/downloads/
-   :alt: Python 3.8+
+   :alt: Python 3.10+
 
 .. image:: https://img.shields.io/badge/tests-896%20passed-brightgreen
    :alt: Tests
@@ -51,6 +51,7 @@ A Python implementation of the OHDSI CIRCE-BE (Cohort Inclusion and Restriction 
 
    developer/contributing
    developer/architecture
+   developer/extensions
    developer/testing
    developer/release
 
@@ -110,8 +111,8 @@ Quick Example
 Support
 -------
 
-* **Repository**: https://github.com/OHDSI/circe-be-python
-* **Issues**: https://github.com/OHDSI/circe-be-python/issues
+* **Repository**: https://github.com/OHDSI/Circepy
+* **Issues**: https://github.com/OHDSI/Circepy/issues
 * **PyPI**: https://pypi.org/project/ohdsi-circe/
 
 Indices and tables
@@ -120,4 +121,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

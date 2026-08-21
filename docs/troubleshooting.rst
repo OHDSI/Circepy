@@ -11,7 +11,8 @@ If you encounter import errors:
 
 .. code-block:: bash
 
-   pip install --upgrade ohdsi-circe
+   cd Circepy
+   uv sync --extra dev
 
 SQL Generation Issues
 ~~~~~~~~~~~~~~~~~~~~~
@@ -38,4 +39,3 @@ If you can't resolve an issue:
    * CIRCE version
    * Error message
    * Minimal reproduction example
-

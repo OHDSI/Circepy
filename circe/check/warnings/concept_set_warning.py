@@ -8,8 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional
-
 from ...vocabulary.concept import ConceptSet
 from ..warning_severity import WarningSeverity
 from .base_warning import BaseWarning
@@ -28,7 +26,7 @@ class ConceptSetWarning(BaseWarning):
         self,
         severity: WarningSeverity,
         template: str,
-        concept_set: Optional[ConceptSet],
+        concept_set: ConceptSet | None,
     ):
         """Initialize a concept set warning.
 
@@ -42,7 +40,7 @@ class ConceptSetWarning(BaseWarning):
         self._concept_set = concept_set
 
     @property
-    def concept_set(self) -> Optional[ConceptSet]:
+    def concept_set(self) -> ConceptSet | None:
         """Get the concept set associated with this warning.
 
         Returns:

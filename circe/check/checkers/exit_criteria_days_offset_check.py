@@ -8,6 +8,8 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+from typing import Any
+
 from ..operations.operations import Operations
 from ..warning_severity import WarningSeverity
 from .base_check import BaseCheck
@@ -31,9 +33,7 @@ class ExitCriteriaDaysOffsetCheck(BaseCheck):
     Java equivalent: org.ohdsi.circe.check.checkers.ExitCriteriaDaysOffsetCheck
     """
 
-    DAYS_OFFSET_WARNING = (
-        "Cohort Exit criteria: Days offset from start date should be greater than 0"
-    )
+    DAYS_OFFSET_WARNING = "Cohort Exit criteria: Days offset from start date should be greater than 0"
 
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.
@@ -50,10 +50,12 @@ class ExitCriteriaDaysOffsetCheck(BaseCheck):
             expression: The cohort expression to check
             reporter: The warning reporter to use
         """
-        match_result = Operations.match(expression.end_strategy)
+        match_result: Any = Operations.match(expression.end_strategy)
         match_result.is_a(DateOffsetStrategy)
         match_result.then(
-            lambda s: Operations.match(s)
-            .when(lambda dos: dos.date_field == DateType.START_DATE and dos.offset == 0)
-            .then(lambda dos: reporter(self.DAYS_OFFSET_WARNING))
+            lambda s: (
+                Operations.match(s)
+                .when(lambda dos: dos.date_field == DateType.START_DATE and dos.offset == 0)
+                .then(lambda dos: reporter(self.DAYS_OFFSET_WARNING))
+            )
         )
