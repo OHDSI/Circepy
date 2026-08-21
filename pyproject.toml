@@ -94,6 +94,7 @@ exclude = ["circe.tests*"]
 
 [tool.setuptools.package-data]
 circe = ["py.typed"]
+"circe.sqlrender" = ["replacementPatterns.csv"]
 "circe.extensions.waveform" = ["templates/*.j2"]
 
 [tool.mypy]
