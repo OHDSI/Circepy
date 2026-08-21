@@ -99,14 +99,9 @@ from circe.vocabulary import ConceptSet, ConceptSetExpression, ConceptSetItem, C
 cohort = CohortExpression(
     title="Type 2 Diabetes Cohort",
     primary_criteria=PrimaryCriteria(
-        criteria_list=[
-            ConditionOccurrence(
-                codeset_id=1,
-                first=True
-            )
-        ],
+        criteria_list=[ConditionOccurrence(codeset_id=1, first=True)],
         observation_window=ObservationFilter(prior_days=0, post_days=0),
-        primary_limit=ResultLimit(type="All")
+        primary_limit=ResultLimit(type="All"),
     ),
     concept_sets=[
         ConceptSet(
@@ -115,16 +110,13 @@ cohort = CohortExpression(
             expression=ConceptSetExpression(
                 items=[
                     ConceptSetItem(
-                        concept=Concept(
-                            concept_id=201826,
-                            concept_name="Type 2 diabetes mellitus"
-                        ),
-                        include_descendants=True
+                        concept=Concept(concept_id=201826, concept_name="Type 2 diabetes mellitus"),
+                        include_descendants=True,
                     )
                 ]
-            )
+            ),
         )
-    ]
+    ],
 )
 
 # Generate SQL using the API
@@ -132,10 +124,10 @@ from circe.api import build_cohort_query
 from circe.cohortdefinition import BuildExpressionQueryOptions
 
 options = BuildExpressionQueryOptions()
-options.cdm_schema = 'cdm'
-options.vocabulary_schema = 'cdm'
+options.cdm_schema = "cdm"
+options.vocabulary_schema = "cdm"
 options.cohort_id = 1
-options.target_table = 'scratch.cohort'
+options.target_table = "scratch.cohort"
 sql = build_cohort_query(cohort, options)
 print(sql)
 ```

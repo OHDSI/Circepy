@@ -207,7 +207,7 @@ For the best learning experience, run the examples in this order:
 ```python
 from circe import cohort_expression_from_json
 
-with open('my_cohort.json', 'r') as f:
+with open("my_cohort.json", "r") as f:
     json_data = f.read()
 
 cohort = cohort_expression_from_json(json_data)
@@ -218,12 +218,7 @@ cohort = cohort_expression_from_json(json_data)
 ```python
 from circe.api import build_cohort_query
 
-sql = build_cohort_query(
-    cohort,
-    cdm_schema="my_cdm_schema",
-    vocab_schema="my_vocab_schema",
-    cohort_id=1
-)
+sql = build_cohort_query(cohort, cdm_schema="my_cdm_schema", vocab_schema="my_vocab_schema", cohort_id=1)
 ```
 
 ### Validating a Cohort

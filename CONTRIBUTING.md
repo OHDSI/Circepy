@@ -66,6 +66,7 @@ All functions and methods should include type hints. Use `typing` module for com
 ```python
 from typing import List, Optional, Dict, Any
 
+
 def process_cohort(cohort: CohortExpression) -> Optional[str]:
     """Process a cohort expression and return SQL."""
     pass
