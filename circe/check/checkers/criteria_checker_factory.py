@@ -8,7 +8,8 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Callable, Optional
+from collections.abc import Callable
+from typing import Optional
 
 # Import at runtime to avoid circular dependencies
 try:
@@ -213,7 +214,7 @@ class CriteriaCheckerFactory:
         Returns:
             A list of functions that return ConceptSetSelection objects
         """
-        suppliers: list[Callable[[], Optional[ConceptSetSelection]]] = []
+        suppliers: list[Callable[[], ConceptSetSelection | None]] = []
         suppliers.append(lambda: criteria.place_of_service_cs)
         suppliers.append(lambda: criteria.gender_cs)
         suppliers.append(lambda: criteria.provider_specialty_cs)

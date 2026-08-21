@@ -38,6 +38,14 @@ def lower_common_steps(criterion: NormalizedCriterion) -> list[PlanStep]:
             )
         )
 
+    if criterion.source_codeset_id is not None and criterion.source_concept_column is not None:
+        steps.append(
+            FilterByCodeset(
+                column=criterion.source_concept_column,
+                codeset_id=int(criterion.source_codeset_id),
+            )
+        )
+
     if criterion.person_filters.gender_concept_ids or criterion.person_filters.gender_codeset_id is not None:
         steps.append(
             FilterByPersonGender(

@@ -9,10 +9,12 @@ from .end_strategy import attach_observation_bounds
 
 
 def _union_all(tables):
-    current = tables[0]
-    for table in tables[1:]:
-        current = current.union(table, distinct=False)
-    return current
+    if len(tables) == 1:
+        return tables[0]
+    mid = len(tables) // 2
+    left = _union_all(tables[:mid])
+    right = _union_all(tables[mid:])
+    return left.union(right, distinct=False)
 
 
 def _compile_censor_events(criteria, ctx):

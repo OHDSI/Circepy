@@ -10,13 +10,13 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 from .api import cohort_expression_from_json, cohort_expression_from_yaml
 from .cohortdefinition import CohortExpression
 from .cohortdefinition.yaml_utils import cohort_expression_to_snake_case
 
-ExpressionInput = Union[CohortExpression, Mapping[str, Any], str, Path]
+ExpressionInput = CohortExpression | Mapping[str, Any] | str | Path
 
 
 def load_expression(value: ExpressionInput) -> CohortExpression:

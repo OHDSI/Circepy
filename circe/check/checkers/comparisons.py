@@ -76,7 +76,7 @@ class Comparisons:
         return False
 
     @staticmethod
-    def is_date_valid(date: Optional[str]) -> bool:
+    def is_date_valid(date: str | None) -> bool:
         """Check if a date string is valid.
 
         Args:

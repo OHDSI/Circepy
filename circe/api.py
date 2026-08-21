@@ -9,8 +9,16 @@ This module provides a simple R CirceR-style API for working with cohort definit
 - cohort_print_friendly(): Generate Markdown from cohort expression
 """
 
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal
 
+from .cohort_definition_set import (  # noqa: F401
+    CohortDefinition,
+    CohortDefinitionSet,
+    CohortGenerationResult,
+    async_generate_cohort_set,
+    generate_cohort_set,
+    summarise_generation_results,
+)
 from .cohortdefinition import (
     BuildExpressionQueryOptions,
     CohortExpression,
@@ -114,7 +122,7 @@ def cohort_expression_from_yaml(yaml_str: str) -> CohortExpression:
 
 def build_cohort_query(
     expression: CohortExpression,
-    options: Optional[BuildExpressionQueryOptions] = None,
+    options: BuildExpressionQueryOptions | None = None,
 ) -> str:
     """Generate SQL query from a cohort expression.
 
@@ -147,8 +155,8 @@ def build_cohort(
     *,
     backend: IbisBackendLike,
     cdm_schema: str,
-    vocabulary_schema: Optional[str] = None,
-    results_schema: Optional[str] = None,
+    vocabulary_schema: str | None = None,
+    results_schema: str | None = None,
 ) -> Table:
     """Build a cohort as a relational table expression.
 
@@ -199,8 +207,8 @@ def write_cohort(
     cdm_schema: str,
     cohort_table: str,
     cohort_id: int,
-    vocabulary_schema: Optional[str] = None,
-    results_schema: Optional[str] = None,
+    vocabulary_schema: str | None = None,
+    results_schema: str | None = None,
     if_exists: Literal["fail", "replace"] = "fail",
 ) -> None:
     """Build and write an OHDSI cohort table.
@@ -260,13 +268,11 @@ def write_cohort(
 
 def cohort_print_friendly(
     expression: CohortExpression,
-    concept_sets: Optional[list[ConceptSet]] = None,
-    title: Optional[str] = None,
+    concept_sets: list[ConceptSet] | None = None,
+    title: str | None = None,
     include_concept_sets: bool = False,
 ) -> str:
     """Generate human-readable Markdown from a cohort expression.
-
-    This is equivalent to R CirceR's `cohortPrintFriendly()` function.
 
     Args:
         expression: CohortExpression instance

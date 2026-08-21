@@ -584,6 +584,14 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.builder.get_strategy_sql(strategy, "#test_events")
 
+    def test_get_strategy_sql_custom_era_strategy_days_supply_override(self):
+        """CustomEraStrategy with days_supply_override uses DATEADD on start date."""
+        strategy = CustomEraStrategy(drug_codeset_id=12345, gap_days=30, offset=0, days_supply_override=7)
+
+        query = self.builder.get_strategy_sql(strategy, "#test_events")
+
+        self.assertIn("DATEADD(day,7,DRUG_EXPOSURE_START_DATE)", query)
+
     def test_get_criteria_sql_delegation(self):
         """Test that get_criteria_sql methods delegate to appropriate builders."""
         criteria = Death(first=True, death_type_exclude=False, codeset_id=12345)

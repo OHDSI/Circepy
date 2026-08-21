@@ -8,8 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional
-
 from ..criteria import VisitDetail
 from .base import CriteriaSqlBuilder
 from .utils import BuilderOptions, BuilderUtils, CriteriaColumn
@@ -102,7 +100,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
     def resolve_select_clauses(
         self,
         criteria: VisitDetail,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve select clauses for visit detail criteria."""
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
@@ -151,7 +149,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
     def resolve_join_clauses(
         self,
         criteria: VisitDetail,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve join clauses for visit detail criteria."""
         join_clauses = []
@@ -177,7 +175,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
     def resolve_where_clauses(
         self,
         criteria: VisitDetail,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve where clauses for visit detail criteria."""
         where_clauses = []
@@ -264,7 +262,7 @@ class VisitDetailSqlBuilder(CriteriaSqlBuilder[VisitDetail]):
         where_clauses: list[str],
         concept_set_selection,
         concept_column: str,
-        exclude: Optional[bool] = None,
+        exclude: bool | None = None,
     ):
         """Add where clause for concept set selection."""
         is_exclusion = exclude if exclude is not None else concept_set_selection.is_exclusion

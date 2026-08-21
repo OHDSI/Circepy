@@ -22,6 +22,8 @@ DURATION = "duration"
 CRITERION_INDEX = "criterion_index"
 CRITERION_TYPE = "criterion_type"
 SOURCE_TABLE = "source_table"
+OP_START_DATE = "op_start_date"
+OP_END_DATE = "op_end_date"
 
 STANDARD_EVENT_COLUMNS = (
     PERSON_ID,

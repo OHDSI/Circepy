@@ -10,7 +10,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, Optional, TypeVar
+from typing import Generic, TypeVar
 
 from ..criteria import Criteria
 from .utils import BuilderOptions, CriteriaColumn
@@ -24,14 +24,14 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
     Java equivalent: org.ohdsi.circe.cohortdefinition.builders.CriteriaSqlBuilder
     """
 
-    def get_criteria_sql(self, criteria: T, options: Optional[BuilderOptions] = None) -> str:
+    def get_criteria_sql(self, criteria: T, options: BuilderOptions | None = None) -> str:
         """Get SQL query for criteria.
 
         Java equivalent: CriteriaSqlBuilder.getCriteriaSql(T criteria)
         """
         return self.get_criteria_sql_with_options(criteria, options)
 
-    def get_criteria_sql_with_options(self, criteria: T, options: Optional[BuilderOptions]) -> str:
+    def get_criteria_sql_with_options(self, criteria: T, options: BuilderOptions | None) -> str:
         """Get SQL query for criteria with builder options.
 
         Java equivalent: CriteriaSqlBuilder.getCriteriaSql(T criteria, BuilderOptions options)
@@ -99,7 +99,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return query.replace("@codesetClause", "")
 
-    def resolve_select_clauses(self, criteria: T, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_select_clauses(self, criteria: T, options: BuilderOptions | None = None) -> list[str]:
         """Resolve select clauses for criteria.
 
         Java equivalent: CriteriaSqlBuilder.resolveSelectClauses()
@@ -107,7 +107,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return []
 
-    def resolve_join_clauses(self, criteria: T, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_join_clauses(self, criteria: T, options: BuilderOptions | None = None) -> list[str]:
         """Resolve join clauses for criteria.
 
         Java equivalent: CriteriaSqlBuilder.resolveJoinClauses()
@@ -115,7 +115,7 @@ class CriteriaSqlBuilder(ABC, Generic[T]):
         # This would need to be implemented based on the Java logic
         return []
 
-    def resolve_where_clauses(self, criteria: T, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_where_clauses(self, criteria: T, options: BuilderOptions | None = None) -> list[str]:
         """Resolve where clauses for criteria.
 
         Java equivalent: CriteriaSqlBuilder.resolveWhereClauses()

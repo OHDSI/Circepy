@@ -14,7 +14,6 @@ import re
 import textwrap
 from difflib import unified_diff
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
@@ -61,7 +60,7 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("cohort_name", params)
 
 
-def get_reference_sql(cohort_name: str) -> Optional[str]:
+def get_reference_sql(cohort_name: str) -> str | None:
     """Get pre-generated reference SQL from R/Java implementation."""
     ref_file = REFERENCE_DIR / cohort_name.replace(".json", ".sql")
     if ref_file.exists():
@@ -69,7 +68,7 @@ def get_reference_sql(cohort_name: str) -> Optional[str]:
     return None
 
 
-def generate_python_outputs(cohort_file: Path) -> tuple[Optional[str], Optional[str]]:
+def generate_python_outputs(cohort_file: Path) -> tuple[str | None, str | None]:
     """
     Run Python reference implementation to generate SQL.
 
@@ -392,10 +391,10 @@ def test_sql_matches_reference(cohort_name):
 # =============================================================================
 
 # Cache for generated markdown to avoid redundant work
-_MARKDOWN_CACHE: dict[str, tuple[Optional[str], Optional[str]]] = {}
+_MARKDOWN_CACHE: dict[str, tuple[str | None, str | None]] = {}
 
 
-def get_generated_markdown(cohort_name: str) -> tuple[Optional[str], Optional[str]]:
+def get_generated_markdown(cohort_name: str) -> tuple[str | None, str | None]:
     """
     Get generated markdown for a cohort, using cache if available.
     """
@@ -424,7 +423,7 @@ def get_generated_markdown(cohort_name: str) -> tuple[Optional[str], Optional[st
     return markdown, error
 
 
-def get_reference_markdown(cohort_name: str) -> Optional[str]:
+def get_reference_markdown(cohort_name: str) -> str | None:
     """Get pre-generated reference Markdown from R/Java implementation."""
     ref_file = REFERENCE_DIR / cohort_name.replace(".json", ".md")
     if ref_file.exists():

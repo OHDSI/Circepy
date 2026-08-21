@@ -3,6 +3,7 @@ from __future__ import annotations
 import ibis
 
 from ..errors import CompilationError
+from ..ibis_compat import literal_column_relation
 from ..plan.predicates import NumericRangePredicate
 from ..plan.schema import PERSON_ID
 from .context import ExecutionContext
@@ -61,18 +62,17 @@ def apply_person_gender_filter(
     concept_ids: tuple[int, ...],
     codeset_id: int | None,
 ):
-    all_ids = list(concept_ids)
     if codeset_id is not None:
-        for cid in ctx.concept_ids_for_codeset(codeset_id):
-            if cid not in all_ids:
-                all_ids.append(cid)
-
-    if not all_ids:
+        concept_table = ctx.concept_set_table(codeset_id)
+        concept_table = concept_table.select(concept_table.concept_id.name("_pconcept_id"))
+    elif concept_ids:
+        concept_table = literal_column_relation(concept_ids, column_name="_pconcept_id", dtype="int64")
+    else:
         return table
 
     person = ctx.table("person").select(PERSON_ID, "gender_concept_id")
     joined = table.join(person, table[PERSON_ID] == person[PERSON_ID])
-    filtered = joined.filter(joined.gender_concept_id.isin(all_ids))
+    filtered = joined.join(concept_table, joined.gender_concept_id == concept_table._pconcept_id)
     return filtered.select(*[filtered[c] for c in table.columns])
 
 
@@ -84,18 +84,17 @@ def _apply_person_concept_filter(
     concept_ids: tuple[int, ...],
     codeset_id: int | None,
 ):
-    all_ids = list(concept_ids)
     if codeset_id is not None:
-        for cid in ctx.concept_ids_for_codeset(codeset_id):
-            if cid not in all_ids:
-                all_ids.append(cid)
-
-    if not all_ids:
+        concept_table = ctx.concept_set_table(codeset_id)
+        concept_table = concept_table.select(concept_table.concept_id.name("_pconcept_id"))
+    elif concept_ids:
+        concept_table = literal_column_relation(concept_ids, column_name="_pconcept_id", dtype="int64")
+    else:
         return table
 
     person = ctx.table("person").select(PERSON_ID, person_column)
     joined = table.join(person, table[PERSON_ID] == person[PERSON_ID])
-    filtered = joined.filter(joined[person_column].isin(all_ids))
+    filtered = joined.join(concept_table, joined[person_column] == concept_table._pconcept_id)
     return filtered.select(*[filtered[c] for c in table.columns])
 
 

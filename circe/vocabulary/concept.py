@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
@@ -26,53 +26,53 @@ class Concept(BaseModel):
     New schema adds: validStartDate, validEndDate, invalidReason with specific formats.
     """
 
-    concept_id: Optional[int] = Field(
+    concept_id: int | None = Field(
         default=None,
         validation_alias=AliasChoices("ConceptId", "CONCEPT_ID", "conceptId", "ConceptID"),
         serialization_alias="CONCEPT_ID",
     )
-    concept_name: Optional[str] = Field(
+    concept_name: str | None = Field(
         default=None,
         validation_alias=AliasChoices("ConceptName", "CONCEPT_NAME", "conceptName"),
         serialization_alias="CONCEPT_NAME",
     )
-    concept_code: Optional[str] = Field(
+    concept_code: str | None = Field(
         default=None,
         validation_alias=AliasChoices("ConceptCode", "CONCEPT_CODE", "conceptCode"),
         serialization_alias="CONCEPT_CODE",
     )
-    concept_class_id: Optional[str] = Field(
+    concept_class_id: str | None = Field(
         default=None,
         validation_alias=AliasChoices("ConceptClassId", "CONCEPT_CLASS_ID", "conceptClassId"),
         serialization_alias="CONCEPT_CLASS_ID",
     )
-    standard_concept: Optional[str] = Field(
+    standard_concept: str | None = Field(
         default=None,
         validation_alias=AliasChoices("StandardConcept", "STANDARD_CONCEPT", "standardConcept"),
         serialization_alias="STANDARD_CONCEPT",
     )
-    invalid_reason: Optional[str] = Field(
+    invalid_reason: str | None = Field(
         default=None,
         validation_alias=AliasChoices("InvalidReason", "INVALID_REASON", "invalidReason"),
         serialization_alias="INVALID_REASON",
     )
-    domain_id: Optional[str] = Field(
+    domain_id: str | None = Field(
         default=None,
         validation_alias=AliasChoices("DomainId", "DOMAIN_ID", "domainId"),
         serialization_alias="DOMAIN_ID",
     )
-    vocabulary_id: Optional[str] = Field(
+    vocabulary_id: str | None = Field(
         default=None,
         validation_alias=AliasChoices("VocabularyId", "VOCABULARY_ID", "vocabularyId"),
         serialization_alias="VOCABULARY_ID",
     )
     # New schema fields
-    valid_start_date: Optional[str] = Field(
+    valid_start_date: str | None = Field(
         default=None,
         validation_alias=AliasChoices("validStartDate", "valid_start_date"),
         serialization_alias="validStartDate",
     )
-    valid_end_date: Optional[str] = Field(
+    valid_end_date: str | None = Field(
         default=None,
         validation_alias=AliasChoices("validEndDate", "valid_end_date"),
         serialization_alias="validEndDate",
@@ -82,7 +82,7 @@ class Concept(BaseModel):
 
     @field_validator("standard_concept")
     @classmethod
-    def validate_standard_concept(cls, v: Optional[str]) -> Optional[str]:
+    def validate_standard_concept(cls, v: str | None) -> str | None:
         """Validate standard_concept is 'S', 'C', or null (relaxed for legacy data)."""
         # Relaxed validation - warn but don't fail on unexpected values
         return v
@@ -121,11 +121,11 @@ class ConceptSetExpression(BaseModel):
     (they're sometimes only on the items), so we provide defaults.
     """
 
-    concept: Optional[Concept] = None
+    concept: Concept | None = None
     is_excluded: bool = Field(default=False, alias="isExcluded")
     include_mapped: bool = Field(default=False, alias="includeMapped")
     include_descendants: bool = Field(default=False, alias="includeDescendants")
-    items: Optional[list[ConceptExpressionItem]] = None
+    items: list[ConceptExpressionItem] | None = None
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -145,7 +145,7 @@ class ConceptSet(BaseModel):
         description="Unique identifier for the concept set",
     )
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         min_length=1,
         max_length=255,
@@ -154,7 +154,7 @@ class ConceptSet(BaseModel):
         description="Human-readable name for the concept set",
     )
 
-    expression: Optional[ConceptSetExpression] = Field(
+    expression: ConceptSetExpression | None = Field(
         default=None,
         alias="expression",
         validation_alias=AliasChoices("expression", "EXPRESSION"),
@@ -162,62 +162,62 @@ class ConceptSet(BaseModel):
     )
 
     # Optional fields for both legacy and new schema
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         max_length=4000,
         description="Optional detailed description of the concept set purpose and contents",
     )
 
     # New schema fields (all optional for backward compatibility)
-    version: Optional[str] = Field(
+    version: str | None = Field(
         default=None,
         description="Version identifier for the concept set (semantic versioning)",
     )
-    created_by: Optional[str] = Field(
+    created_by: str | None = Field(
         default=None,
         alias="createdBy",
         validation_alias=AliasChoices("createdBy", "created_by"),
         max_length=255,
         description="Username or identifier of the concept set creator",
     )
-    created_date: Optional[datetime] = Field(
+    created_date: datetime | None = Field(
         default=None,
         alias="createdDate",
         validation_alias=AliasChoices("createdDate", "created_date"),
         description="ISO 8601 timestamp of concept set creation",
     )
-    modified_by: Optional[str] = Field(
+    modified_by: str | None = Field(
         default=None,
         alias="modifiedBy",
         validation_alias=AliasChoices("modifiedBy", "modified_by"),
         max_length=255,
         description="Username or identifier of the last modifier",
     )
-    modified_date: Optional[datetime] = Field(
+    modified_date: datetime | None = Field(
         default=None,
         alias="modifiedDate",
         validation_alias=AliasChoices("modifiedDate", "modified_date"),
         description="ISO 8601 timestamp of last modification",
     )
-    created_by_tool: Optional[str] = Field(
+    created_by_tool: str | None = Field(
         default=None,
         alias="createdByTool",
         validation_alias=AliasChoices("createdByTool", "created_by_tool"),
         max_length=255,
         description="Name and version of the tool used to create the concept set",
     )
-    modified_by_tool: Optional[str] = Field(
+    modified_by_tool: str | None = Field(
         default=None,
         alias="modifiedByTool",
         validation_alias=AliasChoices("modifiedByTool", "modified_by_tool"),
         max_length=255,
         description="Name and version of the tool used for the last modification",
     )
-    tags: Optional[list[str]] = Field(
+    tags: list[str] | None = Field(
         default=None,
         description="Optional array of tags for categorization",
     )
-    metadata: Optional[dict[str, Any]] = Field(
+    metadata: dict[str, Any] | None = Field(
         default=None,
         description="Optional additional metadata",
     )
@@ -226,14 +226,14 @@ class ConceptSet(BaseModel):
 
     @field_validator("version")
     @classmethod
-    def validate_version(cls, v: Optional[str]) -> Optional[str]:
+    def validate_version(cls, v: str | None) -> str | None:
         """Validate semantic versioning pattern if provided (relaxed for legacy compatibility)."""
         # Relaxed - allow any version string for backward compatibility
         return v
 
     @field_validator("tags")
     @classmethod
-    def validate_tags(cls, v: Optional[list[str]]) -> Optional[list[str]]:
+    def validate_tags(cls, v: list[str] | None) -> list[str] | None:
         """Validate tags if provided."""
         if v is not None:
             for tag in v:

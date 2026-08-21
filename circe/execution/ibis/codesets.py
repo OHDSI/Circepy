@@ -1,229 +1,382 @@
 from __future__ import annotations
 
-import hashlib
-import json
+import contextlib
 from collections.abc import Callable, Mapping
 from typing import Any
 
+import ibis
+
 from ..errors import CompilationError
-from ..normalize.cohort import NormalizedConceptSet, NormalizedConceptSetItem
+from ..normalize.cohort import NormalizedConceptSet
 from ..plan.schema import CONCEPT_ID
 from ..typing import IbisBackendLike, Table
+from .operations import create_table as _create_table_impl
 
-_CACHE_TABLE_NAME = "_circe_codeset_cache"
+
+def _literal_select(**columns: int) -> Table:
+    """Return an ibis table expression that selects literal values.
+
+    Builds ``SELECT val1 AS col1, val2 AS col2`` using ``as_table()`` and
+    ``mutate()`` so no memtable or local-file staging is required.
+    """
+    items = list(columns.items())
+    t = ibis.literal(items[0][1], type="int64").name(items[0][0]).as_table()
+    for name, val in items[1:]:
+        t = t.mutate(**{name: ibis.literal(val, type="int64")})
+    return t
 
 
-def _compute_cache_key(items: tuple[NormalizedConceptSetItem, ...]) -> str:
-    """Deterministic SHA-256 hash of sorted concept set items."""
-    canonical = sorted(
-        (item.concept_id, item.is_excluded, item.include_descendants, item.include_mapped) for item in items
+def _empty_table(*, columns: tuple[tuple[str, int], ...]) -> Table:
+    """Return an ibis expression for an empty table with the given column types.
+
+    Produces ``SELECT ... WHERE FALSE`` -- no local files.
+    """
+    if not columns:
+        raise ValueError("_empty_table requires at least one column")
+    t = _literal_select(**dict(columns))
+    return t.filter(ibis.literal(False))
+
+
+def _vocabulary_table(
+    table_name: str,
+    *,
+    vocabulary_schema: str | None,
+    table_getter: Callable[[str, str | None], Table],
+) -> Table:
+    try:
+        return table_getter(table_name, vocabulary_schema)
+    except Exception as exc:
+        raise CompilationError(
+            f"Ibis executor compilation error: failed to access vocabulary table '{table_name}'."
+        ) from exc
+
+
+def _descendant_expression(
+    ancestor_ids: tuple[int, ...],
+    *,
+    table_getter: Callable[[str, str | None], Table],
+    vocabulary_schema: str | None,
+) -> Table:
+    concept = _vocabulary_table("concept", vocabulary_schema=vocabulary_schema, table_getter=table_getter)
+    concept_ancestor = _vocabulary_table(
+        "concept_ancestor", vocabulary_schema=vocabulary_schema, table_getter=table_getter
     )
-    payload = json.dumps(canonical, separators=(",", ":"))
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
-
-
-def clear_codeset_cache(
-    backend: IbisBackendLike,
-    results_schema: str | None,
-) -> None:
-    """Drop the persistent codeset cache table if it exists."""
-    from .operations import create_table, table_exists
-
-    if not table_exists(backend, table_name=_CACHE_TABLE_NAME, schema=results_schema):
-        return
-
-    import ibis
-
-    empty = ibis.memtable(
-        {"cache_key": [], "concept_id": []},
-        schema={"cache_key": "string", "concept_id": "int64"},
+    return (
+        concept_ancestor.join(concept, concept_ancestor.descendant_concept_id == concept.concept_id)
+        .filter(concept_ancestor.ancestor_concept_id.isin(ancestor_ids))
+        .filter(concept.invalid_reason.isnull())
+        .select(concept_ancestor.descendant_concept_id.name(CONCEPT_ID))
+        .distinct()
     )
-    create_table(backend, table_name=_CACHE_TABLE_NAME, schema=results_schema, obj=empty, overwrite=True)
 
 
-class CachedConceptSetResolver:
-    """Resolve concept sets to concrete concept IDs using vocabulary tables."""
+def _mapped_expression(
+    concept_ids: tuple[int, ...],
+    *,
+    table_getter: Callable[[str, str | None], Table],
+    vocabulary_schema: str | None,
+) -> Table:
+    concept_relationship = _vocabulary_table(
+        "concept_relationship", vocabulary_schema=vocabulary_schema, table_getter=table_getter
+    )
+    return (
+        concept_relationship.filter(concept_relationship.concept_id_2.isin(concept_ids))
+        .filter(concept_relationship.relationship_id == "Maps to")
+        .filter(concept_relationship.invalid_reason.isnull())
+        .select(concept_relationship.concept_id_1.name(CONCEPT_ID))
+        .distinct()
+    )
 
-    def __init__(
-        self,
-        *,
-        table_getter: Callable[[str, str | None], Table],
-        vocabulary_schema: str | None,
-        concept_sets: Mapping[int, NormalizedConceptSet],
-        backend: IbisBackendLike | None = None,
-        results_schema: str | None = None,
-        use_persistent_cache: bool = False,
-    ) -> None:
-        self._table_getter = table_getter
-        self._vocabulary_schema = vocabulary_schema
-        self._concept_sets = concept_sets
-        self._cache: dict[int, tuple[int, ...]] = {}
-        self._backend = backend
-        self._results_schema = results_schema
-        self._use_persistent_cache = (
-            use_persistent_cache and backend is not None and results_schema is not None
-        )
-        self._persistent_cache_initialized: bool = False
 
-    def resolve_codeset(self, codeset_id: int) -> tuple[int, ...]:
-        normalized_id = int(codeset_id)
-        if normalized_id in self._cache:
-            return self._cache[normalized_id]
+def _build_codeset_expression(
+    concept_set: NormalizedConceptSet,
+    *,
+    table_getter: Callable[[str, str | None], Table],
+    vocabulary_schema: str | None,
+) -> Table:
+    """Build a lazy ibis expression for a concept set with include/exclude logic.
 
-        concept_set = self._concept_sets.get(normalized_id)
-        if concept_set is None or not concept_set.items:
-            return ()
+    Handles descendants, mapped codes, and exclusions via ibis JOINs.
+    The database engine performs the expansion at execution time.
+    Never uses ``ibis.memtable`` -- all leaf values use ``as_table().mutate()``
+    to avoid local-file staging on Databricks.
 
-        # L2: persistent cache lookup
-        cache_key: str | None = None
-        if self._use_persistent_cache:
-            cache_key = _compute_cache_key(concept_set.items)
-            persistent_hit = self._read_persistent_cache(cache_key)
-            if persistent_hit is not None:
-                self._cache[normalized_id] = persistent_hit
-                return persistent_hit
+    Batches all ancestor lookups within one concept set into a single
+    ``concept_ancestor`` JOIN (mirrors Java's ``IN (id1, ..., idN)`` pattern)
+    rather than issuing one JOIN per item.
+    """
+    # Separate items by (is_excluded) and collect IDs for batched lookups.
+    include_direct: list[int] = []
+    include_desc: list[int] = []
+    include_mapped: list[int] = []
+    exclude_direct: list[int] = []
+    exclude_desc: list[int] = []
+    exclude_mapped: list[int] = []
 
-        include_ids: set[int] = set()
-        exclude_ids: set[int] = set()
-        for item in concept_set.items:
-            expanded = self._expand_item(item)
-            if item.is_excluded:
-                exclude_ids.update(expanded)
-            else:
-                include_ids.update(expanded)
-
-        resolved = tuple(sorted(include_ids - exclude_ids))
-        self._cache[normalized_id] = resolved
-
-        # L2: persistent cache write
-        if self._use_persistent_cache and cache_key is not None and resolved:
-            self._write_persistent_cache(cache_key, resolved)
-
-        return resolved
-
-    def _expand_item(self, item: NormalizedConceptSetItem) -> set[int]:
-        base_ids: set[int] = {int(item.concept_id)}
-        if item.include_descendants:
-            base_ids.update(self._descendant_ids(base_ids))
-
-        expanded = set(base_ids)
-        if item.include_mapped:
-            expanded.update(self._mapped_ids(base_ids))
-        return expanded
-
-    def _vocabulary_table(self, table_name: str) -> Table:
-        try:
-            return self._table_getter(table_name, self._vocabulary_schema)
-        except Exception as exc:  # pragma: no cover - backend specific error types
-            raise CompilationError(
-                f"Ibis executor compilation error: failed to access vocabulary table '{table_name}'."
-            ) from exc
-
-    def _descendant_ids(self, ancestor_ids: set[int]) -> set[int]:
-        if not ancestor_ids:
-            return set()
-
-        concept = self._vocabulary_table("concept")
-        concept_ancestor = self._vocabulary_table("concept_ancestor")
-        query = (
-            concept_ancestor.join(
-                concept,
-                concept_ancestor.descendant_concept_id == concept.concept_id,
-            )
-            .filter(concept_ancestor.ancestor_concept_id.isin(tuple(ancestor_ids)))
-            .filter(concept.invalid_reason.isnull())
-            .select(concept_ancestor.descendant_concept_id.name(CONCEPT_ID))
-            .distinct()
-        )
-        return self._execute_concept_id_query(query)
-
-    def _mapped_ids(self, input_ids: set[int]) -> set[int]:
-        if not input_ids:
-            return set()
-
-        concept_relationship = self._vocabulary_table("concept_relationship")
-        query = (
-            concept_relationship.filter(concept_relationship.concept_id_2.isin(tuple(input_ids)))
-            .filter(concept_relationship.relationship_id == "Maps to")
-            .filter(concept_relationship.invalid_reason.isnull())
-            .select(concept_relationship.concept_id_1.name(CONCEPT_ID))
-            .distinct()
-        )
-        return self._execute_concept_id_query(query)
-
-    def _execute_concept_id_query(self, query: Table) -> set[int]:
-        try:
-            rows = query.execute()
-        except Exception as exc:  # pragma: no cover - backend specific error types
-            raise CompilationError(
-                "Ibis executor compilation error: failed executing concept-set expansion query."
-            ) from exc
-
-        values: list[Any]
-        if hasattr(rows, "columns"):  # pandas DataFrame
-            values = rows[CONCEPT_ID].tolist() if CONCEPT_ID in rows.columns else rows.iloc[:, 0].tolist()
-        elif isinstance(rows, (list, tuple, set)):
-            values = list(rows)
+    for item in concept_set.items:
+        if item.concept_id is None:
+            continue
+        cid = int(item.concept_id)
+        if item.is_excluded:
+            exclude_direct.append(cid)
+            if item.include_descendants:
+                exclude_desc.append(cid)
+            if item.include_mapped:
+                exclude_mapped.append(cid)
         else:
-            values = [rows]
+            include_direct.append(cid)
+            if item.include_descendants:
+                include_desc.append(cid)
+            if item.include_mapped:
+                include_mapped.append(cid)
 
-        output: set[int] = set()
-        for value in values:
-            if value is None:
-                continue
-            output.add(int(value))
-        return output
-
-    # ------------------------------------------------------------------
-    # Persistent cache helpers
-    # ------------------------------------------------------------------
-
-    def _read_persistent_cache(self, cache_key: str) -> tuple[int, ...] | None:
-        from .operations import read_table, table_exists
-
-        try:
-            if not table_exists(self._backend, table_name=_CACHE_TABLE_NAME, schema=self._results_schema):
-                return None
-            tbl = read_table(self._backend, table_name=_CACHE_TABLE_NAME, schema=self._results_schema)
-            rows = tbl.filter(tbl.cache_key == cache_key).select("concept_id").execute()
-            if hasattr(rows, "columns"):
-                values = rows["concept_id"].tolist()
-            elif isinstance(rows, (list, tuple)):
-                values = list(rows)
-            else:
-                return None
-            if not values:
-                return None
-            return tuple(sorted(int(v) for v in values if v is not None))
-        except Exception:
-            return None
-
-    def _write_persistent_cache(self, cache_key: str, concept_ids: tuple[int, ...]) -> None:
-        import ibis
-
-        from .operations import create_table, insert_relation, table_exists
-
-        try:
-            data = ibis.memtable(
-                {"cache_key": [cache_key] * len(concept_ids), "concept_id": list(concept_ids)},
-                schema={"cache_key": "string", "concept_id": "int64"},
+    # Build include expression parts with batched vocabulary lookups.
+    include_parts: list[Table] = []
+    if include_direct:
+        for cid in include_direct:
+            include_parts.append(_literal_select(concept_id=cid))
+    if include_desc:
+        include_parts.append(
+            _descendant_expression(
+                tuple(include_desc), table_getter=table_getter, vocabulary_schema=vocabulary_schema
             )
-            if not self._persistent_cache_initialized:
-                if not table_exists(self._backend, table_name=_CACHE_TABLE_NAME, schema=self._results_schema):
-                    create_table(
-                        self._backend,
-                        table_name=_CACHE_TABLE_NAME,
-                        schema=self._results_schema,
-                        obj=data,
-                    )
-                    self._persistent_cache_initialized = True
-                    return
-                self._persistent_cache_initialized = True
-            insert_relation(
-                data,
-                backend=self._backend,
-                target_table=_CACHE_TABLE_NAME,
-                target_schema=self._results_schema,
+        )
+    if include_mapped:
+        include_parts.append(
+            _mapped_expression(
+                tuple(include_mapped), table_getter=table_getter, vocabulary_schema=vocabulary_schema
             )
-        except Exception:
+        )
+
+    # Build exclude expression parts with batched vocabulary lookups.
+    exclude_parts: list[Table] = []
+    if exclude_direct:
+        for cid in exclude_direct:
+            exclude_parts.append(_literal_select(concept_id=cid))
+    if exclude_desc:
+        exclude_parts.append(
+            _descendant_expression(
+                tuple(exclude_desc), table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+        )
+    if exclude_mapped:
+        exclude_parts.append(
+            _mapped_expression(
+                tuple(exclude_mapped), table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+        )
+
+    if not include_parts:
+        return _empty_table(columns=(("concept_id", 0),))
+
+    # Normalize column nullability for union compatibility across backends.
+    # _literal_select produces nullable int64 while vocabulary table columns
+    # (e.g. Databricks concept_ancestor.descendant_concept_id) may be non-nullable.
+    # Strict backends require exact schema match for UNION ALL.
+    if len(include_parts) > 1:
+        include_parts = [p.select(p.concept_id.cast("int64").name(CONCEPT_ID)) for p in include_parts]
+
+    result = _union_all_tables(include_parts)
+    result = result.distinct()
+
+    if exclude_parts:
+        if len(exclude_parts) > 1:
+            exclude_parts = [p.select(p.concept_id.cast("int64").name(CONCEPT_ID)) for p in exclude_parts]
+        exclude_relation = _union_all_tables(exclude_parts).distinct()
+        marked = exclude_relation.mutate(_cm=ibis.literal(1, type="int64"))
+        result = result.join(marked, result.concept_id == marked.concept_id, how="left")
+        result = result.filter(result._cm.isnull()).drop("_cm")
+        result = result.select(result.concept_id.name(CONCEPT_ID))
+
+    return result.select(result.concept_id.name(CONCEPT_ID))
+
+
+def _union_all_tables(tables: list[Table]) -> Table:
+    """Union multiple single-column ibis tables using binary-tree merge."""
+    if not tables:
+        raise ValueError("_union_all_tables requires at least one table")
+    if len(tables) == 1:
+        return tables[0]
+    mid = len(tables) // 2
+    left = _union_all_tables(tables[:mid])
+    right = _union_all_tables(tables[mid:])
+    return left.union(right, distinct=False)
+
+
+def _needs_vocabulary_expansion(concept_sets: Mapping[int, NormalizedConceptSet]) -> bool:
+    for cset in concept_sets.values():
+        for item in cset.items:
+            if item.include_descendants or item.include_mapped:
+                return True
+    return False
+
+
+def build_batch_codeset_table(
+    *,
+    backend: IbisBackendLike,
+    concept_sets: Mapping[int, NormalizedConceptSet],
+    batch_table_name: str,
+    results_schema: str | None = None,
+    vocabulary_schema: str | None = None,
+    temporary: bool = False,
+) -> Table:
+    """Build a ``(codeset_id, concept_id)`` table from multiple concept sets."""
+    return build_single_codeset_table(
+        backend=backend,
+        concept_sets=concept_sets,
+        batch_table_name=batch_table_name,
+        results_schema=results_schema,
+        vocabulary_schema=vocabulary_schema,
+    )
+
+
+def _table_getter_from_backend(
+    backend: IbisBackendLike,
+    schema: str,
+) -> Callable[[str, str | None], Table]:
+    def _getter(table_name: str, table_schema: str | None) -> Table:
+        try:
+            if table_schema is not None:
+                return backend.table(table_name, database=table_schema)
+        except TypeError:
             pass
+        return backend.table(table_name)
+
+    return _getter
+
+
+def _read_table(
+    backend: IbisBackendLike,
+    *,
+    table_name: str,
+    schema: str | None,
+) -> Table:
+    try:
+        if schema is not None:
+            return backend.table(table_name, database=schema)
+    except TypeError:
+        pass
+    return backend.table(table_name)
+
+
+def _extract_column(result: Any, col_name: str) -> tuple[int, ...]:
+    if hasattr(result, "columns"):
+        values = result[col_name].tolist() if col_name in result.columns else result.iloc[:, 0].tolist()
+    elif isinstance(result, (list, tuple, set)):
+        values = list(result)
+    else:
+        values = [result] if result is not None else []
+    return tuple(int(v) for v in values if v is not None)
+
+
+def _drop_table(
+    backend: IbisBackendLike,
+    table_name: str,
+    schema: str | None,
+) -> None:
+    with contextlib.suppress(Exception):
+        backend.drop_table(table_name, database=schema, force=True)
+
+
+def build_single_codeset_table(
+    *,
+    backend: IbisBackendLike,
+    concept_sets: Mapping[int, NormalizedConceptSet],
+    batch_table_name: str,
+    results_schema: str | None = None,
+    vocabulary_schema: str | None = None,
+    session_prefix: str = "",
+) -> Table:
+    """Build a per-cohort codeset table ``(codeset_id, concept_id)``.
+
+    Like the Java ``#Codesets`` table.  All work stays in the database --
+    no ``ibis.memtable``, no local-file staging, no ``temp`` tables
+    (which Databricks / Oracle / BigQuery do not support).
+    """
+    name = f"{session_prefix}{batch_table_name}"
+
+    if not concept_sets:
+        empty = _empty_table(columns=(("codeset_id", 0), ("concept_id", 0)))
+        _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=True)
+        return _read_table(backend, table_name=name, schema=results_schema)
+
+    needs_vocab = _needs_vocabulary_expansion(concept_sets)
+
+    if not needs_vocab:
+        parts: list[Table] = []
+        for cid, cset in concept_sets.items():
+            for item in cset.items:
+                if not item.is_excluded and item.concept_id is not None:
+                    parts.append(_literal_select(codeset_id=int(cid), concept_id=int(item.concept_id)))
+        if not parts:
+            empty = _empty_table(columns=(("codeset_id", 0), ("concept_id", 0)))
+            _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=True)
+            return _read_table(backend, table_name=name, schema=results_schema)
+        combined = _union_all_tables(parts)
+        _create_table_impl(backend, table_name=name, schema=results_schema, obj=combined, overwrite=True)
+        return _read_table(backend, table_name=name, schema=results_schema)
+
+    table_getter = _table_getter_from_backend(backend, vocabulary_schema or "")
+
+    parts = []
+    for cid, cset in concept_sets.items():
+        if not cset.items:
+            continue
+        has_vocab = any(item.include_descendants or item.include_mapped for item in cset.items)
+        if has_vocab:
+            expr = _build_codeset_expression(
+                cset, table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+            labeled = expr.mutate(codeset_id=ibis.literal(int(cid), type="int64")).select(
+                "codeset_id", CONCEPT_ID
+            )
+            parts.append(labeled)
+        else:
+            for item in cset.items:
+                if not item.is_excluded and item.concept_id is not None:
+                    parts.append(_literal_select(codeset_id=int(cid), concept_id=int(item.concept_id)))
+
+    if not parts:
+        empty = _empty_table(columns=(("codeset_id", 0), ("concept_id", 0)))
+        _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=True)
+        return _read_table(backend, table_name=name, schema=results_schema)
+
+    # Normalize column nullability for union compatibility across backends.
+    if len(parts) > 1:
+        parts = [
+            p.select(
+                p.codeset_id.cast("int64").name("codeset_id"), p.concept_id.cast("int64").name(CONCEPT_ID)
+            )
+            for p in parts
+        ]
+
+    combined = _union_all_tables(parts)
+    _create_table_impl(backend, table_name=name, schema=results_schema, obj=combined, overwrite=True)
+    return _read_table(backend, table_name=name, schema=results_schema)
+
+
+def drop_codeset_table(
+    backend: IbisBackendLike,
+    *,
+    batch_table_name: str,
+    results_schema: str | None = None,
+) -> None:
+    _drop_table(backend, batch_table_name, results_schema)
+
+
+def _filter_by_concept_table(
+    table: Table,
+    concept_table: Table,
+    *,
+    column: str,
+    exclude: bool = False,
+) -> Table:
+    """Semi-join (include) or anti-join (exclude) *table* against *concept_table*."""
+    if not exclude:
+        joined = table.join(concept_table, table[column] == concept_table.concept_id)
+        return joined.select(*[joined[c] for c in table.columns])
+    else:
+        marked = concept_table.mutate(_cm=ibis.literal(1, type="int64"))
+        joined = table.join(marked, table[column] == marked.concept_id, how="left")
+        filtered = joined.filter(joined._cm.isnull())
+        return filtered.select(*[filtered[c] for c in table.columns])

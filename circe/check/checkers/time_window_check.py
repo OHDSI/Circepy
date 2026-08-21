@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from ..operations.operations import Operations
 from ..utils.criteria_name_helper import CriteriaNameHelper
@@ -42,7 +42,7 @@ class TimeWindowCheck(BaseCorelatedCriteriaCheck):
     def __init__(self):
         """Initialize the time window check."""
         super().__init__()
-        self._observation_filter: Optional[ObservationFilter] = None
+        self._observation_filter: ObservationFilter | None = None
 
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.

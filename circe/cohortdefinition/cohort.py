@@ -9,8 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 import contextlib
-import json
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from pydantic import (
     AliasChoices,
@@ -51,6 +50,32 @@ else:
         InclusionRule = Any
 
 
+def _python_serialize(obj: Any) -> bytes:
+    """Deterministic Python-native serialization for checksum hashing.
+
+    Recursively serializes Python builtins (dict, list, str, int, float,
+    bool, None) to a stable byte representation.  Dict keys are sorted to
+    guarantee deterministic output across Python versions and platforms.
+    """
+    if isinstance(obj, dict):
+        items = b",".join(_python_serialize(k) + b":" + _python_serialize(v) for k, v in sorted(obj.items()))
+        return b"{" + items + b"}"
+    if isinstance(obj, list):
+        items = b",".join(_python_serialize(v) for v in obj)
+        return b"[" + items + b"]"
+    if isinstance(obj, bool):
+        return b"true" if obj else b"false"
+    if isinstance(obj, int):
+        return repr(obj).encode("ascii")
+    if isinstance(obj, float):
+        return repr(obj).encode("ascii")
+    if isinstance(obj, str):
+        return obj.encode("utf-8")
+    if obj is None:
+        return b"null"
+    return repr(obj).encode("utf-8")
+
+
 class CohortExpression(CirceBaseModel):
     """Main cohort expression class containing all cohort definition components.
 
@@ -62,38 +87,38 @@ class CohortExpression(CirceBaseModel):
         validation_alias=AliasChoices("ConceptSets", "conceptSets"),
         serialization_alias="ConceptSets",
     )
-    qualified_limit: Optional[ResultLimit] = Field(
+    qualified_limit: ResultLimit | None = Field(
         default=None,
         validation_alias=AliasChoices("QualifiedLimit", "qualifiedLimit"),
         serialization_alias="QualifiedLimit",
     )
-    additional_criteria: Optional[CriteriaGroup] = Field(
+    additional_criteria: CriteriaGroup | None = Field(
         default=None,
         validation_alias=AliasChoices("AdditionalCriteria", "additionalCriteria"),
         serialization_alias="AdditionalCriteria",
     )
-    end_strategy: Optional[Union[EndStrategy, DateOffsetStrategy, CustomEraStrategy]] = Field(
+    end_strategy: EndStrategy | DateOffsetStrategy | CustomEraStrategy | None = Field(
         default=None,
         validation_alias=AliasChoices("EndStrategy", "endStrategy"),
         serialization_alias="EndStrategy",
     )
-    cdm_version_range: Optional[str] = Field(default=None, alias="cdmVersionRange")
-    primary_criteria: Optional[PrimaryCriteria] = Field(
+    cdm_version_range: str | None = Field(default=None, alias="cdmVersionRange")
+    primary_criteria: PrimaryCriteria | None = Field(
         default=None,
         validation_alias=AliasChoices("PrimaryCriteria", "primaryCriteria"),
         serialization_alias="PrimaryCriteria",
     )
-    expression_limit: Optional[ResultLimit] = Field(
+    expression_limit: ResultLimit | None = Field(
         default=None,
         validation_alias=AliasChoices("ExpressionLimit", "expressionLimit"),
         serialization_alias="ExpressionLimit",
     )
-    collapse_settings: Optional[CollapseSettings] = Field(
+    collapse_settings: CollapseSettings | None = Field(
         default=None,
         validation_alias=AliasChoices("CollapseSettings", "collapseSettings"),
         serialization_alias="CollapseSettings",
     )
-    title: Optional[str] = Field(
+    title: str | None = Field(
         default=None,
         validation_alias=AliasChoices("Title", "title"),
         serialization_alias="Title",
@@ -103,7 +128,7 @@ class CohortExpression(CirceBaseModel):
         validation_alias=AliasChoices("InclusionRules", "inclusionRules"),
         serialization_alias="InclusionRules",
     )
-    censor_window: Optional[Period] = Field(
+    censor_window: Period | None = Field(
         default=None,
         validation_alias=AliasChoices("CensorWindow", "censorWindow"),
         serialization_alias="CensorWindow",
@@ -364,19 +389,12 @@ class CohortExpression(CirceBaseModel):
             Hex digest of the checksum
         """
         import hashlib
-        import json
 
-        # 1. Dump with defaults excluded to handle implicit defaults
-        data = self.model_dump(exclude_unset=True, exclude_defaults=True, by_alias=True)
-
-        # 2. Normalize: remove metadata, deduplicate concept sets, etc.
-        normalized_data = self._normalize_for_checksum(data)
-
-        # 3. Serialize to canonical JSON
-        canonical_json = json.dumps(normalized_data, sort_keys=True)
-
+        data = self.model_dump(by_alias=True, exclude_none=True)
+        normalized = self._normalize_for_checksum(data)
+        serialized = _python_serialize(normalized)
         h = hashlib.new(algorithm)
-        h.update(canonical_json.encode("utf-8"))
+        h.update(serialized)
         return h.hexdigest()
 
     def _normalize_for_checksum(self, data: Any) -> Any:
@@ -396,20 +414,14 @@ class CohortExpression(CirceBaseModel):
                 seen_items = set()
 
                 for item in data["items"]:
-                    # Normalize the item first
                     norm_item = self._normalize_for_checksum(item)
+                    item_bytes = _python_serialize(norm_item)
 
-                    # Create a sortable/hashable representation for deduplication
-                    # We need to sort keys to ensure tuple order is consistent
-                    item_json = json.dumps(norm_item, sort_keys=True)
-
-                    if item_json not in seen_items:
-                        seen_items.add(item_json)
+                    if item_bytes not in seen_items:
+                        seen_items.add(item_bytes)
                         normalized_items.append(norm_item)
 
-                # Sort items to ensure list order doesn't affect hash
-                # Sort by the JSON string representation
-                normalized_items.sort(key=lambda x: json.dumps(x, sort_keys=True))
+                normalized_items.sort(key=_python_serialize)
 
                 new_data = data.copy()
                 new_data["items"] = normalized_items
@@ -417,8 +429,6 @@ class CohortExpression(CirceBaseModel):
 
             # Handle Concept Objects (heuristically by fields)
             if "CONCEPT_ID" in data:
-                # Keep ID, remove metadata names/codes/vocab
-                # Keep only structural identifier
                 return {"CONCEPT_ID": data["CONCEPT_ID"]}
 
             # Recurse for other dicts
@@ -524,7 +534,7 @@ class CohortExpression(CirceBaseModel):
         """
         return self.end_strategy is not None
 
-    def get_end_strategy_type(self) -> Optional[str]:
+    def get_end_strategy_type(self) -> str | None:
         """Get the type of end strategy.
 
         Returns:
@@ -563,7 +573,7 @@ class CohortExpression(CirceBaseModel):
 
         return self.primary_criteria.observation_window is not None
 
-    def get_primary_limit_type(self) -> Optional[str]:
+    def get_primary_limit_type(self) -> str | None:
         """Get the primary limit type.
 
         Returns:

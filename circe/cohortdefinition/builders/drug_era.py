@@ -8,8 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional
-
 from ..criteria import DrugEra
 from .base import CriteriaSqlBuilder
 from .utils import BuilderOptions, BuilderUtils, CriteriaColumn
@@ -101,7 +99,7 @@ from
     def resolve_select_clauses(
         self,
         criteria: DrugEra,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve select clauses for drug era criteria."""
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
@@ -130,7 +128,7 @@ from
 
         return select_cols
 
-    def resolve_join_clauses(self, criteria: DrugEra, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_join_clauses(self, criteria: DrugEra, options: BuilderOptions | None = None) -> list[str]:
         """Resolve join clauses for drug era criteria."""
         join_clauses = []
 
@@ -145,7 +143,7 @@ from
 
         return join_clauses
 
-    def resolve_where_clauses(self, criteria: DrugEra, options: Optional[BuilderOptions] = None) -> list[str]:
+    def resolve_where_clauses(self, criteria: DrugEra, options: BuilderOptions | None = None) -> list[str]:
         """Resolve where clauses for drug era criteria."""
         where_clauses = []
 

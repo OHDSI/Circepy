@@ -10,7 +10,6 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Union
 
 from .builders.utils import BuilderOptions
 from .core import CustomEraStrategy, DateOffsetStrategy
@@ -34,24 +33,24 @@ from .criteria import (
 )
 
 # Type alias for all criteria types
-Criteria = Union[
-    LocationRegion,
-    ConditionEra,
-    ConditionOccurrence,
-    Death,
-    DeviceExposure,
-    DoseEra,
-    DrugEra,
-    DrugExposure,
-    Measurement,
-    Observation,
-    ObservationPeriod,
-    PayerPlanPeriod,
-    ProcedureOccurrence,
-    Specimen,
-    VisitOccurrence,
-    VisitDetail,
-]
+Criteria = (
+    LocationRegion
+    | ConditionEra
+    | ConditionOccurrence
+    | Death
+    | DeviceExposure
+    | DoseEra
+    | DrugEra
+    | DrugExposure
+    | Measurement
+    | Observation
+    | ObservationPeriod
+    | PayerPlanPeriod
+    | ProcedureOccurrence
+    | Specimen
+    | VisitOccurrence
+    | VisitDetail
+)
 
 
 class IGetCriteriaSqlDispatcher(ABC):
@@ -61,7 +60,7 @@ class IGetCriteriaSqlDispatcher(ABC):
     """
 
     @abstractmethod
-    def get_criteria_sql(self, criteria: Criteria, options: Optional[BuilderOptions] = None) -> str:
+    def get_criteria_sql(self, criteria: Criteria, options: BuilderOptions | None = None) -> str:
         """Generate SQL for various criteria types.
 
         Args:
@@ -75,7 +74,7 @@ class IGetCriteriaSqlDispatcher(ABC):
 
 
 # Type alias for end strategies
-EndStrategy = Union[DateOffsetStrategy, CustomEraStrategy]
+EndStrategy = DateOffsetStrategy | CustomEraStrategy
 
 
 class IGetEndStrategySqlDispatcher(ABC):
