@@ -350,9 +350,7 @@ def test_compute_drug_eras_matches_java_sql_logic():
 
     ctx = SimpleNamespace(
         table=lambda name: conn.table(name),
-        concept_set_table=lambda cid: ibis.memtable(
-            {"concept_id": [222] if cid == 2 else []}, schema={"concept_id": "int64"}
-        ),
+        concept_ids_for_codeset=lambda cid: (222,) if cid == 2 else (),
     )
 
     # --- ibis path ---
@@ -425,17 +423,12 @@ def test_compute_drug_eras_matches_java_sql_logic():
 
 
 def test_custom_era_offset_affects_era_grouping():
-    """Offset included in padded_end changes which exposures merge into eras.
+    """Offset in padded_end determines whether exposures merge into eras.
 
-    With gap_days=0, offset=30:
-      exp1: end=2020-01-10, exp2: start=2020-01-12 (gap=2 days)
-
-    Without offset in padded_end: padded_end1=2020-01-10 (< start 2020-01-12)
-      → separate eras, cohort end=2020-01-10+30=2020-02-09
-
-    With offset in padded_end (Circe BE: DATEADD(day, gap+offset, end)):
-      padded_end1=2020-01-10+30=2020-02-09 (>= start 2020-01-12)
-      → merged era, cohort end=2020-01-20+30=2020-02-19
+    Two exposures are separated by more than gap_days (0) but less than or
+    equal to gap_days + offset (10).  If offset is *not* included in the
+    padded_end before grouping the exposures would remain in separate eras,
+    producing a wrong cohort end_date.
     """
     ibis = pytest.importorskip("ibis")
     _ = pytest.importorskip("duckdb")
@@ -450,7 +443,7 @@ def test_custom_era_offset_affects_era_grouping():
                 "person_id": [1, 1],
                 "drug_exposure_id": [1, 2],
                 "drug_concept_id": [222, 222],
-                "drug_exposure_start_date": [date(2020, 1, 1), date(2020, 1, 12)],
+                "drug_exposure_start_date": [date(2020, 1, 1), date(2020, 1, 15)],
                 "drug_exposure_end_date": [date(2020, 1, 10), date(2020, 1, 20)],
                 "days_supply": [0, 0],
             }
@@ -478,16 +471,19 @@ def test_custom_era_offset_affects_era_grouping():
             _make_concept_set(2, 222),
         ],
         primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
-        end_strategy=CustomEraStrategy(drug_codeset_id=2, gap_days=0, offset=30),
+        end_strategy=CustomEraStrategy(drug_codeset_id=2, gap_days=0, offset=10),
     )
 
     result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
 
     assert len(result) == 1
     assert str(result.iloc[0]["start_date"])[:10] == "2020-01-01"
-    # Both exposures merge because padded_end1=2020-02-09 >= start 2020-01-12
-    # era end = max(end) + offset = 2020-01-20 + 30 = 2020-02-19
-    assert str(result.iloc[0]["end_date"])[:10] == "2020-02-19"
+    # exp1 end=2020-01-10, exp2 start=2020-01-15 (gap=5 days)
+    # Without offset in padded_end: padded_end1=2020-01-10 < start2 → SPLIT
+    #   → wrong cohort end = 2020-01-10+10 = 2020-01-20
+    # With offset in padded_end: padded_end1=2020-01-20 >= start2 → MERGED
+    #   → correct cohort end = max(end)+offset = 2020-01-20+10 = 2020-01-30
+    assert str(result.iloc[0]["end_date"])[:10] == "2020-01-30"
 
 
 def test_full_cohort_custom_era_matches_sql_end_dates():
@@ -539,32 +535,32 @@ def test_full_cohort_custom_era_matches_sql_end_dates():
     # --- ibis pipeline ---
     cohort_result = build_cohort(expression, backend=conn, cdm_schema="main").execute()
 
-    # --- raw SQL pipeline (Java CUSTOM_ERA_STRATEGY_TEMPLATE logic, DuckDB dialect) ---
-    # Mirrors Circe BE's generateCohort.sql end-date selection:
-    #   ROW_NUMBER() PARTITION BY person_id, event_id ORDER BY era_end_date ASC
-    # picks the earliest strategy end per event, matching Circe BE's
-    #   MIN(end_date) across #strategy_ends union.
-    gap = 30
-    sql = f"""
+    # --- raw SQL pipeline (Circe BE generateCohort.sql logic, DuckDB dialect) ---
+    # Mirrors Circe BE's @cohort_end_unions approach:
+    #   The default observation-period end and every strategy end are UNIONed,
+    #   then the earliest valid end_date per (person_id, event_id) is selected:
+    #     ROW_NUMBER() OVER (PARTITION BY person_id, event_id ORDER BY CE.end_date)
+    #     WHERE CE.end_date >= I.start_date
+    sql = """
     WITH drug_eras AS (
         SELECT
             person_id,
             MIN(start_date) AS era_start_date,
-            MAX(padded_end) - {gap} AS era_end_date
+            MAX(exposure_end) AS era_end_date
         FROM (
             SELECT
-                person_id, start_date, padded_end,
+                person_id, start_date, exposure_end, padded_end,
                 SUM(is_new) OVER (
                     PARTITION BY person_id
                     ORDER BY start_date, is_new DESC, padded_end DESC
                 ) AS era_id
             FROM (
                 SELECT
-                    person_id, start_date, padded_end,
+                    person_id, start_date, exposure_end, padded_end,
                     CASE WHEN prev_max IS NULL OR prev_max < start_date THEN 1 ELSE 0 END AS is_new
                 FROM (
                     SELECT
-                        person_id, start_date, padded_end,
+                        person_id, start_date, exposure_end, padded_end,
                         MAX(padded_end) OVER (
                             PARTITION BY person_id ORDER BY start_date, padded_end DESC
                             ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
@@ -577,7 +573,12 @@ def test_full_cohort_custom_era_matches_sql_end_dates():
                                 de.drug_exposure_end_date::DATE,
                                 de.drug_exposure_start_date::DATE + de.days_supply::INTEGER,
                                 de.drug_exposure_start_date::DATE + 1
-                            ) + {gap} AS padded_end
+                            ) AS exposure_end,
+                            COALESCE(
+                                de.drug_exposure_end_date::DATE,
+                                de.drug_exposure_start_date::DATE + de.days_supply::INTEGER,
+                                de.drug_exposure_start_date::DATE + 1
+                            ) + 30 AS padded_end
                         FROM drug_exposure de
                         WHERE de.drug_concept_id = 222
                     ) raw_ends
@@ -586,39 +587,38 @@ def test_full_cohort_custom_era_matches_sql_end_dates():
         ) indexed
         GROUP BY person_id, era_id
     ),
-    events_with_obs AS (
+    events AS (
         SELECT
-            e.person_id,
             e.condition_occurrence_id AS event_id,
+            e.person_id,
             e.condition_start_date::DATE AS start_date,
             op.observation_period_end_date::DATE AS op_end_date
         FROM condition_occurrence e
         JOIN observation_period op ON e.person_id = op.person_id
     ),
-    ranked_ends AS (
-        SELECT
-            ev.person_id,
-            ev.event_id,
-            ev.start_date,
-            ev.op_end_date,
-            er.era_end_date,
+    cohort_ends AS (
+        SELECT event_id, person_id, start_date, op_end_date AS end_date FROM events
+        UNION ALL
+        SELECT e.event_id, e.person_id, e.start_date, er.era_end_date AS end_date
+        FROM events e
+        JOIN drug_eras er
+            ON e.person_id = er.person_id
+            AND e.start_date BETWEEN er.era_start_date AND er.era_end_date
+    ),
+    ranked AS (
+        SELECT *,
             ROW_NUMBER() OVER (
-                PARTITION BY ev.person_id, ev.event_id
-                ORDER BY er.era_end_date
+                PARTITION BY person_id, event_id
+                ORDER BY end_date ASC
             ) AS rn
-        FROM events_with_obs ev
-        LEFT JOIN drug_eras er
-            ON ev.person_id = er.person_id
-            AND ev.start_date BETWEEN er.era_start_date AND er.era_end_date
+        FROM cohort_ends
+        WHERE end_date >= start_date
     )
     SELECT
         person_id,
         start_date,
-        LEAST(
-            COALESCE(era_end_date, op_end_date),
-            op_end_date
-        )::DATE AS end_date
-    FROM ranked_ends
+        end_date::DATE AS end_date
+    FROM ranked
     WHERE rn = 1
     ORDER BY person_id, start_date
     """

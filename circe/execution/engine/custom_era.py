@@ -64,13 +64,13 @@ def _compute_eras(exposures, *, gap_days: int, offset: int):
 
     collapsed = era_indexed.group_by(era_indexed.person_id, era_indexed._era_id).aggregate(
         era_start_date=era_indexed.start_date.min(),
-        _max_padded_end=era_indexed._padded_end.max(),
+        _max_exposure_end=era_indexed._exposure_end.max(),
     )
 
     return collapsed.select(
         collapsed.person_id.cast("int64").name(PERSON_ID),
         collapsed.era_start_date.cast("date").name("era_start_date"),
-        (collapsed._max_padded_end - ibis.interval(days=int(gap_days))).cast("date").name("era_end_date"),
+        (collapsed._max_exposure_end + ibis.interval(days=int(offset))).cast("date").name("era_end_date"),
     )
 
 
@@ -83,20 +83,29 @@ def compute_drug_eras(
     days_supply_override: int | None,
     cohort_person_ids=None,
 ):
-    concept_table = ctx.concept_set_table(drug_codeset_id)
+    concept_ids = ctx.concept_ids_for_codeset(drug_codeset_id)
+
+    if not concept_ids:
+        de = ctx.table("drug_exposure")
+        return de.filter(ibis.literal(False)).select(
+            de.person_id.cast("int64").name(PERSON_ID),
+            ibis.null().cast("date").name("era_start_date"),
+            ibis.null().cast("date").name("era_end_date"),
+        )
 
     de = ctx.table("drug_exposure")
     if cohort_person_ids is not None:
         de = de.semi_join(
-            cohort_person_ids.select(cohort_person_ids.person_id).distinct(),
+            cohort_person_ids,
             predicates=[de.person_id == cohort_person_ids.person_id],
         )
 
-    has_source = "drug_source_concept_id" in de.columns
-    filtered = de.semi_join(concept_table, de.drug_concept_id == concept_table.concept_id)
-    if has_source:
-        source_matches = de.semi_join(concept_table, de.drug_source_concept_id == concept_table.concept_id)
-        filtered = filtered.union(source_matches, distinct=True)
+    if "drug_source_concept_id" in de.columns:
+        filtered = de.filter(
+            de.drug_concept_id.isin(concept_ids) | de.drug_source_concept_id.isin(concept_ids)
+        )
+    else:
+        filtered = de.filter(de.drug_concept_id.isin(concept_ids))
 
     prepared = filtered.select(
         filtered.person_id.cast("int64").name("person_id"),
@@ -148,7 +157,7 @@ def apply_custom_era_strategy(events, strategy, ctx):
 
     event_window = ibis.window(
         group_by=[joined.person_id, joined.event_id],
-        order_by=[joined.era_end_date.desc()],
+        order_by=[joined.era_end_date.asc()],
     )
     ranked = joined.mutate(_rn=ibis.row_number().over(event_window))
     one_per_event = ranked.filter(ranked._rn == 0)
