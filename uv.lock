@@ -1820,7 +1820,7 @@ wheels = [
 ]
 
 [[package]]
-name = "ohdsi-circe-python-alpha"
+name = "ohdsi-circe"
 version = "0.2.0"
 source = { editable = "." }
 dependencies = [

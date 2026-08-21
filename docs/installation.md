@@ -1,18 +1,17 @@
 # Installation Guide
 
-> [!CAUTION]
-> **This project is currently under active development and testing.** It is a Python implementation of the Java [OHDSI CIRCE-BE](https://github.com/OHDSI/circe-be) library. This is an Alpha release and should be used with caution in production environments.
+> [!NOTE]
+> This is a Python implementation of the Java [OHDSI CIRCE-BE](https://github.com/OHDSI/circe-be) library. It aims for 1:1 parity with the Java implementation and is under active development.
 
 ## Prerequisites
 
-- **Python 3.9 or higher** (Python 3.9+ recommended)
+- **Python 3.10 or higher**
 - **Git** for cloning the repository
 - **uv** for the recommended, lockfile-backed workflow
 - **pip** package manager for fallback installation paths
 
 ## Installation from Source (Current Method)
 
-Since this package is currently in private development, you'll need to install it directly from the GitHub repository.
 The recommended workflow uses `uv` and the checked-in `uv.lock` for a reproducible environment.
 
 ### Step 1: Clone the Repository
@@ -65,16 +64,8 @@ This installs the project with its core dependencies into the `uv`-managed envir
 
 ## PyPI Installation
 
-> [!NOTE]
-> The currently published alpha package is available as `ohdsi-circe-python-alpha`.
-> The long-term package name is expected to become `ohdsi-circepy` once that package name is available for takeover.
-> 
 > ```bash
-> # Current alpha package
-> pip install ohdsi-circe-python-alpha
->
-> # Planned future package name
-> pip install ohdsi-circepy
+> pip install ohdsi-circe
 > ```
 
 ## Installation Options
@@ -232,13 +223,13 @@ rm -rf .venv
 If you installed with `pip`, remove the package with:
 
 ```bash
-pip uninstall ohdsi-circe-python-alpha
+pip uninstall ohdsi-circe
 ```
 
 ## System Requirements
 
 ### Minimum Requirements
-- Python 3.9+
+- Python 3.10+
 - 100 MB free disk space
 - 512 MB RAM
 
@@ -252,7 +243,7 @@ pip uninstall ohdsi-circe-python-alpha
 If you encounter installation issues:
 
 1. Check the [Troubleshooting](#troubleshooting) section above
-2. Review the [Contributing Guide](CONTRIBUTING.md)
+2. Review the [Contributing Guide](../CONTRIBUTING.md)
 3. Open an issue on [GitHub Issues](https://github.com/OHDSI/Circepy/issues)
 4. Check existing issues for similar problems
 
@@ -260,7 +251,7 @@ If you encounter installation issues:
 
 After successful installation:
 
-1. Read the [README.md](README.md) for an overview
-2. Explore the [examples/](examples/) directory
-3. Review the [CONTRIBUTING.md](CONTRIBUTING.md) if you want to contribute
-4. Check the [CHANGELOG.md](CHANGELOG.md) for recent updates
+1. Read the [README.md](../README.md) for an overview
+2. Explore the [examples/](../examples/) directory
+3. Review the [CONTRIBUTING.md](../CONTRIBUTING.md) if you want to contribute
+4. Check the [CHANGELOG.md](../CHANGELOG.md) for recent updates

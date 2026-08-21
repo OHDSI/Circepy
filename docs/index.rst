@@ -1,9 +1,9 @@
 OHDSI CIRCE Python Documentation
 ==================================
 
-.. image:: https://img.shields.io/badge/python-3.9%2B-blue
+.. image:: https://img.shields.io/badge/python-3.10%2B-blue
    :target: https://www.python.org/downloads/
-   :alt: Python 3.9+
+   :alt: Python 3.10+
 
 .. image:: https://img.shields.io/badge/tests-896%20passed-brightgreen
    :alt: Tests
@@ -113,7 +113,7 @@ Support
 
 * **Repository**: https://github.com/OHDSI/Circepy
 * **Issues**: https://github.com/OHDSI/Circepy/issues
-* **PyPI**: https://pypi.org/project/ohdsi-circe-python-alpha/
+* **PyPI**: https://pypi.org/project/ohdsi-circe/
 
 Indices and tables
 ==================

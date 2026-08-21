@@ -6,13 +6,14 @@ declared in the Java JSON Schema, serving as a 1:1 replacement for the Java vers
 """
 
 import json
+from pathlib import Path
 
 from deepdiff import DeepDiff  # pip install deepdiff
 
 from circe import get_json_schema
 
 # Path to Java schema JSON
-JAVA_SCHEMA_PATH = "java_cohort_expression_schema.json"
+JAVA_SCHEMA_PATH = Path(__file__).parent / "fixtures" / "java_cohort_expression_schema.json"
 
 
 def normalize_schema(schema):

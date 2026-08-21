@@ -698,7 +698,7 @@ def test_real_cohorts_summary(request):
         pass
 
     # Write to file
-    output_path = Path(__file__).parent.parent / "debug_app" / "test_results.json"
+    output_path = Path(__file__).parent.parent / ".test_results.json"
     try:
         if not output_path.parent.exists():
             output_path.parent.mkdir(parents=True)

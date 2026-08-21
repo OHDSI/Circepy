@@ -61,8 +61,8 @@ python -m build
 
 - [ ] Build completed successfully
 - [ ] Generated files in `dist/`:
-  - [ ] `ohdsi-circe-python-alpha-X.Y.Z.tar.gz` (source distribution)
-  - [ ] `ohdsi-circe-python-alpha-X.Y.Z-py3-none-any.whl` (wheel)
+  - [ ] `ohdsi-circe-X.Y.Z.tar.gz` (source distribution)
+  - [ ] `ohdsi-circe-X.Y.Z-py3-none-any.whl` (wheel)
 
 ### 3. Check Package
 
@@ -84,7 +84,7 @@ python -m venv test_env
 source test_env/bin/activate  # On Windows: test_env\Scripts\activate
 
 # Install from wheel
-pip install dist/ohdsi-circe-python-alpha-X.Y.Z-py3-none-any.whl
+pip install dist/ohdsi-circe-X.Y.Z-py3-none-any.whl
 
 # Test imports
 python -c "from circe import CohortExpression; print('✓ Import successful')"
@@ -119,7 +119,7 @@ twine upload --repository testpypi dist/*
 ```
 
 - [ ] Uploaded to TestPyPI successfully
-- [ ] TestPyPI page loads: https://test.pypi.org/project/ohdsi-circe-python-alpha/
+- [ ] TestPyPI page loads: https://test.pypi.org/project/ohdsi-circe/
 
 ### 6. Test Installation from TestPyPI
 
@@ -129,7 +129,7 @@ python -m venv testpypi_env
 source testpypi_env/bin/activate
 
 # Install from TestPyPI
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ ohdsi-circe-python-alpha
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ ohdsi-circe
 
 # Test the installation
 python -c "from circe import CohortExpression; print('✓ TestPyPI installation works')"
@@ -170,7 +170,7 @@ twine upload dist/*
 ```
 
 - [ ] Uploaded to PyPI successfully
-- [ ] PyPI page loads: https://pypi.org/project/ohdsi-circe-python-alpha/
+- [ ] PyPI page loads: https://pypi.org/project/ohdsi-circe/
 
 ### 9. Verify Production Installation
 
@@ -180,7 +180,7 @@ python -m venv prod_test_env
 source prod_test_env/bin/activate
 
 # Install from PyPI
-pip install ohdsi-circe-python-alpha
+pip install ohdsi-circe
 
 # Verify installation
 python -c "from circe import __version__; print(f'Installed version: {__version__}')"
@@ -251,7 +251,7 @@ rm -rf prod_test_env
 
 1. Create account at https://pypi.org/
 2. Go to Account Settings → API tokens
-3. Generate token with scope for "ohdsi-circe-python-alpha" project
+3. Generate token with scope for "ohdsi-circe" project
 4. Store securely (use `keyring` or `.pypirc`)
 
 ### TestPyPI API Token

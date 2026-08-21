@@ -10,7 +10,7 @@ This project follows the [OHDSI Code of Conduct](https://www.ohdsi.org/web/wiki/
 
 ### Prerequisites
 
-- Python 3.9 or higher
+- Python 3.10 or higher
 - Git
 - Basic understanding of the OMOP Common Data Model
 - Familiarity with the Java CIRCE-BE implementation (recommended)
@@ -18,7 +18,6 @@ This project follows the [OHDSI Code of Conduct](https://www.ohdsi.org/web/wiki/
 ### Development Setup
 
 > [!NOTE]
-> This is a private development repository. Ensure you have access before attempting to clone.
 > The recommended contributor workflow uses `uv` and the checked-in `uv.lock` for a reproducible environment.
 
 1. Clone the repository
@@ -246,7 +245,7 @@ We follow [Semantic Versioning](https://semver.org/):
    twine upload --repository testpypi dist/*
    
    # Test installation
-   pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ ohdsi-circe-python-alpha
+   pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ ohdsi-circe
    ```
 
 4. **Create Git Tag**
@@ -267,7 +266,7 @@ We follow [Semantic Versioning](https://semver.org/):
 
 ### Detailed Release Checklist
 
-See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) for a comprehensive checklist covering:
+See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) for a comprehensive checklist covering:
 - Pre-release quality checks
 - Build and test procedures
 - TestPyPI validation

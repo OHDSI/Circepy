@@ -39,6 +39,11 @@ templates_path = ["_templates"]
 # directories to ignore when looking for source files.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+# Markdown files included from the repository root link to files (e.g.
+# README.md, CONTRIBUTING.md, CHANGELOG.md) that live outside the Sphinx
+# source tree; these are valid repository links but are not Sphinx documents.
+suppress_warnings = ["myst.xref_missing"]
+
 # The suffix(es) of source filenames.
 source_suffix = {
     ".rst": "restructuredtext",

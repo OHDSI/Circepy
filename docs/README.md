@@ -51,7 +51,7 @@ uv run make -C docs clean
 ## Live Documentation
 
 Once published, documentation will be available at:
-https://ohdsi-circe-python-alpha.readthedocs.io/
+https://ohdsi-circe.readthedocs.io/
 
 ## Contributing to Documentation
 

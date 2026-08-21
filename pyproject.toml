@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ohdsi-circe-python-alpha"
+name = "ohdsi-circe"
 version = "0.3.0"
 description = "Python implementation of OHDSI CIRCE-BE for cohort definition and SQL generation"
 readme = {file = "README.md", content-type = "text/markdown"}
@@ -16,7 +16,7 @@ maintainers = [
 ]
 keywords = ["ohdsi", "circe", "cohort", "sql", "omop", "cdm", "healthcare", "observational-health"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Healthcare Industry",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",
@@ -71,7 +71,7 @@ waveform = [
 
 [project.urls]
 Homepage = "https://github.com/OHDSI/Circepy"
-Documentation = "https://ohdsi-circe-python-alpha.readthedocs.io/"
+Documentation = "https://ohdsi-circe.readthedocs.io/"
 Repository = "https://github.com/OHDSI/Circepy.git"
 Issues = "https://github.com/OHDSI/Circepy/issues"
 Changelog = "https://github.com/OHDSI/Circepy/blob/main/CHANGELOG.md"

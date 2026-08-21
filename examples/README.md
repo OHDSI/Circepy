@@ -161,14 +161,12 @@ pip install -e ".[dev]"
 circe --help
 ```
 
-See [../INSTALLATION.md](../INSTALLATION.md) for detailed installation instructions.
+See [../docs/installation.md](../docs/installation.md) for detailed installation instructions.
 
-**PyPI Installation (Coming Soon):**
+**PyPI Installation:**
 
-> [!NOTE]
-> PyPI package is not yet available. Once released:
 > ```bash
-> pip install ohdsi-circepy
+> pip install ohdsi-circe
 > ```
 
 ### Run All Examples
@@ -257,7 +255,7 @@ These examples generate SQL for the OMOP Common Data Model. To use the generated
 
 ## Getting Help
 
-- **Documentation**: See the main [README.md](../README.md) and [INSTALLATION.md](../INSTALLATION.md)
+- **Documentation**: See the main [README.md](../README.md) and [docs/installation.md](../docs/installation.md)
 - **API Reference**: Use `help()` in Python: `help(CohortExpression)`
 - **Issues**: Report problems at https://github.com/OHDSI/Circepy/issues
 

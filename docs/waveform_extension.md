@@ -20,7 +20,7 @@ The extension provides criteria classes and SQL builders for all 4 waveform tabl
 Install the waveform extension as an optional extra:
 
 ```bash
-pip install "ohdsi-circe-python-alpha[waveform]"
+pip install "ohdsi-circe[waveform]"
 ```
 
 Then import the package — registration is automatic:

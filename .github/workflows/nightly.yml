@@ -119,8 +119,8 @@ jobs:
             Or install directly from the develop branch:
             
             ```bash
-            git clone https://github.com/azimov/circepy.git
-            cd circepy
+            git clone https://github.com/OHDSI/Circepy.git
+            cd Circepy
             git checkout develop
             pip install -e ".[dev]"
             ```

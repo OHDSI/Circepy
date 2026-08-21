@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # Publishing Guide for OHDSI Circepy
 
 This guide covers how to publish the Circepy package to PyPI and set up documentation on ReadTheDocs.
@@ -53,7 +57,7 @@ chmod 600 ~/.pypirc
 
 ### Step 2: Prepare for Release
 
-Follow the detailed checklist in [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md). Key steps:
+Follow the detailed checklist in [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md). Key steps:
 
 1. **Update version number** in:
    - `pyproject.toml` (line 7)
@@ -90,8 +94,8 @@ python -m build
 ```
 
 This creates:
-- `dist/ohdsi-circe-python-alpha-X.Y.Z.tar.gz` (source distribution)
-- `dist/ohdsi-circe-python-alpha-X.Y.Z-py3-none-any.whl` (wheel)
+- `dist/ohdsi-circe-X.Y.Z.tar.gz` (source distribution)
+- `dist/ohdsi-circe-X.Y.Z-py3-none-any.whl` (wheel)
 
 ### Step 4: Test the Build
 
@@ -118,7 +122,7 @@ twine upload --repository testpypi dist/*
 
 Test the installation:
 ```bash
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ ohdsi-circe-python-alpha
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ ohdsi-circe
 ```
 
 ### Step 6: Upload to Production PyPI
@@ -178,7 +182,7 @@ Your documentation is already configured! You just need to set it up on ReadTheD
 ReadTheDocs will automatically detect your `.readthedocs.yaml` configuration file.
 
 #### Basic Settings
-- **Name**: `ohdsi-circe-python-alpha` (or your preferred name)
+- **Name**: `ohdsi-circe` (or your preferred name)
 - **Repository URL**: `https://github.com/OHDSI/Circepy`
 - **Default branch**: `main`
 - **Default version**: `latest`
@@ -195,7 +199,7 @@ ReadTheDocs will automatically detect your `.readthedocs.yaml` configuration fil
 ReadTheDocs will automatically:
 1. Build docs on every push to `main` or `develop`
 2. Create versioned docs for each git tag
-3. Host at `https://ohdsi-circe-python-alpha.readthedocs.io/`
+3. Host at `https://ohdsi-circe.readthedocs.io/`
 
 To manually trigger a build:
 - Go to your ReadTheDocs project dashboard
@@ -221,7 +225,7 @@ For versioned documentation:
 
 ### Step 6: Custom Domain (Optional)
 
-If you want a custom domain like `docs.ohdsi.org/ohdsi-circe-python-alpha`:
+If you want a custom domain like `docs.ohdsi.org/ohdsi-circe`:
 
 1. Go to **Admin** → **Domains**
 2. Add your custom domain
@@ -267,10 +271,10 @@ Add this job to `.github/workflows/release.yml` (after the build job):
 
 PyPI supports "Trusted Publishers" which eliminates the need for API tokens:
 
-1. Go to [PyPI Project Settings](https://pypi.org/manage/project/ohdsi-circe-python-alpha/)
+1. Go to [PyPI Project Settings](https://pypi.org/manage/project/ohdsi-circe/)
 2. Navigate to **Publishing** → **Add a new pending publisher**
 3. Add:
-   - **PyPI Project Name**: `ohdsi-circe-python-alpha`
+   - **PyPI Project Name**: `ohdsi-circe`
    - **Owner**: `OHDSI`
    - **Repository**: `Circepy`
    - **Workflow name**: `release.yml`
@@ -298,7 +302,7 @@ Then update the workflow to use trusted publishing:
 - [ ] Upload to PyPI: `twine upload dist/*`
 - [ ] Create and push git tag: `git tag -a v0.1.0 -m "Release 0.1.0" && git push origin v0.1.0`
 - [ ] Verify GitHub release was created
-- [ ] Verify PyPI package: `pip install ohdsi-circe-python-alpha`
+- [ ] Verify PyPI package: `pip install ohdsi-circe`
 - [ ] Verify ReadTheDocs build succeeded
 
 ---

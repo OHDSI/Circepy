@@ -148,12 +148,7 @@ Criteria objects are automatically wrapped in their type names for Java compatib
 condition = ConditionOccurrence(codeset_id=6, condition_type_exclude=False)
 
 # Exported JSON (automatically wrapped)
-{
-  "ConditionOccurrence": {
-    "CodesetId": 6,
-    "ConditionTypeExclude": false
-  }
-}
+{"ConditionOccurrence": {"CodesetId": 6, "ConditionTypeExclude": false}}
 ```
 
 ### Field Name Casing

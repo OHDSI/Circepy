@@ -1,13 +1,13 @@
 # CIRCE Python Implementation
 
-[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](tests/)
 [![codecov](https://codecov.io/gh/OHDSI/Circepy/graph/badge.svg?token=CODECOV_TOKEN)](https://codecov.io/gh/OHDSI/Circepy)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![PyPI](https://img.shields.io/badge/PyPI-ohdsi--circe--python--alpha-blue)](https://pypi.org/project/ohdsi-circe-python-alpha/)
+[![PyPI](https://img.shields.io/badge/PyPI-ohdsi--circe-blue)](https://pypi.org/project/ohdsi-circe/)
 
-> [!CAUTION]
-> **This project is currently under active testing and development.** It is a Python implementation of the OHDSI CIRCE-BE Java library. While we aim for 1:1 parity, this version is an Alpha release and should be used with caution in production environments.
+> [!NOTE]
+> This is a Python implementation of the OHDSI CIRCE-BE Java library. It aims for 1:1 parity with the Java implementation and is under active development.
 
 A Python implementation of the OHDSI CIRCE-BE (Cohort Inclusion and Restriction Criteria Engine) for generating SQL queries from cohort definitions in the OMOP Common Data Model.
 
@@ -24,12 +24,12 @@ CIRCE Python provides a comprehensive toolkit for working with OMOP CDM cohort d
 
 ## Package Status
 
-> [!IMPORTANT]
-> This package is currently in **Alpha** status and undergoing rigorous parity testing against the Java implementation.
+> [!NOTE]
+> This package is stable and undergoing continuous parity testing against the Java implementation.
 
-- **Version**: 0.2.0 (Alpha)
+- **Version**: 0.3.0
 - **Tests**: Passing in CI
-- **Python**: 3.9+
+- **Python**: 3.10+
 - **License**: Apache 2.0
 
 ## Installation
@@ -51,18 +51,14 @@ uv sync
 uv run circe --help
 ```
 
-See [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions, troubleshooting, and setup options.
+See [docs/installation.md](docs/installation.md) for detailed installation instructions, troubleshooting, and setup options.
 
-If you are not using `uv`, see [INSTALLATION.md](INSTALLATION.md) for alternative setup options. The `uv` workflow is the recommended development path.
+If you are not using `uv`, see [docs/installation.md](docs/installation.md) for alternative setup options. The `uv` workflow is the recommended development path.
 
 ### From PyPI
 
 > ```bash
-> # Current alpha package
-> pip install ohdsi-circe-python-alpha
->
-> # Planned future package name
-> pip install ohdsi-circepy
+> pip install ohdsi-circe
 > ```
 
 ## Quick Start
@@ -140,7 +136,7 @@ An experimental backend-native execution API is available under
 ```python
 from circe.execution import build_cohort
 
-# Requires optional extras, e.g. `pip install ohdsi-circe-python-alpha[ibis-duckdb]`
+# Requires optional extras, e.g. `pip install ohdsi-circe[ibis-duckdb]`
 events = build_cohort(cohort, backend=conn, cdm_schema="main")  # lazy ibis relation
 ```
 
@@ -169,7 +165,7 @@ This package provides a complete Python implementation of CIRCE-BE with:
 
 Included Extensions:
 
-- **OHDSI Waveform Extension**: Support for the OHDSI Waveform Extension specification (waveform_occurrence, waveform_registry, waveform_channel_metadata, waveform_feature). Install with `pip install "ohdsi-circe-python-alpha[waveform]"`. See [docs/waveform_extension.md](docs/waveform_extension.md).
+- **OHDSI Waveform Extension**: Support for the OHDSI Waveform Extension specification (waveform_occurrence, waveform_registry, waveform_channel_metadata, waveform_feature). Install with `pip install "ohdsi-circe[waveform]"`. See [docs/waveform_extension.md](docs/waveform_extension.md).
 
 For information on how to implement your own extension, see the [Developer Guide for Extensions](docs/developer/extensions.rst).
 
@@ -446,9 +442,9 @@ Special thanks to:
 
 - **Repository**: https://github.com/OHDSI/Circepy
 - **Issues**: https://github.com/OHDSI/Circepy/issues
-- **Installation Guide**: [INSTALLATION.md](INSTALLATION.md)
-- **PyPI**: https://pypi.org/project/ohdsi-circe-python-alpha/
-- **Documentation**: https://ohdsi-circe-python-alpha.readthedocs.io/
+- **Installation Guide**: [docs/installation.md](docs/installation.md)
+- **PyPI**: https://pypi.org/project/ohdsi-circe/
+- **Documentation**: https://ohdsi-circe.readthedocs.io/
 
 ## Related Projects
 
