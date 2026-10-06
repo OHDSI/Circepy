@@ -41,6 +41,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from xml.etree import ElementTree
 
+try:  # Python 3.11+
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10
+    import tomli as tomllib  # type: ignore[no-redef]
+
 import tomllib
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
