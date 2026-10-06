@@ -94,16 +94,9 @@ from
         ]
 
         if criteria.date_adjustment is not None:
-            start_column = (
-                "E.start_date"
-                if criteria.date_adjustment.start_with == "start_date"
-                else "E.end_date"
-            )
-            end_column = (
-                "E.start_date"
-                if criteria.date_adjustment.end_with == "start_date"
-                else "E.end_date"
-            )
+            adjustment = criteria.date_adjustment
+            start_column = "E.start_date" if adjustment.start_with == "start_date" else "E.end_date"
+            end_column = "E.start_date" if adjustment.end_with == "start_date" else "E.end_date"
             select_cols.append(
                 BuilderUtils.get_date_adjustment_expression(
                     criteria.date_adjustment, start_column, end_column
