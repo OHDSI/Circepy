@@ -11,7 +11,7 @@ This checklist ensures a smooth and error-free release process for publishing to
 ### Code Quality
 
 - [ ] All tests passing: `uv run pytest`
-- [ ] Code coverage meets minimum (71%+): `uv run pytest --cov`
+- [ ] Code coverage meets minimum (80%+): `uv run pytest --cov`
 - [ ] No linting errors: `uv run ruff check .`
 - [ ] Code formatted: `uv run ruff format .`
 - [ ] Pre-commit hooks pass: `uv run pre-commit run --all-files`

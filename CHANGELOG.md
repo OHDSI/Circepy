@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Dropped Python 3.8/3.9 support (minimum version is now 3.10)
 - Added PyYAML as a core dependency
-- Added `ibis`, `ibis-duckdb`, `ibis-postgres`, and `ibis-databricks` optional dependency groups
+- Added `ibis-postgres` and `ibis-databricks` optional dependency groups (`ibis-framework[duckdb]` is a core dependency)
 
 ## [0.2.0] - 2026-02-25
 

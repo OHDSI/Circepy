@@ -115,14 +115,6 @@ module = "ibis.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["litellm.*", "dotenv.*"]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = ["circe.chat", "circe.prompt_builder"]
-ignore_errors = true
-
-[[tool.mypy.overrides]]
 module = [
     "circe.execution.ibis.*",
     "circe.execution.engine.*",
