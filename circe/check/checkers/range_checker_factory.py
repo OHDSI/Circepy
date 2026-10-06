@@ -115,11 +115,13 @@ class RangeCheckerFactory(BaseCheckerFactory):
         from ...cohortdefinition.criteria import (
             ConditionEra,
             ConditionOccurrence,
+            CustomEra,
             Death,
             DeviceExposure,
             DoseEra,
             DrugEra,
             DrugExposure,
+            Episode,
             LocationRegion,
             Measurement,
             Observation,
@@ -557,6 +559,52 @@ class RangeCheckerFactory(BaseCheckerFactory):
                     c.start_date,
                     Constants.Criteria.LOCATION_REGION,
                     Constants.Attributes.LOCATION_REGION_END_DATE_ATTR,
+                )
+
+            return check
+        elif isinstance(criteria, Episode):
+
+            def check(c: "Episode") -> None:
+                self._check_range(
+                    c.episode_start_date,
+                    Constants.Criteria.EPISODE,
+                    Constants.Attributes.EPISODE_START_DATE_ATTR,
+                )
+                self._check_range(
+                    c.episode_end_date,
+                    Constants.Criteria.EPISODE,
+                    Constants.Attributes.EPISODE_END_DATE_ATTR,
+                )
+                self._check_range(
+                    c.episode_number,
+                    Constants.Criteria.EPISODE,
+                    Constants.Attributes.EPISODE_NUMBER_ATTR,
+                )
+                self._check_range(c.age, Constants.Criteria.EPISODE, Constants.Attributes.AGE_ATTR)
+
+            return check
+        elif isinstance(criteria, CustomEra):
+
+            def check(c: "CustomEra") -> None:
+                self._check_range(
+                    c.start_date,
+                    Constants.Criteria.CUSTOM_ERA,
+                    Constants.Attributes.CUSTOM_ERA_START_DATE_ATTR,
+                )
+                self._check_range(
+                    c.end_date,
+                    Constants.Criteria.CUSTOM_ERA,
+                    Constants.Attributes.CUSTOM_ERA_END_DATE_ATTR,
+                )
+                self._check_range(
+                    c.age_at_start,
+                    Constants.Criteria.CUSTOM_ERA,
+                    Constants.Attributes.AGE_AT_START_ATTR,
+                )
+                self._check_range(
+                    c.duration,
+                    Constants.Criteria.CUSTOM_ERA,
+                    Constants.Attributes.CUSTOM_ERA_DURATION_ATTR,
                 )
 
             return check

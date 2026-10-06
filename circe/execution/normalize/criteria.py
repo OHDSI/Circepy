@@ -9,11 +9,13 @@ from ...cohortdefinition.criteria import (
     ConditionEra,
     ConditionOccurrence,
     Criteria,
+    CustomEra,
     Death,
     DeviceExposure,
     DoseEra,
     DrugEra,
     DrugExposure,
+    Episode,
     LocationRegion,
     Measurement,
     Observation,
@@ -474,6 +476,52 @@ def _normalize_location_region(criteria: LocationRegion) -> NormalizedCriterion:
         first=False,
         occurrence_start_date=None,
         occurrence_end_date=None,
+    )
+
+
+@normalizer(Episode)
+def _normalize_episode(criteria: Episode) -> NormalizedCriterion:
+    return _build_normalized_criterion(
+        criteria=criteria,
+        criterion_type="Episode",
+        domain="episode",
+        source_table="episode",
+        event_id_column="episode_id",
+        start_date_column="episode_start_date",
+        end_date_column="episode_end_date",
+        concept_column="episode_concept_id",
+        source_concept_column=None,
+        visit_occurrence_column=None,
+        codeset_id=criteria.codeset_id,
+        first=bool(criteria.first),
+        occurrence_start_date=normalize_date_range(criteria.episode_start_date),
+        occurrence_end_date=normalize_date_range(criteria.episode_end_date),
+    )
+
+
+@normalizer(CustomEra)
+def _normalize_custom_era(criteria: CustomEra) -> NormalizedCriterion:
+    person_filters = _person_filters_from_criterion(criteria)
+    if criteria.age_at_start is not None and person_filters.age is None:
+        person_filters = replace(person_filters, age=normalize_numeric_range(criteria.age_at_start))
+
+    return NormalizedCriterion(
+        raw_criteria=criteria,
+        criterion_type="CustomEra",
+        domain="custom_era",
+        source_table="custom_era",
+        event_id_column="event_id",
+        start_date_column="start_date",
+        end_date_column="end_date",
+        concept_column=None,
+        source_concept_column=None,
+        visit_occurrence_column=None,
+        codeset_id=None,
+        source_codeset_id=None,
+        first=bool(criteria.first),
+        occurrence_start_date=normalize_date_range(criteria.start_date),
+        occurrence_end_date=normalize_date_range(criteria.end_date),
+        person_filters=person_filters,
     )
 
 

@@ -62,6 +62,7 @@ class ConceptSetCriteriaCheck(BaseCriteriaCheck):
             DoseEra,
             DrugEra,
             DrugExposure,
+            Episode,
             Measurement,
             Observation,
             ProcedureOccurrence,
@@ -104,6 +105,8 @@ class ConceptSetCriteriaCheck(BaseCriteriaCheck):
                     .then(add_warning)
                 )
             )
+            .is_a(Episode)
+            .then(lambda c: Operations.match(c).when(lambda e: e.codeset_id is None).then(add_warning))
             .is_a(Measurement)
             .then(
                 lambda c: (

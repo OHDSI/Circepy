@@ -14,11 +14,13 @@ from circe.extensions import get_registry
 from .base import CriteriaSqlBuilder
 from .condition_era import ConditionEraSqlBuilder
 from .condition_occurrence import ConditionOccurrenceSqlBuilder
+from .custom_era import CustomEraSqlBuilder
 from .death import DeathSqlBuilder
 from .device_exposure import DeviceExposureSqlBuilder
 from .dose_era import DoseEraSqlBuilder
 from .drug_era import DrugEraSqlBuilder
 from .drug_exposure import DrugExposureSqlBuilder
+from .episode import EpisodeSqlBuilder
 from .location_region import LocationRegionSqlBuilder
 from .measurement import MeasurementSqlBuilder
 from .observation import ObservationSqlBuilder
@@ -58,6 +60,8 @@ __all__ = [
     "ConditionEraSqlBuilder",
     "DrugEraSqlBuilder",
     "DoseEraSqlBuilder",
+    "EpisodeSqlBuilder",
+    "CustomEraSqlBuilder",
     "ObservationPeriodSqlBuilder",
     "PayerPlanPeriodSqlBuilder",
     "VisitDetailSqlBuilder",

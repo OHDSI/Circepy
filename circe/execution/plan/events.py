@@ -148,6 +148,13 @@ class StandardizeEventShape:
     end_with: str = "end_date"
 
 
+@frozen_slots_dataclass
+class CollapseCustomEra:
+    criteria: tuple[Any, ...]
+    gap_days: int
+    criterion: Any  # NormalizedCriterion
+
+
 PlanStep = (
     FilterByCodeset
     | FilterByConceptSet
@@ -168,6 +175,7 @@ PlanStep = (
     | ApplyDateAdjustment
     | RestrictToCorrelatedWindow
     | StandardizeEventShape
+    | CollapseCustomEra
 )
 
 

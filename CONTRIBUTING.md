@@ -58,6 +58,20 @@ uv run ruff format .
 uv run pre-commit run --all-files
 ```
 
+### Local CI preflight (recommended before pushing)
+
+`pre-commit` and a local `pytest` run do not reproduce everything CI does. Before
+pushing, run the CI preflight harness, which reproduces the GitHub Actions gates
+(including the ones that only fail in CI, such as latest-`ruff` formatting,
+dependency drift, and Codecov thresholds):
+
+```bash
+python scripts/ci_preflight.py --refresh
+```
+
+See [`scripts/README.md`](scripts/README.md) for options. Fix any failures before
+opening a pull request.
+
 ### Type Hints
 
 All functions and methods should include type hints. Use `typing` module for complex types:

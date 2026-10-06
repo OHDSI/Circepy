@@ -23,6 +23,8 @@
   {%- elif type_name == "DoseEra" -%}{{ DoseEra(c, level, isPlural, countCriteria, indexLabel) }}
   {%- elif type_name == "DrugEra" -%}{{ DrugEra(c, level, isPlural, countCriteria, indexLabel) }}
   {%- elif type_name == "DrugExposure" -%}{{ DrugExposure(c, level, isPlural, countCriteria, indexLabel) }}
+  {%- elif type_name == "CustomEra" -%}{{ CustomEra(c, level, isPlural, countCriteria, indexLabel) }}
+  {%- elif type_name == "Episode" -%}{{ Episode(c, level, isPlural, countCriteria, indexLabel) }}
   {%- elif type_name == "LocationRegion" -%}{{ LocationRegion(c, level, isPlural, countCriteria, indexLabel) }}
   {%- elif type_name == "Measurement" -%}{{ Measurement(c, level, isPlural, countCriteria, indexLabel) }}
   {%- elif type_name == "Observation" -%}{{ Observation(c, level, isPlural, countCriteria, indexLabel) }}
@@ -314,6 +316,74 @@
   {%- if c.first %} for the first time in the person's history{% endif -%}
   {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
   {%- if c.correlated_criteria -%}; {{ Group(c.correlated_criteria, level, indexLabel=codeset_name(c.codeset_id, "any drug")) }}{%- else -%}.{%- endif -%}
+{%- endmacro -%}
+
+{%- macro CustomEra(c, level, isPlural=true, countCriteria={}, indexLabel="cohort entry") -%}
+  {%- set attrs = [] -%}
+  {%- if countCriteria and countCriteria.occurrence -%}
+    {%- set temp = WindowCriteria(countCriteria, indexLabel) -%}
+    {%- if temp -%}{%- set _ = attrs.append(temp) -%}{%- endif -%}
+  {%- endif -%}
+  
+  {%- set temp = AgeGenderCriteria(age_at_start=c.age_at_start, gender_cs=c.gender_cs) -%}
+  {%- if temp -%}{%- set _ = attrs.append(temp) -%}{%- endif -%}
+  
+  {%- set temp = inputTypes.DateAdjustment(c.date_adjustment) -%}
+  {%- if temp -%}{%- set _ = attrs.append(temp) -%}{%- endif -%}
+  
+  {%- set temp = EventDateCriteria(c.start_date, c.end_date) -%}
+  {%- if temp -%}{%- set _ = attrs.append(temp) -%}{%- endif -%}
+  
+  {%- if c.duration -%}
+    {%- set temp -%}with duration {{ inputTypes.NumericRange(c.duration) }} days{%- endset -%}
+    {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+  
+  custom era{% if isPlural and not c.first %}s{% endif %} created using a {{ c.gap_days or 0 }}-day gap
+  {%- if c.first %} for the first time in the person's history{% endif -%}
+  {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
+  {%- if c.correlated_criteria -%}; {{ Group(c.correlated_criteria, level, indexLabel="custom era") }}{%- endif %} from the following criteria:
+  {%- for nestedCriteria in c.criteria_list %}
+
+{{ utils.indent(level + 1) }}1. {{ Criteria(nestedCriteria, level + 1) }}
+  {%- endfor -%}
+{%- endmacro -%}
+
+{%- macro Episode(c, level, isPlural=true, countCriteria={}, indexLabel="cohort entry") -%}
+  {%- set attrs = [] -%}
+  {%- if countCriteria and countCriteria.occurrence -%}
+    {%- set temp = WindowCriteria(countCriteria, indexLabel) -%}
+    {%- if temp -%}{%- set _ = attrs.append(temp) -%}{%- endif -%}
+  {%- endif -%}
+  
+  {%- set temp = AgeGenderCriteria(age_at_start=c.age, gender_cs=c.gender_cs) -%}
+  {%- if temp -%}{%- set _ = attrs.append(temp) -%}{%- endif -%}
+  
+  {%- set temp = inputTypes.DateAdjustment(c.date_adjustment) -%}
+  {%- if temp -%}{%- set _ = attrs.append(temp) -%}{%- endif -%}
+  
+  {%- set temp = EventDateCriteria(c.episode_start_date, c.episode_end_date) -%}
+  {%- if temp -%}{%- set _ = attrs.append(temp) -%}{%- endif -%}
+  
+  {%- if c.episode_object_concept_cs and c.episode_object_concept_cs.codeset_id is not none -%}
+    {%- set temp -%}an episode object concept {{ inputTypes.ConceptSetSelection(c.episode_object_concept_cs) }} concept set{%- endset -%}
+    {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+  
+  {%- if c.episode_type_cs and c.episode_type_cs.codeset_id is not none -%}
+    {%- set temp -%}an episode type concept {{ inputTypes.ConceptSetSelection(c.episode_type_cs) }} concept set{%- endset -%}
+    {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+  
+  {%- if c.episode_number -%}
+    {%- set temp -%}with episode number {{ inputTypes.NumericRange(c.episode_number) }}{%- endset -%}
+    {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+  
+  episode{% if isPlural and not c.first %}s{% endif %} of {{ codeset_name(c.codeset_id, "any episode") }}
+  {%- if c.first %} for the first time in the person's history{% endif -%}
+  {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
+  {%- if c.correlated_criteria -%}; {{ Group(c.correlated_criteria, level, indexLabel=codeset_name(c.codeset_id, "any episode")) }}{%- else -%}.{%- endif -%}
 {%- endmacro -%}
 
 {%- macro DemographicCriteria(c, level=0, indexLabel="cohort entry") -%}

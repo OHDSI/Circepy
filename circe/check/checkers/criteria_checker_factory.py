@@ -18,11 +18,13 @@ try:
         ConditionEra,
         ConditionOccurrence,
         Criteria,
+        CustomEra,
         Death,
         DeviceExposure,
         DoseEra,
         DrugEra,
         DrugExposure,
+        Episode,
         LocationRegion,
         Measurement,
         Observation,
@@ -41,11 +43,13 @@ except ImportError:
             ConditionEra,
             ConditionOccurrence,
             Criteria,
+            CustomEra,
             Death,
             DeviceExposure,
             DoseEra,
             DrugEra,
             DrugExposure,
+            Episode,
             LocationRegion,
             Measurement,
             Observation,
@@ -99,11 +103,13 @@ class CriteriaCheckerFactory:
         from ...cohortdefinition.criteria import (
             ConditionEra,
             ConditionOccurrence,
+            CustomEra,
             Death,
             DeviceExposure,
             DoseEra,
             DrugEra,
             DrugExposure,
+            Episode,
             LocationRegion,
             Measurement,
             Observation,
@@ -167,6 +173,17 @@ class CriteriaCheckerFactory:
         def check_location_region(c: "LocationRegion") -> bool:
             return c.codeset_id == self._concept_set.id
 
+        def check_episode(c: "Episode") -> bool:
+            if c.codeset_id == self._concept_set.id:
+                return True
+            for css in (c.episode_object_concept_cs, c.episode_type_cs):
+                if css is not None and css.codeset_id == self._concept_set.id:
+                    return True
+            return False
+
+        def check_custom_era(c: "CustomEra") -> bool:
+            return any(self.get_criteria_checker(nested)(nested) for nested in (c.criteria_list or []))
+
         def default_check(c: "Criteria") -> bool:
             return False
 
@@ -199,6 +216,10 @@ class CriteriaCheckerFactory:
             return check_visit_detail
         elif isinstance(criteria, LocationRegion):
             return check_location_region
+        elif isinstance(criteria, Episode):
+            return check_episode
+        elif isinstance(criteria, CustomEra):
+            return check_custom_era
         else:
             return default_check
 

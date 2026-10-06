@@ -199,11 +199,13 @@ class CohortExpression(CirceBaseModel):
         from .criteria import (
             ConditionEra,
             ConditionOccurrence,
+            CustomEra,
             Death,
             DeviceExposure,
             DoseEra,
             DrugEra,
             DrugExposure,
+            Episode,
             LocationRegion,
             Measurement,
             Observation,
@@ -232,6 +234,8 @@ class CohortExpression(CirceBaseModel):
             "ConditionEra": ConditionEra,
             "DrugEra": DrugEra,
             "DoseEra": DoseEra,
+            "Episode": Episode,
+            "CustomEra": CustomEra,
         }
 
         deserialized = []
