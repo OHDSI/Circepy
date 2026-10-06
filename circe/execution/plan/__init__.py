@@ -1,6 +1,7 @@
 from .cohort import CohortPlan, PrimaryEventInput
 from .events import (
     ApplyDateAdjustment,
+    CollapseCustomEra,
     EventPlan,
     EventSource,
     FilterByCareSite,
@@ -100,4 +101,5 @@ __all__ = [
     "ApplyDateAdjustment",
     "RestrictToCorrelatedWindow",
     "StandardizeEventShape",
+    "CollapseCustomEra",
 ]

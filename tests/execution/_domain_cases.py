@@ -10,6 +10,7 @@ from circe.cohortdefinition import (
     DoseEra,
     DrugEra,
     DrugExposure,
+    Episode,
     LocationRegion,
     Measurement,
     Observation,
@@ -42,5 +43,6 @@ def domain_criteria_cases() -> list[tuple[str, CriteriaFactory, int | None]]:
         ("condition_era", lambda: ConditionEra(codeset_id=1), 1201),
         ("drug_era", lambda: DrugEra(codeset_id=1), 1301),
         ("dose_era", lambda: DoseEra(codeset_id=1), 1401),
+        ("episode", lambda: Episode(codeset_id=1), 1601),
         ("location_history", lambda: LocationRegion(codeset_id=1), 15151),
     ]

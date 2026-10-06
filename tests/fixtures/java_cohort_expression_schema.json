@@ -536,6 +536,26 @@
         },
         {
           "properties": {
+            "CustomEra": {
+              "$ref": "#/$defs/CustomEra"
+            }
+          },
+          "required": [
+            "CustomEra"
+          ]
+        },
+        {
+          "properties": {
+            "Episode": {
+              "$ref": "#/$defs/Episode"
+            }
+          },
+          "required": [
+            "Episode"
+          ]
+        },
+        {
+          "properties": {
             "LocationRegion": {
               "$ref": "#/$defs/LocationRegion"
             }
@@ -1033,6 +1053,26 @@
       ]
     },
     "PayerPlanPeriod": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "Episode": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "CustomEra": {
       "allOf": [
         {
           "$ref": "#/$defs/BaseCriteria"

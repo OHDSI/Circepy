@@ -16,11 +16,13 @@ from .core import CustomEraStrategy, DateOffsetStrategy
 from .criteria import (
     ConditionEra,
     ConditionOccurrence,
+    CustomEra,
     Death,
     DeviceExposure,
     DoseEra,
     DrugEra,
     DrugExposure,
+    Episode,
     LocationRegion,
     Measurement,
     Observation,
@@ -42,6 +44,8 @@ Criteria = (
     | DoseEra
     | DrugEra
     | DrugExposure
+    | Episode
+    | CustomEra
     | Measurement
     | Observation
     | ObservationPeriod

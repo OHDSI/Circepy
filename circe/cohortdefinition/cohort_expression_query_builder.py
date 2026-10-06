@@ -17,11 +17,13 @@ from ..vocabulary.concept_set_expression_query_builder import ConceptSetExpressi
 from .builders import (
     ConditionEraSqlBuilder,
     ConditionOccurrenceSqlBuilder,
+    CustomEraSqlBuilder,
     DeathSqlBuilder,
     DeviceExposureSqlBuilder,
     DoseEraSqlBuilder,
     DrugEraSqlBuilder,
     DrugExposureSqlBuilder,
+    EpisodeSqlBuilder,
     LocationRegionSqlBuilder,
     MeasurementSqlBuilder,
     ObservationPeriodSqlBuilder,
@@ -42,12 +44,14 @@ from .criteria import (
     CorelatedCriteria,
     Criteria,
     CriteriaGroup,
+    CustomEra,
     Death,
     DemographicCriteria,
     DeviceExposure,
     DoseEra,
     DrugEra,
     DrugExposure,
+    Episode,
     LocationRegion,
     Measurement,
     Observation,
@@ -485,6 +489,8 @@ DROP TABLE #drugTarget;
         self.condition_era_sql_builder = ConditionEraSqlBuilder()
         self.drug_era_sql_builder = DrugEraSqlBuilder()
         self.dose_era_sql_builder = DoseEraSqlBuilder()
+        self.episode_sql_builder = EpisodeSqlBuilder()
+        self.custom_era_sql_builder = CustomEraSqlBuilder()
         self.observation_period_sql_builder = ObservationPeriodSqlBuilder()
         self.payer_plan_period_sql_builder = PayerPlanPeriodSqlBuilder()
         self.visit_detail_sql_builder = VisitDetailSqlBuilder()
@@ -1211,6 +1217,8 @@ DROP TABLE #inclusion_rules;
                     "ConditionEra": ConditionEra,
                     "DrugEra": DrugEra,
                     "DoseEra": DoseEra,
+                    "Episode": Episode,
+                    "CustomEra": CustomEra,
                 }
 
                 if criteria_type in criteria_class_map:
@@ -1475,11 +1483,13 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
             # Try to deserialize it - import here to avoid circular dependency issues
             from .criteria import ConditionEra as CE  # type: ignore[unreachable]
             from .criteria import ConditionOccurrence as CO
+            from .criteria import CustomEra as CuE
             from .criteria import Death as D
             from .criteria import DeviceExposure as DevE
             from .criteria import DoseEra as DoE
             from .criteria import DrugEra as DrE
             from .criteria import DrugExposure as DE
+            from .criteria import Episode as Ep
             from .criteria import LocationRegion as LR
             from .criteria import Measurement as M
             from .criteria import Observation as O
@@ -1517,6 +1527,8 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
                     "ConditionEra": CE,
                     "DrugEra": DrE,
                     "DoseEra": DoE,
+                    "Episode": Ep,
+                    "CustomEra": CuE,
                 }
                 registry = get_registry()
                 if criteria_type and criteria_type in registry._criteria_classes:
@@ -1599,6 +1611,10 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
             return self._get_criteria_sql_from_builder(self.condition_era_sql_builder, criteria, options)
         elif isinstance(criteria, DoseEra):
             return self._get_criteria_sql_from_builder(self.dose_era_sql_builder, criteria, options)
+        elif isinstance(criteria, Episode):
+            return self._get_criteria_sql_from_builder(self.episode_sql_builder, criteria, options)
+        elif isinstance(criteria, CustomEra):
+            return self._get_custom_era_criteria_sql(criteria, options)
         elif isinstance(criteria, ObservationPeriod):
             return self._get_criteria_sql_from_builder(self.observation_period_sql_builder, criteria, options)
         elif isinstance(criteria, PayerPlanPeriod):
@@ -1618,6 +1634,36 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
     ) -> str:
         """Generic method to get criteria SQL from builder."""
         query = builder.get_criteria_sql_with_options(criteria, options)
+        return self.process_correlated_criteria(query, criteria)
+
+    def _get_custom_era_criteria_query(self, criteria: CustomEra, options: BuilderOptions | None) -> str:
+        """Build the UNION ALL query of nested criteria for a custom era.
+
+        Java equivalent: CohortExpressionQueryBuilder.getCustomEraCriteriaQuery()
+        """
+        if not criteria.criteria_list:
+            raise RuntimeError("CustomEra.CriteriaList can not be null or empty.")
+
+        criteria_queries = []
+        for nested in criteria.criteria_list:
+            nested_query = (
+                nested.accept(self, options)
+                if hasattr(nested, "accept")
+                else self.get_criteria_sql(nested, options)
+            )
+            criteria_queries.append(f"select person_id, start_date, end_date from ({nested_query}) C")
+
+        return "\nUNION ALL\n".join(criteria_queries)
+
+    def _get_custom_era_criteria_sql(self, criteria: CustomEra, options: BuilderOptions | None) -> str:
+        """Get SQL for custom era criteria by injecting the nested criteria query.
+
+        Java equivalent: CohortExpressionQueryBuilder.getCriteriaSql(CustomEra, BuilderOptions)
+        """
+        criteria_query = self._get_custom_era_criteria_query(criteria, options)
+        query = self.custom_era_sql_builder.get_criteria_sql_with_options(
+            criteria, options, criteria_query=criteria_query
+        )
         return self.process_correlated_criteria(query, criteria)
 
     def process_correlated_criteria(self, query: str, criteria: Criteria) -> str:

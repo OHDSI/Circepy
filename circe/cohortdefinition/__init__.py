@@ -39,12 +39,14 @@ from .criteria import (  # Moved from core; Criteria Domain Classes; Era Criteri
     Criteria,
     CriteriaColumn,
     CriteriaGroup,
+    CustomEra,
     Death,
     DemographicCriteria,
     DeviceExposure,
     DoseEra,
     DrugEra,
     DrugExposure,
+    Episode,
     GeoCriteria,
     InclusionRule,
     LocationRegion,
@@ -91,6 +93,8 @@ __all__ = [
     "ConditionEra",
     "DrugEra",
     "DoseEra",
+    "Episode",
+    "CustomEra",
     # Geographic Criteria
     "GeoCriteria",
     # Core classes
@@ -130,3 +134,5 @@ PrimaryCriteria.model_rebuild()
 WindowedCriteria.model_rebuild()
 CorelatedCriteria.model_rebuild()
 CohortExpression.model_rebuild()
+Episode.model_rebuild()
+CustomEra.model_rebuild()

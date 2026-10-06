@@ -6,10 +6,12 @@ from circe.cohortdefinition import (
     ConditionOccurrence,
     CorelatedCriteria,
     CriteriaGroup,
+    CustomEra,
     Death,
     DeviceExposure,
     DoseEra,
     DrugEra,
+    Episode,
     InclusionRule,
     LocationRegion,
     Measurement,
@@ -135,6 +137,8 @@ def test_normalize_new_domains():
         (ConditionEra(codeset_id=1), "condition_era"),
         (DrugEra(codeset_id=1), "drug_era"),
         (DoseEra(codeset_id=1), "dose_era"),
+        (Episode(codeset_id=1), "episode"),
+        (CustomEra(criteria_list=[ConditionEra(codeset_id=1)]), "custom_era"),
         (LocationRegion(codeset_id=1), "location_history"),
     ]
     for criteria, expected_table in cases:

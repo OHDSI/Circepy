@@ -1039,6 +1039,149 @@ class DoseEra(Criteria):
     model_config = ConfigDict(populate_by_name=True)
 
 
+class Episode(Criteria):
+    """Episode criteria.
+
+    Java equivalent: org.ohdsi.circe.cohortdefinition.Episode
+    """
+
+    codeset_id: int | None = Field(default=None, alias="CodesetId")
+    first: bool | None = Field(
+        default=None,
+        validation_alias=AliasChoices("First", "first"),
+        serialization_alias="First",
+    )
+    episode_start_date: DateRange | None = Field(
+        default=None,
+        validation_alias=AliasChoices("EpisodeStartDate", "episodeStartDate"),
+        serialization_alias="EpisodeStartDate",
+    )
+    episode_end_date: DateRange | None = Field(
+        default=None,
+        validation_alias=AliasChoices("EpisodeEndDate", "episodeEndDate"),
+        serialization_alias="EpisodeEndDate",
+    )
+    episode_number: NumericRange | None = Field(
+        default=None,
+        validation_alias=AliasChoices("EpisodeNumber", "episodeNumber"),
+        serialization_alias="EpisodeNumber",
+    )
+    age: NumericRange | None = Field(
+        default=None,
+        validation_alias=AliasChoices("Age", "age"),
+        serialization_alias="Age",
+    )
+    gender_cs: ConceptSetSelection | None = Field(
+        default=None,
+        validation_alias=AliasChoices("GenderCS", "genderCS"),
+        serialization_alias="GenderCS",
+    )
+    episode_object_concept_cs: ConceptSetSelection | None = Field(
+        default=None,
+        validation_alias=AliasChoices("EpisodeObjectConceptCS", "episodeObjectConceptCS"),
+        serialization_alias="EpisodeObjectConceptCS",
+    )
+    episode_type_cs: ConceptSetSelection | None = Field(
+        default=None,
+        validation_alias=AliasChoices("EpisodeTypeCS", "episodeTypeCS"),
+        serialization_alias="EpisodeTypeCS",
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class CustomEra(Criteria):
+    """Custom era criteria built by merging the rows produced by nested criteria.
+
+    Java equivalent: org.ohdsi.circe.cohortdefinition.CustomEra
+    """
+
+    criteria_list: list["CriteriaType"] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("CriteriaList", "criteriaList"),
+        serialization_alias="CriteriaList",
+    )
+    first: bool | None = Field(
+        default=None,
+        validation_alias=AliasChoices("First", "first"),
+        serialization_alias="First",
+    )
+    gap_days: int | None = Field(
+        default=None,
+        validation_alias=AliasChoices("GapDays", "gapDays"),
+        serialization_alias="GapDays",
+    )
+    start_date: DateRange | None = Field(
+        default=None,
+        validation_alias=AliasChoices("StartDate", "startDate"),
+        serialization_alias="StartDate",
+    )
+    end_date: DateRange | None = Field(
+        default=None,
+        validation_alias=AliasChoices("EndDate", "endDate"),
+        serialization_alias="EndDate",
+    )
+    age_at_start: NumericRange | None = Field(
+        default=None,
+        validation_alias=AliasChoices("AgeAtStart", "ageAtStart"),
+        serialization_alias="AgeAtStart",
+    )
+    gender_cs: ConceptSetSelection | None = Field(
+        default=None,
+        validation_alias=AliasChoices("GenderCS", "genderCS"),
+        serialization_alias="GenderCS",
+    )
+    duration: NumericRange | None = Field(
+        default=None,
+        validation_alias=AliasChoices("Duration", "duration"),
+        serialization_alias="Duration",
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    @field_validator("criteria_list", mode="before")
+    @classmethod
+    def deserialize_criteria_list(cls, v: Any) -> Any:
+        if v is None:
+            return []
+        if not v or not isinstance(v, list):
+            return v
+
+        deserialized = []
+        for item in v:
+            if not isinstance(item, dict):
+                deserialized.append(item)
+                continue
+
+            c_type_raw = next(iter(item.keys()), None)
+            c_type = None
+            if c_type_raw and c_type_raw in NAMES_TO_CLASSES:
+                c_type = c_type_raw
+            else:
+                for k in NAMES_TO_CLASSES:
+                    if k.lower() == (c_type_raw or "").lower():
+                        c_type = k
+                        break
+
+            if c_type:
+                try:
+                    c_data = dict(item[c_type_raw])
+                    if c_type == "Measurement" and "MeasurementTypeExclude" not in c_data:
+                        c_data["MeasurementTypeExclude"] = False
+                    if c_type == "Observation" and "ObservationTypeExclude" not in c_data:
+                        c_data["ObservationTypeExclude"] = False
+                    if c_type == "ConditionOccurrence" and "ConditionTypeExclude" not in c_data:
+                        c_data["ConditionTypeExclude"] = False
+                    if "First" not in c_data:
+                        c_data["First"] = False
+                    deserialized.append(NAMES_TO_CLASSES[c_type].model_validate(c_data, strict=False))
+                except Exception:
+                    deserialized.append(item)
+            else:
+                deserialized.append(item)
+        return deserialized
+
+
 # =============================================================================
 # GEOGRAPHIC CRITERIA
 # =============================================================================
@@ -1389,6 +1532,8 @@ _CriteriaTypeUnion = (
     | ConditionEra
     | DrugEra
     | DoseEra
+    | Episode
+    | CustomEra
     | Criteria  # catch-all for extension subclasses
 )
 
@@ -1429,6 +1574,8 @@ NAMES_TO_CLASSES = {
     "ConditionEra": ConditionEra,
     "DrugEra": DrugEra,
     "DoseEra": DoseEra,
+    "Episode": Episode,
+    "CustomEra": CustomEra,
 }
 
 
