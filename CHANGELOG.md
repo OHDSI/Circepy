@@ -7,18 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [0.3.0] - 2026-08-21
+## [0.3.0] - 2026-10-06
 
 ### Added
 - Experimental Ibis execution engine for building and writing cohorts as relational expressions (`build_cohort()`, `write_cohort()`)
 - Custom era end strategy (`CustomEraStrategy`) in the Ibis execution engine, with parity to Java CIRCE-BE
-- SQL rendering and dialect translation module (`circe.sqlrender`) supporting Oracle, PostgreSQL, DuckDB, BigQuery, and Spark dialects
+- Episode criteria (`Episode`, `EpisodeSqlBuilder`) with nested criteria, print-friendly rendering, Ibis execution support, and check-framework integration (synced with Java CIRCE-BE)
+- Custom era criteria (`CustomEra`, `CustomEraSqlBuilder`) with nested criteria, print-friendly rendering, and check-framework integration (synced with Java CIRCE-BE)
+- SQL rendering and dialect translation module (`circe.sqlrender`) supporting Oracle, PostgreSQL, DuckDB, BigQuery, Spark, Hive, Impala, SQL Server, SQLite, SQLite extended, Synapse, Redshift, Snowflake, Netezza, PDW, and IRIS dialects
 - Cohort definition set batch generation (`CohortDefinitionSet`, `generate_cohort_set()`) with checksum-based incremental skipping
 - CDM extension registration system with `@criteria_class`, `@sql_builder`, and `@markdown_template` decorators
 - Waveform extension (WaveformOccurrence, WaveformFeature, WaveformRegistry, WaveformChannelMetadata) as a reference extension
 - Support for snake_case YAML cohort definitions via `cohort_expression_from_yaml()`
 - Persistent caching of concept set resolution in the IBIS execution layer
 - `load_expression()` helper for loading cohort expressions from JSON, YAML, dict, or file paths
+- Local CI preflight harness (`scripts/ci_preflight.py`) that reproduces the GitHub Actions lint, dependency-drift, and coverage gates
 
 ### Fixed
 - ERA collapse ordering made deterministic across repeated executions
@@ -28,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom era strategy now honors `days_supply_override` in both the SQL builder and Ibis execution engine
 - Package now importable without ibis installed
 - Pydantic deprecation warnings resolved
+- Pinned `sqlglot<30.18.0`; 30.18.0 regresses `DROP` rendering and breaks Ibis create-table overwrites
 
 ### Changed
 - Dropped Python 3.8/3.9 support (minimum version is now 3.10)
