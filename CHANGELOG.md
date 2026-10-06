@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [Unreleased]
+
+### Fixed
+- `ConceptSetExpressionQueryBuilder` no longer generates the invalid `ILEFT JOIN` alias when a concept set contains excluded items; the include template now ends with a newline, matching Java CIRCE-BE's `conceptSetInclude.sql`
+
 ## [0.3.0] - 2026-10-06
 
 ### Added

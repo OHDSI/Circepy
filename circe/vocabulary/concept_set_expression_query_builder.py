@@ -39,7 +39,8 @@ join @vocabulary_database_schema.concept_relationship cr on C.concept_id = cr.co
     CONCEPT_SET_INCLUDE_TEMPLATE = """select distinct I.concept_id FROM
 ( 
   @includeQuery
-) I"""
+) I
+"""
 
     CONCEPT_SET_EXCLUDE_TEMPLATE = """LEFT JOIN
 (

@@ -216,6 +216,7 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         # Now uses LEFT JOIN pattern instead of EXCEPT
         self.assertIn("LEFT JOIN", query)
         self.assertIn("WHERE E.concept_id is null", query)
+        self.assertNotIn("ILEFT JOIN", query)
         self.assertIn("12345", query)
         self.assertIn("67890", query)
 
