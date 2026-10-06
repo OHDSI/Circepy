@@ -214,6 +214,7 @@ class TestConceptSetSchemaCompatibility(unittest.TestCase):
         # But it should have exclusion logic since item 2 is excluded
         self.assertIn("LEFT JOIN", new_query)
         self.assertIn("E.concept_id is null", new_query)
+        self.assertNotIn("ILEFT JOIN", new_query)
 
     def test_query_builder_handles_include_mapped(self):
         """Test that query builder properly handles includeMapped flag."""
