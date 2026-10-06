@@ -28,7 +28,6 @@ from circe.cohortdefinition.core import (
 )
 from circe.vocabulary import ConceptSet
 
-
 # ---------------------------------------------------------------------------
 # SQL builders
 # ---------------------------------------------------------------------------
@@ -264,9 +263,7 @@ def test_compile_custom_era_applies_filters():
     conn = ibis.duckdb.connect()
     conn.create_table(
         "person",
-        obj=ibis.memtable(
-            {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
-        ),
+        obj=ibis.memtable({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}),
         overwrite=True,
     )
     conn.create_table(
@@ -392,7 +389,5 @@ def _concept_set(set_id, concept_id):
 
     return ConceptSet(
         id=set_id,
-        expression=ConceptSetExpression(
-            items=[ConceptSetItem(concept=Concept(conceptId=concept_id))]
-        ),
+        expression=ConceptSetExpression(items=[ConceptSetItem(concept=Concept(conceptId=concept_id))]),
     )
