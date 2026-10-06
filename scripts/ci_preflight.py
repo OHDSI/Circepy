@@ -44,9 +44,10 @@ from xml.etree import ElementTree
 try:  # Python 3.11+
     import tomllib
 except ModuleNotFoundError:  # Python 3.10
-    import tomli as tomllib  # type: ignore[no-redef]
-
-import tomllib
+    try:
+        import tomli as tomllib  # type: ignore[no-redef]
+    except ModuleNotFoundError:
+        tomllib = None  # type: ignore[assignment]
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ENV_DIR = REPO_ROOT / ".ci_preflight" / "venv"
@@ -286,7 +287,7 @@ def load_config() -> Config:
     """Load ``[tool.ci-preflight]`` from pyproject.toml, falling back to defaults."""
     config = Config()
     pyproject = REPO_ROOT / "pyproject.toml"
-    if not pyproject.exists():
+    if tomllib is None or not pyproject.exists():
         return config
     data = tomllib.loads(pyproject.read_text()).get("tool", {}).get("ci-preflight", {})
     if "base-ref" in data:
