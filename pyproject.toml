@@ -218,3 +218,12 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 # Automatically detect the appropriate line ending.
 line-ending = "auto"
+
+[tool.ci-preflight]
+# Local CI-preflight harness (scripts/ci_preflight.py). Reproduces the checks
+# GitHub Actions runs so failures surface before pushing.
+base-ref = "origin/develop"
+python = "3.11"
+project-target = 80
+patch-target = 80
+sensitive-packages = ["ruff", "ibis-framework", "sqlglot", "duckdb", "pandas", "polars"]

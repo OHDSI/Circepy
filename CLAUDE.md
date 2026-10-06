@@ -25,12 +25,33 @@ pytest -n auto --tb=short -v --json-report --json-report-file=.test_final.json
 
 Compare `.test_baseline.json` with `.test_final.json` — the final state should not show new failures.
 
-2. Run git pre-commit checks:
+2. Run pre-commit checks (note: `pre-commit`, not `git pre-commit`):
 ```bash
-git pre-commit run --all-files
+pre-commit run --all-files
 ```
 
 If pre-commit checks fail, fix the issues and re-run until they pass.
+
+3. Run the local CI preflight harness (strongly recommended before pushing):
+```bash
+python scripts/ci_preflight.py --refresh
+```
+
+This reproduces the GitHub Actions gates locally so you don't have to iterate on
+CI failures. It catches three classes of failure that do **not** show up with a
+plain local `pytest` + `pre-commit` run:
+
+- **Tool-version skew** — CI installs the *latest* `ruff`, while pre-commit pins
+  an older one. The `lint` gate runs the latest ruff (`uvx ruff@latest`).
+- **Dependency drift** — CI resolves the *latest allowed* deps (ignoring
+  `uv.lock`), so an upstream regression (e.g. in `sqlglot`/`duckdb`) breaks the
+  suite. The `tests` gate installs/upgrades an isolated env first.
+- **Coverage thresholds** — Codecov patch/project failures. The `coverage` gate
+  computes both from `coverage.xml`.
+
+Use `--only lint`, `--only coverage`, etc. to run individual gates. See
+`scripts/README.md` for details. If the harness fails, fix it before considering
+the task complete.
 
 ## Ibis Execution Layer: NEVER use Python in-memory operations
 
