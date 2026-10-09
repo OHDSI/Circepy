@@ -78,7 +78,7 @@ class DrugDomainCheck(BaseCheck):
             title = "Concept sets" if len(concept_sets) > 1 else "Concept set"
             reporter(self.MESSAGE, title, names)
 
-    def _map_criteria(self, criteria: "Criteria") -> Optional[int]:
+    def _map_criteria(self, criteria: "Criteria") -> int | None:
         """Map a criteria to its codeset ID.
 
         Args:

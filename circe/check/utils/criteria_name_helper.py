@@ -42,11 +42,13 @@ class CriteriaNameHelper:
         from ...cohortdefinition.criteria import (
             ConditionEra,
             ConditionOccurrence,
+            CustomEra,
             Death,
             DeviceExposure,
             DoseEra,
             DrugEra,
             DrugExposure,
+            Episode,
             Measurement,
             Observation,
             ObservationPeriod,
@@ -73,6 +75,10 @@ class CriteriaNameHelper:
             .then_return(lambda c: Constants.Criteria.DRUG_ERA)
             .is_a(DrugExposure)
             .then_return(lambda c: Constants.Criteria.DRUG_EXPOSURE)
+            .is_a(Episode)
+            .then_return(lambda c: Constants.Criteria.EPISODE)
+            .is_a(CustomEra)
+            .then_return(lambda c: Constants.Criteria.CUSTOM_ERA)
             .is_a(Measurement)
             .then_return(lambda c: Constants.Criteria.MEASUREMENT)
             .is_a(Observation)
@@ -90,5 +96,5 @@ class CriteriaNameHelper:
             .is_a(PayerPlanPeriod)
             .then_return(lambda c: Constants.Criteria.PAYER_PLAN_PERIOD)
             .value()
-            or "unknown criteria"
+            or "unknown criteria"  # type: ignore[unreachable]
         )

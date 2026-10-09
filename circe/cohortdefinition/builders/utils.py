@@ -9,7 +9,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from ...vocabulary.concept import Concept
 from ..core import DateAdjustment, DateRange, NumericRange
@@ -62,9 +62,9 @@ class BuilderUtils:
 
     @staticmethod
     def get_codeset_join_expression(
-        standard_codeset_id: Optional[int],
+        standard_codeset_id: int | None,
         standard_concept_column: str,
-        source_codeset_id: Optional[int],
+        source_codeset_id: int | None,
         source_concept_column: str,
     ) -> str:
         """Get codeset join expression for SQL.
@@ -133,7 +133,7 @@ class BuilderUtils:
         raise RuntimeError(f"Unknown operator type: {op}")
 
     @staticmethod
-    def build_date_range_clause(sql_expression: str, date_range: Optional[DateRange]) -> Optional[str]:
+    def build_date_range_clause(sql_expression: str, date_range: DateRange | None) -> str | None:
         """Build date range clause for SQL.
 
         Java equivalent: BuilderUtils.buildDateRangeClause(String sqlExpression, DateRange range)
@@ -157,9 +157,9 @@ class BuilderUtils:
     @staticmethod
     def build_numeric_range_clause(
         sql_expression: str,
-        numeric_range: Optional[NumericRange],
-        format: Optional[str] = None,
-    ) -> Optional[str]:
+        numeric_range: NumericRange | None,
+        format: str | None = None,
+    ) -> str | None:
         """Build numeric range clause for SQL.
 
         Java equivalent: BuilderUtils.buildNumericRangeClause(String sqlExpression, NumericRange range, String format)
@@ -193,7 +193,7 @@ class BuilderUtils:
                 return f"{sql_expression} {BuilderUtils.get_operator(op)} {int(numeric_range.value)}"
 
     @staticmethod
-    def build_text_filter_clause(text_filter: Optional[Any], column_name: str) -> Optional[str]:
+    def build_text_filter_clause(text_filter: Any | None, column_name: str) -> str | None:
         """Build text filter clause for SQL.
 
         Java equivalent: BuilderUtils.buildTextFilterClause()

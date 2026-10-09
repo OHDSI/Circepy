@@ -1,13 +1,13 @@
 # CIRCE Python Implementation
 
-[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-3400%2B%20passed-brightgreen)](tests/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](tests/)
 [![codecov](https://codecov.io/gh/OHDSI/Circepy/graph/badge.svg?token=CODECOV_TOKEN)](https://codecov.io/gh/OHDSI/Circepy)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![PyPI](https://img.shields.io/badge/PyPI-ohdsi--circe--python--alpha-blue)](https://pypi.org/project/ohdsi-circe-python-alpha/)
+[![PyPI](https://img.shields.io/badge/PyPI-ohdsi--circepy-blue)](https://pypi.org/project/ohdsi-circepy/)
 
-> [!CAUTION]
-> **This project is currently under active testing and development.** It is a Python implementation of the OHDSI CIRCE-BE Java library. While we aim for 1:1 parity, this version is an Alpha release and should be used with caution in production environments.
+> [!NOTE]
+> This is a Python implementation of the OHDSI CIRCE-BE Java library. It aims for 1:1 parity with the Java implementation and is under active development.
 
 A Python implementation of the OHDSI CIRCE-BE (Cohort Inclusion and Restriction Criteria Engine) for generating SQL queries from cohort definitions in the OMOP Common Data Model.
 
@@ -24,20 +24,18 @@ CIRCE Python provides a comprehensive toolkit for working with OMOP CDM cohort d
 
 ## Package Status
 
-> [!IMPORTANT]
-> This package is currently in **Alpha** status and undergoing rigorous parity testing against the Java implementation.
+> [!NOTE]
+> This package is stable and undergoing continuous parity testing against the Java implementation.
 
-- **Version**: 0.1.0 (Alpha)
-- **Tests**: 3,400+ passing
-- **Coverage**: 34% (Core logic focus)
-- **Python**: 3.9+
+- **Version**: 0.3.0
+- **Tests**: Passing in CI
+- **Python**: 3.10+
 - **License**: Apache 2.0
 
 ## Installation
 
 > [!NOTE]
-> This package is currently in private development. Install from source using Git.
-> The recommended workflow uses `uv` and the checked-in `uv.lock` for a reproducible environment.
+> The recommended source workflow uses `uv` and the checked-in `uv.lock` for a reproducible environment.
 
 ### From Source (Current Method)
 
@@ -53,19 +51,23 @@ uv sync
 uv run circe --help
 ```
 
-See [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions, troubleshooting, and setup options.
+See [docs/installation.md](docs/installation.md) for detailed installation instructions, troubleshooting, and setup options.
 
-If you are not using `uv`, see [INSTALLATION.md](INSTALLATION.md) for alternative setup options. The `uv` workflow is the recommended development path.
+If you are not using `uv`, see [docs/installation.md](docs/installation.md) for alternative setup options. The `uv` workflow is the recommended development path.
 
 ### From PyPI
 
 > ```bash
-> # Current alpha package
-> pip install ohdsi-circe-python-alpha
->
-> # Planned future package name
 > pip install ohdsi-circepy
 > ```
+
+> [!NOTE]
+> **Package naming.** This project is published to PyPI as `ohdsi-circepy`.
+> Older releases (`0.1.0`, `0.2.0`) were published under the legacy name
+> `ohdsi-circe-python-alpha`, which will be retired at a later date. The
+> `ohdsi-circe` name on PyPI currently belongs to an unrelated project (a
+> Python wrapper for the OHDSI R packages); the owner has been contacted about
+> a name handover, but ownership has not been transferred yet.
 
 ## Quick Start
 
@@ -101,14 +103,9 @@ from circe.vocabulary import ConceptSet, ConceptSetExpression, ConceptSetItem, C
 cohort = CohortExpression(
     title="Type 2 Diabetes Cohort",
     primary_criteria=PrimaryCriteria(
-        criteria_list=[
-            ConditionOccurrence(
-                codeset_id=1,
-                first=True
-            )
-        ],
+        criteria_list=[ConditionOccurrence(codeset_id=1, first=True)],
         observation_window=ObservationFilter(prior_days=0, post_days=0),
-        primary_limit=ResultLimit(type="All")
+        primary_limit=ResultLimit(type="All"),
     ),
     concept_sets=[
         ConceptSet(
@@ -117,16 +114,13 @@ cohort = CohortExpression(
             expression=ConceptSetExpression(
                 items=[
                     ConceptSetItem(
-                        concept=Concept(
-                            concept_id=201826,
-                            concept_name="Type 2 diabetes mellitus"
-                        ),
-                        include_descendants=True
+                        concept=Concept(concept_id=201826, concept_name="Type 2 diabetes mellitus"),
+                        include_descendants=True,
                     )
                 ]
-            )
+            ),
         )
-    ]
+    ],
 )
 
 # Generate SQL using the API
@@ -134,10 +128,10 @@ from circe.api import build_cohort_query
 from circe.cohortdefinition import BuildExpressionQueryOptions
 
 options = BuildExpressionQueryOptions()
-options.cdm_schema = 'cdm'
-options.vocabulary_schema = 'cdm'
+options.cdm_schema = "cdm"
+options.vocabulary_schema = "cdm"
 options.cohort_id = 1
-options.target_table = 'scratch.cohort'
+options.target_table = "scratch.cohort"
 sql = build_cohort_query(cohort, options)
 print(sql)
 ```
@@ -148,18 +142,21 @@ An experimental backend-native execution API is available under
 `circe.execution`.
 
 ```python
-from circe.execution import ExecutionOptions, IbisExecutor
+from circe.execution import build_cohort
 
-# Requires optional extras, e.g. `pip install ohdsi-circe-python-alpha[ibis-duckdb]`
-executor = IbisExecutor(conn, ExecutionOptions(cdm_schema="main"))
-events = executor.build(cohort)  # lazy ibis relation
+# DuckDB support is bundled with the core install:
+#   pip install ohdsi-circepy
+# Other backends are available as optional extras:
+#   pip install "ohdsi-circepy[ibis-postgres]"    # PostgreSQL
+#   pip install "ohdsi-circepy[ibis-databricks]"  # Databricks
+events = build_cohort(cohort, backend=conn, cdm_schema="main")  # lazy ibis relation
 ```
 
 ## What's Included
 
 This package provides a complete Python implementation of CIRCE-BE with:
 
-- **3,400+ passing tests** with focused coverage on core logic
+- **Passing test suite** with focused coverage on core logic
 - **18+ SQL builders** for all OMOP CDM domains:
   - Condition Occurrence/Era
   - Drug Exposure/Era
@@ -180,7 +177,7 @@ This package provides a complete Python implementation of CIRCE-BE with:
 
 Included Extensions:
 
-- **OHDSI Waveform Extension**: Support for the OHDSI Waveform Extension specification (waveform_occurrence, waveform_registry, waveform_channel_metadata, waveform_feature). Install with `pip install "ohdsi-circe-python-alpha[waveform]"`. See [docs/waveform_extension.md](docs/waveform_extension.md).
+- **OHDSI Waveform Extension**: Support for the OHDSI Waveform Extension specification (waveform_occurrence, waveform_registry, waveform_channel_metadata, waveform_feature). Install with `pip install "ohdsi-circepy[waveform]"`. See [docs/waveform_extension.md](docs/waveform_extension.md).
 
 For information on how to implement your own extension, see the [Developer Guide for Extensions](docs/developer/extensions.rst).
 
@@ -227,7 +224,7 @@ circe/
 - [x] Java interoperability with camelCase/snake_case field support
 - [x] Cohort expression validation with 40+ checker implementations
 - [x] Markdown rendering for print-friendly descriptions
-- [x] Full test suite (3,400+ tests)
+- [x] Full test suite
 - [x] Type hints throughout with py.typed marker
 - [x] Concept set expression handling
 - [x] Window criteria and correlated criteria support
@@ -373,7 +370,7 @@ uv run circe --help
 uv run pytest
 ```
 
-All 3,400+ tests should pass.
+The full test suite should pass.
 
 ### Linting and Formatting
 
@@ -457,9 +454,9 @@ Special thanks to:
 
 - **Repository**: https://github.com/OHDSI/Circepy
 - **Issues**: https://github.com/OHDSI/Circepy/issues
-- **Installation Guide**: [INSTALLATION.md](INSTALLATION.md)
-- **PyPI**: https://pypi.org/project/ohdsi-circe-python-alpha/
-- **Documentation**: https://ohdsi-circe-python-alpha.readthedocs.io/
+- **Installation Guide**: [docs/installation.md](docs/installation.md)
+- **PyPI**: https://pypi.org/project/ohdsi-circepy/
+- **Documentation**: https://ohdsi-circepy.readthedocs.io/
 
 ## Related Projects
 

@@ -8,8 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional
-
 from ..warning_severity import WarningSeverity
 from ..warnings.concept_set_warning import ConceptSetWarning
 from .base_check import BaseCheck
@@ -243,7 +241,7 @@ class UnusedConceptsCheck(BaseCheck):
                     )
         return criteria_list
 
-    def _to_criteria_list(self, criteria_list: Optional[list["CorelatedCriteria"]]) -> list["Criteria"]:
+    def _to_criteria_list(self, criteria_list: list["CorelatedCriteria"] | None) -> list["Criteria"]:
         """Convert a list of CorelatedCriteria to a list of Criteria.
 
         Args:
@@ -256,7 +254,7 @@ class UnusedConceptsCheck(BaseCheck):
             return []
         return [c.criteria for c in criteria_list if hasattr(c, "criteria") and c.criteria]
 
-    def _to_criteria_list_from_groups(self, groups: Optional[list["CriteriaGroup"]]) -> list["Criteria"]:
+    def _to_criteria_list_from_groups(self, groups: list["CriteriaGroup"] | None) -> list["Criteria"]:
         """Convert groups to a list of criteria.
 
         Args:

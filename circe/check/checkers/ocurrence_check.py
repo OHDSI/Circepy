@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ..operations.operations import Operations
 from ..warning_severity import WarningSeverity
@@ -52,6 +52,6 @@ class OcurrenceCheck(BaseCorelatedCriteriaCheck):
             reporter: The warning reporter to use
         """
         if criteria.occurrence:
-            match_result = Operations.match(criteria.occurrence)
+            match_result: Any = Operations.match(criteria.occurrence)
             match_result.when(lambda o: o.type == self.AT_LEAST and o.count == 0)
             match_result.then(lambda o: reporter(self.AT_LEAST_0_WARNING))

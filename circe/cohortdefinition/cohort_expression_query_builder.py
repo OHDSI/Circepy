@@ -9,18 +9,21 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 import json
-from typing import Any, Optional, Union
+from typing import Any
 
 from circe.extensions import get_registry
 
+from ..vocabulary.concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
 from .builders import (
     ConditionEraSqlBuilder,
     ConditionOccurrenceSqlBuilder,
+    CustomEraSqlBuilder,
     DeathSqlBuilder,
     DeviceExposureSqlBuilder,
     DoseEraSqlBuilder,
     DrugEraSqlBuilder,
     DrugExposureSqlBuilder,
+    EpisodeSqlBuilder,
     LocationRegionSqlBuilder,
     MeasurementSqlBuilder,
     ObservationPeriodSqlBuilder,
@@ -34,7 +37,6 @@ from .builders import (
 )
 from .builders.utils import BuilderOptions, BuilderUtils, CriteriaColumn
 from .cohort import CohortExpression
-from .concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
 from .core import CustomEraStrategy, DateOffsetStrategy, Period
 from .criteria import (
     ConditionEra,
@@ -42,12 +44,14 @@ from .criteria import (
     CorelatedCriteria,
     Criteria,
     CriteriaGroup,
+    CustomEra,
     Death,
     DemographicCriteria,
     DeviceExposure,
     DoseEra,
     DrugEra,
     DrugExposure,
+    Episode,
     LocationRegion,
     Measurement,
     Observation,
@@ -69,12 +73,12 @@ class BuildExpressionQueryOptions:
     """
 
     def __init__(self):
-        self.cohort_id_field_name: Optional[str] = None
-        self.cohort_id: Optional[int] = None
-        self.cdm_schema: Optional[str] = None
-        self.target_table: Optional[str] = None
-        self.result_schema: Optional[str] = None
-        self.vocabulary_schema: Optional[str] = None
+        self.cohort_id_field_name: str | None = None
+        self.cohort_id: int | None = None
+        self.cdm_schema: str | None = None
+        self.target_table: str | None = None
+        self.result_schema: str | None = None
+        self.vocabulary_schema: str | None = None
         self.generate_stats: bool = False
 
     @classmethod
@@ -485,6 +489,8 @@ DROP TABLE #drugTarget;
         self.condition_era_sql_builder = ConditionEraSqlBuilder()
         self.drug_era_sql_builder = DrugEraSqlBuilder()
         self.dose_era_sql_builder = DoseEraSqlBuilder()
+        self.episode_sql_builder = EpisodeSqlBuilder()
+        self.custom_era_sql_builder = CustomEraSqlBuilder()
         self.observation_period_sql_builder = ObservationPeriodSqlBuilder()
         self.payer_plan_period_sql_builder = PayerPlanPeriodSqlBuilder()
         self.visit_detail_sql_builder = VisitDetailSqlBuilder()
@@ -592,7 +598,7 @@ JOIN (
     def get_primary_events_query(
         self,
         primary_criteria: PrimaryCriteria,
-        subquery: Optional[str] = None,
+        subquery: str | None = None,
     ) -> str:
         """Get primary events query.
 
@@ -652,7 +658,7 @@ JOIN (
 
         return query
 
-    def get_final_cohort_query(self, censor_window: Optional[Period]) -> str:
+    def get_final_cohort_query(self, censor_window: Period | None) -> str:
         """Get final cohort query.
 
         Java equivalent: getFinalCohortQuery()
@@ -780,7 +786,7 @@ DROP TABLE #inclusion_rules;
 
     def build_expression_query(
         self,
-        expression: Union[str, CohortExpression],
+        expression: str | CohortExpression,
         options: BuildExpressionQueryOptions,
     ) -> str:
         """Build expression query from CohortExpression object or JSON string.
@@ -1170,7 +1176,7 @@ DROP TABLE #inclusion_rules;
         sql_template: str,
         criteria: Any,
         event_table: str,
-        options: Optional[BuilderOptions],
+        options: BuilderOptions | None,
     ) -> str:
         """Get windowed criteria query (internal method with all parameters).
 
@@ -1211,6 +1217,8 @@ DROP TABLE #inclusion_rules;
                     "ConditionEra": ConditionEra,
                     "DrugEra": DrugEra,
                     "DoseEra": DoseEra,
+                    "Episode": Episode,
+                    "CustomEra": CustomEra,
                 }
 
                 if criteria_type in criteria_class_map:
@@ -1365,7 +1373,7 @@ DROP TABLE #inclusion_rules;
         self,
         criteria: Any,
         event_table: str,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> str:
         """Get windowed criteria query.
 
@@ -1465,21 +1473,23 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
 
         return query
 
-    def get_criteria_sql(self, criteria: Criteria, options: Optional[BuilderOptions] = None) -> str:
+    def get_criteria_sql(self, criteria: Criteria, options: BuilderOptions | None = None) -> str:
         """Get criteria SQL for any criteria type.
 
         Java equivalent: Various getCriteriaSql methods
         """
         # Handle case where criteria is still a dict (shouldn't happen, but be defensive)
-        if isinstance(criteria, dict):
+        if isinstance(criteria, dict):  # type: ignore[unreachable]
             # Try to deserialize it - import here to avoid circular dependency issues
-            from .criteria import ConditionEra as CE
+            from .criteria import ConditionEra as CE  # type: ignore[unreachable]
             from .criteria import ConditionOccurrence as CO
+            from .criteria import CustomEra as CuE
             from .criteria import Death as D
             from .criteria import DeviceExposure as DevE
             from .criteria import DoseEra as DoE
             from .criteria import DrugEra as DrE
             from .criteria import DrugExposure as DE
+            from .criteria import Episode as Ep
             from .criteria import LocationRegion as LR
             from .criteria import Measurement as M
             from .criteria import Observation as O
@@ -1517,6 +1527,8 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
                     "ConditionEra": CE,
                     "DrugEra": DrE,
                     "DoseEra": DoE,
+                    "Episode": Ep,
+                    "CustomEra": CuE,
                 }
                 registry = get_registry()
                 if criteria_type and criteria_type in registry._criteria_classes:
@@ -1599,6 +1611,10 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
             return self._get_criteria_sql_from_builder(self.condition_era_sql_builder, criteria, options)
         elif isinstance(criteria, DoseEra):
             return self._get_criteria_sql_from_builder(self.dose_era_sql_builder, criteria, options)
+        elif isinstance(criteria, Episode):
+            return self._get_criteria_sql_from_builder(self.episode_sql_builder, criteria, options)
+        elif isinstance(criteria, CustomEra):
+            return self._get_custom_era_criteria_sql(criteria, options)
         elif isinstance(criteria, ObservationPeriod):
             return self._get_criteria_sql_from_builder(self.observation_period_sql_builder, criteria, options)
         elif isinstance(criteria, PayerPlanPeriod):
@@ -1614,10 +1630,40 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
         self,
         builder: Any,
         criteria: Criteria,
-        options: Optional[BuilderOptions],
+        options: BuilderOptions | None,
     ) -> str:
         """Generic method to get criteria SQL from builder."""
         query = builder.get_criteria_sql_with_options(criteria, options)
+        return self.process_correlated_criteria(query, criteria)
+
+    def _get_custom_era_criteria_query(self, criteria: CustomEra, options: BuilderOptions | None) -> str:
+        """Build the UNION ALL query of nested criteria for a custom era.
+
+        Java equivalent: CohortExpressionQueryBuilder.getCustomEraCriteriaQuery()
+        """
+        if not criteria.criteria_list:
+            raise RuntimeError("CustomEra.CriteriaList can not be null or empty.")
+
+        criteria_queries = []
+        for nested in criteria.criteria_list:
+            nested_query = (
+                nested.accept(self, options)
+                if hasattr(nested, "accept")
+                else self.get_criteria_sql(nested, options)
+            )
+            criteria_queries.append(f"select person_id, start_date, end_date from ({nested_query}) C")
+
+        return "\nUNION ALL\n".join(criteria_queries)
+
+    def _get_custom_era_criteria_sql(self, criteria: CustomEra, options: BuilderOptions | None) -> str:
+        """Get SQL for custom era criteria by injecting the nested criteria query.
+
+        Java equivalent: CohortExpressionQueryBuilder.getCriteriaSql(CustomEra, BuilderOptions)
+        """
+        criteria_query = self._get_custom_era_criteria_query(criteria, options)
+        query = self.custom_era_sql_builder.get_criteria_sql_with_options(
+            criteria, options, criteria_query=criteria_query
+        )
         return self.process_correlated_criteria(query, criteria)
 
     def process_correlated_criteria(self, query: str, criteria: Criteria) -> str:
@@ -1637,7 +1683,7 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
 
     def get_strategy_sql(
         self,
-        strategy: Union[DateOffsetStrategy, CustomEraStrategy],
+        strategy: DateOffsetStrategy | CustomEraStrategy,
         event_table: str,
     ) -> str:
         """Get strategy SQL for date offset or custom era strategy."""
@@ -1662,7 +1708,12 @@ JOIN @cdm_database_schema.OBSERVATION_PERIOD OP on Q.person_id = OP.person_id
         if strategy.drug_codeset_id is None:
             raise RuntimeError("Drug Codeset ID cannot be NULL.")
 
-        drug_exposure_end_date_expression = self.DEFAULT_DRUG_EXPOSURE_END_DATE_EXPRESSION
+        if strategy.days_supply_override is not None:
+            drug_exposure_end_date_expression = (
+                f"DATEADD(day,{strategy.days_supply_override},DRUG_EXPOSURE_START_DATE)"
+            )
+        else:
+            drug_exposure_end_date_expression = self.DEFAULT_DRUG_EXPOSURE_END_DATE_EXPRESSION
 
         strategy_sql = self.CUSTOM_ERA_STRATEGY_TEMPLATE.replace("@eventTable", event_table)
         strategy_sql = strategy_sql.replace("@drugCodesetId", str(strategy.drug_codeset_id))

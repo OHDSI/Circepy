@@ -13,8 +13,8 @@ sys.path.insert(0, os.path.abspath(".."))
 project = "OHDSI CIRCE Python"
 copyright = "2024, OHDSI Community"
 author = "CIRCE Python Implementation Team"
-release = "0.2.0"
-version = "0.2.0"
+release = "0.3.0"
+version = "0.3.0"
 
 # -- General configuration ---------------------------------------------------
 extensions = [
@@ -38,6 +38,11 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+
+# Markdown files included from the repository root link to files (e.g.
+# README.md, CONTRIBUTING.md, CHANGELOG.md) that live outside the Sphinx
+# source tree; these are valid repository links but are not Sphinx documents.
+suppress_warnings = ["myst.xref_missing"]
 
 # The suffix(es) of source filenames.
 source_suffix = {

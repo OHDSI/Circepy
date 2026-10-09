@@ -38,7 +38,7 @@ class LimitType(Enum):
     LATEST = (1, "Last")
     ALL = (2, "All")
 
-    def __init__(self, weight: int, name: Optional[str]):
+    def __init__(self, weight: int, name: str | None):
         """Initialize a limit type.
 
         Args:
@@ -58,7 +58,7 @@ class LimitType(Enum):
         return self._weight
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         """Get the name of this limit type.
 
         Returns:
@@ -67,7 +67,7 @@ class LimitType(Enum):
         return self._name
 
     @staticmethod
-    def from_name(name: Optional[str]) -> "LimitType":
+    def from_name(name: str | None) -> "LimitType":
         """Get a limit type from its name.
 
         Args:

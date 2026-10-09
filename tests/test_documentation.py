@@ -58,7 +58,7 @@ class TestDocumentation:
         files_to_check = [
             root / "README.md",
             root / "CONTRIBUTING.md",
-            root / "INSTALLATION.md",
+            root / "docs" / "installation.md",
             root / "examples" / "README.md",
         ]
 
@@ -95,8 +95,8 @@ class TestDocumentation:
         assert "git clone" in readme.lower()
         assert "uv sync" in readme.lower()
 
-        # INSTALLATION.md should exist and have comprehensive instructions
-        installation = (root / "INSTALLATION.md").read_text()
+        # docs/installation.md should exist and have comprehensive instructions
+        installation = (root / "docs" / "installation.md").read_text()
         assert "git clone" in installation.lower()
         assert "troubleshooting" in installation.lower()
         assert "uv sync --extra dev" in installation.lower()
@@ -168,7 +168,7 @@ class TestDocumentation:
 
         # Should link to parent README
         assert "../README.md" in examples_readme
-        assert "../INSTALLATION.md" in examples_readme
+        assert "../docs/installation.md" in examples_readme
 
     def test_no_placeholder_text(self):
         """Verify documentation doesn't contain placeholder text."""
@@ -177,7 +177,7 @@ class TestDocumentation:
         files_to_check = [
             root / "README.md",
             root / "CONTRIBUTING.md",
-            root / "INSTALLATION.md",
+            root / "docs" / "installation.md",
         ]
 
         forbidden_placeholders = [

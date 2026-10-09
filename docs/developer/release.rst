@@ -3,6 +3,8 @@ Release Process
 
 See :doc:`../RELEASE_CHECKLIST` for the complete release checklist.
 
+See :doc:`../publishing_guide` for the full PyPI and ReadTheDocs publishing guide.
+
 Version Numbers
 ---------------
 

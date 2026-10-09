@@ -20,7 +20,7 @@ The extension provides criteria classes and SQL builders for all 4 waveform tabl
 Install the waveform extension as an optional extra:
 
 ```bash
-pip install "ohdsi-circe-python-alpha[waveform]"
+pip install "ohdsi-circepy[waveform]"
 ```
 
 Then import the package — registration is automatic:
@@ -41,7 +41,7 @@ from circe.cohortdefinition.core import NumericRange, DateRange
 criteria = WaveformOccurrence(
     waveform_occurrence_concept_id=[create_concept(2000000001, "ICU Continuous Monitoring")],
     occurrence_start_datetime=DateRange(value="2025-01-01", op="gte"),
-    num_of_files=NumericRange(value=10, op="gte")
+    num_of_files=NumericRange(value=10, op="gte"),
 )
 ```
 
@@ -56,7 +56,7 @@ criteria = WaveformChannelMetadata(
     channel_concept_id=[create_concept(2000000020, "ECG Lead II")],
     metadata_concept_id=[create_concept(2000000030, "Sampling Rate")],
     value_as_number=NumericRange(value=500, op="gte"),  # ≥500 Hz
-    unit_concept_id=[create_concept(8504, "Hz")]
+    unit_concept_id=[create_concept(8504, "Hz")],
 )
 ```
 
@@ -71,7 +71,7 @@ criteria = WaveformFeature(
     feature_concept_id=[create_concept(3027018, "Heart Rate")],
     algorithm_concept_id=[create_concept(2000000040, "Pan-Tompkins QRS Detection")],
     value_as_number=NumericRange(value=60, op="gte", extent=100),  # 60-100 bpm
-    unit_concept_id=[create_concept(8541, "beats/min")]
+    unit_concept_id=[create_concept(8541, "beats/min")],
 )
 ```
 
@@ -82,9 +82,7 @@ criteria = WaveformFeature(
 ```python
 from circe.extensions.waveform.criteria import WaveformRegistry
 
-criteria = WaveformRegistry(
-    file_extension_concept_id=[create_concept(2000000010, "EDF")]
-)
+criteria = WaveformRegistry(file_extension_concept_id=[create_concept(2000000010, "EDF")])
 ```
 
 **Use Case**: Filter cohorts to only include patients with EDF waveform files.

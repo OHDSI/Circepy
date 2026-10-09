@@ -8,7 +8,8 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from ..constants import Constants
 from .base_checker_factory import BaseCheckerFactory

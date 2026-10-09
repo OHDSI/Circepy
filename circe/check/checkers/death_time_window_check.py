@@ -8,6 +8,8 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+from typing import Any
+
 from ..operations.operations import Operations
 from ..utils.criteria_name_helper import CriteriaNameHelper
 from ..warning_severity import WarningSeverity
@@ -122,7 +124,7 @@ class DeathTimeWindowCheck(BaseCorelatedCriteriaCheck):
         """
         name = f"{group_name} {CriteriaNameHelper.get_criteria_name(criteria.criteria)}"
 
-        match_result = Operations.match(criteria.criteria)
+        match_result: Any = Operations.match(criteria.criteria)
         match_result.is_a(Death)
         match_result.then(
             lambda death: (

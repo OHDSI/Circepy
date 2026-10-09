@@ -19,7 +19,7 @@ Author: CIRCE Python Implementation Team
 License: Apache License 2.0
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __author__ = "CIRCE Python Implementation Team"
 __email__ = "circe-python@ohdsi.org"
 __license__ = "Apache License 2.0"
@@ -43,6 +43,7 @@ from circe.cohortdefinition import (
     CorelatedCriteria,
     Criteria,
     CriteriaGroup,
+    CustomEra,
     CustomEraStrategy,
     DateAdjustment,
     DateOffsetStrategy,
@@ -54,6 +55,7 @@ from circe.cohortdefinition import (
     DrugEra,
     DrugExposure,
     EndStrategy,
+    Episode,
     GeoCriteria,
     InclusionRule,
     LocationRegion,
@@ -78,17 +80,14 @@ from circe.cohortdefinition import (
 )
 
 from .api import (
+    build_cohort,
     build_cohort_query,
     cohort_expression_from_json,
     cohort_print_friendly,
-)
-from .execution import (
-    ExecutionOptions,
-    IbisExecutor,
-    build_ibis,
-    to_polars,
     write_cohort,
 )
+
+# Main exports
 from .io import load_expression
 from .vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
@@ -159,6 +158,8 @@ def get_json_schema() -> dict:
         "ConditionEra": ConditionEra,
         "DrugEra": DrugEra,
         "DoseEra": DoseEra,
+        "Episode": Episode,
+        "CustomEra": CustomEra,
         "GeoCriteria": GeoCriteria,
         "DateOffsetStrategy": DateOffsetStrategy,
         "CustomEraStrategy": CustomEraStrategy,
@@ -208,13 +209,10 @@ __all__ = [
     # API functions
     "cohort_expression_from_json",
     "build_cohort_query",
+    "build_cohort",
+    "write_cohort",
     "cohort_print_friendly",
     "safe_model_rebuild",
-    # I/O and experimental execution API
+    # I/O helpers
     "load_expression",
-    "ExecutionOptions",
-    "IbisExecutor",
-    "build_ibis",
-    "to_polars",
-    "write_cohort",
 ]

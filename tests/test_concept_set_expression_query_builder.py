@@ -1,6 +1,6 @@
 import unittest
 
-from circe.vocabulary.concept import Concept, ConceptSetExpression, ConceptSetItem
+from circe.vocabulary.concept import Concept, ConceptExpressionItem, ConceptSetExpression
 from circe.vocabulary.concept_set_expression_query_builder import (
     ConceptSetExpressionQueryBuilder,
 )
@@ -64,7 +64,7 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
 
     def test_build_expression_query_simple_include(self):
         c1 = Concept(concept_id=1, concept_name="C1")
-        item = ConceptSetItem(
+        item = ConceptExpressionItem(
             concept=c1,
             is_excluded=False,
             include_descendants=False,
@@ -85,13 +85,13 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         c1 = Concept(concept_id=1, concept_name="C1")
         c2 = Concept(concept_id=2, concept_name="C2")
 
-        item1 = ConceptSetItem(
+        item1 = ConceptExpressionItem(
             concept=c1,
             is_excluded=False,
             include_descendants=False,
             include_mapped=False,
         )
-        item2 = ConceptSetItem(
+        item2 = ConceptExpressionItem(
             concept=c2,
             is_excluded=True,
             include_descendants=False,
@@ -105,13 +105,20 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         self.assertIn("select distinct I.concept_id", query)
         self.assertIn("LEFT JOIN", query)
         self.assertIn("E.concept_id is null", query)
+        # The include and exclude templates must stay token-separated; otherwise
+        # ") I" fuses with "LEFT JOIN" into the invalid alias ") ILEFT JOIN".
+        # Java emits ") I\nLEFT JOIN" (see resources/vocabulary/sql/conceptSetInclude.sql).
+        self.assertNotIn("ILEFT JOIN", query)
+        self.assertIn(") I\nLEFT JOIN", query)
 
     def test_build_expression_query_complex_flags(self):
         """Test combinations of include_descendants and include_mapped."""
         c1 = Concept(concept_id=1, concept_name="C1")
 
         # Test mapped + descendants
-        item = ConceptSetItem(concept=c1, is_excluded=False, include_descendants=True, include_mapped=True)
+        item = ConceptExpressionItem(
+            concept=c1, is_excluded=False, include_descendants=True, include_mapped=True
+        )
         expression = ConceptSetExpression(items=[item])
 
         query = self.builder.build_expression_query(expression)
@@ -128,13 +135,16 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         c1 = Concept(concept_id=1, concept_name="C1")
 
         # Test excluded + mapped + descendants
-        item = ConceptSetItem(concept=c1, is_excluded=True, include_descendants=True, include_mapped=True)
+        item = ConceptExpressionItem(
+            concept=c1, is_excluded=True, include_descendants=True, include_mapped=True
+        )
         expression = ConceptSetExpression(items=[item])
 
         query = self.builder.build_expression_query(expression)
 
         # Should have exclusion join
         self.assertIn("LEFT JOIN", query)
+        self.assertNotIn("ILEFT JOIN", query)
         # Should include descendants and mapped logic in exclusion
         self.assertIn("CONCEPT_ANCESTOR", query)
         self.assertIn("concept_relationship", query)

@@ -1,0 +1,1095 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/OHDSI/circe-be/java-schema.json",
+  "title": "CIRCE-BE Java Implementation Schema (Updated)",
+  "description": "JSON Schema extracted from Java CIRCE-BE source code",
+  "version": "1.3.3",
+  "$defs": {
+    "CohortExpression": {
+      "type": "object",
+      "properties": {
+        "cdmVersionRange": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "Title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "PrimaryCriteria": {
+          "$ref": "#/$defs/PrimaryCriteria"
+        },
+        "AdditionalCriteria": {
+          "$ref": "#/$defs/CriteriaGroup"
+        },
+        "ConceptSets": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/ConceptSet"
+          }
+        },
+        "QualifiedLimit": {
+          "$ref": "#/$defs/ResultLimit"
+        },
+        "ExpressionLimit": {
+          "$ref": "#/$defs/ResultLimit"
+        },
+        "InclusionRules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InclusionRule"
+          }
+        },
+        "EndStrategy": {
+          "$ref": "#/$defs/EndStrategy"
+        },
+        "CensoringCriteria": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/Criteria"
+          }
+        },
+        "CollapseSettings": {
+          "$ref": "#/$defs/CollapseSettings"
+        },
+        "CensorWindow": {
+          "$ref": "#/$defs/Period"
+        }
+      }
+    },
+    "ConceptSet": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expression": {
+          "$ref": "#/$defs/ConceptSetExpression"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "ConceptSetExpression": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/ConceptSetItem"
+          }
+        }
+      }
+    },
+    "ConceptSetItem": {
+      "type": "object",
+      "properties": {
+        "concept": {
+          "$ref": "#/$defs/Concept"
+        },
+        "isExcluded": {
+          "type": "boolean"
+        },
+        "includeDescendants": {
+          "type": "boolean"
+        },
+        "includeMapped": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Concept": {
+      "type": "object",
+      "properties": {
+        "CONCEPT_ID": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "CONCEPT_NAME": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "STANDARD_CONCEPT": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "STANDARD_CONCEPT_CAPTION": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "INVALID_REASON": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "INVALID_REASON_CAPTION": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "CONCEPT_CODE": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "DOMAIN_ID": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "VOCABULARY_ID": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "CONCEPT_CLASS_ID": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "ResultLimit": {
+      "type": "object",
+      "properties": {
+        "Type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "CriteriaGroup": {
+      "type": "object",
+      "properties": {
+        "Type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "Count": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "CriteriaList": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CorelatedCriteria"
+          }
+        },
+        "DemographicCriteriaList": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DemographicCriteria"
+          }
+        },
+        "Groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CriteriaGroup"
+          }
+        }
+      }
+    },
+    "CorelatedCriteria": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/WindowedCriteria"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "Occurrence": {
+              "$ref": "#/$defs/Occurrence"
+            }
+          }
+        }
+      ]
+    },
+    "WindowedCriteria": {
+      "type": "object",
+      "properties": {
+        "Criteria": {
+          "$ref": "#/$defs/Criteria"
+        },
+        "StartWindow": {
+          "$ref": "#/$defs/Window"
+        },
+        "EndWindow": {
+          "$ref": "#/$defs/Window"
+        },
+        "RestrictVisit": {
+          "type": "boolean"
+        },
+        "IgnoreObservationPeriod": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Occurrence": {
+      "type": "object",
+      "properties": {
+        "Type": {
+          "type": "integer"
+        },
+        "Count": {
+          "type": "integer"
+        },
+        "IsDistinct": {
+          "type": "boolean"
+        },
+        "CountColumn": {
+          "$ref": "#/$defs/CriteriaColumn"
+        }
+      },
+      "required": [
+        "Type",
+        "Count"
+      ]
+    },
+    "CriteriaColumn": {
+      "type": "string"
+    },
+    "DemographicCriteria": {
+      "type": "object",
+      "properties": {
+        "Age": {
+          "$ref": "#/$defs/NumericRange"
+        },
+        "Gender": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/Concept"
+          }
+        },
+        "GenderCS": {
+          "$ref": "#/$defs/ConceptSetSelection"
+        },
+        "Race": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/Concept"
+          }
+        },
+        "RaceCS": {
+          "$ref": "#/$defs/ConceptSetSelection"
+        },
+        "Ethnicity": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/Concept"
+          }
+        },
+        "EthnicityCS": {
+          "$ref": "#/$defs/ConceptSetSelection"
+        },
+        "OccurrenceStartDate": {
+          "$ref": "#/$defs/DateRange"
+        },
+        "OccurrenceEndDate": {
+          "$ref": "#/$defs/DateRange"
+        }
+      }
+    },
+    "DateRange": {
+      "type": "object",
+      "properties": {
+        "Value": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "Op": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "Extent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "NumericRange": {
+      "type": "object",
+      "properties": {
+        "Value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "Op": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "Extent": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
+    },
+    "ConceptSetSelection": {
+      "type": "object",
+      "properties": {
+        "CodesetId": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "IsExclusion": {
+          "type": "boolean"
+        }
+      }
+    },
+    "EndStrategy": {
+      "type": "object",
+      "oneOf": [
+        {
+          "properties": {
+            "DateOffset": {
+              "$ref": "#/$defs/DateOffsetStrategy"
+            }
+          },
+          "required": [
+            "DateOffset"
+          ]
+        },
+        {
+          "properties": {
+            "CustomEra": {
+              "$ref": "#/$defs/CustomEraStrategy"
+            }
+          },
+          "required": [
+            "CustomEra"
+          ]
+        }
+      ]
+    },
+    "DateOffsetStrategy": {
+      "type": "object",
+      "properties": {
+        "DateField": {
+          "type": "string",
+          "enum": [
+            "StartDate",
+            "EndDate"
+          ]
+        },
+        "Offset": {
+          "type": "integer"
+        }
+      }
+    },
+    "CustomEraStrategy": {
+      "type": "object",
+      "properties": {
+        "DrugCodesetId": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "GapDays": {
+          "type": "integer"
+        },
+        "Offset": {
+          "type": "integer"
+        },
+        "DaysSupplyOverride": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
+    },
+    "Criteria": {
+      "type": "object",
+      "oneOf": [
+        {
+          "properties": {
+            "ConditionEra": {
+              "$ref": "#/$defs/ConditionEra"
+            }
+          },
+          "required": [
+            "ConditionEra"
+          ]
+        },
+        {
+          "properties": {
+            "ConditionOccurrence": {
+              "$ref": "#/$defs/ConditionOccurrence"
+            }
+          },
+          "required": [
+            "ConditionOccurrence"
+          ]
+        },
+        {
+          "properties": {
+            "Death": {
+              "$ref": "#/$defs/Death"
+            }
+          },
+          "required": [
+            "Death"
+          ]
+        },
+        {
+          "properties": {
+            "DeviceExposure": {
+              "$ref": "#/$defs/DeviceExposure"
+            }
+          },
+          "required": [
+            "DeviceExposure"
+          ]
+        },
+        {
+          "properties": {
+            "DoseEra": {
+              "$ref": "#/$defs/DoseEra"
+            }
+          },
+          "required": [
+            "DoseEra"
+          ]
+        },
+        {
+          "properties": {
+            "DrugEra": {
+              "$ref": "#/$defs/DrugEra"
+            }
+          },
+          "required": [
+            "DrugEra"
+          ]
+        },
+        {
+          "properties": {
+            "DrugExposure": {
+              "$ref": "#/$defs/DrugExposure"
+            }
+          },
+          "required": [
+            "DrugExposure"
+          ]
+        },
+        {
+          "properties": {
+            "CustomEra": {
+              "$ref": "#/$defs/CustomEra"
+            }
+          },
+          "required": [
+            "CustomEra"
+          ]
+        },
+        {
+          "properties": {
+            "Episode": {
+              "$ref": "#/$defs/Episode"
+            }
+          },
+          "required": [
+            "Episode"
+          ]
+        },
+        {
+          "properties": {
+            "LocationRegion": {
+              "$ref": "#/$defs/LocationRegion"
+            }
+          },
+          "required": [
+            "LocationRegion"
+          ]
+        },
+        {
+          "properties": {
+            "Measurement": {
+              "$ref": "#/$defs/Measurement"
+            }
+          },
+          "required": [
+            "Measurement"
+          ]
+        },
+        {
+          "properties": {
+            "Observation": {
+              "$ref": "#/$defs/Observation"
+            }
+          },
+          "required": [
+            "Observation"
+          ]
+        },
+        {
+          "properties": {
+            "ObservationPeriod": {
+              "$ref": "#/$defs/ObservationPeriod"
+            }
+          },
+          "required": [
+            "ObservationPeriod"
+          ]
+        },
+        {
+          "properties": {
+            "ProcedureOccurrence": {
+              "$ref": "#/$defs/ProcedureOccurrence"
+            }
+          },
+          "required": [
+            "ProcedureOccurrence"
+          ]
+        },
+        {
+          "properties": {
+            "Specimen": {
+              "$ref": "#/$defs/Specimen"
+            }
+          },
+          "required": [
+            "Specimen"
+          ]
+        },
+        {
+          "properties": {
+            "VisitOccurrence": {
+              "$ref": "#/$defs/VisitOccurrence"
+            }
+          },
+          "required": [
+            "VisitOccurrence"
+          ]
+        },
+        {
+          "properties": {
+            "VisitDetail": {
+              "$ref": "#/$defs/VisitDetail"
+            }
+          },
+          "required": [
+            "VisitDetail"
+          ]
+        },
+        {
+          "properties": {
+            "PayerPlanPeriod": {
+              "$ref": "#/$defs/PayerPlanPeriod"
+            }
+          },
+          "required": [
+            "PayerPlanPeriod"
+          ]
+        }
+      ]
+    },
+    "ConditionOccurrence": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "CodesetId": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "First": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "OccurrenceStartDate": {
+              "$ref": "#/$defs/DateRange"
+            },
+            "OccurrenceEndDate": {
+              "$ref": "#/$defs/DateRange"
+            },
+            "ConditionType": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/$defs/Concept"
+              }
+            },
+            "ConditionTypeCS": {
+              "$ref": "#/$defs/ConceptSetSelection"
+            },
+            "ConditionTypeExclude": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "StopReason": {
+              "$ref": "#/$defs/TextFilter"
+            },
+            "ConditionSourceConcept": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "Age": {
+              "$ref": "#/$defs/NumericRange"
+            },
+            "Gender": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/$defs/Concept"
+              }
+            },
+            "GenderCS": {
+              "$ref": "#/$defs/ConceptSetSelection"
+            },
+            "ProviderSpecialty": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/$defs/Concept"
+              }
+            },
+            "ProviderSpecialtyCS": {
+              "$ref": "#/$defs/ConceptSetSelection"
+            },
+            "VisitType": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/$defs/Concept"
+              }
+            },
+            "VisitTypeCS": {
+              "$ref": "#/$defs/ConceptSetSelection"
+            },
+            "ConditionStatus": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/$defs/Concept"
+              }
+            },
+            "ConditionStatusCS": {
+              "$ref": "#/$defs/ConceptSetSelection"
+            }
+          }
+        }
+      ]
+    },
+    "BaseCriteria": {
+      "type": "object",
+      "properties": {
+        "CorrelatedCriteria": {
+          "$ref": "#/$defs/CriteriaGroup"
+        },
+        "DateAdjustment": {
+          "$ref": "#/$defs/DateAdjustment"
+        }
+      }
+    },
+    "DateAdjustment": {
+      "type": "object",
+      "properties": {
+        "startOffset": {
+          "type": "integer"
+        },
+        "startWith": {
+          "type": "string"
+        },
+        "endOffset": {
+          "type": "integer"
+        },
+        "endWith": {
+          "type": "string"
+        }
+      }
+    },
+    "TextFilter": {
+      "type": "object",
+      "properties": {
+        "Text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "Op": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "InclusionRule": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expression": {
+          "$ref": "#/$defs/CriteriaGroup"
+        }
+      }
+    },
+    "Period": {
+      "type": "object",
+      "properties": {
+        "StartDate": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "EndDate": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "ObservationFilter": {
+      "type": "object",
+      "properties": {
+        "PriorDays": {
+          "type": "integer"
+        },
+        "PostDays": {
+          "type": "integer"
+        }
+      }
+    },
+    "CollapseSettings": {
+      "type": "object",
+      "properties": {
+        "EraPad": {
+          "type": "integer"
+        },
+        "CollapseType": {
+          "type": "string"
+        }
+      }
+    },
+    "Window": {
+      "type": "object",
+      "properties": {
+        "Start": {
+          "$ref": "#/$defs/WindowEndpoint"
+        },
+        "End": {
+          "$ref": "#/$defs/WindowEndpoint"
+        },
+        "UseIndexEnd": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "UseEventEnd": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
+    "WindowEndpoint": {
+      "type": "object",
+      "properties": {
+        "Days": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "Coeff": {
+          "type": "integer"
+        }
+      }
+    },
+    "PrimaryCriteria": {
+      "type": "object",
+      "properties": {
+        "CriteriaList": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Criteria"
+          }
+        },
+        "ObservationWindow": {
+          "$ref": "#/$defs/ObservationFilter"
+        },
+        "PrimaryLimit": {
+          "$ref": "#/$defs/ResultLimit"
+        }
+      }
+    },
+    "ConditionEra": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "Death": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "DeviceExposure": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "DoseEra": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "DrugEra": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "DrugExposure": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "LocationRegion": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "Measurement": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "Observation": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "ObservationPeriod": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "ProcedureOccurrence": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "Specimen": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "VisitOccurrence": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "VisitDetail": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "PayerPlanPeriod": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "Episode": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "CustomEra": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCriteria"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "CohortExpression": {
+      "$ref": "#/$defs/CohortExpression"
+    }
+  },
+  "type": "object",
+  "required": [
+    "CohortExpression"
+  ]
+}

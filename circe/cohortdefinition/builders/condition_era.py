@@ -8,8 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional
-
 from ..criteria import ConditionEra
 from .base import CriteriaSqlBuilder
 from .utils import BuilderOptions, BuilderUtils, CriteriaColumn
@@ -90,7 +88,7 @@ FROM
     def resolve_select_clauses(
         self,
         criteria: ConditionEra,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve select clauses for condition era criteria."""
         select_cols = list(self.DEFAULT_SELECT_COLUMNS)
@@ -120,7 +118,7 @@ FROM
         return select_cols
 
     def resolve_join_clauses(
-        self, criteria: ConditionEra, options: Optional[BuilderOptions] = None
+        self, criteria: ConditionEra, options: BuilderOptions | None = None
     ) -> list[str]:
         """Resolve join clauses for condition era criteria."""
         join_clauses = []
@@ -139,7 +137,7 @@ FROM
     def resolve_where_clauses(
         self,
         criteria: ConditionEra,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve where clauses for condition era criteria."""
         where_clauses = []

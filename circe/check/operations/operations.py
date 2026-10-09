@@ -9,7 +9,8 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Any, Callable, Generic, Optional, TypeVar
+from collections.abc import Callable
+from typing import Any, Generic, TypeVar
 
 from .conditional_operations import ConditionalOperations
 from .executive_operations import ExecutiveOperations
@@ -34,8 +35,8 @@ class Operations(Generic[T, V], ConditionalOperations[T, V], ExecutiveOperations
             value: The value to match against
         """
         self._value = value
-        self._result: Optional[bool] = None
-        self._return_value: Optional[V] = None
+        self._result: bool | None = None
+        self._return_value: V | None = None
 
     @staticmethod
     def match(value: T) -> ConditionalOperations[T, V]:
@@ -113,7 +114,7 @@ class Operations(Generic[T, V], ConditionalOperations[T, V], ExecutiveOperations
         if not self._result:
             consumer(self._value)
 
-    def value(self) -> Optional[V]:
+    def value(self) -> V | None:
         """Get the return value from then_return operations.
 
         Returns:

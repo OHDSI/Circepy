@@ -8,7 +8,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from ..constants import Constants
 from ..operations.operations import Operations
@@ -427,7 +427,7 @@ class ConceptCheckerFactory(BaseCheckerFactory):
 
         return check
 
-    def _check_concept(self, concepts: Optional[list["Concept"]], criteria_name: str, attribute: str) -> None:
+    def _check_concept(self, concepts: list["Concept"] | None, criteria_name: str, attribute: str) -> None:
         """Check if a concept array is empty.
 
         Args:

@@ -8,6 +8,8 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+from typing import Any
+
 from ..operations.operations import Operations
 from .base_check import BaseCheck
 from .warning_reporter import WarningReporter
@@ -37,7 +39,7 @@ class InitialEventCheck(BaseCheck):
             expression: The cohort expression to check
             reporter: The warning reporter to use
         """
-        match_result = Operations.match(expression)
+        match_result: Any = Operations.match(expression)
         match_result.when(
             lambda e: (
                 e.primary_criteria is None

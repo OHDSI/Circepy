@@ -14,7 +14,6 @@ from circe.cohortdefinition import (
     CohortExpressionQueryBuilder,
     CollapseSettings,
     CollapseType,
-    ConceptSetExpressionQueryBuilder,
     ConceptSetSelection,
     ConditionOccurrence,
     CorelatedCriteria,
@@ -32,6 +31,7 @@ from circe.cohortdefinition import (
     ResultLimit,
 )
 from circe.vocabulary import Concept, ConceptSetExpression, ConceptSetItem
+from circe.vocabulary.concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
 
 
 class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
@@ -216,6 +216,7 @@ class TestConceptSetExpressionQueryBuilder(unittest.TestCase):
         # Now uses LEFT JOIN pattern instead of EXCEPT
         self.assertIn("LEFT JOIN", query)
         self.assertIn("WHERE E.concept_id is null", query)
+        self.assertNotIn("ILEFT JOIN", query)
         self.assertIn("12345", query)
         self.assertIn("67890", query)
 
@@ -583,6 +584,14 @@ class TestCohortExpressionQueryBuilder(unittest.TestCase):
 
         with self.assertRaises(RuntimeError):
             self.builder.get_strategy_sql(strategy, "#test_events")
+
+    def test_get_strategy_sql_custom_era_strategy_days_supply_override(self):
+        """CustomEraStrategy with days_supply_override uses DATEADD on start date."""
+        strategy = CustomEraStrategy(drug_codeset_id=12345, gap_days=30, offset=0, days_supply_override=7)
+
+        query = self.builder.get_strategy_sql(strategy, "#test_events")
+
+        self.assertIn("DATEADD(day,7,DRUG_EXPOSURE_START_DATE)", query)
 
     def test_get_criteria_sql_delegation(self):
         """Test that get_criteria_sql methods delegate to appropriate builders."""

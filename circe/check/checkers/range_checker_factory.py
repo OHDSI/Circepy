@@ -8,7 +8,8 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Callable, Optional
+from collections.abc import Callable
+from typing import Any, Optional
 
 from ..constants import Constants
 from ..operations.operations import Operations
@@ -114,11 +115,13 @@ class RangeCheckerFactory(BaseCheckerFactory):
         from ...cohortdefinition.criteria import (
             ConditionEra,
             ConditionOccurrence,
+            CustomEra,
             Death,
             DeviceExposure,
             DoseEra,
             DrugEra,
             DrugExposure,
+            Episode,
             LocationRegion,
             Measurement,
             Observation,
@@ -559,6 +562,52 @@ class RangeCheckerFactory(BaseCheckerFactory):
                 )
 
             return check
+        elif isinstance(criteria, Episode):
+
+            def check(c: "Episode") -> None:
+                self._check_range(
+                    c.episode_start_date,
+                    Constants.Criteria.EPISODE,
+                    Constants.Attributes.EPISODE_START_DATE_ATTR,
+                )
+                self._check_range(
+                    c.episode_end_date,
+                    Constants.Criteria.EPISODE,
+                    Constants.Attributes.EPISODE_END_DATE_ATTR,
+                )
+                self._check_range(
+                    c.episode_number,
+                    Constants.Criteria.EPISODE,
+                    Constants.Attributes.EPISODE_NUMBER_ATTR,
+                )
+                self._check_range(c.age, Constants.Criteria.EPISODE, Constants.Attributes.AGE_ATTR)
+
+            return check
+        elif isinstance(criteria, CustomEra):
+
+            def check(c: "CustomEra") -> None:
+                self._check_range(
+                    c.start_date,
+                    Constants.Criteria.CUSTOM_ERA,
+                    Constants.Attributes.CUSTOM_ERA_START_DATE_ATTR,
+                )
+                self._check_range(
+                    c.end_date,
+                    Constants.Criteria.CUSTOM_ERA,
+                    Constants.Attributes.CUSTOM_ERA_END_DATE_ATTR,
+                )
+                self._check_range(
+                    c.age_at_start,
+                    Constants.Criteria.CUSTOM_ERA,
+                    Constants.Attributes.AGE_AT_START_ATTR,
+                )
+                self._check_range(
+                    c.duration,
+                    Constants.Criteria.CUSTOM_ERA,
+                    Constants.Attributes.CUSTOM_ERA_DURATION_ATTR,
+                )
+
+            return check
         else:
 
             def default_check(c) -> None:
@@ -613,7 +662,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
 
         if isinstance(range_val, DateRange):
             # Date range checks
-            match_result = Operations.match(range_val)
+            match_result: Any = Operations.match(range_val)
             match_result.when(lambda r: r.value is not None and not Comparisons.is_date_valid(r.value)).then(
                 lambda x: warning(self.WARNING_DATE_IS_INVALID)
             )
@@ -639,7 +688,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
             )
         elif isinstance(range_val, NumericRange):
             # Numeric range checks
-            match_result = Operations.match(range_val)
+            match_result: Any = Operations.match(range_val)
             match_result.when(lambda r: r.op is not None and r.op.endswith("bt")).then(
                 lambda r: (
                     Operations.match(r)
@@ -673,7 +722,7 @@ class RangeCheckerFactory(BaseCheckerFactory):
         def warning(template: str) -> None:
             self._reporter(template, self._group_name, criteria_name, attribute)
 
-        match_result = Operations.match(period)
+        match_result: Any = Operations.match(period)
         match_result.when(
             lambda x: x.start_date is not None and not Comparisons.is_date_valid(x.start_date)
         ).then(lambda x: warning(self.WARNING_DATE_IS_INVALID))

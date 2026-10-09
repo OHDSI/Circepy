@@ -9,7 +9,7 @@ Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any
 
 from pydantic import (
     AliasChoices,
@@ -91,7 +91,7 @@ class ResultLimit(CirceBaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.ResultLimit
     """
 
-    type: Optional[str] = Field(
+    type: str | None = Field(
         default=None,
         validation_alias=AliasChoices("Type", "type"),
         serialization_alias="Type",
@@ -104,8 +104,8 @@ class Period(CirceBaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.Period
     """
 
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
+    start_date: str | None = None
+    end_date: str | None = None
 
     model_config = ConfigDict(populate_by_name=True, alias_generator=to_pascal_alias)
 
@@ -116,17 +116,17 @@ class DateRange(CirceBaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.DateRange
     """
 
-    op: Optional[str] = Field(
+    op: str | None = Field(
         default=None,
         validation_alias=AliasChoices("Op", "op"),
         serialization_alias="Op",
     )
-    value: Optional[Union[str, float]] = Field(
+    value: str | float | None = Field(
         default=None,
         validation_alias=AliasChoices("Value", "value"),
         serialization_alias="Value",
     )
-    extent: Optional[Union[str, float]] = Field(
+    extent: str | float | None = Field(
         default=None,
         validation_alias=AliasChoices("Extent", "extent"),
         serialization_alias="Extent",
@@ -139,17 +139,17 @@ class NumericRange(CirceBaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.NumericRange
     """
 
-    op: Optional[str] = Field(
+    op: str | None = Field(
         default=None,
         validation_alias=AliasChoices("Op", "op"),
         serialization_alias="Op",
     )
-    value: Optional[Union[int, float]] = Field(
+    value: int | float | None = Field(
         default=None,
         validation_alias=AliasChoices("Value", "value"),
         serialization_alias="Value",
     )
-    extent: Optional[Union[int, float]] = Field(
+    extent: int | float | None = Field(
         default=None,
         validation_alias=AliasChoices("Extent", "extent"),
         serialization_alias="Extent",
@@ -170,12 +170,12 @@ class DateAdjustment(CirceBaseModel):
         validation_alias=AliasChoices("endOffset", "EndOffset"),
         serialization_alias="endOffset",
     )
-    start_with: Optional[DateType] = Field(
+    start_with: DateType | None = Field(
         default=DateType.START_DATE,
         validation_alias=AliasChoices("startWith", "StartWith"),
         serialization_alias="startWith",
     )
-    end_with: Optional[DateType] = Field(
+    end_with: DateType | None = Field(
         default=DateType.END_DATE,
         validation_alias=AliasChoices("endWith", "EndWith"),
         serialization_alias="endWith",
@@ -209,7 +209,7 @@ class CollapseSettings(CirceBaseModel):
     """
 
     era_pad: int = Field(validation_alias=AliasChoices("EraPad", "eraPad"), serialization_alias="EraPad")
-    collapse_type: Optional[CollapseType] = Field(
+    collapse_type: CollapseType | None = Field(
         default=CollapseType.ERA,
         validation_alias=AliasChoices("CollapseType", "collapseType"),
         serialization_alias="CollapseType",
@@ -224,7 +224,7 @@ class EndStrategy(CirceBaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.EndStrategy
     """
 
-    include: Optional[str] = None  # JsonTypeInfo.Id.NAME
+    include: str | None = None  # JsonTypeInfo.Id.NAME
 
     @model_serializer(mode="wrap")
     def _serialize_polymorphic(self, serializer, info):
@@ -243,7 +243,7 @@ class ConceptSetSelection(CirceBaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.ConceptSetSelection
     """
 
-    codeset_id: Optional[int] = Field(
+    codeset_id: int | None = Field(
         default=None,
         validation_alias=AliasChoices("CodesetId", "codesetId"),
         serialization_alias="CodesetId",
@@ -263,12 +263,12 @@ class TextFilter(CirceBaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.TextFilter
     """
 
-    text: Optional[str] = Field(
+    text: str | None = Field(
         default=None,
         validation_alias=AliasChoices("Text", "text"),
         serialization_alias="Text",
     )
-    op: Optional[str] = Field(
+    op: str | None = Field(
         default=None,
         validation_alias=AliasChoices("Op", "op"),
         serialization_alias="Op",
@@ -282,7 +282,7 @@ class WindowBound(CirceBaseModel):
     """
 
     coeff: int = Field(validation_alias=AliasChoices("Coeff", "coeff"), serialization_alias="Coeff")
-    days: Optional[int] = Field(
+    days: int | None = Field(
         default=None,
         validation_alias=AliasChoices("Days", "days"),
         serialization_alias="Days",
@@ -297,22 +297,22 @@ class Window(CirceBaseModel):
     Java equivalent: org.ohdsi.circe.cohortdefinition.Window
     """
 
-    start: Optional[WindowBound] = Field(
+    start: WindowBound | None = Field(
         default=None,
         validation_alias=AliasChoices("Start", "start"),
         serialization_alias="Start",
     )
-    end: Optional[WindowBound] = Field(
+    end: WindowBound | None = Field(
         default=None,
         validation_alias=AliasChoices("End", "end"),
         serialization_alias="End",
     )
-    use_event_end: Optional[bool] = Field(
+    use_event_end: bool | None = Field(
         default=None,
         validation_alias=AliasChoices("UseEventEnd", "useEventEnd"),
         serialization_alias="UseEventEnd",
     )
-    use_index_end: Optional[bool] = Field(
+    use_index_end: bool | None = Field(
         default=None,
         validation_alias=AliasChoices("UseIndexEnd", "useIndexEnd"),
         serialization_alias="UseIndexEnd",
@@ -346,7 +346,7 @@ class CustomEraStrategy(EndStrategy):
     Java equivalent: org.ohdsi.circe.cohortdefinition.CustomEraStrategy
     """
 
-    drug_codeset_id: Optional[int] = Field(
+    drug_codeset_id: int | None = Field(
         default=None,
         validation_alias=AliasChoices("DrugCodesetId", "drugCodesetId"),
         serialization_alias="DrugCodesetId",
@@ -361,7 +361,7 @@ class CustomEraStrategy(EndStrategy):
         validation_alias=AliasChoices("Offset", "offset"),
         serialization_alias="Offset",
     )
-    days_supply_override: Optional[int] = Field(
+    days_supply_override: int | None = Field(
         default=None,
         validation_alias=AliasChoices("DaysSupplyOverride", "daysSupplyOverride"),
         serialization_alias="DaysSupplyOverride",

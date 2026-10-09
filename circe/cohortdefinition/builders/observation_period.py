@@ -8,8 +8,6 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Optional
-
 from ..criteria import ObservationPeriod
 from .base import CriteriaSqlBuilder
 from .utils import BuilderOptions, BuilderUtils, CriteriaColumn
@@ -73,7 +71,7 @@ from
     def get_criteria_sql_with_options(
         self,
         criteria: ObservationPeriod,
-        options: Optional[BuilderOptions],
+        options: BuilderOptions | None,
     ) -> str:
         """Get SQL query for criteria with builder options."""
         query = super().get_criteria_sql_with_options(criteria, options)
@@ -112,7 +110,7 @@ from
     def resolve_select_clauses(
         self,
         criteria: ObservationPeriod,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve select clauses for observation period criteria.
 
@@ -148,7 +146,7 @@ from
     def resolve_join_clauses(
         self,
         criteria: ObservationPeriod,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve join clauses for observation period criteria."""
         join_clauses = []
@@ -162,7 +160,7 @@ from
     def resolve_where_clauses(
         self,
         criteria: ObservationPeriod,
-        options: Optional[BuilderOptions] = None,
+        options: BuilderOptions | None = None,
     ) -> list[str]:
         """Resolve where clauses for observation period criteria."""
         where_clauses = []

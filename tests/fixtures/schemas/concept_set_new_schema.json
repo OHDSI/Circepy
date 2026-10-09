@@ -1,0 +1,45 @@
+{
+  "id": 456,
+  "name": "Heart Failure excluding Rheumatic",
+  "description": "Heart failure concept set excluding rheumatic heart failure cases",
+  "version": "1.2.0",
+  "expression": {
+    "items": [
+      {
+        "concept": {
+          "conceptId": 316139,
+          "conceptName": "Heart failure",
+          "domainId": "Condition",
+          "vocabularyId": "SNOMED",
+          "conceptClassId": "Clinical Finding",
+          "standardConcept": "S",
+          "conceptCode": "84114007",
+          "validStartDate": "2002-01-30",
+          "validEndDate": "2099-12-30",
+          "invalidReason": null
+        },
+        "isExcluded": false,
+        "includeDescendants": true,
+        "includeMapped": false
+      },
+      {
+        "concept": {
+          "conceptId": 315295,
+          "conceptName": "Congestive rheumatic heart failure",
+          "domainId": "Condition",
+          "vocabularyId": "SNOMED",
+          "conceptClassId": "Clinical Finding",
+          "standardConcept": "S",
+          "conceptCode": "82523003",
+          "validStartDate": "2002-01-30",
+          "validEndDate": "2099-12-30",
+          "invalidReason": null
+        },
+        "isExcluded": true,
+        "includeDescendants": true,
+        "includeMapped": false
+      }
+    ]
+  },
+  "tags": ["cardiology", "heart-failure"]
+}

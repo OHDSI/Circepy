@@ -1,7 +1,9 @@
 Contributing Guide
 ==================
 
-See :doc:`../CONTRIBUTING` for complete contributing guidelines.
+.. include:: ../../CONTRIBUTING.md
+   :parser: myst_parser.sphinx_
+
 
 Development Setup
 -----------------
