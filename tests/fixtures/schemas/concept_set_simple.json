@@ -1,0 +1,31 @@
+{
+  "id": 123,
+  "name": "Type 2 Diabetes Mellitus",
+  "description": "Concept set for identifying Type 2 diabetes mellitus cases in observational studies",
+  "version": "1.0.0",
+  "createdBy": "researcher@example.org",
+  "createdDate": "2024-01-15T10:30:00Z",
+  "createdByTool": "ATLAS 2.12.0",
+  "expression": {
+    "items": [
+      {
+        "concept": {
+          "conceptId": 201826,
+          "conceptName": "Type 2 diabetes mellitus",
+          "domainId": "Condition",
+          "vocabularyId": "SNOMED",
+          "conceptClassId": "Clinical Finding",
+          "standardConcept": "S",
+          "conceptCode": "44054006",
+          "validStartDate": "1970-01-01",
+          "validEndDate": "2099-12-31",
+          "invalidReason": null
+        },
+        "isExcluded": false,
+        "includeDescendants": true,
+        "includeMapped": true
+      }
+    ]
+  },
+  "tags": ["diabetes", "endocrine", "chronic-disease"]
+}

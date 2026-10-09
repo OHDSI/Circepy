@@ -38,7 +38,7 @@ class LimitType(Enum):
     LATEST = (1, "Last")
     ALL = (2, "All")
 
-    def __init__(self, weight: int, name: Optional[str]):
+    def __init__(self, weight: int, name: str | None):
         """Initialize a limit type.
 
         Args:
@@ -58,7 +58,7 @@ class LimitType(Enum):
         return self._weight
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         """Get the name of this limit type.
 
         Returns:
@@ -67,7 +67,7 @@ class LimitType(Enum):
         return self._name
 
     @staticmethod
-    def from_name(name: Optional[str]) -> "LimitType":
+    def from_name(name: str | None) -> "LimitType":
         """Get a limit type from its name.
 
         Args:
@@ -114,18 +114,16 @@ class EventsProgressionCheck(BaseCheck):
         cohort_initial_weight = self._get_weight(expression.qualified_limit)
 
         # Qualifying limit is ignored when no additionalCriteria specified
-        if expression.additional_criteria is not None:
-            qualifying_weight = self._get_weight(expression.expression_limit)
-        else:
-            qualifying_weight = LimitType.NONE.weight
+        qualifying_weight = (
+            self._get_weight(expression.expression_limit)
+            if expression.additional_criteria is not None
+            else LimitType.NONE.weight
+        )
 
         if initial_weight - cohort_initial_weight < 0:
             reporter(self.WARNING, "Cohort of initial events")
 
-        if (
-            cohort_initial_weight - qualifying_weight < 0
-            or initial_weight - qualifying_weight < 0
-        ):
+        if cohort_initial_weight - qualifying_weight < 0 or initial_weight - qualifying_weight < 0:
             reporter(self.WARNING, "Qualifying cohort")
 
     def _get_weight(self, limit: Optional["ResultLimit"]) -> int:

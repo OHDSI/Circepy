@@ -9,14 +9,18 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+from circe.extensions import get_registry
+
 from .base import CriteriaSqlBuilder
 from .condition_era import ConditionEraSqlBuilder
 from .condition_occurrence import ConditionOccurrenceSqlBuilder
+from .custom_era import CustomEraSqlBuilder
 from .death import DeathSqlBuilder
 from .device_exposure import DeviceExposureSqlBuilder
 from .dose_era import DoseEraSqlBuilder
 from .drug_era import DrugEraSqlBuilder
 from .drug_exposure import DrugExposureSqlBuilder
+from .episode import EpisodeSqlBuilder
 from .location_region import LocationRegionSqlBuilder
 from .measurement import MeasurementSqlBuilder
 from .observation import ObservationSqlBuilder
@@ -27,6 +31,14 @@ from .specimen import SpecimenSqlBuilder
 from .utils import BuilderOptions, BuilderUtils, CriteriaColumn
 from .visit_detail import VisitDetailSqlBuilder
 from .visit_occurrence import VisitOccurrenceSqlBuilder
+
+
+# Extension support
+def get_builder_for_criteria(criteria):
+    """Get a SQL builder for a criteria instance, checking extensions first."""
+    registry = get_registry()
+    return registry.get_builder(criteria)
+
 
 __all__ = [
     # Utility classes
@@ -48,8 +60,11 @@ __all__ = [
     "ConditionEraSqlBuilder",
     "DrugEraSqlBuilder",
     "DoseEraSqlBuilder",
+    "EpisodeSqlBuilder",
+    "CustomEraSqlBuilder",
     "ObservationPeriodSqlBuilder",
     "PayerPlanPeriodSqlBuilder",
     "VisitDetailSqlBuilder",
     "LocationRegionSqlBuilder",
+    "get_builder_for_criteria",
 ]

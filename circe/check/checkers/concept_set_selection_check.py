@@ -19,9 +19,7 @@ class ConceptSetSelectionCheck(BaseValueCheck):
     Java equivalent: org.ohdsi.circe.check.checkers.ConceptSetSelectionCheck
     """
 
-    def _get_factory(
-        self, reporter: WarningReporter, name: str
-    ) -> ConceptSetSelectionCheckerFactory:
+    def _get_factory(self, reporter: WarningReporter, name: str) -> ConceptSetSelectionCheckerFactory:
         """Get a concept set selection checker factory.
 
         Args:

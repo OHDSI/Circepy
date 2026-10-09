@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # Release Checklist
 
 This checklist ensures a smooth and error-free release process for publishing to PyPI.
@@ -6,11 +10,11 @@ This checklist ensures a smooth and error-free release process for publishing to
 
 ### Code Quality
 
-- [ ] All tests passing: `pytest`
-- [ ] Code coverage meets minimum (71%+): `pytest --cov`
-- [ ] No linting errors: `flake8 circe/`
-- [ ] Code formatted: `black circe/` and `isort circe/`
-- [ ] Type checking passes: `mypy circe/` (or acceptable errors documented)
+- [ ] All tests passing: `uv run pytest`
+- [ ] Code coverage meets minimum (80%+): `uv run pytest --cov`
+- [ ] No linting errors: `uv run ruff check .`
+- [ ] Code formatted: `uv run ruff format .`
+- [ ] Pre-commit hooks pass: `uv run pre-commit run --all-files`
 - [ ] No security vulnerabilities in dependencies: `pip-audit` (if installed)
 
 ### Documentation
@@ -37,7 +41,6 @@ This checklist ensures a smooth and error-free release process for publishing to
 ```bash
 # Remove old build artifacts
 rm -rf build/ dist/ *.egg-info/
-rm -rf circe.egg-info/ ohdsi-circepy.egg-info/
 
 # Clear Python cache
 find . -type d -name __pycache__ -exec rm -r {} + 2>/dev/null || true
@@ -287,4 +290,3 @@ If a critical issue is discovered after release:
 - **Always test on TestPyPI** first for major releases
 - **Keep credentials secure** and rotate regularly
 - **Document any manual steps** needed for release
-

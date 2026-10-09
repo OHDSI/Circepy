@@ -14,7 +14,6 @@ from .cohort_expression_query_builder import (
     BuildExpressionQueryOptions,
     CohortExpressionQueryBuilder,
 )
-from .concept_set_expression_query_builder import ConceptSetExpressionQueryBuilder
 from .core import (  # Supporting Classes
     CollapseSettings,
     CollapseType,
@@ -40,12 +39,14 @@ from .criteria import (  # Moved from core; Criteria Domain Classes; Era Criteri
     Criteria,
     CriteriaColumn,
     CriteriaGroup,
+    CustomEra,
     Death,
     DemographicCriteria,
     DeviceExposure,
     DoseEra,
     DrugEra,
     DrugExposure,
+    Episode,
     GeoCriteria,
     InclusionRule,
     LocationRegion,
@@ -92,6 +93,8 @@ __all__ = [
     "ConditionEra",
     "DrugEra",
     "DoseEra",
+    "Episode",
+    "CustomEra",
     # Geographic Criteria
     "GeoCriteria",
     # Core classes
@@ -118,7 +121,6 @@ __all__ = [
     # Query Builders
     "CohortExpressionQueryBuilder",
     "BuildExpressionQueryOptions",
-    "ConceptSetExpressionQueryBuilder",
     # Interfaces
     "IGetCriteriaSqlDispatcher",
     "IGetEndStrategySqlDispatcher",
@@ -132,3 +134,5 @@ PrimaryCriteria.model_rebuild()
 WindowedCriteria.model_rebuild()
 CorelatedCriteria.model_rebuild()
 CohortExpression.model_rebuild()
+Episode.model_rebuild()
+CustomEra.model_rebuild()

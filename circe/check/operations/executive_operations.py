@@ -9,12 +9,14 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Callable, Generic, Protocol, TypeVar
+from collections.abc import Callable
+from typing import Generic, Protocol, TypeVar, overload
+
+from .conditional_operations import ConditionalOperations
+from .execution import Execution
 
 T = TypeVar("T")
 V = TypeVar("V")
-from .conditional_operations import ConditionalOperations
-from .execution import Execution
 
 
 class ExecutiveOperations(Protocol, Generic[T, V]):
@@ -26,6 +28,7 @@ class ExecutiveOperations(Protocol, Generic[T, V]):
     pattern matching conditions are met.
     """
 
+    @overload
     def then(self, consumer: Callable[[T], None]) -> ConditionalOperations[T, V]:
         """Execute a consumer function if the condition was met.
 
@@ -37,6 +40,7 @@ class ExecutiveOperations(Protocol, Generic[T, V]):
         """
         ...
 
+    @overload
     def then(self, execution: Execution) -> ConditionalOperations[T, V]:
         """Execute an Execution if the condition was met.
 

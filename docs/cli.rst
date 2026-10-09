@@ -363,10 +363,10 @@ If ``circe`` command is not found after installation:
 .. code-block:: bash
 
    # Try with python -m
-   python -m circe.cli --help
+   uv run python -m circe.cli --help
 
-   # Or reinstall
-   pip install --force-reinstall ohdsi-circe
+   # Or re-sync the environment
+   uv sync --extra dev
 
 Permission Errors
 ~~~~~~~~~~~~~~~~~
@@ -400,4 +400,3 @@ Next Steps
 * :doc:`user_guide/cohort_definitions` - Learn about cohort definitions
 * :doc:`user_guide/validation` - Understand validation
 * :doc:`user_guide/sql_generation` - Master SQL generation
-

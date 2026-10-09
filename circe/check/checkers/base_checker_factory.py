@@ -9,7 +9,7 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
-from typing import Callable
+from collections.abc import Callable
 
 from .warning_reporter import WarningReporter
 
@@ -64,7 +64,8 @@ class BaseCheckerFactory:
         raise NotImplementedError("Subclasses must implement _get_check_criteria")
 
     def _get_check_demographic(
-        self, criteria: "DemographicCriteria"
+        self,
+        criteria: "DemographicCriteria",
     ) -> Callable[["DemographicCriteria"], None]:
         """Get a checker function for a demographic criteria (to be implemented by subclasses).
 

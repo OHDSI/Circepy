@@ -42,9 +42,7 @@ class BaseIterableCheck(BaseCheck):
         self._internal_check(expression, reporter)
         self._after_check(reporter, expression)
 
-    def _before_check(
-        self, reporter: WarningReporter, expression: "CohortExpression"
-    ) -> None:
+    def _before_check(self, reporter: WarningReporter, expression: "CohortExpression") -> None:
         """Hook called before the internal check runs.
 
         Args:
@@ -53,9 +51,7 @@ class BaseIterableCheck(BaseCheck):
         """
         pass
 
-    def _after_check(
-        self, reporter: WarningReporter, expression: "CohortExpression"
-    ) -> None:
+    def _after_check(self, reporter: WarningReporter, expression: "CohortExpression") -> None:
         """Hook called after the internal check runs.
 
         Args:
@@ -64,9 +60,7 @@ class BaseIterableCheck(BaseCheck):
         """
         pass
 
-    def _internal_check(
-        self, expression: "CohortExpression", reporter: WarningReporter
-    ) -> None:
+    def _internal_check(self, expression: "CohortExpression", reporter: WarningReporter) -> None:
         """Internal check method to be implemented by subclasses.
 
         Args:

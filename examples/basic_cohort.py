@@ -6,16 +6,18 @@ for patients with Type 2 Diabetes using the CIRCE Python API.
 """
 
 from circe import CohortExpression
-from circe.cohortdefinition import PrimaryCriteria, ConditionOccurrence
-from circe.cohortdefinition.core import ObservationFilter, ResultLimit
-from circe.cohortdefinition.cohort_expression_query_builder import BuildExpressionQueryOptions
-from circe.vocabulary import ConceptSet, ConceptSetExpression, ConceptSetItem, Concept
 from circe.api import build_cohort_query
+from circe.cohortdefinition import ConditionOccurrence, PrimaryCriteria
+from circe.cohortdefinition.cohort_expression_query_builder import (
+    BuildExpressionQueryOptions,
+)
+from circe.cohortdefinition.core import ObservationFilter, ResultLimit
+from circe.vocabulary import Concept, ConceptSet, ConceptSetExpression, ConceptSetItem
 
 
 def create_diabetes_cohort():
     """Create a simple Type 2 Diabetes cohort definition."""
-    
+
     # Define the Type 2 Diabetes concept set
     diabetes_concept_set = ConceptSet(
         id=1,
@@ -30,44 +32,44 @@ def create_diabetes_cohort():
                         vocabulary_id="SNOMED",
                         concept_class_id="Clinical Finding",
                         standard_concept="S",
-                        concept_code="44054006"
+                        concept_code="44054006",
                     ),
                     include_descendants=True,  # Include all child concepts
-                    is_excluded=False
+                    is_excluded=False,
                 )
             ]
-        )
+        ),
     )
-    
+
     # Create the primary criteria (first occurrence of condition)
     primary_criteria = PrimaryCriteria(
         criteria_list=[
             ConditionOccurrence(
                 codeset_id=1,  # References the concept set above
-                first=True,     # Only the first occurrence
-                condition_type_exclude=False
+                first=True,  # Only the first occurrence
+                condition_type_exclude=False,
             )
         ],
         observation_window=ObservationFilter(
-            prior_days=0,   # Must have observation period starting on or before event
-            post_days=0     # Must have observation period ending on or after event
+            prior_days=0,  # Must have observation period starting on or before event
+            post_days=0,  # Must have observation period ending on or after event
         ),
-        primary_limit=ResultLimit(type="All")  # Include all matching events
+        primary_limit=ResultLimit(type="All"),  # Include all matching events
     )
-    
+
     # Create the complete cohort expression
     cohort = CohortExpression(
         title="Patients with Type 2 Diabetes",
         concept_sets=[diabetes_concept_set],
-        primary_criteria=primary_criteria
+        primary_criteria=primary_criteria,
     )
-    
+
     return cohort
 
 
 def generate_sql_from_cohort(cohort):
     """Generate SQL from the cohort definition."""
-    
+
     # Create build options
     # Note: For SqlRender compatibility, leave schema parameters unset
     # to preserve @vocabulary_database_schema notation in the output.
@@ -75,9 +77,9 @@ def generate_sql_from_cohort(cohort):
     options = BuildExpressionQueryOptions()
     options.cohort_id = 1
     options.generate_stats = True
-    
+
     sql = build_cohort_query(cohort, options)
-    
+
     return sql
 
 
@@ -85,27 +87,27 @@ if __name__ == "__main__":
     # Create the cohort definition
     print("Creating Type 2 Diabetes cohort definition...")
     cohort = create_diabetes_cohort()
-    
+
     # Display cohort information
     print(f"\nCohort Title: {cohort.title}")
     print(f"Number of Concept Sets: {len(cohort.concept_sets)}")
     print(f"Concept Set: {cohort.concept_sets[0].name}")
-    
+
     # Generate SQL
     print("\nGenerating SQL...")
     sql = generate_sql_from_cohort(cohort)
-    
+
     # Display first 500 characters of SQL
-    print(f"\nGenerated SQL (first 500 chars):")
+    print("\nGenerated SQL (first 500 chars):")
     print(sql[:500])
     print("...")
-    
+
     # Optionally save to file
     output_file = "diabetes_cohort.sql"
     with open(output_file, "w") as f:
         f.write(sql)
     print(f"\nFull SQL saved to: {output_file}")
-    
+
     # Optionally export as JSON (Java CIRCE-BE compatible format)
     # Note: For ATLAS compatibility, concepts should have complete metadata (see ATLAS_COMPATIBILITY.md)
     json_output = cohort.model_dump_json(indent=2, by_alias=True, exclude_none=True)

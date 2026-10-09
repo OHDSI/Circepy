@@ -5,7 +5,7 @@ This module contains operational classes for check processing.
 """
 
 # Type alias for convenience (Callable[[], None])
-from typing import Callable
+from collections.abc import Callable
 
 from .conditional_operations import ConditionalOperations
 from .execution import Execution

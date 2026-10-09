@@ -113,14 +113,14 @@ jobs:
             Download the wheel from the assets below and install:
             
             ```bash
-            pip install ohdsi_circe-${{ steps.nightly_version.outputs.NIGHTLY_VERSION }}-py3-none-any.whl
+            pip install ohdsi_circepy-${{ steps.nightly_version.outputs.NIGHTLY_VERSION }}-py3-none-any.whl
             ```
             
             Or install directly from the develop branch:
             
             ```bash
-            git clone https://github.com/azimov/circepy.git
-            cd circepy
+            git clone https://github.com/OHDSI/Circepy.git
+            cd Circepy
             git checkout develop
             pip install -e ".[dev]"
             ```

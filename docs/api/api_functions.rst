@@ -3,10 +3,7 @@ High-Level API Functions
 
 Convenience functions for common operations.
 
-.. automodule:: circe.api
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. currentmodule:: circe.api
 
 cohort_expression_from_json
 ----------------------------
@@ -22,4 +19,3 @@ cohort_print_friendly
 ---------------------
 
 .. autofunction:: circe.api.cohort_print_friendly
-

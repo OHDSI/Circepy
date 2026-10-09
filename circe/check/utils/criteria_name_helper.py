@@ -9,51 +9,14 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+from contextlib import suppress
+
 from ..constants import Constants
 from ..operations.operations import Operations
 
 # Import at runtime to avoid circular dependencies
-try:
-    from ...cohortdefinition.criteria import (
-        ConditionEra,
-        ConditionOccurrence,
-        Death,
-        DeviceExposure,
-        DoseEra,
-        DrugEra,
-        DrugExposure,
-        LocationRegion,
-        Measurement,
-        Observation,
-        ObservationPeriod,
-        PayerPlanPeriod,
-        ProcedureOccurrence,
-        Specimen,
-        VisitDetail,
-        VisitOccurrence,
-    )
-except ImportError:
-    from typing import TYPE_CHECKING
-
-    if TYPE_CHECKING:
-        from ...cohortdefinition.criteria import (
-            ConditionEra,
-            ConditionOccurrence,
-            Death,
-            DeviceExposure,
-            DoseEra,
-            DrugEra,
-            DrugExposure,
-            LocationRegion,
-            Measurement,
-            Observation,
-            ObservationPeriod,
-            PayerPlanPeriod,
-            ProcedureOccurrence,
-            Specimen,
-            VisitDetail,
-            VisitOccurrence,
-        )
+with suppress(ImportError):
+    pass
 
 
 class CriteriaNameHelper:
@@ -79,12 +42,13 @@ class CriteriaNameHelper:
         from ...cohortdefinition.criteria import (
             ConditionEra,
             ConditionOccurrence,
+            CustomEra,
             Death,
             DeviceExposure,
             DoseEra,
             DrugEra,
             DrugExposure,
-            LocationRegion,
+            Episode,
             Measurement,
             Observation,
             ObservationPeriod,
@@ -111,6 +75,10 @@ class CriteriaNameHelper:
             .then_return(lambda c: Constants.Criteria.DRUG_ERA)
             .is_a(DrugExposure)
             .then_return(lambda c: Constants.Criteria.DRUG_EXPOSURE)
+            .is_a(Episode)
+            .then_return(lambda c: Constants.Criteria.EPISODE)
+            .is_a(CustomEra)
+            .then_return(lambda c: Constants.Criteria.CUSTOM_ERA)
             .is_a(Measurement)
             .then_return(lambda c: Constants.Criteria.MEASUREMENT)
             .is_a(Observation)
@@ -128,5 +96,5 @@ class CriteriaNameHelper:
             .is_a(PayerPlanPeriod)
             .then_return(lambda c: Constants.Criteria.PAYER_PLAN_PERIOD)
             .value()
-            or "unknown criteria"
+            or "unknown criteria"  # type: ignore[unreachable]
         )

@@ -8,9 +8,10 @@ import argparse
 import sys
 from pathlib import Path
 
-from .api import build_cohort_query, cohort_expression_from_json, cohort_print_friendly
+from .api import build_cohort_query, cohort_print_friendly
 from .cohortdefinition import BuildExpressionQueryOptions
 from .cohortdefinition.code_generator import to_python_code
+from .io import load_expression
 
 
 def main():
@@ -23,23 +24,15 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Validate command
-    validate_parser = subparsers.add_parser(
-        "validate", help="Validate a cohort definition"
-    )
-    validate_parser.add_argument("input", help="Input JSON file")
-    validate_parser.add_argument(
-        "--quiet", "-q", action="store_true", help="Only show errors"
-    )
+    validate_parser = subparsers.add_parser("validate", help="Validate a cohort definition")
+    validate_parser.add_argument("input", help="Input JSON or YAML file")
+    validate_parser.add_argument("--quiet", "-q", action="store_true", help="Only show errors")
 
     # Generate SQL command
-    sql_parser = subparsers.add_parser(
-        "generate-sql", help="Generate SQL from cohort definition"
-    )
-    sql_parser.add_argument("input", help="Input JSON file")
+    sql_parser = subparsers.add_parser("generate-sql", help="Generate SQL from cohort definition")
+    sql_parser.add_argument("input", help="Input JSON or YAML file")
     sql_parser.add_argument("--output", "-o", help="Output SQL file (default: stdout)")
-    sql_parser.add_argument(
-        "--cdm-schema", default="@cdm_database_schema", help="CDM schema name"
-    )
+    sql_parser.add_argument("--cdm-schema", default="@cdm_database_schema", help="CDM schema name")
     sql_parser.add_argument(
         "--target-table",
         default="@target_database_schema.@target_cohort_table",
@@ -51,42 +44,28 @@ def main():
         default=None,
         help="Cohort ID (default: @target_cohort_id placeholder)",
     )
-    sql_parser.add_argument(
-        "--no-validate", action="store_true", help="Skip validation"
-    )
+    sql_parser.add_argument("--no-validate", action="store_true", help="Skip validation")
 
     # Render markdown command
-    md_parser = subparsers.add_parser(
-        "render-markdown", help="Render cohort definition as Markdown"
-    )
-    md_parser.add_argument("input", help="Input JSON file")
-    md_parser.add_argument(
-        "--output", "-o", help="Output Markdown file (default: stdout)"
-    )
+    md_parser = subparsers.add_parser("render-markdown", help="Render cohort definition as Markdown")
+    md_parser.add_argument("input", help="Input JSON or YAML file")
+    md_parser.add_argument("--output", "-o", help="Output Markdown file (default: stdout)")
     md_parser.add_argument("--no-validate", action="store_true", help="Skip validation")
-    md_parser.add_argument(
-        "--title", "-t", type=str, help="Title to add to markdown document"
-    )
+    md_parser.add_argument("--title", "-t", type=str, help="Title to add to markdown document")
 
     # Generate source code command
     source_parser = subparsers.add_parser(
         "generate-source", help="Generate Python source code from cohort definition"
     )
-    source_parser.add_argument("input", help="Input JSON file")
-    source_parser.add_argument(
-        "--output", "-o", help="Output Python file (default: stdout)"
-    )
+    source_parser.add_argument("input", help="Input JSON or YAML file")
+    source_parser.add_argument("--output", "-o", help="Output Python file (default: stdout)")
 
     # Process command (all-in-one)
-    process_parser = subparsers.add_parser(
-        "process", help="Validate, generate SQL and Markdown"
-    )
-    process_parser.add_argument("input", help="Input JSON file")
+    process_parser = subparsers.add_parser("process", help="Validate, generate SQL and Markdown")
+    process_parser.add_argument("input", help="Input JSON or YAML file")
     process_parser.add_argument("--sql-output", help="SQL output file")
     process_parser.add_argument("--md-output", help="Markdown output file")
-    process_parser.add_argument(
-        "--cdm-schema", default="@cdm_database_schema", help="CDM schema name"
-    )
+    process_parser.add_argument("--cdm-schema", default="@cdm_database_schema", help="CDM schema name")
     process_parser.add_argument(
         "--target-table",
         default="@target_database_schema.@target_cohort_table",
@@ -123,11 +102,8 @@ def main():
 
 def validate_command(args):
     """Validate a cohort definition."""
-    # Read JSON
-    json_str = Path(args.input).read_text()
-
-    # Load and validate
-    expression = cohort_expression_from_json(json_str)
+    # Load expression (auto-detects JSON or YAML)
+    expression = load_expression(Path(args.input))
 
     # Run validation checks
     warnings = expression.check()
@@ -143,9 +119,7 @@ def validate_command(args):
 
     if not args.quiet:
         for warning in warnings:
-            severity = (
-                warning.severity.name if hasattr(warning, "severity") else "WARNING"
-            )
+            severity = warning.severity.name if hasattr(warning, "severity") else "WARNING"
             msg = str(warning) if not hasattr(warning, "message") else warning.message
             print(f"[{severity}] {msg}")
 
@@ -155,11 +129,8 @@ def validate_command(args):
 
 def generate_sql_command(args):
     """Generate SQL from cohort definition."""
-    # Read JSON
-    json_str = Path(args.input).read_text()
-
-    # Load expression
-    expression = cohort_expression_from_json(json_str)
+    # Load expression (auto-detects JSON or YAML)
+    expression = load_expression(Path(args.input))
 
     # Validate if requested
     if not args.no_validate:
@@ -190,11 +161,8 @@ def generate_sql_command(args):
 
 def render_markdown_command(args):
     """Render cohort definition as Markdown."""
-    # Read JSON
-    json_str = Path(args.input).read_text()
-
-    # Load expression
-    expression = cohort_expression_from_json(json_str)
+    # Load expression (auto-detects JSON or YAML)
+    expression = load_expression(Path(args.input))
 
     # Validate if requested
     if not args.no_validate:
@@ -219,11 +187,8 @@ def render_markdown_command(args):
 
 def process_command(args):
     """Process cohort definition (validate, generate SQL and Markdown)."""
-    # Read JSON
-    json_str = Path(args.input).read_text()
-
-    # Load expression
-    expression = cohort_expression_from_json(json_str)
+    # Load expression (auto-detects JSON or YAML)
+    expression = load_expression(Path(args.input))
 
     # Validate
     warnings = expression.check()
@@ -261,11 +226,8 @@ def process_command(args):
 
 def generate_source_command(args):
     """Generate Python source code from cohort definition."""
-    # Read JSON
-    json_str = Path(args.input).read_text()
-
-    # Load expression
-    expression = cohort_expression_from_json(json_str)
+    # Load expression (auto-detects JSON or YAML)
+    expression = load_expression(Path(args.input))
 
     # Generate Source Code
     source_code = to_python_code(expression)

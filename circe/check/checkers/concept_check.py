@@ -19,9 +19,7 @@ class ConceptCheck(BaseValueCheck):
     Java equivalent: org.ohdsi.circe.check.checkers.ConceptCheck
     """
 
-    def _get_factory(
-        self, reporter: WarningReporter, name: str
-    ) -> ConceptCheckerFactory:
+    def _get_factory(self, reporter: WarningReporter, name: str) -> ConceptCheckerFactory:
         """Get a concept checker factory.
 
         Args:

@@ -1,0 +1,27 @@
+{%- import 'input_types.j2' as inputTypes -%}
+
+{%- macro WaveformRegistry(c, level, isPlural=true, countCriteria={}, indexLabel="cohort entry") -%}
+  {%- set attrs = [] -%}
+  
+  {%- if c.file_start_datetime -%}
+      {%- set temp -%}file starting {{ inputTypes.DateRange(c.file_start_datetime) }}{%- endset -%}
+      {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+  
+  {%- if c.file_end_datetime -%}
+      {%- set temp -%}file ending {{ inputTypes.DateRange(c.file_end_datetime) }}{%- endset -%}
+      {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+
+  {%- if c.file_extension_concept_id -%}
+    {%- set temp -%}file format: {{ inputTypes.ConceptList(c.file_extension_concept_id) }}{%- endset -%}
+    {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+
+  waveform file{% if isPlural and not c.first %}s{% endif %}
+  {%- if c.first %} for the first time in the person's history{% endif -%}
+  {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
+  .
+{%- endmacro -%}
+
+{{ WaveformRegistry(criteria, level, isPlural, countCriteria, indexLabel) }}

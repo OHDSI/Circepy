@@ -1,0 +1,32 @@
+{%- import 'input_types.j2' as inputTypes -%}
+
+{%- macro WaveformChannelMetadata(c, level, isPlural=true, countCriteria={}, indexLabel="cohort entry") -%}
+  {%- set attrs = [] -%}
+  
+  {%- if c.channel_concept_id -%}
+    {%- set temp -%}channel type: {{ inputTypes.ConceptList(c.channel_concept_id) }}{%- endset -%}
+    {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+
+  {%- if c.metadata_concept_id -%}
+    {%- set temp -%}metadata type: {{ inputTypes.ConceptList(c.metadata_concept_id) }}{%- endset -%}
+    {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+
+  {%- if c.value_as_number -%}
+    {%- set temp -%}value {{ inputTypes.NumericRange(c.value_as_number) }}{%- endset -%}
+    {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+
+  {%- if c.unit_concept_id -%}
+    {%- set temp -%}units: {{ inputTypes.ConceptList(c.unit_concept_id) }}{%- endset -%}
+    {%- set _ = attrs.append(temp) -%}
+  {%- endif -%}
+
+  waveform channel metadata record{% if isPlural and not c.first %}s{% endif %}
+  {%- if c.first %} for the first time in the person's history{% endif -%}
+  {%- if attrs|length > 0 -%}, {{ attrs|join("; ") }}{%- endif -%}
+  .
+{%- endmacro -%}
+
+{{ WaveformChannelMetadata(criteria, level, isPlural, countCriteria, indexLabel) }}

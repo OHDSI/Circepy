@@ -14,7 +14,7 @@ CohortExpression
 Primary Criteria
 ----------------
 
-.. autoclass:: circe.cohortdefinition.core.PrimaryCriteria
+.. autoclass:: circe.cohortdefinition.criteria.PrimaryCriteria
    :members:
    :undoc-members:
    :show-inheritance:
@@ -64,4 +64,3 @@ Supporting Classes
 .. autoclass:: circe.cohortdefinition.core.WindowBound
    :members:
    :undoc-members:
-

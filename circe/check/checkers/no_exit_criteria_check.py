@@ -8,6 +8,8 @@ Any changes must maintain 1:1 compatibility with Java classes.
 Reference: JAVA_CLASS_MAPPINGS.md for Java equivalents.
 """
 
+from typing import Any
+
 from ..operations.operations import Operations
 from ..warning_severity import WarningSeverity
 from .base_check import BaseCheck
@@ -29,9 +31,7 @@ class NoExitCriteriaCheck(BaseCheck):
     Java equivalent: org.ohdsi.circe.check.checkers.NoExitCriteriaCheck
     """
 
-    NO_EXIT_CRITERIA_WARNING = (
-        ' "all events" are selected and cohort exit criteria has not been specified'
-    )
+    NO_EXIT_CRITERIA_WARNING = ' "all events" are selected and cohort exit criteria has not been specified'
 
     def _define_severity(self) -> WarningSeverity:
         """Define the severity level for this check.
@@ -48,7 +48,7 @@ class NoExitCriteriaCheck(BaseCheck):
             expression: The cohort expression to check
             reporter: The warning reporter to use
         """
-        match_result = Operations.match(expression)
+        match_result: Any = Operations.match(expression)
         match_result.when(
             lambda e: (
                 e.primary_criteria
