@@ -80,6 +80,29 @@ class TestPackageStructure:
         cohort_expr = CohortExpression(title="Test")
         assert cohort_expr.title == "Test"
 
+    def test_printfriendly_templates_declared_as_package_data(self):
+        """Print-friendly Jinja templates must be bundled in the wheel (#52)."""
+        from pathlib import Path
+
+        try:
+            import tomllib
+        except ModuleNotFoundError:  # Python <3.11
+            import tomli as tomllib
+
+        root = Path(__file__).parent.parent
+        with open(root / "pyproject.toml", "rb") as f:
+            pyproject = tomllib.load(f)
+
+        package_data = pyproject["tool"]["setuptools"]["package-data"]
+        assert "circe.cohortdefinition.printfriendly" in package_data, (
+            "The print-friendly templates are not declared as package data; "
+            "they will be missing from the installed wheel"
+        )
+        assert "templates/*.j2" in package_data["circe.cohortdefinition.printfriendly"]
+
+        template_dir = root / "circe" / "cohortdefinition" / "printfriendly" / "templates"
+        assert (template_dir / "cohort_expression.j2").is_file()
+
 
 class TestModuleStructure:
     """Test individual module structure."""
