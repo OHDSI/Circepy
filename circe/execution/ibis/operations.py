@@ -119,6 +119,34 @@ def delete_cohort_rows(
         ) from exc
 
 
+def delete_rows(
+    backend: IbisBackendLike,
+    *,
+    table_name: str,
+    schema: str | None,
+    column: str,
+    value: object,
+) -> None:
+    """Delete rows from a backend table where *column* equals *value*."""
+    raw_sql = getattr(backend, "raw_sql", None)
+    if not callable(raw_sql):
+        raise ExecutionError("Ibis executor write error: backend does not support raw_sql for row deletes.")
+
+    catalog, database = _catalog_db_tuple(backend, schema)
+    quoted = getattr(getattr(backend, "compiler", None), "quoted", False)
+    statement = sge.delete(sg.table(table_name, db=database, catalog=catalog, quoted=quoted)).where(
+        sg.column(column, quoted=quoted).eq(sge.convert(value))
+    )
+
+    try:
+        raw_sql(statement)
+    except Exception as exc:
+        raise ExecutionError(
+            "Ibis executor write error: failed deleting rows from "
+            f"table '{table_name}' where {column}={value!r}."
+        ) from exc
+
+
 def insert_rows_via_raw_sql(
     backend: IbisBackendLike,
     *,

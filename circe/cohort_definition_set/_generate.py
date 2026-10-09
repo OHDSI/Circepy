@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Literal
 
 from ..execution.api import build_cohort, write_cohort
 from ..execution.ibis.materialize import project_to_ohdsi_cohort_table
+from ..execution.session import register_session, report_stale_sessions, unregister_session
 from ._checksum_store import load_checksums, upsert_generation_history
 from ._core import CohortDefinition, CohortDefinitionSet, CohortGenerationResult
 
@@ -33,6 +34,22 @@ def _drop_tables_by_prefix(backend: IbisBackendLike, prefix: str, schema: str | 
         if table_name.startswith(prefix):
             with contextlib.suppress(Exception):
                 backend.drop_table(table_name, database=schema, force=True)
+
+
+def _cleanup_batch_tables(backend: IbisBackendLike, prefix: str, schema: str | None) -> None:
+    """Drop batch-owned staging tables, serialized against in-flight workers.
+
+    Acquiring ``_backend_lock`` waits for any worker still holding it (for
+    example one whose compile timed out but whose thread cannot be cancelled)
+    before dropping tables, so cleanup cannot race a worker that is still
+    creating stage tables.  Cleanup failures are swallowed so they never mask
+    the original generation error.
+    """
+    try:
+        with _backend_lock:
+            _drop_tables_by_prefix(backend, prefix, schema)
+    except Exception:
+        logger.warning("Failed to clean up staging tables with prefix %s", prefix, exc_info=True)
 
 
 def _process_single_cohort(
@@ -126,6 +143,10 @@ async def async_generate_cohort_set(
 
     session_prefix = f"__s_{uuid.uuid4().hex[:8]}_"
 
+    session_schema = results_schema or cdm_schema
+    report_stale_sessions(backend, schema=session_schema)
+    register_session(backend, schema=session_schema, session_prefix=session_prefix)
+
     if checksum_table is None:
         checksum_table = f"{cohort_table}_checksum"
 
@@ -142,181 +163,188 @@ async def async_generate_cohort_set(
 
     logger.info("Generating %d cohort(s) (incremental=%s)", total, incremental)
 
-    for i, cohort in enumerate(cohort_definition_set, start=1):
-        current_checksum = cohort.expression.checksum()
+    try:
+        for i, cohort in enumerate(cohort_definition_set, start=1):
+            current_checksum = cohort.expression.checksum()
 
-        if incremental and previous_checksums.get(cohort.cohort_id) == current_checksum:
+            if incremental and previous_checksums.get(cohort.cohort_id) == current_checksum:
+                logger.info(
+                    "[%d/%d] Skipping cohort %d (%s) -- checksum unchanged",
+                    i,
+                    total,
+                    cohort.cohort_id,
+                    cohort.cohort_name,
+                )
+                results.append(
+                    CohortGenerationResult(
+                        cohort_id=cohort.cohort_id,
+                        cohort_name=cohort.cohort_name,
+                        status="SKIPPED",
+                        checksum=current_checksum,
+                        start_time=datetime.now(),
+                        end_time=datetime.now(),
+                    )
+                )
+                continue
+
             logger.info(
-                "[%d/%d] Skipping cohort %d (%s) -- checksum unchanged",
+                "[%d/%d] Building cohort %d (%s) ...",
                 i,
                 total,
                 cohort.cohort_id,
                 cohort.cohort_name,
             )
+
+            start_time: datetime | None = None
+            end_time: datetime | None = None
+            try:
+                start_time, end_time = await asyncio.wait_for(
+                    asyncio.to_thread(
+                        _process_single_cohort,
+                        cohort,
+                        backend=backend,
+                        cdm_schema=cdm_schema,
+                        results_schema=results_schema,
+                        vocabulary_schema=vocabulary_schema,
+                        cohort_table=cohort_table,
+                        session_prefix=session_prefix,
+                    ),
+                    timeout=compile_timeout,
+                )
+
+                duration = (end_time - start_time).total_seconds()
+                logger.info(
+                    "[%d/%d] Completed cohort %d (%s) -- duration %.1fs",
+                    i,
+                    total,
+                    cohort.cohort_id,
+                    cohort.cohort_name,
+                    duration,
+                )
+            except asyncio.TimeoutError:
+                if end_time is None:
+                    end_time = datetime.now()
+                duration = (end_time - (start_time or end_time)).total_seconds()
+                logger.error(
+                    "[%d/%d] TIMED OUT cohort %d (%s) after %.1fs",
+                    i,
+                    total,
+                    cohort.cohort_id,
+                    cohort.cohort_name,
+                    duration,
+                )
+                timeout_exc = TimeoutError(
+                    f"Cohort {cohort.cohort_id} ({cohort.cohort_name}) exceeded timeout of {compile_timeout:.0f}s"
+                )
+                results.append(
+                    CohortGenerationResult(
+                        cohort_id=cohort.cohort_id,
+                        cohort_name=cohort.cohort_name,
+                        status="FAILED",
+                        checksum=current_checksum,
+                        start_time=start_time or datetime.now(),
+                        end_time=end_time,
+                        error=timeout_exc,
+                    )
+                )
+                if incremental:
+                    upsert_generation_history(
+                        backend,
+                        schema=results_schema,
+                        table_name=checksum_table,
+                        cohort_id=cohort.cohort_id,
+                        checksum=current_checksum,
+                        status="FAILED",
+                        start_time=start_time or datetime.now(),
+                        end_time=end_time,
+                    )
+                if stop_on_error:
+                    raise timeout_exc from None
+                continue
+            except Exception as exc:
+                if end_time is None:
+                    end_time = datetime.now()
+                duration = (end_time - (start_time or end_time)).total_seconds()
+                logger.error(
+                    "[%d/%d] FAILED cohort %d (%s) after %.1fs: %s",
+                    i,
+                    total,
+                    cohort.cohort_id,
+                    cohort.cohort_name,
+                    duration,
+                    exc,
+                )
+                results.append(
+                    CohortGenerationResult(
+                        cohort_id=cohort.cohort_id,
+                        cohort_name=cohort.cohort_name,
+                        status="FAILED",
+                        checksum=current_checksum,
+                        start_time=start_time or datetime.now(),
+                        end_time=end_time,
+                        error=exc,
+                    )
+                )
+                if incremental:
+                    upsert_generation_history(
+                        backend,
+                        schema=results_schema,
+                        table_name=checksum_table,
+                        cohort_id=cohort.cohort_id,
+                        checksum=current_checksum,
+                        status="FAILED",
+                        start_time=start_time or datetime.now(),
+                        end_time=end_time,
+                    )
+                if stop_on_error:
+                    raise
+                continue
+
+            # Individual staging tables are cleaned by prefix at batch end
+
             results.append(
                 CohortGenerationResult(
                     cohort_id=cohort.cohort_id,
                     cohort_name=cohort.cohort_name,
-                    status="SKIPPED",
+                    status="COMPLETE",
                     checksum=current_checksum,
-                    start_time=datetime.now(),
-                    end_time=datetime.now(),
+                    start_time=start_time or datetime.now(),
+                    end_time=end_time or datetime.now(),
                 )
             )
-            continue
+            if incremental:
+                upsert_generation_history(
+                    backend,
+                    schema=results_schema,
+                    table_name=checksum_table,
+                    cohort_id=cohort.cohort_id,
+                    checksum=current_checksum,
+                    status="COMPLETE",
+                    start_time=start_time or datetime.now(),
+                    end_time=end_time or datetime.now(),
+                )
 
+        summary = summarise_generation_results(results)
         logger.info(
-            "[%d/%d] Building cohort %d (%s) ...",
-            i,
-            total,
-            cohort.cohort_id,
-            cohort.cohort_name,
+            "Cohort generation complete: %d completed, %d skipped, %d failed",
+            summary["COMPLETE"],
+            summary["SKIPPED"],
+            summary["FAILED"],
         )
 
-        start_time: datetime | None = None
-        end_time: datetime | None = None
-        try:
-            start_time, end_time = await asyncio.wait_for(
-                asyncio.to_thread(
-                    _process_single_cohort,
-                    cohort,
-                    backend=backend,
-                    cdm_schema=cdm_schema,
-                    results_schema=results_schema,
-                    vocabulary_schema=vocabulary_schema,
-                    cohort_table=cohort_table,
-                    session_prefix=session_prefix,
-                ),
-                timeout=compile_timeout,
-            )
-
-            duration = (end_time - start_time).total_seconds()
-            logger.info(
-                "[%d/%d] Completed cohort %d (%s) -- duration %.1fs",
-                i,
-                total,
-                cohort.cohort_id,
-                cohort.cohort_name,
-                duration,
-            )
-        except asyncio.TimeoutError:
-            if end_time is None:
-                end_time = datetime.now()
-            duration = (end_time - (start_time or end_time)).total_seconds()
-            logger.error(
-                "[%d/%d] TIMED OUT cohort %d (%s) after %.1fs",
-                i,
-                total,
-                cohort.cohort_id,
-                cohort.cohort_name,
-                duration,
-            )
-            timeout_exc = TimeoutError(
-                f"Cohort {cohort.cohort_id} ({cohort.cohort_name}) exceeded timeout of {compile_timeout:.0f}s"
-            )
-            results.append(
-                CohortGenerationResult(
-                    cohort_id=cohort.cohort_id,
-                    cohort_name=cohort.cohort_name,
-                    status="FAILED",
-                    checksum=current_checksum,
-                    start_time=start_time or datetime.now(),
-                    end_time=end_time,
-                    error=timeout_exc,
-                )
-            )
-            if incremental:
-                upsert_generation_history(
-                    backend,
-                    schema=results_schema,
-                    table_name=checksum_table,
-                    cohort_id=cohort.cohort_id,
-                    checksum=current_checksum,
-                    status="FAILED",
-                    start_time=start_time or datetime.now(),
-                    end_time=end_time,
-                )
-            if stop_on_error:
-                raise timeout_exc from None
-            continue
-        except Exception as exc:
-            if end_time is None:
-                end_time = datetime.now()
-            duration = (end_time - (start_time or end_time)).total_seconds()
-            logger.error(
-                "[%d/%d] FAILED cohort %d (%s) after %.1fs: %s",
-                i,
-                total,
-                cohort.cohort_id,
-                cohort.cohort_name,
-                duration,
-                exc,
-            )
-            results.append(
-                CohortGenerationResult(
-                    cohort_id=cohort.cohort_id,
-                    cohort_name=cohort.cohort_name,
-                    status="FAILED",
-                    checksum=current_checksum,
-                    start_time=start_time or datetime.now(),
-                    end_time=end_time,
-                    error=exc,
-                )
-            )
-            if incremental:
-                upsert_generation_history(
-                    backend,
-                    schema=results_schema,
-                    table_name=checksum_table,
-                    cohort_id=cohort.cohort_id,
-                    checksum=current_checksum,
-                    status="FAILED",
-                    start_time=start_time or datetime.now(),
-                    end_time=end_time,
-                )
-            if stop_on_error:
-                raise
-            continue
-
-        # Individual staging tables are cleaned by prefix at batch end
-
-        results.append(
-            CohortGenerationResult(
-                cohort_id=cohort.cohort_id,
-                cohort_name=cohort.cohort_name,
-                status="COMPLETE",
-                checksum=current_checksum,
-                start_time=start_time or datetime.now(),
-                end_time=end_time or datetime.now(),
-            )
+    finally:
+        # Drop all staging tables from this batch run, even when generation
+        # raises (e.g. ``stop_on_error=True``).  Runs under ``_backend_lock``
+        # so it waits for any still-running worker (such as one whose compile
+        # timed out but whose thread could not be cancelled) before dropping
+        # tables.
+        await asyncio.to_thread(
+            _cleanup_batch_tables,
+            backend,
+            session_prefix,
+            results_schema or cdm_schema,
         )
-        if incremental:
-            upsert_generation_history(
-                backend,
-                schema=results_schema,
-                table_name=checksum_table,
-                cohort_id=cohort.cohort_id,
-                checksum=current_checksum,
-                status="COMPLETE",
-                start_time=start_time or datetime.now(),
-                end_time=end_time or datetime.now(),
-            )
-
-    summary = summarise_generation_results(results)
-    logger.info(
-        "Cohort generation complete: %d completed, %d skipped, %d failed",
-        summary["COMPLETE"],
-        summary["SKIPPED"],
-        summary["FAILED"],
-    )
-
-    # Drop all staging tables from this batch run
-    await asyncio.to_thread(
-        _drop_tables_by_prefix,
-        backend,
-        session_prefix,
-        results_schema or cdm_schema,
-    )
+        unregister_session(backend, schema=results_schema or cdm_schema, session_prefix=session_prefix)
 
     return results
 

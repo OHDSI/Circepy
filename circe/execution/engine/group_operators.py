@@ -94,12 +94,15 @@ def group_predicate(match_count_expr, mode: str, count: int | None, child_count:
     )
 
 
-_COMPILED_CORRELATED_EVENTS: dict[tuple[int, int], Table] = {}
-"""Cache for :func:`_compile_correlated_events` keyed by ``(backend_id, content_hash)``.
+_COMPILED_CORRELATED_EVENTS: dict[tuple[ExecutionContext, str], Table] = {}
+"""Cache for :func:`_compile_correlated_events` keyed by ``(context, content)``.
 
 Identical correlated criteria frequently appear across multiple primary event
 criteria within a cohort — compiling them once avoids 350+ duplicate ibis
-expression tree constructions for large cohorts.
+expression tree constructions for large cohorts.  The execution context is part
+of the key because the compiled expression references schema-qualified tables
+(CDM, results, vocabulary) and the codeset table; reusing a cached expression
+across contexts would read the wrong schema or codeset (#51).
 """
 
 
@@ -113,9 +116,9 @@ def _compile_correlated_events(
 
     The compiled events are independent of *criterion_index* (the position
     within the enclosing group), so results are cached by content hash
-    scoped to the current backend connection.
+    scoped to the execution context.
     """
-    cache_key = (id(ctx.backend), hash(repr(correlated)))
+    cache_key = (ctx, repr(correlated))
     cached = _COMPILED_CORRELATED_EVENTS.get(cache_key)
     if cached is not None:
         return cached

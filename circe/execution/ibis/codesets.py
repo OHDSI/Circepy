@@ -88,6 +88,48 @@ def _mapped_expression(
     )
 
 
+def _mapped_descendants_expression(
+    ancestor_ids: tuple[int, ...],
+    *,
+    table_getter: Callable[[str, str | None], Table],
+    vocabulary_schema: str | None,
+) -> Table:
+    """Return concepts mapped to any *valid* descendant of *ancestor_ids*.
+
+    Used when an item requests both ``includeDescendants`` and
+    ``includeMapped``: the ``Maps to`` relationship is resolved against the
+    descendant set.  Deprecated descendants (``invalid_reason`` set) are
+    excluded, mirroring :func:`_descendant_expression`.  Callers also run the
+    direct :func:`_mapped_expression` so that mappings to the concept itself
+    are covered even when the vocabulary's ``concept_ancestor`` table omits
+    self-relations.  Mirrors Java CIRCE-BE.
+    """
+    concept = _vocabulary_table("concept", vocabulary_schema=vocabulary_schema, table_getter=table_getter)
+    concept_ancestor = _vocabulary_table(
+        "concept_ancestor", vocabulary_schema=vocabulary_schema, table_getter=table_getter
+    )
+    concept_relationship = _vocabulary_table(
+        "concept_relationship", vocabulary_schema=vocabulary_schema, table_getter=table_getter
+    )
+    valid_descendants = (
+        concept_ancestor.join(concept, concept_ancestor.descendant_concept_id == concept.concept_id)
+        .filter(concept_ancestor.ancestor_concept_id.isin(ancestor_ids))
+        .filter(concept.invalid_reason.isnull())
+        .select(concept_ancestor.descendant_concept_id.name("descendant_concept_id"))
+        .distinct()
+    )
+    return (
+        concept_relationship.join(
+            valid_descendants,
+            concept_relationship.concept_id_2 == valid_descendants.descendant_concept_id,
+        )
+        .filter(concept_relationship.relationship_id == "Maps to")
+        .filter(concept_relationship.invalid_reason.isnull())
+        .select(concept_relationship.concept_id_1.name(CONCEPT_ID))
+        .distinct()
+    )
+
+
 def _build_codeset_expression(
     concept_set: NormalizedConceptSet,
     *,
@@ -106,12 +148,17 @@ def _build_codeset_expression(
     rather than issuing one JOIN per item.
     """
     # Separate items by (is_excluded) and collect IDs for batched lookups.
+    # Items that request both descendants and mapped concepts contribute to
+    # both the direct "Maps to" lookup and the descendant-based lookup, so the
+    # result covers mappings to the concept itself *and* to its descendants.
     include_direct: list[int] = []
     include_desc: list[int] = []
     include_mapped: list[int] = []
+    include_mapped_desc: list[int] = []
     exclude_direct: list[int] = []
     exclude_desc: list[int] = []
     exclude_mapped: list[int] = []
+    exclude_mapped_desc: list[int] = []
 
     for item in concept_set.items:
         if item.concept_id is None:
@@ -123,12 +170,16 @@ def _build_codeset_expression(
                 exclude_desc.append(cid)
             if item.include_mapped:
                 exclude_mapped.append(cid)
+                if item.include_descendants:
+                    exclude_mapped_desc.append(cid)
         else:
             include_direct.append(cid)
             if item.include_descendants:
                 include_desc.append(cid)
             if item.include_mapped:
                 include_mapped.append(cid)
+                if item.include_descendants:
+                    include_mapped_desc.append(cid)
 
     # Build include expression parts with batched vocabulary lookups.
     include_parts: list[Table] = []
@@ -147,6 +198,14 @@ def _build_codeset_expression(
                 tuple(include_mapped), table_getter=table_getter, vocabulary_schema=vocabulary_schema
             )
         )
+    if include_mapped_desc:
+        include_parts.append(
+            _mapped_descendants_expression(
+                tuple(include_mapped_desc),
+                table_getter=table_getter,
+                vocabulary_schema=vocabulary_schema,
+            )
+        )
 
     # Build exclude expression parts with batched vocabulary lookups.
     exclude_parts: list[Table] = []
@@ -163,6 +222,14 @@ def _build_codeset_expression(
         exclude_parts.append(
             _mapped_expression(
                 tuple(exclude_mapped), table_getter=table_getter, vocabulary_schema=vocabulary_schema
+            )
+        )
+    if exclude_mapped_desc:
+        exclude_parts.append(
+            _mapped_descendants_expression(
+                tuple(exclude_mapped_desc),
+                table_getter=table_getter,
+                vocabulary_schema=vocabulary_schema,
             )
         )
 
@@ -203,10 +270,16 @@ def _union_all_tables(tables: list[Table]) -> Table:
     return left.union(right, distinct=False)
 
 
-def _needs_vocabulary_expansion(concept_sets: Mapping[int, NormalizedConceptSet]) -> bool:
+def _needs_codeset_expression(concept_sets: Mapping[int, NormalizedConceptSet]) -> bool:
+    """Return True when the direct-only fast path cannot be used.
+
+    Descendant/mapped expansion needs vocabulary tables, and exclusions need
+    the include/exclude expression builder so that a concept that is both
+    included and excluded is removed rather than kept (#48).
+    """
     for cset in concept_sets.values():
         for item in cset.items:
-            if item.include_descendants or item.include_mapped:
+            if item.include_descendants or item.include_mapped or item.is_excluded:
                 return True
     return False
 
@@ -300,9 +373,9 @@ def build_single_codeset_table(
         _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=True)
         return _read_table(backend, table_name=name, schema=results_schema)
 
-    needs_vocab = _needs_vocabulary_expansion(concept_sets)
+    needs_expression = _needs_codeset_expression(concept_sets)
 
-    if not needs_vocab:
+    if not needs_expression:
         parts: list[Table] = []
         for cid, cset in concept_sets.items():
             for item in cset.items:
@@ -322,8 +395,10 @@ def build_single_codeset_table(
     for cid, cset in concept_sets.items():
         if not cset.items:
             continue
-        has_vocab = any(item.include_descendants or item.include_mapped for item in cset.items)
-        if has_vocab:
+        needs_set_expression = any(
+            item.include_descendants or item.include_mapped or item.is_excluded for item in cset.items
+        )
+        if needs_set_expression:
             expr = _build_codeset_expression(
                 cset, table_getter=table_getter, vocabulary_schema=vocabulary_schema
             )

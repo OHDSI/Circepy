@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import uuid
 from typing import Literal
 
 from ..cohortdefinition import CohortExpression
 from .databricks_compat import maybe_apply_databricks_post_connect_workaround
-from .engine.cohort import build_cohort_table
+from .engine.cohort import _drop_staging_tables, build_cohort_table
 from .errors import ExecutionError
 from .ibis.codesets import build_single_codeset_table
 from .ibis.context import make_execution_context
@@ -20,6 +21,7 @@ from .ibis.operations import (
     table_exists,
 )
 from .normalize.cohort import normalize_cohort
+from .session import register_session, report_stale_sessions, unregister_session
 from .typing import IbisBackendLike, Table
 
 
@@ -47,14 +49,42 @@ def build_cohort(
     """
     maybe_apply_databricks_post_connect_workaround(backend)
 
+    # Bound the correlated-criteria cache to this build.  The cache is keyed by
+    # execution context, so entries from a previous build are never re-hit;
+    # clearing here prevents the module-global dict from pinning prior backends
+    # and codeset tables for the lifetime of the process.
+    from .engine.group_operators import _COMPILED_CORRELATED_EVENTS
+
+    _COMPILED_CORRELATED_EVENTS.clear()
+
     normalized = normalize_cohort(expression)
+
+    # Resolve the vocabulary schema once at the API boundary so that concept
+    # expansion (descendants / mapped concepts) reads from the same schema the
+    # execution context uses.  Without this, the vocabulary lookup defaults to
+    # the backend's default schema instead of ``cdm_schema`` (#45).
+    vocabulary_schema = vocabulary_schema or cdm_schema
+
+    # The codeset table, staging tables, and session registry all live in the
+    # same schema so that cleanup and stale-table detection agree (#57).
+    session_schema = results_schema or cdm_schema
+
+    # Default to a unique session prefix so that building a second cohort on the
+    # same backend/schema does not overwrite the ``__codesets`` / staging tables
+    # that an earlier, still-live relation depends on (#50).
+    if not session_prefix:
+        session_prefix = f"__c_{uuid.uuid4().hex[:8]}_"
+        # Direct build: surface any orphaned staging tables from prior (possibly
+        # crashed) runs, and register this build's session.
+        report_stale_sessions(backend, schema=session_schema)
+        register_session(backend, schema=session_schema, session_prefix=session_prefix)
 
     if codeset_table is None:
         codeset_table = build_single_codeset_table(
             backend=backend,
             concept_sets=normalized.concept_sets,
             batch_table_name="__codesets",
-            results_schema=results_schema,
+            results_schema=session_schema,
             vocabulary_schema=vocabulary_schema,
             session_prefix=session_prefix,
         )
@@ -158,9 +188,15 @@ def write_cohort(
     if if_exists not in {"fail", "replace"}:
         raise ValueError("if_exists must be one of {'fail', 'replace'} for write_cohort.")
 
+    session_prefix = ""
+    cleanup_schema = results_schema or cdm_schema
+
     if compiled_relation is not None:
         new_rows = compiled_relation
     else:
+        session_prefix = f"__w_{uuid.uuid4().hex[:8]}_"
+        report_stale_sessions(backend, schema=cleanup_schema)
+        register_session(backend, schema=cleanup_schema, session_prefix=session_prefix)
         new_rows = build_cohort(
             expression,  # type: ignore[arg-type]
             backend=backend,
@@ -168,59 +204,65 @@ def write_cohort(
             results_schema=results_schema,
             vocabulary_schema=vocabulary_schema,
             cohort_id=cohort_id,
+            session_prefix=session_prefix,
         )
         new_rows = project_to_ohdsi_cohort_table(new_rows, cohort_id=cohort_id)
 
-    if not table_exists(backend, table_name=cohort_table, schema=results_schema):
-        write_relation(
-            new_rows,
-            backend=backend,
-            target_table=cohort_table,
-            target_schema=results_schema,
-            if_exists="fail",
-        )
-        return
-
-    if if_exists == "fail":
-        if cohort_rows_exist(
-            backend,
-            cohort_table=cohort_table,
-            results_schema=results_schema,
-            cohort_id=cohort_id,
-        ):
-            raise ExecutionError(
-                "Ibis executor write error: cohort table "
-                f"'{cohort_table}' already contains rows for cohort_id={cohort_id}."
+    try:
+        if not table_exists(backend, table_name=cohort_table, schema=results_schema):
+            write_relation(
+                new_rows,
+                backend=backend,
+                target_table=cohort_table,
+                target_schema=results_schema,
+                if_exists="fail",
             )
-        insert_relation(
-            new_rows,
+            return
+
+        if if_exists == "fail":
+            if cohort_rows_exist(
+                backend,
+                cohort_table=cohort_table,
+                results_schema=results_schema,
+                cohort_id=cohort_id,
+            ):
+                raise ExecutionError(
+                    "Ibis executor write error: cohort table "
+                    f"'{cohort_table}' already contains rows for cohort_id={cohort_id}."
+                )
+            insert_relation(
+                new_rows,
+                backend=backend,
+                target_table=cohort_table,
+                target_schema=results_schema,
+            )
+            return
+
+        if supports_transactional_replace(backend):
+            replace_cohort_rows_transactionally(
+                new_rows,
+                backend=backend,
+                cohort_table=cohort_table,
+                results_schema=results_schema,
+                cohort_id=cohort_id,
+            )
+            return
+
+        existing = read_table(
+            backend,
+            table_name=cohort_table,
+            schema=results_schema,
+        )
+        filtered = exclude_cohort_rows(existing, cohort_id=cohort_id)
+        relation = filtered.union(new_rows, distinct=False)
+        write_relation(
+            relation,
             backend=backend,
             target_table=cohort_table,
             target_schema=results_schema,
+            if_exists="replace",
         )
-        return
-
-    if supports_transactional_replace(backend):
-        replace_cohort_rows_transactionally(
-            new_rows,
-            backend=backend,
-            cohort_table=cohort_table,
-            results_schema=results_schema,
-            cohort_id=cohort_id,
-        )
-        return
-
-    existing = read_table(
-        backend,
-        table_name=cohort_table,
-        schema=results_schema,
-    )
-    filtered = exclude_cohort_rows(existing, cohort_id=cohort_id)
-    relation = filtered.union(new_rows, distinct=False)
-    write_relation(
-        relation,
-        backend=backend,
-        target_table=cohort_table,
-        target_schema=results_schema,
-        if_exists="replace",
-    )
+    finally:
+        if session_prefix:
+            _drop_staging_tables(backend, cleanup_schema, session_prefix)
+            unregister_session(backend, schema=cleanup_schema, session_prefix=session_prefix)
