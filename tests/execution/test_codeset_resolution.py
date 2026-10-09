@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -243,3 +244,91 @@ def test_phenotype_cohort_with_exclusions_compiles(cohort_id: int):
         build_cohort(expression, backend=conn, cdm_schema="main", materialize=False)
     except Exception as exc:
         pytest.fail(f"Cohort {cohort_id} compilation failed: {exc}")
+
+
+# ------------------------------------------------------------------
+# Direct-only exclusions (#48)
+# ------------------------------------------------------------------
+
+
+def test_direct_include_and_exclude_same_concept_yields_empty():
+    """A concept both included and excluded must be removed (#48)."""
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    item = _make_item(111)
+    concept_sets = {
+        1: NormalizedConceptSet(
+            set_id=1,
+            items=(item, replace(item, is_excluded=True)),
+        ),
+    }
+
+    table = build_single_codeset_table(
+        backend=conn,
+        concept_sets=concept_sets,
+        batch_table_name="repro_direct_exclude",
+    )
+    assert table.concept_id.execute().tolist() == []
+    conn.drop_table("repro_direct_exclude", force=True)
+
+
+# ------------------------------------------------------------------
+# Mapped descendants (#49)
+# ------------------------------------------------------------------
+
+
+def test_mapped_codes_are_resolved_over_descendants():
+    """includeDescendants + includeMapped must map over descendants (#49)."""
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    conn.create_table(
+        "concept",
+        obj=ibis.memtable(
+            {"concept_id": [100, 200, 900], "invalid_reason": [None, None, None]},
+            schema=ibis.schema({"concept_id": "int64", "invalid_reason": "string"}),
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "concept_ancestor",
+        obj=ibis.memtable({"ancestor_concept_id": [100, 100], "descendant_concept_id": [100, 200]}),
+        overwrite=True,
+    )
+    conn.create_table(
+        "concept_relationship",
+        obj=ibis.memtable(
+            {
+                "concept_id_1": [900],
+                "concept_id_2": [200],
+                "relationship_id": ["Maps to"],
+                "invalid_reason": [None],
+            },
+            schema=ibis.schema(
+                {
+                    "concept_id_1": "int64",
+                    "concept_id_2": "int64",
+                    "relationship_id": "string",
+                    "invalid_reason": "string",
+                }
+            ),
+        ),
+        overwrite=True,
+    )
+
+    item = NormalizedConceptSetItem(
+        concept_id=100,
+        is_excluded=False,
+        include_descendants=True,
+        include_mapped=True,
+    )
+    table = build_single_codeset_table(
+        backend=conn,
+        concept_sets={1: NormalizedConceptSet(set_id=1, items=(item,))},
+        batch_table_name="repro_mapped_desc",
+    )
+    assert sorted(table.concept_id.execute().tolist()) == [100, 200, 900]
+    conn.drop_table("repro_mapped_desc", force=True)

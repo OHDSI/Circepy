@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from circe.api import build_cohort
+from circe.api import build_cohort, write_cohort
 from circe.cohortdefinition import (
     CohortExpression,
     ConditionEra,
@@ -1221,3 +1221,162 @@ def test_build_cohort_rejects_unsupported_criteria():
         from circe.execution.normalize.criteria import normalize_criterion
 
         normalize_criterion(RawCriteria())
+
+
+def test_build_cohort_defaults_vocabulary_schema_to_cdm_schema():
+    """vocabulary_schema=None must resolve vocabulary tables from cdm_schema (#45)."""
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    conn.raw_sql("CREATE SCHEMA cdm")
+    conn.create_table(
+        "person",
+        obj=ibis.memtable({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}),
+        database="cdm",
+        overwrite=True,
+    )
+    conn.create_table(
+        "observation_period",
+        obj=ibis.memtable(
+            {
+                "person_id": [1],
+                "observation_period_id": [1],
+                "observation_period_start_date": ["2019-01-01"],
+                "observation_period_end_date": ["2021-12-31"],
+            }
+        ),
+        database="cdm",
+        overwrite=True,
+    )
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1],
+                "condition_occurrence_id": [100],
+                "condition_concept_id": [200],
+                "condition_start_date": ["2020-01-01"],
+                "condition_end_date": ["2020-01-01"],
+            }
+        ),
+        database="cdm",
+        overwrite=True,
+    )
+    conn.create_table(
+        "concept",
+        obj=ibis.memtable(
+            {"concept_id": [100, 200], "invalid_reason": [None, None]},
+            schema=ibis.schema({"concept_id": "int64", "invalid_reason": "string"}),
+        ),
+        database="cdm",
+        overwrite=True,
+    )
+    conn.create_table(
+        "concept_ancestor",
+        obj=ibis.memtable({"ancestor_concept_id": [100], "descendant_concept_id": [200]}),
+        database="cdm",
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[
+            ConceptSet(
+                id=1,
+                expression=ConceptSetExpression(
+                    items=[ConceptSetItem(concept=Concept(conceptId=100), includeDescendants=True)]
+                ),
+            )
+        ],
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
+    )
+
+    result = build_cohort(expression, backend=conn, cdm_schema="cdm").execute()
+    assert set(result.person_id) == {1}
+    assert set(result.concept_id) == {200}
+
+
+def test_building_a_second_cohort_does_not_change_the_first_relation():
+    """Each build must own its staging/codeset tables (#50)."""
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2],
+                "condition_occurrence_id": [100, 101],
+                "condition_concept_id": [111, 222],
+                "condition_start_date": ["2020-01-01", "2020-01-01"],
+                "condition_end_date": ["2020-01-01", "2020-01-01"],
+            }
+        ),
+        overwrite=True,
+    )
+
+    def _cohort(concept_id: int) -> CohortExpression:
+        return CohortExpression(
+            concept_sets=[_make_concept_set(1, concept_id)],
+            primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
+        )
+
+    first = build_cohort(_cohort(111), backend=conn, cdm_schema="main")
+    assert set(first.person_id.execute().tolist()) == {1}
+
+    build_cohort(_cohort(222), backend=conn, cdm_schema="main")
+
+    # The first relation must still resolve against its own staging tables.
+    assert set(first.person_id.execute().tolist()) == {1}
+
+
+def test_criteria_cache_is_scoped_to_execution_context():
+    """A reused connection with a new schema must not reuse cached criteria (#51)."""
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2],
+                "condition_occurrence_id": [100, 101],
+                "condition_concept_id": [111, 222],
+                "condition_start_date": ["2020-01-01", "2020-01-01"],
+                "condition_end_date": ["2020-01-01", "2020-01-01"],
+            }
+        ),
+        overwrite=True,
+    )
+
+    def _cohort(concept_id: int) -> CohortExpression:
+        return CohortExpression(
+            concept_sets=[_make_concept_set(1, concept_id)],
+            primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence()]),
+            additional_criteria=CriteriaGroup(
+                type="ALL",
+                criteria_list=[
+                    CorelatedCriteria(
+                        criteria=ConditionOccurrence(codeset_id=1),
+                        occurrence=Occurrence(type=2, count=1),
+                    )
+                ],
+            ),
+        )
+
+    for schema, concept_id, expected in (("r1", 111, 1), ("r2", 222, 2)):
+        conn.raw_sql(f"CREATE SCHEMA {schema}")
+        write_cohort(
+            _cohort(concept_id),
+            backend=conn,
+            cdm_schema="main",
+            results_schema=schema,
+            cohort_table="cohort",
+            cohort_id=1,
+        )
+        rows = conn.raw_sql(f"SELECT subject_id FROM {schema}.cohort").fetchall()
+        assert [row[0] for row in rows] == [expected]

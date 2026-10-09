@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import Literal
 
 from ..cohortdefinition import CohortExpression
@@ -48,6 +49,18 @@ def build_cohort(
     maybe_apply_databricks_post_connect_workaround(backend)
 
     normalized = normalize_cohort(expression)
+
+    # Resolve the vocabulary schema once at the API boundary so that concept
+    # expansion (descendants / mapped concepts) reads from the same schema the
+    # execution context uses.  Without this, the vocabulary lookup defaults to
+    # the backend's default schema instead of ``cdm_schema`` (#45).
+    vocabulary_schema = vocabulary_schema or cdm_schema
+
+    # Default to a unique session prefix so that building a second cohort on the
+    # same backend/schema does not overwrite the ``__codesets`` / staging tables
+    # that an earlier, still-live relation depends on (#50).
+    if not session_prefix:
+        session_prefix = f"__c_{uuid.uuid4().hex[:8]}_"
 
     if codeset_table is None:
         codeset_table = build_single_codeset_table(
