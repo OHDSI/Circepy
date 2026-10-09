@@ -235,58 +235,25 @@ If you want a custom domain like `docs.ohdsi.org/ohdsi-circepy`:
 
 ## 🔄 Automated Publishing Workflow
 
-### Current Setup
+Publishing is handled by `.github/workflows/publish-pypi.yml`, which runs when a
+GitHub Release is published (and can also be triggered manually). It builds the
+package and uploads it to PyPI using **Trusted Publishing (OIDC)** — no API
+token or password is required.
 
-Your `.github/workflows/release.yml` is configured to:
-- ✅ Build package on git tags (`v*.*.*`)
-- ✅ Run verification tests
-- ✅ Create GitHub releases
-- ✅ Upload artifacts
+### Trusted Publishing Setup (one-time)
 
-### To Enable Auto-Publishing to PyPI
+Configure PyPI to trust this repository's workflow:
 
-Add this job to `.github/workflows/release.yml` (after the build job):
-
-```yaml
-  publish:
-    needs: build-and-release
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write  # IMPORTANT: for trusted publishing
-    
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: python-package-distributions
-          path: dist/
-      
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
-```
-
-### Trusted Publishing (Recommended Alternative)
-
-PyPI supports "Trusted Publishers" which eliminates the need for API tokens:
-
-1. Go to [PyPI Project Settings](https://pypi.org/manage/project/ohdsi-circepy/)
-2. Navigate to **Publishing** → **Add a new pending publisher**
-3. Add:
-   - **PyPI Project Name**: `ohdsi-circepy`
+1. Go to [PyPI Project Settings](https://pypi.org/manage/project/ohdsi-circepy/settings/publishing/)
+2. Click **Add a new publisher** and choose **GitHub**
+3. Fill in:
    - **Owner**: `OHDSI`
-   - **Repository**: `Circepy`
-   - **Workflow name**: `release.yml`
-   - **Environment**: (leave blank or use `release`)
+   - **Repository name**: `Circepy`
+   - **Workflow name**: `publish-pypi.yml`
+   - **Environment name**: `pypi` (required — the workflow runs in the `pypi` environment)
 
-Then update the workflow to use trusted publishing:
-
-```yaml
-- name: Publish to PyPI
-  uses: pypa/gh-action-pypi-publish@release/v1
-  # No password needed with trusted publishing!
-```
+No GitHub secrets are needed. The workflow already requests the mandatory
+`id-token: write` permission.
 
 ---
 
