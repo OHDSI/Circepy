@@ -13,6 +13,12 @@ from .errors import (
     UnsupportedCriterionError,
     UnsupportedFeatureError,
 )
+from .session import (
+    StaleSession,
+    cleanup_stale_sessions,
+    list_stale_sessions,
+    report_stale_sessions,
+)
 
 __all__ = [
     "build_cohort",
@@ -23,4 +29,8 @@ __all__ = [
     "UnsupportedCriterionError",
     "UnsupportedFeatureError",
     "CompilationError",
+    "StaleSession",
+    "list_stale_sessions",
+    "report_stale_sessions",
+    "cleanup_stale_sessions",
 ]

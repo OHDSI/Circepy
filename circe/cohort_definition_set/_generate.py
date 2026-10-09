@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Literal
 
 from ..execution.api import build_cohort, write_cohort
 from ..execution.ibis.materialize import project_to_ohdsi_cohort_table
+from ..execution.session import register_session, report_stale_sessions, unregister_session
 from ._checksum_store import load_checksums, upsert_generation_history
 from ._core import CohortDefinition, CohortDefinitionSet, CohortGenerationResult
 
@@ -125,6 +126,10 @@ async def async_generate_cohort_set(
     _COMPILED_CORRELATED_EVENTS.clear()
 
     session_prefix = f"__s_{uuid.uuid4().hex[:8]}_"
+
+    session_schema = results_schema or cdm_schema
+    report_stale_sessions(backend, schema=session_schema)
+    register_session(backend, schema=session_schema, session_prefix=session_prefix)
 
     if checksum_table is None:
         checksum_table = f"{cohort_table}_checksum"
@@ -317,6 +322,7 @@ async def async_generate_cohort_set(
         session_prefix,
         results_schema or cdm_schema,
     )
+    unregister_session(backend, schema=results_schema or cdm_schema, session_prefix=session_prefix)
 
     return results
 

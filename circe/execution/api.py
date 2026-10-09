@@ -21,6 +21,7 @@ from .ibis.operations import (
     table_exists,
 )
 from .normalize.cohort import normalize_cohort
+from .session import register_session, report_stale_sessions, unregister_session
 from .typing import IbisBackendLike, Table
 
 
@@ -64,18 +65,26 @@ def build_cohort(
     # the backend's default schema instead of ``cdm_schema`` (#45).
     vocabulary_schema = vocabulary_schema or cdm_schema
 
+    # The codeset table, staging tables, and session registry all live in the
+    # same schema so that cleanup and stale-table detection agree (#57).
+    session_schema = results_schema or cdm_schema
+
     # Default to a unique session prefix so that building a second cohort on the
     # same backend/schema does not overwrite the ``__codesets`` / staging tables
     # that an earlier, still-live relation depends on (#50).
     if not session_prefix:
         session_prefix = f"__c_{uuid.uuid4().hex[:8]}_"
+        # Direct build: surface any orphaned staging tables from prior (possibly
+        # crashed) runs, and register this build's session.
+        report_stale_sessions(backend, schema=session_schema)
+        register_session(backend, schema=session_schema, session_prefix=session_prefix)
 
     if codeset_table is None:
         codeset_table = build_single_codeset_table(
             backend=backend,
             concept_sets=normalized.concept_sets,
             batch_table_name="__codesets",
-            results_schema=results_schema,
+            results_schema=session_schema,
             vocabulary_schema=vocabulary_schema,
             session_prefix=session_prefix,
         )
@@ -186,6 +195,8 @@ def write_cohort(
         new_rows = compiled_relation
     else:
         session_prefix = f"__w_{uuid.uuid4().hex[:8]}_"
+        report_stale_sessions(backend, schema=cleanup_schema)
+        register_session(backend, schema=cleanup_schema, session_prefix=session_prefix)
         new_rows = build_cohort(
             expression,  # type: ignore[arg-type]
             backend=backend,
@@ -254,3 +265,4 @@ def write_cohort(
     finally:
         if session_prefix:
             _drop_staging_tables(backend, cleanup_schema, session_prefix)
+            unregister_session(backend, schema=cleanup_schema, session_prefix=session_prefix)

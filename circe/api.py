@@ -9,6 +9,7 @@ This module provides a simple R CirceR-style API for working with cohort definit
 - cohort_print_friendly(): Generate Markdown from cohort expression
 """
 
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any, Literal
 
 from .cohort_definition_set import (  # noqa: F401
@@ -264,6 +265,55 @@ def write_cohort(
         results_schema=results_schema,
         if_exists=if_exists,
     )
+
+
+def check_stale_sessions(
+    backend: IbisBackendLike,
+    *,
+    schema: str | None = None,
+    older_than: timedelta | None = None,
+) -> list[Any]:
+    """Report staging tables left behind by builds older than *older_than*.
+
+    Companion to the experimental Ibis execution engine. If a process or
+    connection died mid-build, its staging/codeset tables remain; this logs a
+    warning and returns the list of stale sessions.
+
+    Args:
+        backend: Ibis backend connection.
+        schema: Schema containing the staging tables (defaults to the backend's
+            default schema).
+        older_than: Age threshold as a :class:`datetime.timedelta` (defaults to
+            7 days, or the ``CIRCE_STALE_SESSION_DAYS`` environment variable).
+
+    Returns:
+        List of :class:`circe.execution.session.StaleSession`.
+    """
+    from .execution import report_stale_sessions
+
+    return report_stale_sessions(backend, schema=schema, older_than=older_than)
+
+
+def cleanup_stale_sessions(
+    backend: IbisBackendLike,
+    *,
+    schema: str | None = None,
+    older_than: timedelta | None = None,
+) -> list[str]:
+    """Drop staging tables left behind by builds older than *older_than*.
+
+    Args:
+        backend: Ibis backend connection.
+        schema: Schema containing the staging tables (defaults to the backend's
+            default schema).
+        older_than: Age threshold as a :class:`datetime.timedelta`.
+
+    Returns:
+        Names of the tables dropped.
+    """
+    from .execution import cleanup_stale_sessions as _cleanup_stale_sessions
+
+    return _cleanup_stale_sessions(backend, schema=schema, older_than=older_than)
 
 
 def cohort_print_friendly(
