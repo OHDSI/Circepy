@@ -136,7 +136,11 @@ An experimental backend-native execution API is available under
 ```python
 from circe.execution import build_cohort
 
-# Requires optional extras, e.g. `pip install ohdsi-circe[ibis-duckdb]`
+# DuckDB support is bundled with the core install:
+#   pip install ohdsi-circe
+# Other backends are available as optional extras:
+#   pip install "ohdsi-circe[ibis-postgres]"    # PostgreSQL
+#   pip install "ohdsi-circe[ibis-databricks]"  # Databricks
 events = build_cohort(cohort, backend=conn, cdm_schema="main")  # lazy ibis relation
 ```
 
