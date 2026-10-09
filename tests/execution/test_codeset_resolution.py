@@ -332,3 +332,60 @@ def test_mapped_codes_are_resolved_over_descendants():
     )
     assert sorted(table.concept_id.execute().tolist()) == [100, 200, 900]
     conn.drop_table("repro_mapped_desc", force=True)
+
+
+def test_mapped_codes_do_not_expand_via_deprecated_descendants():
+    """Deprecated descendants must not be used as mapping targets."""
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    conn.create_table(
+        "concept",
+        obj=ibis.memtable(
+            {"concept_id": [100, 200, 900], "invalid_reason": [None, "D", None]},
+            schema=ibis.schema({"concept_id": "int64", "invalid_reason": "string"}),
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "concept_ancestor",
+        obj=ibis.memtable({"ancestor_concept_id": [100, 100], "descendant_concept_id": [100, 200]}),
+        overwrite=True,
+    )
+    conn.create_table(
+        "concept_relationship",
+        obj=ibis.memtable(
+            {
+                "concept_id_1": [900],
+                "concept_id_2": [200],
+                "relationship_id": ["Maps to"],
+                "invalid_reason": [None],
+            },
+            schema=ibis.schema(
+                {
+                    "concept_id_1": "int64",
+                    "concept_id_2": "int64",
+                    "relationship_id": "string",
+                    "invalid_reason": "string",
+                }
+            ),
+        ),
+        overwrite=True,
+    )
+
+    item = NormalizedConceptSetItem(
+        concept_id=100,
+        is_excluded=False,
+        include_descendants=True,
+        include_mapped=True,
+    )
+    table = build_single_codeset_table(
+        backend=conn,
+        concept_sets={1: NormalizedConceptSet(set_id=1, items=(item,))},
+        batch_table_name="repro_mapped_deprecated_desc",
+    )
+    # 200 is deprecated, so the "Maps to" relationship 900 -> 200 must not
+    # pull 900 into the result.
+    assert sorted(table.concept_id.execute().tolist()) == [100]
+    conn.drop_table("repro_mapped_deprecated_desc", force=True)

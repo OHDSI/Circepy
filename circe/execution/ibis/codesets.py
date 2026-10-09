@@ -94,26 +94,35 @@ def _mapped_descendants_expression(
     table_getter: Callable[[str, str | None], Table],
     vocabulary_schema: str | None,
 ) -> Table:
-    """Return concepts mapped to any descendant of *ancestor_ids*.
+    """Return concepts mapped to any *valid* descendant of *ancestor_ids*.
 
     Used when an item requests both ``includeDescendants`` and
     ``includeMapped``: the ``Maps to`` relationship is resolved against the
-    descendant set.  Callers also run the direct :func:`_mapped_expression` so
-    that mappings to the concept itself are covered even when the vocabulary's
-    ``concept_ancestor`` table omits self-relations.  Mirrors Java CIRCE-BE.
+    descendant set.  Deprecated descendants (``invalid_reason`` set) are
+    excluded, mirroring :func:`_descendant_expression`.  Callers also run the
+    direct :func:`_mapped_expression` so that mappings to the concept itself
+    are covered even when the vocabulary's ``concept_ancestor`` table omits
+    self-relations.  Mirrors Java CIRCE-BE.
     """
+    concept = _vocabulary_table("concept", vocabulary_schema=vocabulary_schema, table_getter=table_getter)
     concept_ancestor = _vocabulary_table(
         "concept_ancestor", vocabulary_schema=vocabulary_schema, table_getter=table_getter
     )
     concept_relationship = _vocabulary_table(
         "concept_relationship", vocabulary_schema=vocabulary_schema, table_getter=table_getter
     )
+    valid_descendants = (
+        concept_ancestor.join(concept, concept_ancestor.descendant_concept_id == concept.concept_id)
+        .filter(concept_ancestor.ancestor_concept_id.isin(ancestor_ids))
+        .filter(concept.invalid_reason.isnull())
+        .select(concept_ancestor.descendant_concept_id.name("descendant_concept_id"))
+        .distinct()
+    )
     return (
         concept_relationship.join(
-            concept_ancestor,
-            concept_relationship.concept_id_2 == concept_ancestor.descendant_concept_id,
+            valid_descendants,
+            concept_relationship.concept_id_2 == valid_descendants.descendant_concept_id,
         )
-        .filter(concept_ancestor.ancestor_concept_id.isin(ancestor_ids))
         .filter(concept_relationship.relationship_id == "Maps to")
         .filter(concept_relationship.invalid_reason.isnull())
         .select(concept_relationship.concept_id_1.name(CONCEPT_ID))

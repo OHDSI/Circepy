@@ -48,6 +48,14 @@ def build_cohort(
     """
     maybe_apply_databricks_post_connect_workaround(backend)
 
+    # Bound the correlated-criteria cache to this build.  The cache is keyed by
+    # execution context, so entries from a previous build are never re-hit;
+    # clearing here prevents the module-global dict from pinning prior backends
+    # and codeset tables for the lifetime of the process.
+    from .engine.group_operators import _COMPILED_CORRELATED_EVENTS
+
+    _COMPILED_CORRELATED_EVENTS.clear()
+
     normalized = normalize_cohort(expression)
 
     # Resolve the vocabulary schema once at the API boundary so that concept
