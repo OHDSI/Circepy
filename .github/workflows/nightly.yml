@@ -113,7 +113,7 @@ jobs:
             Download the wheel from the assets below and install:
             
             ```bash
-            pip install ohdsi_circe-${{ steps.nightly_version.outputs.NIGHTLY_VERSION }}-py3-none-any.whl
+            pip install ohdsi_circepy-${{ steps.nightly_version.outputs.NIGHTLY_VERSION }}-py3-none-any.whl
             ```
             
             Or install directly from the develop branch:

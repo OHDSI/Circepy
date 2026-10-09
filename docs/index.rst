@@ -113,7 +113,7 @@ Support
 
 * **Repository**: https://github.com/OHDSI/Circepy
 * **Issues**: https://github.com/OHDSI/Circepy/issues
-* **PyPI**: https://pypi.org/project/ohdsi-circe/
+* **PyPI**: https://pypi.org/project/ohdsi-circepy/
 
 Indices and tables
 ==================

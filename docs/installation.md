@@ -65,7 +65,7 @@ This installs the project with its core dependencies into the `uv`-managed envir
 ## PyPI Installation
 
 > ```bash
-> pip install ohdsi-circe
+> pip install ohdsi-circepy
 > ```
 
 ## Installation Options
@@ -223,7 +223,7 @@ rm -rf .venv
 If you installed with `pip`, remove the package with:
 
 ```bash
-pip uninstall ohdsi-circe
+pip uninstall ohdsi-circepy
 ```
 
 ## System Requirements

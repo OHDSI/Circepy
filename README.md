@@ -4,7 +4,7 @@
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](tests/)
 [![codecov](https://codecov.io/gh/OHDSI/Circepy/graph/badge.svg?token=CODECOV_TOKEN)](https://codecov.io/gh/OHDSI/Circepy)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![PyPI](https://img.shields.io/badge/PyPI-ohdsi--circe-blue)](https://pypi.org/project/ohdsi-circe/)
+[![PyPI](https://img.shields.io/badge/PyPI-ohdsi--circepy-blue)](https://pypi.org/project/ohdsi-circepy/)
 
 > [!NOTE]
 > This is a Python implementation of the OHDSI CIRCE-BE Java library. It aims for 1:1 parity with the Java implementation and is under active development.
@@ -58,8 +58,16 @@ If you are not using `uv`, see [docs/installation.md](docs/installation.md) for 
 ### From PyPI
 
 > ```bash
-> pip install ohdsi-circe
+> pip install ohdsi-circepy
 > ```
+
+> [!NOTE]
+> **Package naming.** This project is published to PyPI as `ohdsi-circepy`.
+> Older releases (`0.1.0`, `0.2.0`) were published under the legacy name
+> `ohdsi-circe-python-alpha`, which will be retired at a later date. The
+> `ohdsi-circe` name on PyPI currently belongs to an unrelated project (a
+> Python wrapper for the OHDSI R packages); the owner has been contacted about
+> a name handover, but ownership has not been transferred yet.
 
 ## Quick Start
 
@@ -137,10 +145,10 @@ An experimental backend-native execution API is available under
 from circe.execution import build_cohort
 
 # DuckDB support is bundled with the core install:
-#   pip install ohdsi-circe
+#   pip install ohdsi-circepy
 # Other backends are available as optional extras:
-#   pip install "ohdsi-circe[ibis-postgres]"    # PostgreSQL
-#   pip install "ohdsi-circe[ibis-databricks]"  # Databricks
+#   pip install "ohdsi-circepy[ibis-postgres]"    # PostgreSQL
+#   pip install "ohdsi-circepy[ibis-databricks]"  # Databricks
 events = build_cohort(cohort, backend=conn, cdm_schema="main")  # lazy ibis relation
 ```
 
@@ -169,7 +177,7 @@ This package provides a complete Python implementation of CIRCE-BE with:
 
 Included Extensions:
 
-- **OHDSI Waveform Extension**: Support for the OHDSI Waveform Extension specification (waveform_occurrence, waveform_registry, waveform_channel_metadata, waveform_feature). Install with `pip install "ohdsi-circe[waveform]"`. See [docs/waveform_extension.md](docs/waveform_extension.md).
+- **OHDSI Waveform Extension**: Support for the OHDSI Waveform Extension specification (waveform_occurrence, waveform_registry, waveform_channel_metadata, waveform_feature). Install with `pip install "ohdsi-circepy[waveform]"`. See [docs/waveform_extension.md](docs/waveform_extension.md).
 
 For information on how to implement your own extension, see the [Developer Guide for Extensions](docs/developer/extensions.rst).
 
@@ -447,8 +455,8 @@ Special thanks to:
 - **Repository**: https://github.com/OHDSI/Circepy
 - **Issues**: https://github.com/OHDSI/Circepy/issues
 - **Installation Guide**: [docs/installation.md](docs/installation.md)
-- **PyPI**: https://pypi.org/project/ohdsi-circe/
-- **Documentation**: https://ohdsi-circe.readthedocs.io/
+- **PyPI**: https://pypi.org/project/ohdsi-circepy/
+- **Documentation**: https://ohdsi-circepy.readthedocs.io/
 
 ## Related Projects
 

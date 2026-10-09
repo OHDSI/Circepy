@@ -166,7 +166,7 @@ See [../docs/installation.md](../docs/installation.md) for detailed installation
 **PyPI Installation:**
 
 > ```bash
-> pip install ohdsi-circe
+> pip install ohdsi-circepy
 > ```
 
 ### Run All Examples
