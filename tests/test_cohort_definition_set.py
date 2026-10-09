@@ -382,6 +382,48 @@ def test_generate_cohort_set_stop_on_error():
         )
 
 
+def test_generate_cohort_set_stop_on_error_cleans_staging_tables():
+    """A raised batch must not leave session staging tables behind (#47)."""
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    conn.create_table(
+        "person",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2],
+                "year_of_birth": [1980, 1982],
+                "gender_concept_id": [8507, 8507],
+            }
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "observation_period",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2],
+                "observation_period_id": [10, 11],
+                "observation_period_start_date": ["2019-01-01", "2019-01-01"],
+                "observation_period_end_date": ["2021-12-31", "2021-12-31"],
+            }
+        ),
+        overwrite=True,
+    )
+    # condition_occurrence is intentionally missing so compilation fails after
+    # the per-batch codeset table has already been created.
+
+    cds = CohortDefinitionSet()
+    cds.add(cohort_id=1, cohort_name="Missing domain", expression=_simple_expression())
+
+    with pytest.raises(ibis.common.exceptions.TableNotFound):
+        generate_cohort_set(cds, backend=conn, cdm_schema="main", cohort_table="cohort_cleanup")
+
+    leftovers = [name for name in conn.list_tables() if name.startswith("__s_")]
+    assert leftovers == [], f"staging tables leaked: {leftovers}"
+
+
 def test_summarise_generation_results():
     from datetime import datetime
 
