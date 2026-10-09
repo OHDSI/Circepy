@@ -1380,3 +1380,74 @@ def test_criteria_cache_is_scoped_to_execution_context():
         )
         rows = conn.raw_sql(f"SELECT subject_id FROM {schema}.cohort").fetchall()
         assert [row[0] for row in rows] == [expected]
+
+
+def test_build_cohort_drops_intermediate_staging_tables():
+    """build_cohort must release intermediate stage tables (#57)."""
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2],
+                "condition_occurrence_id": [100, 101],
+                "condition_concept_id": [111, 999],
+                "condition_start_date": ["2020-01-01", "2020-01-01"],
+                "condition_end_date": ["2020-01-01", "2020-01-01"],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(1, 111)],
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
+    )
+
+    result = build_cohort(expression, backend=conn, cdm_schema="main")
+
+    staging = [t for t in conn.list_tables() if "__staging_" in t]
+    assert not any(t.endswith("__staging_qualified") for t in staging)
+    assert not any(t.endswith("__staging_included") for t in staging)
+    # The final stage and the codeset table back the returned lazy relation.
+    assert any(t.endswith("__staging_ended") for t in staging)
+    assert len([t for t in conn.list_tables() if "__codesets" in t]) == 1
+
+    # The returned relation must still resolve against the retained final stage.
+    assert set(result.person_id.execute().tolist()) == {1}
+
+
+def test_write_cohort_cleans_up_session_tables():
+    """write_cohort must not leave session staging/codeset tables behind (#57)."""
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_common_tables(conn, ibis)
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2],
+                "condition_occurrence_id": [100, 101],
+                "condition_concept_id": [111, 999],
+                "condition_start_date": ["2020-01-01", "2020-01-01"],
+                "condition_end_date": ["2020-01-01", "2020-01-01"],
+            }
+        ),
+        overwrite=True,
+    )
+
+    expression = CohortExpression(
+        concept_sets=[_make_concept_set(1, 111)],
+        primary_criteria=PrimaryCriteria(criteria_list=[ConditionOccurrence(codeset_id=1)]),
+    )
+
+    write_cohort(expression, backend=conn, cdm_schema="main", cohort_table="cohort", cohort_id=1)
+
+    leftovers = [t for t in conn.list_tables() if t.startswith("__")]
+    assert leftovers == [], f"session tables leaked: {leftovers}"

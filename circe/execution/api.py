@@ -5,7 +5,7 @@ from typing import Literal
 
 from ..cohortdefinition import CohortExpression
 from .databricks_compat import maybe_apply_databricks_post_connect_workaround
-from .engine.cohort import build_cohort_table
+from .engine.cohort import _drop_staging_tables, build_cohort_table
 from .errors import ExecutionError
 from .ibis.codesets import build_single_codeset_table
 from .ibis.context import make_execution_context
@@ -179,9 +179,13 @@ def write_cohort(
     if if_exists not in {"fail", "replace"}:
         raise ValueError("if_exists must be one of {'fail', 'replace'} for write_cohort.")
 
+    session_prefix = ""
+    cleanup_schema = results_schema or cdm_schema
+
     if compiled_relation is not None:
         new_rows = compiled_relation
     else:
+        session_prefix = f"__w_{uuid.uuid4().hex[:8]}_"
         new_rows = build_cohort(
             expression,  # type: ignore[arg-type]
             backend=backend,
@@ -189,59 +193,64 @@ def write_cohort(
             results_schema=results_schema,
             vocabulary_schema=vocabulary_schema,
             cohort_id=cohort_id,
+            session_prefix=session_prefix,
         )
         new_rows = project_to_ohdsi_cohort_table(new_rows, cohort_id=cohort_id)
 
-    if not table_exists(backend, table_name=cohort_table, schema=results_schema):
-        write_relation(
-            new_rows,
-            backend=backend,
-            target_table=cohort_table,
-            target_schema=results_schema,
-            if_exists="fail",
-        )
-        return
-
-    if if_exists == "fail":
-        if cohort_rows_exist(
-            backend,
-            cohort_table=cohort_table,
-            results_schema=results_schema,
-            cohort_id=cohort_id,
-        ):
-            raise ExecutionError(
-                "Ibis executor write error: cohort table "
-                f"'{cohort_table}' already contains rows for cohort_id={cohort_id}."
+    try:
+        if not table_exists(backend, table_name=cohort_table, schema=results_schema):
+            write_relation(
+                new_rows,
+                backend=backend,
+                target_table=cohort_table,
+                target_schema=results_schema,
+                if_exists="fail",
             )
-        insert_relation(
-            new_rows,
+            return
+
+        if if_exists == "fail":
+            if cohort_rows_exist(
+                backend,
+                cohort_table=cohort_table,
+                results_schema=results_schema,
+                cohort_id=cohort_id,
+            ):
+                raise ExecutionError(
+                    "Ibis executor write error: cohort table "
+                    f"'{cohort_table}' already contains rows for cohort_id={cohort_id}."
+                )
+            insert_relation(
+                new_rows,
+                backend=backend,
+                target_table=cohort_table,
+                target_schema=results_schema,
+            )
+            return
+
+        if supports_transactional_replace(backend):
+            replace_cohort_rows_transactionally(
+                new_rows,
+                backend=backend,
+                cohort_table=cohort_table,
+                results_schema=results_schema,
+                cohort_id=cohort_id,
+            )
+            return
+
+        existing = read_table(
+            backend,
+            table_name=cohort_table,
+            schema=results_schema,
+        )
+        filtered = exclude_cohort_rows(existing, cohort_id=cohort_id)
+        relation = filtered.union(new_rows, distinct=False)
+        write_relation(
+            relation,
             backend=backend,
             target_table=cohort_table,
             target_schema=results_schema,
+            if_exists="replace",
         )
-        return
-
-    if supports_transactional_replace(backend):
-        replace_cohort_rows_transactionally(
-            new_rows,
-            backend=backend,
-            cohort_table=cohort_table,
-            results_schema=results_schema,
-            cohort_id=cohort_id,
-        )
-        return
-
-    existing = read_table(
-        backend,
-        table_name=cohort_table,
-        schema=results_schema,
-    )
-    filtered = exclude_cohort_rows(existing, cohort_id=cohort_id)
-    relation = filtered.union(new_rows, distinct=False)
-    write_relation(
-        relation,
-        backend=backend,
-        target_table=cohort_table,
-        target_schema=results_schema,
-        if_exists="replace",
-    )
+    finally:
+        if session_prefix:
+            _drop_staging_tables(backend, cleanup_schema, session_prefix)

@@ -7,7 +7,7 @@ from ..ibis.operations import create_table, read_table
 from ..lower.criteria import lower_criterion
 from ..normalize.cohort import NormalizedCohort
 from ..plan.cohort import CohortPlan, PrimaryEventInput
-from ..typing import Table
+from ..typing import IbisBackendLike, Table
 from .censoring import apply_censoring
 from .collapse import collapse_events
 from .end_strategy import apply_end_strategy
@@ -38,19 +38,37 @@ def _materialize(
 
 
 def _drop_staging_tables(
-    ctx: ExecutionContext,
+    backend: IbisBackendLike,
     schema: str | None,
     session_prefix: str = "",
+    *,
+    include_final: bool = True,
+    include_codeset: bool = True,
 ) -> None:
-    """Remove all session-scoped staging tables from the database."""
-    for stage in ("primary", "qualified", "included", "ended"):
+    """Drop session-scoped staging tables created by a cohort build.
+
+    Args:
+        backend: The ibis backend connection.
+        schema: Schema the staging tables were created in.
+        session_prefix: The build's session prefix.
+        include_final: Also drop the ``ended`` stage.  The final stage backs the
+            lazy relation returned by :func:`build_cohort`, so callers that still
+            need that relation must pass ``include_final=False``.
+        include_codeset: Also drop the per-build codeset table.  A returned
+            relation can still reference the codeset table when censoring
+            criteria are present, so leave this ``False`` for that case.
+    """
+    stages = ("primary", "qualified", "included")
+    if include_final:
+        stages = (*stages, "ended")
+    for stage in stages:
         name = f"{session_prefix}__staging_{stage}"
         with contextlib.suppress(Exception):
-            ctx.backend.drop_table(name, database=schema, force=True)
-    # Also drop the session-scoped codeset table
-    codeset_name = f"{session_prefix}__codesets"
-    with contextlib.suppress(Exception):
-        ctx.backend.drop_table(codeset_name, database=schema, force=True)
+            backend.drop_table(name, database=schema, force=True)
+    if include_codeset:
+        codeset_name = f"{session_prefix}__codesets"
+        with contextlib.suppress(Exception):
+            backend.drop_table(codeset_name, database=schema, force=True)
 
 
 def build_cohort_table(
@@ -161,4 +179,10 @@ def build_cohort_table(
     censored_events = apply_censoring(
         ended_events, normalized.censoring_criteria, normalized.censor_window, ctx
     )
+    if materialize:
+        # The returned relation reads only the final ``ended`` stage (and, when
+        # censoring criteria are present, the codeset table), so the intermediate
+        # stage tables can be released immediately.  The ``ended`` stage and the
+        # codeset table are left for the caller to clean up (issue #57).
+        _drop_staging_tables(ctx.backend, schema, session_prefix, include_final=False, include_codeset=False)
     return collapse_events(censored_events, normalized.collapse_settings, normalized.censor_window)
