@@ -217,6 +217,41 @@ PGPASSWORD=... python benchmarks/decomposable_cohorts_postgres.py \
     --cdm-schema cdm --vocab-schema vocab --cohorts 32 --repeats 2
 ```
 
+### Legacy CohortGenerator cohort sets
+
+Legacy `Cohorts.csv` + `cohorts/*.json` + `sql/sql_server/*.sql` layouts can be
+loaded directly. JSON is the definition source; SQL is loaded into memory for
+provenance and optional oracle comparison.
+
+```python
+from circe.cohort_definition_set import (
+    load_cohort_definition_set,
+    verify_against_legacy_sql,
+)
+
+cohort_set = load_cohort_definition_set(
+    settings_file="inst/Cohorts.csv",
+    json_folder="inst/cohorts",
+    sql_folder="inst/sql/sql_server",
+)
+
+# Optional: execute the legacy SQL and compare its rows with circepy.
+results = verify_against_legacy_sql(
+    cohort_set,
+    backend=conn,
+    cdm_schema="cdm",
+    vocabulary_schema="vocab",
+    results_schema="results",
+    target_table="cohort_legacy",
+    generated_table="cohort_circe",
+    target_dialect="duckdb",
+)
+assert all(result.matching_rows for result in results)
+```
+
+Subsets, template cohorts and custom-SQL-only cohorts are rejected by default;
+pass `unsupported="skip"` to omit them while loading.
+
 ### Databricks and the memtable volume
 
 Ibis 12's Databricks backend creates a memtable storage volume during

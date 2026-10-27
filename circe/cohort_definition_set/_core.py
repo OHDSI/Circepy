@@ -62,14 +62,25 @@ class CohortDefinitionSet:
         Raises:
             ValueError: If a cohort with the same cohort_id already exists.
         """
-        if cohort_id in self._id_index:
-            raise ValueError(
-                f"A cohort with cohort_id={cohort_id} already exists in this CohortDefinitionSet."
-            )
-        self._id_index[cohort_id] = len(self._cohorts)
-        self._cohorts.append(
+        self.add_definition(
             CohortDefinition(cohort_id=cohort_id, cohort_name=cohort_name, expression=expression)
         )
+
+    def add_definition(self, definition: CohortDefinition) -> None:
+        """Add an already-constructed cohort definition.
+
+        Args:
+            definition: The cohort definition to append.
+
+        Raises:
+            ValueError: If a cohort with the same cohort_id already exists.
+        """
+        if definition.cohort_id in self._id_index:
+            raise ValueError(
+                f"A cohort with cohort_id={definition.cohort_id} already exists in this CohortDefinitionSet."
+            )
+        self._id_index[definition.cohort_id] = len(self._cohorts)
+        self._cohorts.append(definition)
 
     def __len__(self) -> int:
         return len(self._cohorts)

@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Legacy CohortGenerator cohort-definition loading from `Cohorts.csv`,
+  `cohorts/*.json` and `sql/sql_server/*.sql` (`load_cohort_definition_set`).
+  JSON is authoritative, SQL is retained in memory, and R's `stringi` /
+  `SqlRender` string handling is mirrored for headers, file stems and
+  transliteration. Legacy SQL can be executed as an oracle and compared with
+  shared or stand-alone cohort generation (`verify_against_legacy_sql`).
 - Decomposable cohort sets: `decompose_cohort_set()` recovers shared bases plus
   v1-placed refinements (additional criteria, inclusion rules, limits, end
   strategy, censoring, censor window, collapse, added concept sets) and

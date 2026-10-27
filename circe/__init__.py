@@ -85,6 +85,7 @@ from .api import (
     cohort_expression_from_json,
     cohort_print_friendly,
     generate_cohort_set,
+    load_cohort_definition_set,
     write_cohort,
 )
 from .decomposition import Decomposition, decompose_cohort_set
@@ -215,6 +216,7 @@ __all__ = [
     "write_cohort",
     "cohort_print_friendly",
     "generate_cohort_set",
+    "load_cohort_definition_set",
     "decompose_cohort_set",
     "Decomposition",
     "safe_model_rebuild",

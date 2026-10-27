@@ -33,11 +33,39 @@ Example:
 from ..decomposition import Decomposition, DerivedCohort, decompose_cohort_set
 from ._core import CohortDefinition, CohortDefinitionSet, CohortGenerationResult
 from ._generate import async_generate_cohort_set, generate_cohort_set, summarise_generation_results
+from ._legacy import (
+    CohortSource,
+    LegacyCohortDefinitionSet,
+    LegacyCohortSetError,
+    LegacyCohortSetReport,
+    LoadedCohortDefinition,
+    MissingCohortDefinitionFileError,
+    SkippedCohort,
+    UnsupportedLegacyFeatureError,
+    load_cohort_definition_set,
+)
+from ._legacy_sql import (
+    LegacySqlComparison,
+    render_legacy_sql,
+    verify_against_legacy_sql,
+)
 
 __all__ = [
     "CohortDefinition",
     "CohortDefinitionSet",
     "CohortGenerationResult",
+    "CohortSource",
+    "LegacyCohortDefinitionSet",
+    "LegacyCohortSetError",
+    "LegacyCohortSetReport",
+    "LoadedCohortDefinition",
+    "LegacySqlComparison",
+    "render_legacy_sql",
+    "verify_against_legacy_sql",
+    "MissingCohortDefinitionFileError",
+    "SkippedCohort",
+    "UnsupportedLegacyFeatureError",
+    "load_cohort_definition_set",
     "Decomposition",
     "DerivedCohort",
     "decompose_cohort_set",

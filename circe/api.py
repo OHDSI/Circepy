@@ -17,10 +17,16 @@ from .cohort_definition_set import (  # noqa: F401
     CohortDefinitionSet,
     CohortGenerationResult,
     Decomposition,
+    LegacyCohortDefinitionSet,
+    LegacySqlComparison,
+    LoadedCohortDefinition,
     async_generate_cohort_set,
     decompose_cohort_set,
     generate_cohort_set,
+    load_cohort_definition_set,
+    render_legacy_sql,
     summarise_generation_results,
+    verify_against_legacy_sql,
 )
 from .cohortdefinition import (
     BuildExpressionQueryOptions,
