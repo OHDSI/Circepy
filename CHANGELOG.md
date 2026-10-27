@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Extension criteria can register ibis execution normalizers and lowerers
+  (`@normalizer`, `@lowerer`), so custom CDM domains execute through the ibis
+  engine. Added public normalization helpers (`build_normalized_criterion`,
+  `normalize_date_range`, `normalize_numeric_range`) and rewrote the extension
+  guide for the current execution architecture.
+
 ## [0.3.0] - 2026-10-06
 
 ### Added
