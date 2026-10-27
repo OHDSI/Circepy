@@ -217,6 +217,30 @@ PGPASSWORD=... python benchmarks/decomposable_cohorts_postgres.py \
     --cdm-schema cdm --vocab-schema vocab --cohorts 32 --repeats 2
 ```
 
+### Databricks and the memtable volume
+
+Ibis 12's Databricks backend creates a memtable storage volume during
+`_post_connect()`, using the current catalog. On workspaces without a
+`hive_metastore` catalog this fails with `NO_SUCH_CATALOG_EXCEPTION` before the
+connection is usable (ibis issue #11598). Circepy patches that optional setup
+step; because it runs *while connecting*, the patch has to be installed first:
+
+```python
+from circe.execution import connect_databricks
+
+conn = connect_databricks(
+    server_hostname="...",
+    http_path="...",
+    personal_access_token="...",
+    # memtable_volume="my_catalog.my_schema.ibis_memtable",  # optional
+)
+```
+
+If you connect with `ibis.databricks.connect()` directly, call
+`apply_databricks_post_connect_workaround()` before connecting. The workaround
+only suppresses the memtable-volume/catalog failure; other connection errors
+still propagate.
+
 ## What's Included
 
 This package provides a complete Python implementation of CIRCE-BE with:
