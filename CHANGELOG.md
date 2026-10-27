@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `normalize_date_range`, `normalize_numeric_range`) and rewrote the extension
   guide for the current execution architecture.
 
+### Fixed
+- Pinned `duckdb<2.0.0`; duckdb 2.0 removed `DuckDBPyConnection.fetch_arrow_table`,
+  which ibis-framework 12.0.0 still calls internally and which the dependency
+  resolver was picking up in CI.
+
 ## [0.3.0] - 2026-10-06
 
 ### Added
