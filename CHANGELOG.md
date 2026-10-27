@@ -15,8 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   applies to ibis >= 10 (including 12.0.0), recognizes missing-catalog errors
   that omit the SQL text, and the new `connect_databricks()` helper installs it
   before `_post_connect()` runs.
-
-### Fixed
 - Pinned `duckdb<2.0.0`; duckdb 2.0 removed `DuckDBPyConnection.fetch_arrow_table`,
   which ibis-framework 12.0.0 still calls internally and which the dependency
   resolver was picking up in CI.
