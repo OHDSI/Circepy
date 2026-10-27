@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Decomposable cohort sets: `decompose_cohort_set()` recovers shared bases plus
+  v1-placed refinements (additional criteria, inclusion rules, limits, end
+  strategy, censoring, censor window, collapse, added concept sets) and
+  `Decomposition.flatten()` reconstructs stand-alone definitions.
+- Shared-checkpoint batch generation via `generate_cohort_set(..., shared=True)`.
+  Primary events, qualified events and inclusion-rule matches are keyed by
+  canonicalised content and materialised once, so refinement-heavy definition
+  sets avoid repeating entry-population work. Concept-set ids are canonicalised
+  by content, allowing cohorts with different local ids to share checkpoints.
+  Tail stages reuse the existing engine functions, keeping cohort rows identical
+  to the stand-alone path.
+- `benchmarks/decomposable_cohorts.py` performance harness comparing shared and
+  stand-alone batch generation on a synthetic DuckDB CDM, and
+  `benchmarks/decomposable_cohorts_postgres.py` for an existing PostgreSQL OMOP
+  CDM with two-way `EXCEPT ALL` verification.
+
 ## [0.3.0] - 2026-10-06
 
 ### Added

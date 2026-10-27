@@ -20,8 +20,17 @@ Example:
     ...     cohort_table="cohort",
     ...     incremental=True,
     ... )
+    >>> # Reuse checkpoints across definitions that share pipeline prefixes:
+    >>> results = generate_cohort_set(
+    ...     cds,
+    ...     backend=conn,
+    ...     cdm_schema="main",
+    ...     cohort_table="cohort",
+    ...     shared=True,
+    ... )
 """
 
+from ..decomposition import Decomposition, DerivedCohort, decompose_cohort_set
 from ._core import CohortDefinition, CohortDefinitionSet, CohortGenerationResult
 from ._generate import async_generate_cohort_set, generate_cohort_set, summarise_generation_results
 
@@ -29,6 +38,9 @@ __all__ = [
     "CohortDefinition",
     "CohortDefinitionSet",
     "CohortGenerationResult",
+    "Decomposition",
+    "DerivedCohort",
+    "decompose_cohort_set",
     "async_generate_cohort_set",
     "generate_cohort_set",
     "summarise_generation_results",

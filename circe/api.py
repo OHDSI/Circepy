@@ -16,7 +16,9 @@ from .cohort_definition_set import (  # noqa: F401
     CohortDefinition,
     CohortDefinitionSet,
     CohortGenerationResult,
+    Decomposition,
     async_generate_cohort_set,
+    decompose_cohort_set,
     generate_cohort_set,
     summarise_generation_results,
 )
@@ -27,6 +29,7 @@ from .cohortdefinition import (
     MarkdownRender,
 )
 from .cohortdefinition.yaml_utils import snake_case_dict_to_cohort_expression
+from .execution.shared import SharedCohortExecutor  # noqa: F401
 from .vocabulary.concept import ConceptSet
 
 if TYPE_CHECKING:

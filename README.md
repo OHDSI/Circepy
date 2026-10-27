@@ -152,6 +152,71 @@ from circe.execution import build_cohort
 events = build_cohort(cohort, backend=conn, cdm_schema="main")  # lazy ibis relation
 ```
 
+### Decomposable Cohort Sets (shared execution)
+
+Large cohort families usually contain one entry population plus many narrowing
+variants (extra inclusion rules, additional criteria, limits, end strategies,
+censoring). Rebuilding the entry population for every definition repeats the
+most expensive part of the pipeline. `generate_cohort_set(..., shared=True)`
+plans the set as a content-addressed checkpoint DAG and materialises each shared
+stage once.
+
+```python
+from circe.cohort_definition_set import CohortDefinitionSet, generate_cohort_set
+
+results = generate_cohort_set(
+    cds,
+    backend=conn,
+    cdm_schema="main",
+    cohort_table="cohort",
+    shared=True,  # reuse primary/qualified/rule checkpoints across definitions
+)
+```
+
+Checkpoint keys are computed on canonicalised definitions: concept-set ids are
+rewritten by content, so two cohorts that use different local ids for the same
+concept set still share. The tail stages (inclusion, limits, end strategy,
+censoring, collapse) run through the same engine functions as a stand-alone
+build, so `shared=True` produces byte-identical cohort rows — it is only faster.
+
+Sharing is opt-in (`shared=False` by default) and applies to the Ibis execution
+path; the SQL builder still emits one self-contained script per definition.
+
+The definition algebra is also available directly. `decompose_cohort_set()`
+recovers shared bases and v1-placed refinements, and `flatten()` reconstructs a
+stand-alone expression:
+
+```python
+from circe.decomposition import decompose_cohort_set
+
+decomposition = decompose_cohort_set(cds)
+print(decomposition.describe())  # bases, derived cohorts, operators
+standalone = decomposition.flatten(42)  # parent + refinements as a CohortExpression
+assert decomposition.verify() == []  # every derived cohort round-trips
+```
+
+Supported refinements are narrowing or tail-modifying only: `RequireAtEntry`,
+`AddInclusionRule`, `SetQualifiedLimit`, `SetExpressionLimit`, `SetEndStrategy`,
+`AddCensoring`, `SetCensorWindow`, `SetCollapse` and added concept sets.
+Definitions that cannot be reproduced exactly stay bases, so the flatten
+invariant always holds.
+
+The performance gate lives in
+`tests/execution/test_shared_execution.py`; `benchmarks/decomposable_cohorts.py`
+reports the speedup and checkpoint reuse for a configurable family:
+
+```bash
+python benchmarks/decomposable_cohorts.py --persons 20000 --cohorts 64
+```
+
+To run the same shared-vs-stand-alone comparison against an existing
+PostgreSQL OMOP CDM (temporary schema, two-way `EXCEPT ALL` verification):
+
+```bash
+PGPASSWORD=... python benchmarks/decomposable_cohorts_postgres.py \
+    --cdm-schema cdm --vocab-schema vocab --cohorts 32 --repeats 2
+```
+
 ## What's Included
 
 This package provides a complete Python implementation of CIRCE-BE with:
