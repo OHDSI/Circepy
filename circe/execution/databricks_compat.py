@@ -141,6 +141,10 @@ def connect_databricks(*args: Any, **kwargs: Any) -> Any:
     Raises:
         ImportError: If the ibis Databricks backend is not installed.
     """
+    from ._sqlglot_compat import require_compatible_sqlglot
+
+    require_compatible_sqlglot()
+
     backend_cls = _databricks_backend_class()
     if backend_cls is None:
         raise ImportError(

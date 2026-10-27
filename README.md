@@ -241,6 +241,14 @@ If you connect with `ibis.databricks.connect()` directly, call
 only suppresses the memtable-volume/catalog failure; other connection errors
 still propagate.
 
+If execution fails with `DROP TABLE IF EXISTS` / `PARSE_SYNTAX_ERROR`, check
+your sqlglot version. sqlglot 30.18+ renders `DROP TABLE` statements without
+the table name; circepy requires `sqlglot<30.18.0`:
+
+```bash
+pip install "sqlglot<30.18.0"
+```
+
 ## What's Included
 
 This package provides a complete Python implementation of CIRCE-BE with:

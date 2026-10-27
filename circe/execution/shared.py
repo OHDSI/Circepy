@@ -34,6 +34,7 @@ from typing import Any
 
 from ..cohortdefinition import CohortExpression
 from ..decomposition.canonical import ConceptSetCanonicalizer, stable_digest
+from ._sqlglot_compat import require_compatible_sqlglot
 from .api import write_cohort
 from .engine.censoring import apply_censoring
 from .engine.cohort import cohort_plan_from_normalized
@@ -291,6 +292,8 @@ class SharedCohortExecutor:
         vocabulary_schema: str | None = None,
         session_prefix: str = "",
     ) -> None:
+        require_compatible_sqlglot()
+
         self._backend = backend
         self._cdm_schema = cdm_schema
         self._results_schema = results_schema

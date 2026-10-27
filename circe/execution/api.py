@@ -4,6 +4,7 @@ import uuid
 from typing import Literal
 
 from ..cohortdefinition import CohortExpression
+from ._sqlglot_compat import require_compatible_sqlglot
 from .databricks_compat import maybe_apply_databricks_post_connect_workaround
 from .engine.cohort import _drop_staging_tables, build_cohort_table
 from .errors import ExecutionError
@@ -47,6 +48,7 @@ def build_cohort(
     When *codeset_table* is provided it is used directly.  Otherwise a
     per-cohort codeset table is auto-created.
     """
+    require_compatible_sqlglot()
     maybe_apply_databricks_post_connect_workaround(backend)
 
     # Bound the correlated-criteria cache to this build.  The cache is keyed by
@@ -183,6 +185,8 @@ def write_cohort(
             are provided, or ``if_exists`` is invalid.
         ExecutionError: If the write fails.
     """
+    require_compatible_sqlglot()
+
     if (expression is None) == (compiled_relation is None):
         raise ValueError("Exactly one of expression or compiled_relation must be provided.")
     if if_exists not in {"fail", "replace"}:

@@ -348,3 +348,18 @@ def test_write_relation_type_error_is_reported_as_generic_write_failure():
             target_schema="main",
             if_exists="replace",
         )
+
+
+def test_sqlglot_version_guard(monkeypatch):
+    from circe.execution import _sqlglot_compat
+
+    installed = _sqlglot_compat.sqlglot_version()
+    assert len(installed) == 3
+    assert installed <= _sqlglot_compat.MAX_SUPPORTED_SQLGLOT
+
+    monkeypatch.setattr(_sqlglot_compat, "sqlglot_version", lambda: (30, 17, 0))
+    _sqlglot_compat.require_compatible_sqlglot()
+
+    monkeypatch.setattr(_sqlglot_compat, "sqlglot_version", lambda: (30, 25, 0))
+    with pytest.raises(RuntimeError, match="sqlglot<30.18.0"):
+        _sqlglot_compat.require_compatible_sqlglot()
