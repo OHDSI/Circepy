@@ -231,3 +231,58 @@ def test_runner_flow_returns_dict(tmp_path):
 
     result = run_cohort_generation_flow(payload.model_dump(mode="json", by_alias=True))
     assert result["generated"] == [1]
+
+
+def test_cli_runs_payload(tmp_path, capsys):
+    db_path = tmp_path / "cli.duckdb"
+    definitions = _write_definitions(tmp_path)
+    _seed_duckdb(db_path)
+    payload = _payload(tmp_path, duckdb_path=db_path, definitions=definitions)
+    payload_path = tmp_path / "payload.json"
+    payload_path.write_text(json.dumps(payload.model_dump(mode="json", by_alias=True)), encoding="utf-8")
+
+    from circe.runner.__main__ import main
+
+    assert main(["--payload", str(payload_path)]) == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["generated"] == [1]
+
+
+def test_cli_reports_bad_payload(tmp_path, capsys):
+    from circe.runner.__main__ import main
+
+    payload_path = tmp_path / "bad.json"
+    payload_path.write_text("{not json", encoding="utf-8")
+    assert main(["--payload", str(payload_path)]) == 2
+    assert "Could not read payload" in capsys.readouterr().err
+
+
+def test_backend_databricks_uses_connect_helper(monkeypatch):
+    from circe import execution
+
+    captured = {}
+
+    def fake_connect(**kwargs):
+        captured.update(kwargs)
+        return "backend"
+
+    monkeypatch.setenv("TEST_DATABRICKS_TOKEN", "token")
+    monkeypatch.setattr(execution, "connect_databricks", fake_connect)
+
+    from circe.runner.backend import connect_backend
+
+    result = connect_backend(
+        BackendConfig(
+            type="databricks",
+            server_hostname="host",
+            http_path="/sql/1.0/warehouses/x",
+            access_token_env="TEST_DATABRICKS_TOKEN",
+            catalog="cat",
+            schema_name="sch",
+        )
+    )
+
+    assert result == "backend"
+    assert captured["server_hostname"] == "host"
+    assert captured["personal_access_token"] == "token"
+    assert captured["catalog"] == "cat"
