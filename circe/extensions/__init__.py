@@ -3,14 +3,20 @@ Extension Registry for OMOP CDM.
 
 This module provides the central registry for managing extensions to circe-py,
 allowing external projects to register custom criteria classes, SQL builders,
-and markdown renderers.
+ibis execution normalizers and lowerers, and markdown renderers.
 
 Decorator Usage
 ---------------
 Extension authors can use the provided decorator functions to register their
 classes automatically, rather than calling the registry methods directly::
 
-    from circe.extensions import criteria_class, sql_builder, markdown_template
+    from circe.extensions import (
+        criteria_class,
+        lowerer,
+        markdown_template,
+        normalizer,
+        sql_builder,
+    )
 
     @criteria_class("WaveformOccurrence")
     class WaveformOccurrence(Criteria):
@@ -18,6 +24,14 @@ classes automatically, rather than calling the registry methods directly::
 
     @sql_builder(WaveformOccurrence)
     class WaveformOccurrenceSqlBuilder(CriteriaSqlBuilder):
+        ...
+
+    @normalizer(WaveformOccurrence)
+    def normalize_waveform_occurrence(criteria):
+        ...
+
+    @lowerer(WaveformOccurrence)
+    def lower_waveform_occurrence(criterion, *, criterion_index):
         ...
 
     @markdown_template(WaveformOccurrence, "waveform_occurrence.j2")

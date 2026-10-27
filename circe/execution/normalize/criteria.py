@@ -147,6 +147,69 @@ def _build_normalized_criterion(
     )
 
 
+def build_normalized_criterion(
+    *,
+    criteria: Criteria,
+    criterion_type: str,
+    domain: str,
+    source_table: str,
+    event_id_column: str,
+    start_date_column: str,
+    end_date_column: str,
+    concept_column: str | None,
+    source_concept_column: str | None,
+    visit_occurrence_column: str | None,
+    codeset_id: int | None,
+    first: bool,
+    occurrence_start_date: NormalizedDateRange | None,
+    occurrence_end_date: NormalizedDateRange | None,
+    source_codeset_id: int | None = None,
+) -> NormalizedCriterion:
+    """Build a :class:`NormalizedCriterion` for a custom criteria type.
+
+    This is the public entry point for ``@normalizer`` implementations.  It
+    populates the person-level filters shared by every criterion and records
+    the CDM table/column contract the ibis lowerer will use.
+
+    Args:
+        criteria: The custom ``Criteria`` instance being normalized.
+        criterion_type: Criteria class name (e.g. ``"WaveformOccurrence"``).
+        domain: Logical OMOP domain name.
+        source_table: CDM table containing the events.
+        event_id_column: Primary-key column of *source_table*.
+        start_date_column: Event start-date column.
+        end_date_column: Event end-date column.
+        concept_column: Standard-concept column, if any.
+        source_concept_column: Source-concept column, if any.
+        visit_occurrence_column: Visit-occurrence column, if any.
+        codeset_id: Concept-set id to filter ``concept_column``, if any.
+        first: Whether only the first event per person should be kept.
+        occurrence_start_date: Normalized occurrence start constraint.
+        occurrence_end_date: Normalized occurrence end constraint.
+        source_codeset_id: Concept-set id for ``source_concept_column``, if any.
+
+    Returns:
+        The normalized criterion consumed by the ibis planner.
+    """
+    return _build_normalized_criterion(
+        criteria=criteria,
+        criterion_type=criterion_type,
+        domain=domain,
+        source_table=source_table,
+        event_id_column=event_id_column,
+        start_date_column=start_date_column,
+        end_date_column=end_date_column,
+        concept_column=concept_column,
+        source_concept_column=source_concept_column,
+        visit_occurrence_column=visit_occurrence_column,
+        codeset_id=codeset_id,
+        first=first,
+        occurrence_start_date=occurrence_start_date,
+        occurrence_end_date=occurrence_end_date,
+        source_codeset_id=source_codeset_id,
+    )
+
+
 @normalizer(ConditionOccurrence)
 def _normalize_condition_occurrence(criteria: ConditionOccurrence) -> NormalizedCriterion:
     return _build_normalized_criterion(

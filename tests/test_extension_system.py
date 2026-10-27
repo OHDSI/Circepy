@@ -1,5 +1,7 @@
 import json
+from datetime import date
 
+import pytest
 from pydantic import AliasChoices, Field
 
 from circe.cohortdefinition import CohortExpression, CriteriaGroup, PrimaryCriteria
@@ -11,7 +13,17 @@ from circe.cohortdefinition.cohort_expression_query_builder import (
 )
 from circe.cohortdefinition.criteria import Criteria
 from circe.cohortdefinition.printfriendly.markdown_render import MarkdownRender
-from circe.extensions import get_registry
+from circe.execution import build_cohort
+from circe.execution.lower.common import (
+    append_concept_filters,
+    build_standard_domain_plan,
+    lower_common_steps,
+)
+from circe.execution.lower.criteria import lower_criterion
+from circe.execution.normalize import build_normalized_criterion, normalize_criterion
+from circe.execution.plan.events import FilterByNumericRange
+from circe.execution.plan.predicates import NumericRangePredicate
+from circe.extensions import get_registry, lowerer, normalizer
 from circe.vocabulary.concept import Concept
 
 # -----------------------------------------------------------------------------
@@ -80,6 +92,55 @@ WHERE @whereClause
         )
         query = query.replace("@whereClause", " AND ".join(where_clauses))
         return query
+
+
+# Register the ibis normalizer/lowerer at import time, mirroring how a real
+# extension package registers itself.
+@normalizer(WeatherCondition)
+def _normalize_weather_condition(criteria: WeatherCondition):
+    return build_normalized_criterion(
+        criteria=criteria,
+        criterion_type="WeatherCondition",
+        domain="weather",
+        source_table="weather_data",
+        event_id_column="weather_id",
+        start_date_column="observation_date",
+        end_date_column="observation_date",
+        concept_column="weather_concept_id",
+        source_concept_column=None,
+        visit_occurrence_column="visit_occurrence_id",
+        codeset_id=None,
+        first=False,
+        occurrence_start_date=None,
+        occurrence_end_date=None,
+    )
+
+
+@lowerer(WeatherCondition)
+def _lower_weather_condition(criterion, *, criterion_index: int):
+    raw = criterion.raw_criteria
+    steps = lower_common_steps(criterion)
+    append_concept_filters(
+        steps,
+        column="weather_concept_id",
+        concepts=raw.weather_concept_id,
+    )
+    if raw.temperature_celsius is not None:
+        steps.append(
+            FilterByNumericRange(
+                column="temp_c",
+                predicate=NumericRangePredicate(
+                    op=">=",
+                    value=raw.temperature_celsius,
+                    extent=None,
+                ),
+            )
+        )
+    return build_standard_domain_plan(
+        criterion,
+        criterion_index=criterion_index,
+        steps=steps,
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -182,3 +243,86 @@ def test_unregistered_extension_fails():
     # It will likely be a ConditionOccurrence because it's first in the Union
     # and all fields are optional with extra='ignore'.
     assert not hasattr(item, "SomeSpecificField")
+
+
+def test_registry_exposes_extension_normalizer_and_lowerer():
+    registry = get_registry()
+    criteria = WeatherCondition(
+        weather_concept_id=[Concept(concept_id=123, concept_name="Snowing")],
+        temperature_celsius=-5.0,
+    )
+
+    assert registry.get_normalizer(WeatherCondition) is _normalize_weather_condition
+    assert registry.get_lowerer(WeatherCondition) is _lower_weather_condition
+
+    normalized = normalize_criterion(criteria)
+    assert normalized.criterion_type == "WeatherCondition"
+    assert normalized.domain == "weather"
+    assert normalized.source_table == "weather_data"
+    assert normalized.concept_column == "weather_concept_id"
+
+    plan = lower_criterion(normalized, criterion_index=0)
+    assert plan.source.table_name == "weather_data"
+    assert plan.source.event_id_column == "weather_id"
+    assert any(isinstance(step, FilterByNumericRange) for step in plan.steps)
+
+
+def test_extension_criteria_execute_through_ibis():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    conn.create_table(
+        "person",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2],
+                "year_of_birth": [1980, 1985],
+                "gender_concept_id": [8507, 8532],
+            }
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "observation_period",
+        obj=ibis.memtable(
+            {
+                "person_id": [1, 2],
+                "observation_period_id": [10, 11],
+                "observation_period_start_date": [date(2019, 1, 1), date(2019, 1, 1)],
+                "observation_period_end_date": [date(2021, 12, 31), date(2021, 12, 31)],
+            }
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "weather_data",
+        obj=ibis.memtable(
+            {
+                "weather_id": [1, 2],
+                "person_id": [1, 2],
+                "weather_concept_id": [123, 123],
+                "temp_c": [-10.0, 10.0],
+                "observation_date": [date(2020, 1, 1), date(2020, 1, 2)],
+                "visit_occurrence_id": [0, 0],
+            }
+        ),
+        overwrite=True,
+    )
+
+    weather_criteria = WeatherCondition(
+        weather_concept_id=[Concept(concept_id=123, concept_name="Snowing")],
+        temperature_celsius=-5.0,
+    )
+    expression = CohortExpression(
+        primary_criteria=PrimaryCriteria(
+            criteria_list=[weather_criteria],
+            observation_window={"priorDays": 0, "postDays": 0},
+        )
+    )
+
+    rows = build_cohort(expression, backend=conn, cdm_schema="main").execute()
+
+    # Only person 2 has temp_c >= -5 for the requested weather concept.
+    assert list(rows["person_id"]) == [2]
+    assert len(rows) == 1
