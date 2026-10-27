@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Cross-dialect and live database tests covering the HADES platform matrix
+  (PostgreSQL, SQL Server, Redshift, SQLite, DuckDB, IRIS, Snowflake, Spark,
+  Synapse and BigQuery; Oracle is excluded as a legacy target).  The suite
+  checks rendered and Ibis-compiled cohort SQL for every platform and runs a
+  backend-agnostic execution contract against DuckDB, PostgreSQL and SQL Server
+  in CI.  See `docs/developer/database-testing.rst`.
+- `ibis-mssql`, `ibis-snowflake` and `ibis-bigquery` optional dependency groups.
+
 ## [0.3.0] - 2026-10-06
 
 ### Added

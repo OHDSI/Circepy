@@ -69,6 +69,15 @@ ibis-postgres = [
 ibis-databricks = [
     "ibis-framework[databricks]>=11.0.0; python_version >= '3.10'",
 ]
+ibis-mssql = [
+    "ibis-framework[mssql]>=11.0.0; python_version >= '3.10'",
+]
+ibis-snowflake = [
+    "ibis-framework[snowflake]>=11.0.0; python_version >= '3.10'",
+]
+ibis-bigquery = [
+    "ibis-framework[bigquery]>=11.0.0; python_version >= '3.10'",
+]
 waveform = [
     "pydantic>=2.0.0",
 ]
