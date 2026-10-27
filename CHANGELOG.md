@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in CI.  See `docs/developer/database-testing.rst`.
 - `ibis-mssql`, `ibis-snowflake` and `ibis-bigquery` optional dependency groups.
 
+### Fixed
+- Pinned `duckdb<2.0.0`; duckdb 2.0 removed `DuckDBPyConnection.fetch_arrow_table`,
+  which ibis-framework 12.0.0 still calls internally and which the dependency
+  resolver was picking up in CI.
+
 ## [0.3.0] - 2026-10-06
 
 ### Added
