@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import contextlib
 import uuid
 from typing import Literal
+
+import sqlglot as sg
+from ibis.backends.sql.compilers.base import AlterTable, RenameTable
 
 from ..cohortdefinition import CohortExpression
 from .databricks_compat import maybe_apply_databricks_post_connect_workaround
@@ -11,6 +15,7 @@ from .ibis.codesets import build_single_codeset_table
 from .ibis.context import make_execution_context
 from .ibis.materialize import project_to_ohdsi_cohort_table
 from .ibis.operations import (
+    _catalog_db_tuple,
     cohort_rows_exist,
     create_table,
     exclude_cohort_rows,
@@ -107,6 +112,29 @@ def build_cohort(
     )
 
 
+def _is_databricks_backend(backend: IbisBackendLike) -> bool:
+    return getattr(backend, "name", None) == "databricks"
+
+
+def _rename_table(
+    backend: IbisBackendLike,
+    old_name: str,
+    new_name: str,
+    schema: str | None,
+) -> None:
+    """Rename a table with a fully qualified Databricks ALTER TABLE statement."""
+    catalog, database = _catalog_db_tuple(backend, schema)
+    quoted = getattr(getattr(backend, "compiler", None), "quoted", False)
+    old = sg.table(old_name, catalog=catalog, db=database, quoted=quoted)
+    new = sg.table(new_name, catalog=catalog, db=database, quoted=quoted)
+    statement = AlterTable(
+        this=old,
+        exists=False,
+        actions=[RenameTable(this=new, exists=True)],
+    )
+    backend.raw_sql(statement.sql(dialect=getattr(backend, "name", "databricks")))
+
+
 def write_relation(
     relation: Table,
     *,
@@ -119,6 +147,11 @@ def write_relation(
     """Materialize a relation to a backend table."""
     if if_exists not in {"fail", "replace"}:
         raise ValueError("if_exists must be one of {'fail', 'replace'} for write_relation.")
+    if target_table is None or not str(target_table).strip():
+        raise ExecutionError(
+            "Ibis executor write error: target cohort table name is empty. "
+            "Pass a non-empty cohort_table / target_table value."
+        )
 
     maybe_apply_databricks_post_connect_workaround(backend)
 
@@ -130,12 +163,35 @@ def write_relation(
         write_kwargs["temp"] = True
 
     try:
-        create_table(
-            backend,
-            table_name=target_table,
-            schema=target_schema,
-            **write_kwargs,
-        )
+        if if_exists == "replace" and not temporary and _is_databricks_backend(backend):
+            # Databricks' ibis create_table(overwrite=True) issues its own DROP
+            # TABLE using an internally built identifier. On some ibis 12
+            # workspaces that renders as bare "DROP TABLE IF EXISTS". Stage the
+            # new relation first (it may read the existing table), then replace
+            # the target with a validated rename.
+            staged_table = f"{target_table}__circe_new_{uuid.uuid4().hex[:8]}"
+            create_table(
+                backend,
+                table_name=staged_table,
+                schema=target_schema,
+                obj=relation,
+                overwrite=False,
+            )
+            try:
+                if table_exists(backend, table_name=target_table, schema=target_schema):
+                    backend.drop_table(str(target_table), database=target_schema, force=True)
+                _rename_table(backend, staged_table, target_table, target_schema)
+            except Exception:
+                with contextlib.suppress(Exception):
+                    backend.drop_table(staged_table, database=target_schema, force=True)
+                raise
+        else:
+            create_table(
+                backend,
+                table_name=target_table,
+                schema=target_schema,
+                **write_kwargs,
+            )
     except Exception as exc:
         schema_label = target_schema if target_schema is not None else "<default>"
         raise ExecutionError(

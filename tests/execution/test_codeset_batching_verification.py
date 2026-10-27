@@ -324,3 +324,19 @@ class TestBatchedEndToEnd:
         #   -> valid exclude = {101}
         # Final: {100, 101, 200} - {101} = {100, 200}
         assert set(cohort_result.concept_id) == {100, 200}
+
+
+def test_single_codeset_table_generates_name_for_empty_prefix_and_batch():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    table = build_single_codeset_table(
+        backend=conn,
+        concept_sets={},
+        batch_table_name="",
+        session_prefix="",
+        overwrite=False,
+    )
+
+    assert table.count().execute() == 0

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import contextlib
+import logging
+import uuid
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -11,6 +13,8 @@ from ..normalize.cohort import NormalizedConceptSet
 from ..plan.schema import CONCEPT_ID
 from ..typing import IbisBackendLike, Table
 from .operations import create_table as _create_table_impl
+
+logger = logging.getLogger(__name__)
 
 
 def _literal_select(**columns: int) -> Table:
@@ -359,6 +363,7 @@ def build_single_codeset_table(
     results_schema: str | None = None,
     vocabulary_schema: str | None = None,
     session_prefix: str = "",
+    overwrite: bool = True,
 ) -> Table:
     """Build a per-cohort codeset table ``(codeset_id, concept_id)``.
 
@@ -367,10 +372,22 @@ def build_single_codeset_table(
     (which Databricks / Oracle / BigQuery do not support).
     """
     name = f"{session_prefix}{batch_table_name}"
+    if not name:
+        # Some callers (and Databricks' create_table overwrite path) cannot
+        # handle an empty identifier: it renders as `DROP TABLE IF EXISTS`
+        # without a table. The session-scoped name should always be non-empty,
+        # but keep this guard so a bad prefix cannot produce invalid SQL.
+        name = f"__circe_codesets_{uuid.uuid4().hex[:8]}"
+        logger.warning(
+            "Empty codeset table name (session_prefix=%r, batch_table_name=%r); using %r.",
+            session_prefix,
+            batch_table_name,
+            name,
+        )
 
     if not concept_sets:
         empty = _empty_table(columns=(("codeset_id", 0), ("concept_id", 0)))
-        _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=True)
+        _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=overwrite)
         return _read_table(backend, table_name=name, schema=results_schema)
 
     needs_expression = _needs_codeset_expression(concept_sets)
@@ -383,10 +400,12 @@ def build_single_codeset_table(
                     parts.append(_literal_select(codeset_id=int(cid), concept_id=int(item.concept_id)))
         if not parts:
             empty = _empty_table(columns=(("codeset_id", 0), ("concept_id", 0)))
-            _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=True)
+            _create_table_impl(
+                backend, table_name=name, schema=results_schema, obj=empty, overwrite=overwrite
+            )
             return _read_table(backend, table_name=name, schema=results_schema)
         combined = _union_all_tables(parts)
-        _create_table_impl(backend, table_name=name, schema=results_schema, obj=combined, overwrite=True)
+        _create_table_impl(backend, table_name=name, schema=results_schema, obj=combined, overwrite=overwrite)
         return _read_table(backend, table_name=name, schema=results_schema)
 
     table_getter = _table_getter_from_backend(backend, vocabulary_schema or "")
@@ -413,7 +432,7 @@ def build_single_codeset_table(
 
     if not parts:
         empty = _empty_table(columns=(("codeset_id", 0), ("concept_id", 0)))
-        _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=True)
+        _create_table_impl(backend, table_name=name, schema=results_schema, obj=empty, overwrite=overwrite)
         return _read_table(backend, table_name=name, schema=results_schema)
 
     # Normalize column nullability for union compatibility across backends.
@@ -426,7 +445,7 @@ def build_single_codeset_table(
         ]
 
     combined = _union_all_tables(parts)
-    _create_table_impl(backend, table_name=name, schema=results_schema, obj=combined, overwrite=True)
+    _create_table_impl(backend, table_name=name, schema=results_schema, obj=combined, overwrite=overwrite)
     return _read_table(backend, table_name=name, schema=results_schema)
 
 
