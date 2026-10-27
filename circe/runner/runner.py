@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
+import warnings
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -81,12 +82,24 @@ def run_cohort_generation(payload: RunnerPayload) -> RunnerResult:
     cohorts whose definition checksum and target rows are unchanged.
     """
     started = time.perf_counter()
+    loaded = _load_definitions(payload)
+    definitions = list(loaded)
+    if not definitions:
+        raise RunnerError(
+            "The cohort definition set is empty; refusing to report a successful run. "
+            "Check the mounted Cohorts.csv and unsupported/skipped definitions."
+        )
+    target = payload.target
+    if target.schema_name == payload.cdm_schema:
+        warnings.warn(
+            "The target schema is the CDM schema. Cohort tables and the definition "
+            "registry must be written to a scratch/results schema, not the CDM.",
+            UserWarning,
+            stacklevel=2,
+        )
+
     backend = connect_backend(payload.backend)
     try:
-        loaded = _load_definitions(payload)
-        definitions = list(loaded)
-        target = payload.target
-
         registry: DefinitionRegistry | None = None
         to_generate = definitions
         reused = []
@@ -106,6 +119,8 @@ def run_cohort_generation(payload: RunnerPayload) -> RunnerResult:
         generated_ids: list[int] = []
         generation_results: list[dict[str, Any]] = []
         if to_generate:
+            if registry is not None:
+                registry.mark_incomplete(to_generate)
             subset = CohortDefinitionSet()
             for definition in to_generate:
                 subset.add_definition(definition)

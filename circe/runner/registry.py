@@ -18,6 +18,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+import ibis
+
 from ..execution.ibis.operations import (
     create_table,
     delete_rows,
@@ -37,7 +39,10 @@ _REGISTRY_SCHEMA = {
     "definition_json": "string",
     "sql": "string",
     "metadata_json": "string",
+    "completed": "boolean",
+    "row_count": "int64",
     "updated_at": "timestamp",
+    "completed_at": "timestamp",
 }
 _REGISTRY_COLUMNS = list(_REGISTRY_SCHEMA)
 
@@ -54,6 +59,8 @@ class DefinitionConflictError(DefinitionRegistryError):
 class RegistryEntry:
     cohort_definition_id: int
     definition_checksum: str
+    completed: bool = False
+    row_count: int | None = None
 
 
 class DefinitionRegistry:
@@ -87,26 +94,45 @@ class DefinitionRegistry:
 
     def entries(self) -> dict[int, RegistryEntry]:
         table = read_table(self.backend, table_name=self.table_name, schema=self.schema)
-        rows = table.select("cohort_definition_id", "definition_checksum").to_pyarrow().to_pylist()
+        rows = (
+            table.select(
+                "cohort_definition_id",
+                "definition_checksum",
+                "completed",
+                "row_count",
+            )
+            .to_pyarrow()
+            .to_pylist()
+        )
         return {
             int(row["cohort_definition_id"]): RegistryEntry(
                 cohort_definition_id=int(row["cohort_definition_id"]),
                 definition_checksum=str(row["definition_checksum"]),
+                completed=bool(row["completed"]),
+                row_count=int(row["row_count"]) if row["row_count"] is not None else None,
             )
             for row in rows
         }
 
-    def existing_target_ids(self) -> set[int]:
+    def existing_target_counts(self) -> dict[int, int]:
         if not table_exists(self.backend, table_name=self.target_table, schema=self.schema):
-            return set()
+            return {}
         table = read_table(self.backend, table_name=self.target_table, schema=self.schema)
-        rows = table.select("cohort_definition_id").distinct().to_pyarrow().to_pylist()
-        return {int(row["cohort_definition_id"]) for row in rows}
+        grouped = table.group_by("cohort_definition_id").aggregate(row_count=ibis._.count())
+        rows = grouped.to_pyarrow().to_pylist()
+        return {int(row["cohort_definition_id"]): int(row["row_count"]) for row in rows}
 
-    def upsert(self, definitions: list[CohortDefinitionLike]) -> None:
+    def _write(
+        self,
+        definitions: list[CohortDefinitionLike],
+        *,
+        completed: bool,
+        row_counts: dict[int, int] | None = None,
+    ) -> None:
         if not definitions:
             return
         now = datetime.now()
+        row_counts = row_counts or {}
         for definition in definitions:
             delete_rows(
                 self.backend,
@@ -134,7 +160,10 @@ class DefinitionRegistry:
                     definition.expression.model_dump_json(by_alias=True),
                     getattr(definition, "sql", None),
                     json.dumps(metadata, sort_keys=True, default=str),
+                    bool(completed),
+                    row_counts.get(int(definition.cohort_id), 0),
                     now,
+                    now if completed else None,
                 ]
             )
 
@@ -147,6 +176,23 @@ class DefinitionRegistry:
                 rows=rows[start : start + 50],
             )
 
+    def mark_incomplete(self, definitions: list[CohortDefinitionLike]) -> None:
+        """Mark cohorts as in progress before generation starts.
+
+        If generation or the copy into the cohort table fails, the next run
+        sees ``completed=False`` and regenerates rather than reusing a partial
+        write.
+        """
+        self._write(definitions, completed=False)
+
+    def upsert(self, definitions: list[CohortDefinitionLike]) -> None:
+        """Record successfully generated/reused definitions with completion data."""
+        self._write(
+            definitions,
+            completed=True,
+            row_counts=self.existing_target_counts(),
+        )
+
     def plan(
         self,
         definitions: list[CohortDefinitionLike],
@@ -156,7 +202,7 @@ class DefinitionRegistry:
     ) -> tuple[list[CohortDefinitionLike], list[CohortDefinitionLike]]:
         """Return ``(to_generate, reused)`` and enforce id/definition safety."""
         existing = self.entries()
-        target_ids = self.existing_target_ids() if reuse_existing else set()
+        target_counts = self.existing_target_counts() if reuse_existing else {}
         to_generate: list[CohortDefinitionLike] = []
         reused: list[CohortDefinitionLike] = []
         conflicts: list[tuple[int, str]] = []
@@ -171,7 +217,13 @@ class DefinitionRegistry:
                     to_generate.append(definition)
                 continue
 
-            if reuse_existing and entry is not None and int(definition.cohort_id) in target_ids:
+            if (
+                reuse_existing
+                and entry is not None
+                and entry.completed
+                and entry.row_count is not None
+                and target_counts.get(int(definition.cohort_id), 0) == entry.row_count
+            ):
                 reused.append(definition)
             else:
                 to_generate.append(definition)

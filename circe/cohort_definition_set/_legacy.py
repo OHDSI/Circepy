@@ -18,13 +18,10 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Any, Literal
 
 from ._core import CohortDefinition, CohortDefinitionSet
 from ._r_compat import format_file_stem, normalize_header
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

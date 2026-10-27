@@ -3,8 +3,7 @@ name: basic tests
 on:
   push:
     branches: [ develop, main ]   # Run on direct pushes to these branches
-  pull_request:
-    branches: [ develop, main ]   # Run on PRs targeting these branches
+  pull_request:                    # Run on all PRs, including stacked feature PRs
 
 jobs:
   test:
@@ -62,3 +61,51 @@ jobs:
           /tmp/circe-wheel-smoke/bin/pip install dist/*.whl
           /tmp/circe-wheel-smoke/bin/circe --help
           /tmp/circe-wheel-smoke/bin/python -c "import circe; print(circe.__version__)"
+
+  prefect-compat:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Prefect runner dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[prefect,ibis-postgres]" pytest
+
+      - name: Assert the real Prefect decorators are active
+        run: |
+          python -c "from circe.runner.flow import PREFECT_AVAILABLE; assert PREFECT_AVAILABLE"
+
+      - name: Run a real Prefect flow
+        env:
+          PREFECT_SERVER_ALLOW_EPHEMERAL_MODE: "true"
+        run: |
+          pytest -q -o addopts= tests/test_runner.py::test_prefect_cli_flow
+
+  docker-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build runner image
+        run: |
+          docker build -f docker/prefect/Dockerfile -t circe-cohort-runner:ci .
+
+      - name: Import runner and Prefect from the image
+        run: |
+          docker run --rm --entrypoint python circe-cohort-runner:ci -c \
+            "import circe; from circe.runner.flow import PREFECT_AVAILABLE; assert PREFECT_AVAILABLE; print(circe.__version__)"
+
+      - name: Check container entrypoint help
+        run: |
+          docker run --rm circe-cohort-runner:ci --help

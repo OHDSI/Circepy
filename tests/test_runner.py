@@ -286,3 +286,85 @@ def test_backend_databricks_uses_connect_helper(monkeypatch):
     assert captured["server_hostname"] == "host"
     assert captured["personal_access_token"] == "token"
     assert captured["catalog"] == "cat"
+
+
+def test_runner_warns_when_target_is_cdm_schema(tmp_path):
+    db_path = tmp_path / "warning.duckdb"
+    definitions = _write_definitions(tmp_path)
+    _seed_duckdb(db_path)
+    payload = _payload(tmp_path, duckdb_path=db_path, definitions=definitions)
+
+    with pytest.warns(UserWarning, match="target schema is the CDM schema"):
+        run_cohort_generation(payload)
+
+
+def test_runner_refuses_empty_definition_set(tmp_path):
+    from circe.runner import RunnerError
+
+    db_path = tmp_path / "empty.duckdb"
+    definitions = _write_definitions(tmp_path)
+    (definitions / "Cohorts.csv").write_text("cohort_id,cohort_name\n", encoding="utf-8")
+    _seed_duckdb(db_path)
+    payload = _payload(tmp_path, duckdb_path=db_path, definitions=definitions)
+
+    with pytest.raises(RunnerError, match="definition set is empty"):
+        run_cohort_generation(payload)
+
+
+def test_runner_reuses_only_completed_matching_row_counts(tmp_path):
+    import ibis
+
+    db_path = tmp_path / "complete.duckdb"
+    definitions = _write_definitions(tmp_path)
+    _seed_duckdb(db_path)
+    payload = _payload(tmp_path, duckdb_path=db_path, definitions=definitions)
+    run_cohort_generation(payload)
+
+    conn = ibis.duckdb.connect(str(db_path))
+    registry = conn.table("cohort_registry", database="main").execute()
+    assert bool(registry.iloc[0]["completed"]) is True
+    assert int(registry.iloc[0]["row_count"]) == 1
+    conn.raw_sql("DELETE FROM main.cohort WHERE cohort_definition_id = 1")
+    conn.disconnect()
+
+    second = run_cohort_generation(payload)
+    assert second.generated == [1]
+    assert second.reused == []
+
+
+def test_prefect_cli_flow(tmp_path):
+    """Run a real Prefect flow in a child process.
+
+    Prefect's ephemeral server is unreliable when started under pytest's
+    in-process capture in containers, so exercise the actual CLI entry point
+    used by the image instead.
+    """
+    pytest.importorskip("prefect")
+
+    import os
+    import subprocess
+    import sys
+
+    db_path = tmp_path / "prefect_cli.duckdb"
+    definitions = _write_definitions(tmp_path)
+    _seed_duckdb(db_path)
+    payload = _payload(tmp_path, duckdb_path=db_path, definitions=definitions)
+    payload_path = tmp_path / "payload.json"
+    payload_path.write_text(json.dumps(payload.model_dump(mode="json", by_alias=True)), encoding="utf-8")
+
+    env = os.environ.copy()
+    prefect_home = tmp_path / "prefect-home"
+    prefect_home.mkdir()
+    env["PREFECT_HOME"] = str(prefect_home)
+    env["PREFECT_SERVER_ALLOW_EPHEMERAL_MODE"] = "true"
+    result = subprocess.run(
+        [sys.executable, "-m", "circe.runner", "--prefect", "--payload", str(payload_path)],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=180,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert '"status": "COMPLETE"' in result.stdout
+    assert '"generated"' in result.stdout

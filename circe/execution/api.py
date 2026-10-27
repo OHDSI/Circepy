@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import contextlib
 import uuid
+import warnings
 from typing import Literal
 
 from ..cohortdefinition import CohortExpression
@@ -14,7 +16,7 @@ from .ibis.materialize import project_to_ohdsi_cohort_table
 from .ibis.operations import (
     cohort_rows_exist,
     create_table,
-    exclude_cohort_rows,
+    delete_cohort_rows,
     insert_relation,
     read_table,
     replace_cohort_rows_transactionally,
@@ -109,6 +111,30 @@ def build_cohort(
     )
 
 
+def warn_if_writing_to_cdm(
+    results_schema: str | None,
+    cdm_schema: str,
+    *,
+    operation: str,
+    stacklevel: int = 2,
+) -> None:
+    """Warn when a write target may put tables in the CDM schema."""
+    if results_schema is None:
+        warnings.warn(
+            f"{operation}: results_schema is not set. The cohort/session tables may be "
+            f"created in the CDM schema ({cdm_schema!r}); use a scratch/results schema.",
+            UserWarning,
+            stacklevel=stacklevel,
+        )
+    elif results_schema == cdm_schema:
+        warnings.warn(
+            f"{operation}: results_schema equals the CDM schema ({cdm_schema!r}). "
+            "Cohort and session tables must be written to a scratch/results schema.",
+            UserWarning,
+            stacklevel=stacklevel,
+        )
+
+
 def write_relation(
     relation: Table,
     *,
@@ -192,6 +218,8 @@ def write_cohort(
     if if_exists not in {"fail", "replace"}:
         raise ValueError("if_exists must be one of {'fail', 'replace'} for write_cohort.")
 
+    warn_if_writing_to_cdm(results_schema, cdm_schema, operation="write_cohort", stacklevel=3)
+
     session_prefix = ""
     cleanup_schema = results_schema or cdm_schema
 
@@ -252,20 +280,39 @@ def write_cohort(
             )
             return
 
-        existing = read_table(
-            backend,
-            table_name=cohort_table,
-            schema=results_schema,
-        )
-        filtered = exclude_cohort_rows(existing, cohort_id=cohort_id)
-        relation = filtered.union(new_rows, distinct=False)
-        write_relation(
-            relation,
-            backend=backend,
-            target_table=cohort_table,
-            target_schema=results_schema,
-            if_exists="replace",
-        )
+        # Non-transactional backends cannot safely rewrite the whole cohort
+        # table: doing so races other writers and can drop unrelated cohorts.
+        # Materialise this cohort into a scratch table first, then replace only
+        # the target cohort id with a DELETE + INSERT.
+        staging_table = f"__circe_stage_{uuid.uuid4().hex[:8]}"
+        try:
+            write_relation(
+                new_rows,
+                backend=backend,
+                target_table=staging_table,
+                target_schema=results_schema,
+                if_exists="fail",
+            )
+            staged_rows = read_table(
+                backend,
+                table_name=staging_table,
+                schema=results_schema,
+            )
+            delete_cohort_rows(
+                backend,
+                cohort_table=cohort_table,
+                results_schema=results_schema,
+                cohort_id=cohort_id,
+            )
+            insert_relation(
+                staged_rows,
+                backend=backend,
+                target_table=cohort_table,
+                target_schema=results_schema,
+            )
+        finally:
+            with contextlib.suppress(Exception):
+                backend.drop_table(staging_table, database=results_schema, force=True)
     finally:
         if session_prefix:
             _drop_staging_tables(backend, cleanup_schema, session_prefix)

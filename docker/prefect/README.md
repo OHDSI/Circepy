@@ -89,12 +89,27 @@ accepts the same payload dictionary.
 ## Persistence model
 
 - Cohort rows are written to `target.schema.target.table`, one cohort id at a
-  time; rows for other cohort ids are preserved.
-- `target.registry_table` stores the latest definition JSON/checksum per cohort
-  id, so reruns can skip ids whose definition and target rows are unchanged.
+  time. On backends without cohort-scoped transactions, circepy stages the new
+  rows and then deletes/inserts only the affected cohort ids; it never rewrites
+  the whole cohort table.
+- `target.registry_table` stores the latest definition JSON/checksum and a
+  completion marker (`completed`, `row_count`, `completed_at`). Reruns reuse a
+  cohort only when the definition checksum matches, the previous write completed,
+  and the target row count matches the recorded count. A failed or partial run
+  leaves `completed=false` and is regenerated on the next run.
 - If an id already exists with a different definition, the runner fails by
-  default.  Set `on_definition_change="replace"` only when you own that id.
+  default. Set `on_definition_change="replace"` only when you own that id.
   Identifier mapping across users/definitions is deliberately deferred.
+- `target.schema` must be a scratch/results schema. Circepy warns when the target
+  schema is the CDM schema, or when a lower-level API would create session/cohort
+  tables in the CDM schema.
+- Checksums are queryable directly from the registry:
+
+  ```sql
+  SELECT cohort_definition_id, definition_checksum, row_count, completed, completed_at
+  FROM results.cohort_definition_registry
+  ORDER BY cohort_definition_id;
+  ```
 
 ## Databricks
 

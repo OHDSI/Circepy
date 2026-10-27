@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Runner writes now preserve unrelated cohorts on non-transactional backends by
+  staging each cohort and applying a cohort-scoped delete/insert; the full cohort
+  table is no longer rewritten. Definition registry entries carry a completion
+  marker and row count, so partial or interrupted generations are regenerated.
+- Writing cohort/session/oracle tables into the CDM schema now emits a warning;
+  runner and oracle APIs document scratch-schema usage.
+- CI now runs on every pull request and includes real Prefect-flow and Docker
+  image smoke jobs.
 - Prefect-compatible cohort-generation runner (`circe.runner`) and Docker image
   (`docker/prefect/`). The runner accepts a JSON payload with CDM/target
   schemas, table names, definition paths and backend connection; it uses the

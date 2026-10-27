@@ -478,21 +478,28 @@ DROP TABLE #final_cohort;
 
     from circe.cohort_definition_set import verify_against_legacy_sql
 
-    comparisons = verify_against_legacy_sql(
-        cohort_set,
-        backend=conn,
-        cdm_schema="main",
-        vocabulary_schema="main",
-        target_schema="main",
-        target_table="cohort_legacy",
-        generated_table="cohort_circe",
-        target_dialect="duckdb",
-    )
+    with pytest.warns(UserWarning, match="write into the CDM schema"):
+        comparisons = verify_against_legacy_sql(
+            cohort_set,
+            backend=conn,
+            cdm_schema="main",
+            vocabulary_schema="main",
+            target_schema="main",
+            target_table="cohort_legacy",
+            generated_table="cohort_circe",
+            target_dialect="duckdb",
+        )
 
     assert len(comparisons) == 1
     assert comparisons[0].legacy_rows == 1
     assert comparisons[0].generated_rows == 1
     assert comparisons[0].matching_rows is True
+
+
+def test_censor_stats_oracle_table_has_lost_count():
+    from circe.cohort_definition_set._legacy_sql import _RESULT_TABLE_DDL
+
+    assert "lost_count" in _RESULT_TABLE_DDL["cohort_censor_stats"]
 
 
 def test_render_legacy_sql_replaces_placeholders(tmp_path):
@@ -501,7 +508,7 @@ def test_render_legacy_sql_replaces_placeholders(tmp_path):
         tmp_path,
         rows=[{"cohort_id": "5", "cohort_name": "render"}],
         json_files={"5": expression_json},
-        sql_files={"5": "SELECT @target_cohort_id AS id;"},
+        sql_files={"5": "SELECT @target_cohort_id AS id FROM @target_database_schema.@target_cohort_table;"},
     )
     cohort_set = _load(settings_file=settings)
 
@@ -515,6 +522,7 @@ def test_render_legacy_sql_replaces_placeholders(tmp_path):
         target_dialect="duckdb",
     )
     assert "5 AS id" in rendered
+    assert "results.cohort" in rendered
 
 
 def test_verify_requires_loaded_definitions(tmp_path):

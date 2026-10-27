@@ -7,6 +7,7 @@ import contextlib
 import logging
 import threading
 import uuid
+import warnings
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
@@ -145,6 +146,20 @@ async def async_generate_cohort_set(
         A list of :class:`CohortGenerationResult`.
     """
     total = len(cohort_definition_set)
+    if results_schema is None:
+        warnings.warn(
+            "generate_cohort_set: results_schema is not set. The cohort/session tables may be "
+            f"created in the CDM schema ({cdm_schema!r}); use a scratch/results schema.",
+            UserWarning,
+            stacklevel=2,
+        )
+    elif results_schema == cdm_schema:
+        warnings.warn(
+            f"generate_cohort_set: results_schema equals the CDM schema ({cdm_schema!r}). "
+            "Cohort and session tables must be written to a scratch/results schema.",
+            UserWarning,
+            stacklevel=2,
+        )
 
     from ..execution.engine.group_operators import _COMPILED_CORRELATED_EVENTS
 

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+import warnings
 from dataclasses import dataclass
 from typing import Any
 
@@ -47,7 +48,7 @@ _RESULT_TABLE_DDL = {
         "gain_count BIGINT, person_total BIGINT, mode_id BIGINT"
     ),
     "cohort_summary_stats": "cohort_definition_id BIGINT, base_count BIGINT, final_count BIGINT, mode_id BIGINT",
-    "cohort_censor_stats": "cohort_definition_id BIGINT",
+    "cohort_censor_stats": "cohort_definition_id BIGINT, lost_count BIGINT",
 }
 
 
@@ -127,7 +128,7 @@ def render_legacy_sql(
         cdm_schema=cdm_schema,
         vocabulary_schema=vocabulary_schema or cdm_schema,
         results_schema=results_schema,
-        target_schema=target_schema,
+        target_schema=target_schema or results_schema,
         target_table=target_table,
         target_cohort_id=int(definition.cohort_id if target_cohort_id is None else target_cohort_id),
         target_dialect=target_dialect,
@@ -201,6 +202,13 @@ def verify_against_legacy_sql(
 
     target_schema = target_schema or results_schema or cdm_schema
     results_schema = results_schema or target_schema
+    if target_schema == cdm_schema or results_schema == cdm_schema:
+        warnings.warn(
+            "Legacy SQL verification is configured to write into the CDM schema. "
+            "Use a scratch/results schema for the oracle tables; the CDM should be read-only.",
+            UserWarning,
+            stacklevel=2,
+        )
     target_dialect = target_dialect.lower()
     session_id = session_id or uuid.uuid4().hex[:8]
     if not session_id[0].isalpha():
