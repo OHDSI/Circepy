@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import contextlib
+
 import sqlglot as sg
 import sqlglot.expressions as sge
 
@@ -60,7 +62,26 @@ def create_table(
     schema: str | None,
     **kwargs,
 ) -> None:
-    """Create or overwrite a backend table with schema fallback."""
+    """Create or overwrite a backend table with schema fallback.
+
+    Ibis' MSSQL ``overwrite=True`` path creates a temporary table and renames it
+    with a schema-qualified target name.  SQL Server's ``sp_rename`` does not
+    accept a schema-qualified new name, so the table is left outside the target
+    schema (or the rename fails).  Drop explicitly and use the plain create path
+    instead; the caller asked for the old contents to be discarded anyway.
+    """
+    if kwargs.get("overwrite") and getattr(backend, "name", None) == "mssql":
+        drop_table = getattr(backend, "drop_table", None)
+        if callable(drop_table):
+            with contextlib.suppress(Exception):
+                _call_with_optional_database(
+                    drop_table,
+                    table_name,
+                    database=schema,
+                    force=True,
+                )
+        kwargs["overwrite"] = False
+
     _call_with_optional_database(
         backend.create_table,
         table_name,

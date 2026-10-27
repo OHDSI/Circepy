@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pinned `duckdb<2.0.0`; duckdb 2.0 removed `DuckDBPyConnection.fetch_arrow_table`,
   which ibis-framework 12.0.0 still calls internally and which the dependency
   resolver was picking up in CI.
+- SQL Server execution now avoids Ibis' MSSQL `overwrite=True` rename path,
+  which leaves the table outside the target schema because SQL Server's
+  `sp_rename` does not accept a schema-qualified new name.
 
 ## [0.3.0] - 2026-10-06
 
