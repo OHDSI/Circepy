@@ -26,10 +26,20 @@ def _post_connect_needs_workaround(post_connect: Callable[..., Any]) -> bool:
 
 
 def _is_memtable_volume_error(exc: Exception) -> bool:
+    """Return True when *exc* is the memtable-volume setup failure.
+
+    Databricks errors often omit the failing SQL statement, so a missing
+    catalog during ``_post_connect`` (whose only operation is CREATE VOLUME)
+    must be recognised from the server error code as well.
+    """
     message = str(exc).lower()
     if "create volume if not exists" in message:
         return True
-    return bool("memtable" in message and "volume" in message)
+    if "memtable" in message and "volume" in message:
+        return True
+    if "no_such_catalog" in message:
+        return True
+    return "catalog" in message and "not found" in message
 
 
 def _backend_looks_like_databricks(backend: object) -> bool:
@@ -56,17 +66,11 @@ def apply_databricks_post_connect_workaround(
     This helper should be applied lazily by the execution path when a
     Databricks backend is actually used.
     """
-    # Only apply the global Ibis-version short-circuit when we are auto-detecting
-    # the real Databricks backend class from ibis. Tests may pass an explicit fake
-    # backend class to validate patch behavior regardless of installed Ibis version.
+    # Resolve the installed backend when the caller did not supply a class.
+    # Ibis 12.0.0 still performs the CREATE VOLUME in ``_post_connect``, so the
+    # version gate that previously skipped this patch on newer Ibis releases was
+    # wrong. Source inspection below decides whether the patch is needed.
     if backend_cls is None:
-        import ibis
-        from packaging.version import Version
-
-        # If the installed Ibis version is late enough to contain the fix, skip patch
-        if Version(ibis.__version__) >= Version("10.0.0"):
-            return False
-
         backend_cls = _databricks_backend_class()
 
     if backend_cls is None:
@@ -86,7 +90,7 @@ def apply_databricks_post_connect_workaround(
 
     warnings.warn(
         "The Databricks workaround for Ibis issue #11598 is active. "
-        "This will be removed in a future release once older Ibis versions are deprecated.",
+        "It will be removed once the upstream memtable-volume initialisation is fixed.",
         DeprecationWarning,
         stacklevel=2,
     )
@@ -105,6 +109,49 @@ def apply_databricks_post_connect_workaround(
     return True
 
 
+def _databricks_connect_fn() -> Callable[..., Any]:
+    """Return the ibis Databricks connect callable (isolated for testing)."""
+    import ibis
+
+    return ibis.databricks.connect
+
+
+def connect_databricks(*args: Any, **kwargs: Any) -> Any:
+    """Connect to Databricks through ibis with the memtable workaround applied.
+
+    The workaround has to be installed *before* the backend is constructed:
+    ``Backend.do_connect()`` calls ``_post_connect()`` (the CREATE VOLUME
+    statement) while connecting.  Calling
+    :func:`apply_databricks_post_connect_workaround` after
+    ``ibis.databricks.connect()`` is too late for that failure.
+
+    Use this helper instead of ``ibis.databricks.connect()`` when the
+    workspace has no ``hive_metastore`` catalog, or call
+    :func:`apply_databricks_post_connect_workaround` yourself first.
+
+    Args:
+        *args: Positional arguments forwarded to ``ibis.databricks.connect``.
+        **kwargs: Keyword arguments forwarded to ``ibis.databricks.connect``.
+            ``memtable_volume`` can be supplied when a writable volume exists;
+            the workaround then suppresses only the catalog-related failures.
+
+    Returns:
+        The connected ibis Databricks backend.
+
+    Raises:
+        ImportError: If the ibis Databricks backend is not installed.
+    """
+    backend_cls = _databricks_backend_class()
+    if backend_cls is None:
+        raise ImportError(
+            "The ibis Databricks backend is unavailable. "
+            "Install it with: pip install 'ibis-framework[databricks]'"
+        )
+
+    apply_databricks_post_connect_workaround(backend_cls=backend_cls)
+    return _databricks_connect_fn()(*args, **kwargs)
+
+
 def maybe_apply_databricks_post_connect_workaround(backend: object) -> bool:
     """Apply the workaround only for Databricks-like backends."""
     if not _backend_looks_like_databricks(backend):
@@ -115,5 +162,6 @@ def maybe_apply_databricks_post_connect_workaround(backend: object) -> bool:
 __all__ = [
     "ISSUE_REFERENCE",
     "apply_databricks_post_connect_workaround",
+    "connect_databricks",
     "maybe_apply_databricks_post_connect_workaround",
 ]
