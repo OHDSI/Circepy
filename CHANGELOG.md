@@ -30,10 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pinned `duckdb<2.0.0`; duckdb 2.0 removed `DuckDBPyConnection.fetch_arrow_table`,
   which ibis-framework 12.0.0 still calls internally and which the dependency
   resolver was picking up in CI.
-- Databricks shared execution no longer emits a bare `DROP TABLE IF EXISTS`:
-  codeset and checkpoint tables are created without overwrite, and cohort-table
-  replacement stages the new rows and renames explicitly instead of relying on
-  ibis' `create_table(overwrite=True)` path.
 - Databricks ibis connections no longer fail on workspaces without a
   `hive_metastore` catalog (ibis issue #11598). The post-connect workaround now
   applies to ibis >= 10 (including 12.0.0), recognizes missing-catalog errors

@@ -345,7 +345,6 @@ class SharedCohortExecutor:
             results_schema=self._schema,
             vocabulary_schema=self._vocabulary_schema,
             session_prefix=self._session_prefix,
-            overwrite=False,
         )
         self._created_tables.append(f"{self._session_prefix}shared_codesets")
         self._context = make_execution_context(
@@ -360,11 +359,7 @@ class SharedCohortExecutor:
     def _materialize(self, relation: Table, label: str) -> Table:
         self._table_counter += 1
         name = f"{self._session_prefix}shared_{label}_{self._table_counter}"
-        # Checkpoint table names are unique within the executor, so no
-        # overwrite is needed. Avoiding overwrite also avoids Databricks'
-        # create_table() DROP TABLE path, which can render an empty identifier
-        # when the name/schema is unexpected.
-        create_table(self._backend, table_name=name, schema=self._schema, obj=relation, overwrite=False)
+        create_table(self._backend, table_name=name, schema=self._schema, obj=relation, overwrite=True)
         self._created_tables.append(name)
         return read_table(self._backend, table_name=name, schema=self._schema)
 
