@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Prefect-compatible cohort-generation runner (`circe.runner`) and Docker image
+  (`docker/prefect/`). The runner accepts a JSON payload with CDM/target
+  schemas, table names, definition paths and backend connection; it uses the
+  shared-checkpoint generator, persists definitions in a registry table, and
+  reuses cohorts whose definition and target rows are unchanged.
 - Legacy CohortGenerator cohort-definition loading from `Cohorts.csv`,
   `cohorts/*.json` and `sql/sql_server/*.sql` (`load_cohort_definition_set`).
   JSON is authoritative, SQL is retained in memory, and R's `stringi` /
