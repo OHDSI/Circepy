@@ -217,6 +217,25 @@ PGPASSWORD=... python benchmarks/decomposable_cohorts_postgres.py \
     --cdm-schema cdm --vocab-schema vocab --cohorts 32 --repeats 2
 ```
 
+### Prefect/Docker cohort runner
+
+A standalone runner and container image are available under `circe.runner` and
+`docker/prefect/`.  The container accepts a JSON payload with the CDM schema,
+target schema/table, definition paths and backend connection; it uses the
+shared-checkpoint generator and persists per-cohort definitions in a registry
+table so reruns can reuse existing cohorts.
+
+```bash
+docker build -f docker/prefect/Dockerfile -t circe-cohort-runner .
+docker run --rm -e PGPASSWORD="$PGPASSWORD" \
+  -v "$PWD/definitions:/data:ro" \
+  -v "$PWD/payload.json:/payload.json:ro" \
+  circe-cohort-runner
+```
+
+See `docker/prefect/README.md` for the payload format and Prefect deployment
+options.
+
 ### Legacy CohortGenerator cohort sets
 
 Legacy `Cohorts.csv` + `cohorts/*.json` + `sql/sql_server/*.sql` layouts can be
