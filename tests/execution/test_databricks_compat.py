@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import sys
+import types
+
 import pytest
 
 from circe.execution import databricks_compat
@@ -136,3 +139,22 @@ def test_connect_databricks_requires_installed_backend(monkeypatch):
 
     with pytest.raises(ImportError, match="ibis Databricks backend"):
         connect_databricks(server_hostname="host")
+
+
+def test_databricks_backend_class_handles_missing_and_present_modules(monkeypatch):
+    monkeypatch.setitem(sys.modules, "ibis.backends.databricks", None)
+    assert databricks_compat._databricks_backend_class() is None
+
+    fake_module = types.SimpleNamespace(Backend=object)
+    monkeypatch.setitem(sys.modules, "ibis.backends.databricks", fake_module)
+    assert databricks_compat._databricks_backend_class() is fake_module.Backend
+
+
+def test_databricks_connect_fn_reads_ibis_module(monkeypatch):
+    fake_connect = lambda *args, **kwargs: "connected"  # noqa: E731
+    fake_ibis = types.SimpleNamespace(
+        databricks=types.SimpleNamespace(connect=fake_connect),
+    )
+    monkeypatch.setitem(sys.modules, "ibis", fake_ibis)
+
+    assert databricks_compat._databricks_connect_fn() is fake_connect
