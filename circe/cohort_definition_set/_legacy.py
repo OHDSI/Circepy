@@ -229,6 +229,9 @@ def load_cohort_definition_set(
     sql_required: bool = False,
     unsupported: Literal["error", "skip"] = "error",
     base_dir: str | Path | None = None,
+    family_column: str = "family",
+    families: Sequence[str] | None = None,
+    cohort_ids: Sequence[int] | None = None,
 ) -> LegacyCohortDefinitionSet:
     """Load a legacy CohortGenerator-style cohort definition set from disk.
 
@@ -245,6 +248,10 @@ def load_cohort_definition_set(
         unsupported: ``"error"`` (default) or ``"skip"`` for subset, template
             and custom-SQL-only cohorts.
         base_dir: Directory used to resolve relative paths (default: cwd).
+        family_column: CSV column containing the optional family tag.
+        families: Optional family tags to load; untagged cohorts are excluded
+            when this filter is set.
+        cohort_ids: Optional cohort ids to load.
 
     Returns:
         A :class:`LegacyCohortDefinitionSet`; its ``report`` attribute contains
@@ -252,6 +259,8 @@ def load_cohort_definition_set(
     """
     if unsupported not in {"error", "skip"}:
         raise ValueError("unsupported must be 'error' or 'skip'")
+    family_filter = {str(family).strip() for family in families} if families is not None else None
+    id_filter = {int(cohort_id) for cohort_id in cohort_ids} if cohort_ids is not None else None
     if not cohort_file_name_format:
         raise ValueError("cohort_file_name_format must be a non-empty string")
 
@@ -289,6 +298,10 @@ def load_cohort_definition_set(
             raise LegacyCohortSetError(
                 f"cohort_file_name_value column {column!r} is not present in {settings_path}"
             )
+    if family_filter is not None and family_column not in headers:
+        raise LegacyCohortSetError(
+            f"Family column {family_column!r} is not present in {settings_path}; found: {sorted(headers)}"
+        )
 
     report = LegacyCohortSetReport(settings_file=settings_path)
     cohort_set = LegacyCohortDefinitionSet(report)
@@ -298,6 +311,11 @@ def load_cohort_definition_set(
 
     for row_number, row in enumerate(rows, start=2):
         cohort_id = _parse_cohort_id(row["cohortId"], path=settings_path)
+        if id_filter is not None and cohort_id not in id_filter:
+            continue
+        family = row.get(family_column, "").strip() or None
+        if family_filter is not None and family not in family_filter:
+            continue
         cohort_name = row["cohortName"].strip()
         if not cohort_name:
             raise LegacyCohortSetError(
@@ -395,6 +413,7 @@ def load_cohort_definition_set(
             cohort_id=cohort_id,
             cohort_name=cohort_name,
             expression=expression,
+            family=family,
             sql=sql_text,
             metadata=metadata,
             source=CohortSource(

@@ -237,6 +237,32 @@ docker run --rm -e PGPASSWORD="$PGPASSWORD" \
 See `docker/prefect/README.md` for the payload format and Prefect deployment
 options.
 
+#### Family tags and sharding
+
+Add an optional `family` column to `Cohorts.csv` (or pass `family=` when building
+a `CohortDefinitionSet` in Python). Cohorts sharing a family are kept on the same
+worker, so related templates retain shared-checkpoint reuse.
+
+```csv
+cohort_id,cohort_name,family
+1,celecoxib,fam-celecoxib
+2,celecoxib-age40,fam-celecoxib
+3,ibuprofen,fam-ibuprofen
+```
+
+For a large set of families, split them across processes while writing to the
+same scratch cohort table:
+
+```bash
+python -m circe.runner --payload payload.json --shards 10 --max-workers 10
+```
+
+Each shard gets a unique registry table (`<registry>_s000`, ...), reuses the
+shared target table, and retries failed shards. Use `--plan-shards shards.json`
+to emit payloads for Databricks Workflows or Prefect fan-out without running
+generation. A 564-family plan is balanced across 10 shards by family size; the
+`--shards` and `--max-workers` values can be raised as the warehouse allows.
+
 ### Legacy CohortGenerator cohort sets
 
 Legacy `Cohorts.csv` + `cohorts/*.json` + `sql/sql_server/*.sql` layouts can be

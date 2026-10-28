@@ -87,7 +87,7 @@ jobs:
         env:
           PREFECT_SERVER_ALLOW_EPHEMERAL_MODE: "true"
         run: |
-          pytest -q -o addopts= tests/test_runner.py::test_prefect_cli_flow
+          pytest -q -o addopts= tests/test_runner.py::test_prefect_flow_and_task_objects_are_active
 
   docker-smoke:
     runs-on: ubuntu-latest

@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .payload import RunnerPayload
 from .runner import run_cohort_generation
+from .sharding import run_sharded_cohort_generation, write_shard_manifest
 
 
 def _read_payload(path: str) -> dict:
@@ -31,6 +32,29 @@ def main(argv: list[str] | None = None) -> int:
         help="Execute through the Prefect flow instead of calling the runner directly",
     )
     parser.add_argument(
+        "--shards",
+        type=int,
+        default=1,
+        help="Split cohort families across this many shard workers (default: 1)",
+    )
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=10,
+        help="Maximum concurrent shard processes (default: 10)",
+    )
+    parser.add_argument(
+        "--shard-retries",
+        type=int,
+        default=2,
+        help="Retries per shard on generation failure (default: 2)",
+    )
+    parser.add_argument(
+        "--plan-shards",
+        metavar="PATH",
+        help="Write a shard manifest and exit without generating cohorts",
+    )
+    parser.add_argument(
         "--log-level",
         default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
@@ -49,12 +73,39 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        if args.prefect:
+        payload = RunnerPayload.model_validate(payload_dict)
+        if args.plan_shards:
+            destination = write_shard_manifest(
+                payload,
+                args.plan_shards,
+                shard_count=args.shards,
+            )
+            print(json.dumps({"shard_manifest": str(destination), "shards": args.shards}))
+            return 0
+
+        if args.shards > 1:
+            if args.prefect:
+                from .flow import run_sharded_cohort_generation_flow
+
+                result = run_sharded_cohort_generation_flow(
+                    payload_dict,
+                    shard_count=args.shards,
+                    max_workers=args.max_workers,
+                    shard_retries=args.shard_retries,
+                )
+            else:
+                result = run_sharded_cohort_generation(
+                    payload,
+                    shard_count=args.shards,
+                    max_workers=args.max_workers,
+                    retries=args.shard_retries,
+                ).to_dict()
+        elif args.prefect:
             from .flow import run_cohort_generation_flow
 
             result = run_cohort_generation_flow(payload_dict)
         else:
-            result = run_cohort_generation(RunnerPayload.model_validate(payload_dict)).to_dict()
+            result = run_cohort_generation(payload).to_dict()
     except Exception as exc:  # noqa: BLE001 - CLI boundary
         logging.getLogger(__name__).exception("Cohort generation failed")
         print(f"Cohort generation failed: {exc}", file=sys.stderr)

@@ -18,6 +18,7 @@ class CohortDefinition:
     cohort_id: int
     cohort_name: str
     expression: CohortExpression
+    family: str | None = None
 
 
 @dataclass
@@ -51,19 +52,33 @@ class CohortDefinitionSet:
         self._cohorts: list[CohortDefinition] = []
         self._id_index: dict[int, int] = {}  # cohort_id -> list index
 
-    def add(self, cohort_id: int, cohort_name: str, expression: CohortExpression) -> None:
+    def add(
+        self,
+        cohort_id: int,
+        cohort_name: str,
+        expression: CohortExpression,
+        *,
+        family: str | None = None,
+    ) -> None:
         """Add a cohort definition to this set.
 
         Args:
             cohort_id: Unique integer identifier for this cohort.
             cohort_name: Human-readable name for this cohort.
             expression: The CohortExpression defining the cohort logic.
+            family: Optional family/grouping tag used by the shard planner. Cohorts
+                in the same family are kept on the same worker.
 
         Raises:
             ValueError: If a cohort with the same cohort_id already exists.
         """
         self.add_definition(
-            CohortDefinition(cohort_id=cohort_id, cohort_name=cohort_name, expression=expression)
+            CohortDefinition(
+                cohort_id=cohort_id,
+                cohort_name=cohort_name,
+                expression=expression,
+                family=family,
+            )
         )
 
     def add_definition(self, definition: CohortDefinition) -> None:
@@ -97,6 +112,18 @@ class CohortDefinitionSet:
         if cohort_id not in self._id_index:
             raise KeyError(f"No cohort with cohort_id={cohort_id} in this CohortDefinitionSet.")
         return self._cohorts[self._id_index[cohort_id]]
+
+    def families(self) -> dict[str, list[int]]:
+        """Group cohort ids by their optional family tag.
+
+        Untagged cohorts are returned under a per-cohort synthetic family key so
+        callers can still shard them without dropping definitions.
+        """
+        grouped: dict[str, list[int]] = {}
+        for cohort in self._cohorts:
+            key = (cohort.family or "").strip() or f"__cohort_{cohort.cohort_id}"
+            grouped.setdefault(key, []).append(cohort.cohort_id)
+        return grouped
 
     def checksums(self) -> dict[int, str]:
         """Return a mapping of cohort_id to the expression checksum for each cohort.

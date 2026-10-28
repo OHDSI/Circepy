@@ -111,6 +111,36 @@ accepts the same payload dictionary.
   ORDER BY cohort_definition_id;
   ```
 
+## Family sharding
+
+Cohorts can carry a `family` tag in `Cohorts.csv`:
+
+```csv
+cohort_id,cohort_name,family
+1,celecoxib,fam-celecoxib
+2,celecoxib-age40,fam-celecoxib
+3,ibuprofen,fam-ibuprofen
+```
+
+Families are atomic: all cohorts in a family run in one worker so shared
+checkpoint reuse is retained. For large sets, run family-balanced shards against
+the same target table:
+
+```bash
+# 564 families, 10 processes, same target schema/table
+docker run --rm ... circe-cohort-runner \
+  --shards 10 --max-workers 10
+
+# Write a manifest for Databricks Workflows / Prefect fan-out instead
+docker run --rm ... circe-cohort-runner \
+  --shards 10 --plan-shards /tmp/shards.json
+```
+
+Each shard receives its own `<registry>_sNNN` table; the cohort table is shared.
+The driver pre-creates the target and session tables before workers start and
+retries failed shards. Start with 10 workers and raise `--shards`/
+`--max-workers` gradually while watching Delta concurrency errors.
+
 ## Databricks
 
 Set `backend.type="databricks"` and provide `server_hostname`, `http_path`,

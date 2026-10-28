@@ -55,6 +55,9 @@ class DefinitionSource(BaseModel):
     base_dir: str | None = None
     cohort_file_name_format: str = "%s"
     cohort_file_name_value: list[str] = Field(default_factory=lambda: ["cohortId"])
+    family_column: str = "family"
+    families: list[str] | None = None
+    cohort_ids: list[int] | None = None
     include_sql: bool = True
     sql_required: bool = False
     unsupported: Literal["error", "skip"] = "error"

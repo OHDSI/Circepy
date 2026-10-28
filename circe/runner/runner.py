@@ -71,6 +71,9 @@ def _load_definitions(payload: RunnerPayload):
         sql_required=source.sql_required,
         unsupported=source.unsupported,
         base_dir=source.base_dir,
+        family_column=source.family_column,
+        families=source.families,
+        cohort_ids=source.cohort_ids,
     )
 
 
