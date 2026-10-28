@@ -277,11 +277,16 @@ def _drop_schema(connection: Any, key: str, schema: str) -> None:
 
 
 def _create_cdm_table(connection: Any, schema: str | None, name: str, data: dict[str, list[Any]]) -> None:
+    from circe.execution.ibis.operations import create_table
+
     ibis = pytest.importorskip("ibis")
-    kwargs = {"obj": ibis.memtable(data), "overwrite": True}
-    if schema is not None:
-        kwargs["database"] = schema
-    connection.create_table(name, **kwargs)
+    create_table(
+        connection,
+        table_name=name,
+        schema=schema,
+        obj=ibis.memtable(data),
+        overwrite=True,
+    )
 
 
 def seed_cdm(connection: Any, schema: str | None) -> None:
