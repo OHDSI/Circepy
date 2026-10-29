@@ -1,0 +1,119 @@
+name: database tests
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dialects:
+    name: SQL dialects (HADES platforms)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run cross-dialect tests
+        run: pytest tests/test_database_dialects.py -q
+
+  postgres:
+    name: Live execution (PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: circe_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d circe_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CIRCE_TEST_POSTGRES_URL: postgresql://postgres:postgres@localhost:5432/circe_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package with PostgreSQL support
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,ibis-postgres]"
+
+      - name: Run live contract tests
+        run: pytest tests/execution/test_database_backends.py -q -m integration
+
+  sqlserver:
+    name: Live execution (SQL Server)
+    runs-on: ubuntu-latest
+    # Non-blocking until the ODBC service setup has a stable CI history.
+    continue-on-error: true
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "CirceTest!Passw0rd"
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'CirceTest!Passw0rd' -C -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      CIRCE_TEST_MSSQL_URL: mssql://sa:CirceTest%21Passw0rd@localhost:1433/circe_test
+      CIRCE_TEST_MSSQL_DRIVER: ODBC Driver 18 for SQL Server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Microsoft ODBC driver
+        run: |
+          curl -sSL https://packages.microsoft.com/keys/microsoft.asc \
+            | sudo gpg --batch --yes --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+          echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/ubuntu/24.04/prod noble main" \
+            | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 mssql-tools18 unixodbc-dev
+          echo "/opt/mssql-tools18/bin" >> "$GITHUB_PATH"
+
+      - name: Create test database
+        run: |
+          sqlcmd -S localhost -U sa -P 'CirceTest!Passw0rd' -C \
+            -Q "IF DB_ID('circe_test') IS NULL CREATE DATABASE circe_test;"
+
+      - name: Install package with SQL Server support
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,ibis-postgres,ibis-mssql]"
+
+      - name: Run live contract tests
+        run: pytest tests/execution/test_database_backends.py -q -m integration

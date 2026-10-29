@@ -53,6 +53,7 @@ A Python implementation of the OHDSI CIRCE-BE (Cohort Inclusion and Restriction 
    developer/architecture
    developer/extensions
    developer/testing
+   developer/database-testing
    developer/release
 
 .. toctree::

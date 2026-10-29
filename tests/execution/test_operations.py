@@ -337,3 +337,36 @@ def test_catalog_db_tuple_uses_backend_helpers_and_falls_back_cleanly():
     assert _catalog_db_tuple(_CatalogBackend(), "results") == ("catalog", "database")
     assert _catalog_db_tuple(_BrokenCatalogBackend(), "results") == (None, "results")
     assert _catalog_db_tuple(object(), None) == (None, None)
+
+
+class _MssqlOverwriteBackend:
+    name = "mssql"
+
+    def __init__(self):
+        self.calls: list[tuple[str, str, object, object]] = []
+
+    def drop_table(self, name, *, database=None, force=False):
+        self.calls.append(("drop_table", name, database, force))
+
+    def create_table(self, name, *, obj=None, database=None, overwrite=False, **kwargs):
+        self.calls.append(("create_table", name, database, overwrite))
+
+
+def test_create_table_mssql_avoids_ibis_overwrite_rename():
+    backend = _MssqlOverwriteBackend()
+
+    create_table(
+        backend,
+        table_name="cohort_out",
+        schema="results",
+        obj=object(),
+        overwrite=True,
+    )
+
+    # Ibis' MSSQL overwrite path renames a temp table with a schema-qualified
+    # target name, which sp_rename does not accept.  The wrapper should drop the
+    # old table and use the plain create path instead.
+    assert backend.calls == [
+        ("drop_table", "cohort_out", "results", True),
+        ("create_table", "cohort_out", "results", False),
+    ]
