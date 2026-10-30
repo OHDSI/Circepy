@@ -92,10 +92,11 @@ accepts the same payload dictionary.
   time. On backends without cohort-scoped transactions, circepy stages the new
   rows and then deletes/inserts only the affected cohort ids; it never rewrites
   the whole cohort table.
-- `target.registry_table` stores the latest definition JSON/checksum and a
-  completion marker (`completed`, `row_count`, `completed_at`). Each cohort is
-  marked complete immediately after its rows are written, not at the end of the
-  shard. Reruns reuse a cohort only when the definition checksum matches, the
+- `target.registry_table` stores the definition checksum and a completion
+  marker (`completed`, `row_count`, `completed_at`). It does not store full
+  definition JSON or SQL, keeping registry writes small and portable. Each
+  cohort is marked complete immediately after its rows are written, not at the
+  end of the shard. Reruns reuse a cohort only when the definition checksum matches, the
   previous write completed, and the target row count matches the recorded count.
   An interrupted shard therefore resumes at cohort granularity; only the cohort
   that was in flight needs to be regenerated. Registry writes reconnect before

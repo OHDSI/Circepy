@@ -122,7 +122,15 @@ def test_runner_generates_and_reuses_cohorts(tmp_path):
     assert conn.table("cohort", database="main").count().execute() == 1
     registry = conn.table("cohort_registry", database="main").execute()
     assert len(registry) == 1
-    assert json.loads(registry.iloc[0]["definition_json"])["PrimaryCriteria"] is not None
+    assert set(registry.columns) == {
+        "cohort_definition_id",
+        "cohort_name",
+        "definition_checksum",
+        "completed",
+        "row_count",
+        "updated_at",
+        "completed_at",
+    }
     conn.disconnect()
 
     second = run_cohort_generation(payload)

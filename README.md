@@ -222,7 +222,7 @@ PGPASSWORD=... python benchmarks/decomposable_cohorts_postgres.py \
 A standalone runner and container image are available under `circe.runner` and
 `docker/prefect/`.  The container accepts a JSON payload with the CDM schema,
 target schema/table, definition paths and backend connection; it uses the
-shared-checkpoint generator and persists per-cohort definitions in a registry
+shared-checkpoint generator and persists per-cohort completion state in a registry
 table so reruns can reuse existing cohorts. The target schema should be a
 scratch/results schema; writing into the CDM schema emits a warning.
 

@@ -1,9 +1,8 @@
 """Persistent definition registry and reuse checks for the runner.
 
-The registry stores the latest definition per ``cohort_definition_id``.  It is
-what makes a shared, persistent cohort table usable by multiple users: rows for
-other cohort ids are never touched, and a rerun can skip cohorts whose
-definition checksum and target rows are already present.
+The registry stores completion state per ``cohort_definition_id`` (checksum,
+completion marker and row count).  It does not store definition JSON/SQL, which
+keeps registry writes small and portable across data sources.
 
 Identifier collisions (same id, different definition) are intentionally not
 resolved yet.  They fail by default so a later identifier-mapping layer can be
@@ -12,8 +11,6 @@ added without silently corrupting another user's cohort.
 
 from __future__ import annotations
 
-import json
-import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -30,15 +27,10 @@ from ..execution.ibis.operations import (
 from ..execution.ibis_compat import literal_rows_relation
 from ._core_types import CohortDefinitionLike
 
-logger = logging.getLogger(__name__)
-
 _REGISTRY_SCHEMA = {
     "cohort_definition_id": "int64",
     "cohort_name": "string",
     "definition_checksum": "string",
-    "definition_json": "string",
-    "sql": "string",
-    "metadata_json": "string",
     "completed": "boolean",
     "row_count": "int64",
     "updated_at": "timestamp",
@@ -64,7 +56,7 @@ class RegistryEntry:
 
 
 class DefinitionRegistry:
-    """Small persistent registry of cohort definitions."""
+    """Small persistent registry of cohort completion state."""
 
     def __init__(
         self,
@@ -144,22 +136,11 @@ class DefinitionRegistry:
 
         rows = []
         for definition in definitions:
-            metadata = getattr(definition, "metadata", {}) or {}
-            source = getattr(definition, "source", None)
-            if source is not None:
-                metadata = {
-                    **metadata,
-                    "_json_file": str(source.json_file),
-                    "_sql_file": str(source.sql_file) if source.sql_file else None,
-                }
             rows.append(
                 [
                     int(definition.cohort_id),
                     str(definition.cohort_name),
                     definition.expression.checksum(),
-                    definition.expression.model_dump_json(by_alias=True),
-                    getattr(definition, "sql", None),
-                    json.dumps(metadata, sort_keys=True, default=str),
                     bool(completed),
                     row_counts.get(int(definition.cohort_id), 0),
                     now,
