@@ -357,3 +357,71 @@ def test_prefect_flow_and_task_objects_are_active():
     assert isinstance(generate_sharded_cohort_set_task, Task)
     assert run_cohort_generation_flow.name == "circe-cohort-generation"
     assert run_sharded_cohort_generation_flow.name == "circe-cohort-generation-sharded"
+
+
+def _write_two_valid_definitions(root: Path) -> Path:
+    definitions = _write_definitions(root)
+    (definitions / "cohorts" / "2.json").write_text(
+        _expression().model_dump_json(by_alias=True), encoding="utf-8"
+    )
+    with (definitions / "Cohorts.csv").open("a", encoding="utf-8") as handle:
+        handle.write("2,second\n")
+    return definitions
+
+
+def test_runner_persists_completed_cohorts_before_batch_finishes(tmp_path, monkeypatch):
+    """A later cohort failure must not discard earlier completed cohorts."""
+    import ibis
+
+    import circe.runner.runner as runner_module
+    from circe.cohort_definition_set import CohortDefinitionSet
+
+    db_path = tmp_path / "partial.duckdb"
+    definitions = _write_two_valid_definitions(tmp_path)
+    _seed_duckdb(db_path)
+    payload = _payload(tmp_path, duckdb_path=db_path, definitions=definitions)
+
+    real_generate = runner_module.generate_cohort_set
+
+    def fake_generate(subset, **kwargs):
+        first = next(iter(subset))
+        one = CohortDefinitionSet()
+        one.add_definition(first)
+        real_generate(one, **kwargs)
+        raise RuntimeError("simulated cohort failure")
+
+    monkeypatch.setattr(runner_module, "generate_cohort_set", fake_generate)
+    with pytest.raises(RuntimeError, match="simulated cohort failure"):
+        run_cohort_generation(payload)
+    monkeypatch.setattr(runner_module, "generate_cohort_set", real_generate)
+
+    conn = ibis.duckdb.connect(str(db_path))
+    registry = conn.table("cohort_registry", database="main").execute()
+    status = {int(row["cohort_definition_id"]): bool(row["completed"]) for _, row in registry.iterrows()}
+    assert status == {1: True, 2: False}
+    conn.disconnect()
+
+    second = run_cohort_generation(payload)
+    assert second.reused == [1]
+    assert second.generated == [2]
+
+
+def test_registry_action_reconnects_once_after_stale_connection():
+    from circe.runner.runner import _with_reconnect
+
+    attempts = []
+    reconnects = []
+
+    class Backend:
+        def reconnect(self):
+            reconnects.append(True)
+
+    def action():
+        attempts.append(True)
+        if len(attempts) == 1:
+            raise RuntimeError("stale connection")
+
+    _with_reconnect(Backend(), action)
+
+    assert len(attempts) == 2
+    assert reconnects == [True]

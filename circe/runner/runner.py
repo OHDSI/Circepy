@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import time
 import warnings
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -57,6 +58,19 @@ class RunnerResult:
             "duration_seconds": round(self.duration_seconds, 3),
             "metadata": dict(self.metadata),
         }
+
+
+def _with_reconnect(backend: Any, action: Callable[[], None]) -> None:
+    """Run a registry action, reconnecting once if the connection went stale."""
+    try:
+        action()
+    except Exception:
+        reconnect = getattr(backend, "reconnect", None)
+        if not callable(reconnect):
+            raise
+        logger.warning("Registry connection failed; reconnecting and retrying", exc_info=True)
+        reconnect()
+        action()
 
 
 def _load_definitions(payload: RunnerPayload):
@@ -123,10 +137,17 @@ def run_cohort_generation(payload: RunnerPayload) -> RunnerResult:
         generation_results: list[dict[str, Any]] = []
         if to_generate:
             if registry is not None:
-                registry.mark_incomplete(to_generate)
+                _with_reconnect(backend, lambda: registry.mark_incomplete(to_generate))
             subset = CohortDefinitionSet()
+            definitions_by_id = {int(definition.cohort_id): definition for definition in to_generate}
             for definition in to_generate:
                 subset.add_definition(definition)
+
+            def _mark_complete(result: Any) -> None:
+                if registry is None:
+                    return
+                definition = definitions_by_id[int(result.cohort_id)]
+                _with_reconnect(backend, lambda: registry.mark_complete(definition))
 
             results = generate_cohort_set(
                 subset,
@@ -136,6 +157,7 @@ def run_cohort_generation(payload: RunnerPayload) -> RunnerResult:
                 results_schema=payload.results_schema,
                 cohort_table=target.table,
                 shared=payload.shared,
+                on_cohort_complete=_mark_complete,
             )
             generated_ids = [result.cohort_id for result in results if result.status == "COMPLETE"]
             generation_results = [
@@ -154,9 +176,6 @@ def run_cohort_generation(payload: RunnerPayload) -> RunnerResult:
                     "Cohort generation failed for ids: "
                     + ", ".join(str(result.cohort_id) for result in failed)
                 )
-
-        if registry is not None:
-            registry.upsert(definitions)
 
         elapsed = time.perf_counter() - started
         logger.info(

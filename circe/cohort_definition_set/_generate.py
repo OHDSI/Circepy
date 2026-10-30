@@ -8,6 +8,7 @@ import logging
 import threading
 import uuid
 import warnings
+from collections.abc import Callable
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
@@ -108,6 +109,7 @@ async def async_generate_cohort_set(
     stop_on_error: bool = True,
     compile_timeout: float | None = None,
     shared: bool = False,
+    on_cohort_complete: Callable[[CohortGenerationResult], None] | None = None,
 ) -> list[CohortGenerationResult]:
     """Generate all cohorts in a CohortDefinitionSet and write them to a shared table.
 
@@ -141,6 +143,10 @@ async def async_generate_cohort_set(
         compile_timeout: Maximum seconds per-cohort before timeout.
         shared: If True, reuse checkpoints shared by cohorts with the same
             primary/qualified/rule content (default: False).
+        on_cohort_complete: Optional synchronous callback invoked immediately
+            after each cohort is successfully written. Use this to persist
+            per-cohort completion state before the rest of the batch finishes.
+            Callback exceptions abort the batch.
 
     Returns:
         A list of :class:`CohortGenerationResult`.
@@ -377,6 +383,8 @@ async def async_generate_cohort_set(
                     start_time=start_time or datetime.now(),
                     end_time=end_time or datetime.now(),
                 )
+            if on_cohort_complete is not None:
+                on_cohort_complete(results[-1])
 
         summary = summarise_generation_results(results)
         logger.info(
@@ -415,6 +423,7 @@ def generate_cohort_set(
     checksum_table: str | None = None,
     stop_on_error: bool = True,
     shared: bool = False,
+    on_cohort_complete: Callable[[CohortGenerationResult], None] | None = None,
 ) -> list[CohortGenerationResult]:
     """Generate all cohorts in a CohortDefinitionSet and write them to a shared table.
 
@@ -438,6 +447,7 @@ def generate_cohort_set(
             checksum_table=checksum_table,
             stop_on_error=stop_on_error,
             shared=shared,
+            on_cohort_complete=on_cohort_complete,
         )
     )
 

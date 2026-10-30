@@ -185,6 +185,23 @@ class DefinitionRegistry:
         """
         self._write(definitions, completed=False)
 
+    def target_count(self, cohort_id: int) -> int:
+        """Return the number of target rows for one cohort id."""
+        if not table_exists(self.backend, table_name=self.target_table, schema=self.schema):
+            return 0
+        table = read_table(self.backend, table_name=self.target_table, schema=self.schema)
+        value = table.filter(table.cohort_definition_id.cast("int64") == int(cohort_id)).count().execute()
+        return int(value)
+
+    def mark_complete(self, definition: CohortDefinitionLike) -> None:
+        """Record one successfully generated cohort immediately."""
+        cohort_id = int(definition.cohort_id)
+        self._write(
+            [definition],
+            completed=True,
+            row_counts={cohort_id: self.target_count(cohort_id)},
+        )
+
     def upsert(self, definitions: list[CohortDefinitionLike]) -> None:
         """Record successfully generated/reused definitions with completion data."""
         self._write(

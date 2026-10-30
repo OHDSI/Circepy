@@ -93,10 +93,12 @@ accepts the same payload dictionary.
   rows and then deletes/inserts only the affected cohort ids; it never rewrites
   the whole cohort table.
 - `target.registry_table` stores the latest definition JSON/checksum and a
-  completion marker (`completed`, `row_count`, `completed_at`). Reruns reuse a
-  cohort only when the definition checksum matches, the previous write completed,
-  and the target row count matches the recorded count. A failed or partial run
-  leaves `completed=false` and is regenerated on the next run.
+  completion marker (`completed`, `row_count`, `completed_at`). Each cohort is
+  marked complete immediately after its rows are written, not at the end of the
+  shard. Reruns reuse a cohort only when the definition checksum matches, the
+  previous write completed, and the target row count matches the recorded count.
+  An interrupted shard therefore resumes at cohort granularity; only the cohort
+  that was in flight needs to be regenerated.
 - If an id already exists with a different definition, the runner fails by
   default. Set `on_definition_change="replace"` only when you own that id.
   Identifier mapping across users/definitions is deliberately deferred.
