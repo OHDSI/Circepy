@@ -214,9 +214,10 @@ def insert_rows_via_raw_sql(
     try:
         raw_sql(statement)
     except Exception as exc:
+        detail = f"{type(exc).__name__}: {exc}"
         raise ExecutionError(
             "Ibis executor write error: failed inserting rows into "
-            f"table '{table_name}' in schema '{schema}'."
+            f"table '{table_name}' in schema '{schema}' ({detail})."
         ) from exc
 
 
@@ -297,9 +298,10 @@ def insert_relation(
         )
     except Exception as exc:
         schema_label = target_schema if target_schema is not None else "<default>"
+        detail = f"{type(exc).__name__}: {exc}"
         raise ExecutionError(
             "Ibis executor write error: failed inserting relation into "
-            f"table '{target_table}' in schema '{schema_label}'."
+            f"table '{target_table}' in schema '{schema_label}' ({detail})."
         ) from exc
 
 

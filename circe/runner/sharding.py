@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+import traceback
 import warnings
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -324,7 +325,9 @@ def run_sharded_cohort_generation(
                 results[shard.shard_id] = future.result()
             except Exception as exc:  # noqa: BLE001 - aggregate shard failures
                 logger.exception("Shard %d failed", shard.shard_id)
-                errors[shard.shard_id] = str(exc)
+                errors[shard.shard_id] = "".join(
+                    traceback.format_exception(type(exc), exc, exc.__traceback__)
+                )
 
     if errors:
         detail = ", ".join(f"{shard_id}: {message}" for shard_id, message in sorted(errors.items()))

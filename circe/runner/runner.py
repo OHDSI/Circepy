@@ -60,17 +60,63 @@ class RunnerResult:
         }
 
 
-def _with_reconnect(backend: Any, action: Callable[[], None]) -> None:
-    """Run a registry action, reconnecting once if the connection went stale."""
-    try:
-        action()
-    except Exception:
-        reconnect = getattr(backend, "reconnect", None)
-        if not callable(reconnect):
-            raise
-        logger.warning("Registry connection failed; reconnecting and retrying", exc_info=True)
-        reconnect()
-        action()
+class _RegistryWriter:
+    """Own a short-lived registry connection and retry writes with backoff.
+
+    The registry is written per cohort.  Before each write the backend is
+    reconnected so a long-running job cannot hold a stale session; on failure
+    the connection is dropped and replaced with a fresh one before retrying.
+    """
+
+    def __init__(self, payload: RunnerPayload, target: Any) -> None:
+        self._payload = payload
+        self._target = target
+        self._backend: Any = None
+        self._registry: DefinitionRegistry | None = None
+
+    def _connect(self) -> None:
+        self.close()
+        self._backend = connect_backend(self._payload.backend)
+        self._registry = DefinitionRegistry(
+            self._backend,
+            schema=self._target.schema_name,
+            table_name=self._target.registry_table,
+            target_table=self._target.table,
+        )
+
+    def write(self, action: Callable[[DefinitionRegistry], None], *, attempts: int = 3) -> None:
+        last_error: Exception | None = None
+        for attempt in range(attempts):
+            try:
+                if self._registry is None:
+                    self._connect()
+                else:
+                    reconnect = getattr(self._backend, "reconnect", None)
+                    if callable(reconnect):
+                        reconnect()
+                action(self._registry)
+                return
+            except Exception as exc:  # noqa: BLE001 - retried, then surfaced
+                last_error = exc
+                self.close()
+                if attempt < attempts - 1:
+                    delay = min(2**attempt, 30)
+                    logger.warning(
+                        "Registry write failed (attempt %d/%d); reconnecting in %ss: %s",
+                        attempt + 1,
+                        attempts,
+                        delay,
+                        exc,
+                    )
+                    time.sleep(delay)
+        assert last_error is not None
+        raise last_error
+
+    def close(self) -> None:
+        if self._backend is not None:
+            close_backend(self._backend)
+            self._backend = None
+            self._registry = None
 
 
 def _load_definitions(payload: RunnerPayload):
@@ -116,6 +162,7 @@ def run_cohort_generation(payload: RunnerPayload) -> RunnerResult:
         )
 
     backend = connect_backend(payload.backend)
+    writer = _RegistryWriter(payload, target) if target.registry_table else None
     try:
         registry: DefinitionRegistry | None = None
         to_generate = definitions
@@ -136,18 +183,18 @@ def run_cohort_generation(payload: RunnerPayload) -> RunnerResult:
         generated_ids: list[int] = []
         generation_results: list[dict[str, Any]] = []
         if to_generate:
-            if registry is not None:
-                _with_reconnect(backend, lambda: registry.mark_incomplete(to_generate))
+            if writer is not None:
+                writer.write(lambda registry: registry.mark_incomplete(to_generate))
             subset = CohortDefinitionSet()
             definitions_by_id = {int(definition.cohort_id): definition for definition in to_generate}
             for definition in to_generate:
                 subset.add_definition(definition)
 
             def _mark_complete(result: Any) -> None:
-                if registry is None:
+                if writer is None:
                     return
                 definition = definitions_by_id[int(result.cohort_id)]
-                _with_reconnect(backend, lambda: registry.mark_complete(definition))
+                writer.write(lambda registry: registry.mark_complete(definition))
 
             results = generate_cohort_set(
                 subset,
@@ -206,6 +253,8 @@ def run_cohort_generation(payload: RunnerPayload) -> RunnerResult:
             metadata=payload.metadata,
         )
     finally:
+        if writer is not None:
+            writer.close()
         close_backend(backend)
 
 

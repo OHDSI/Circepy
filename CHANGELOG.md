@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Per-cohort completion persistence. Each cohort is marked complete in the
   registry immediately after its rows are written, so interrupted/long-running
   shards resume from the last completed cohort instead of restarting the whole
-  shard. Registry writes reconnect once after a stale connection and retry.
+  shard. Registry writes use a short-lived reconnected connection per write,
+  retry with backoff, and surface the original backend error in `ShardingError`.
 - Optional cohort `family` tags and family-aware sharding. Families stay on one
   worker; `--shards`/`--max-workers` split them across processes writing to the
   same target table. `--plan-shards` emits a manifest for Databricks Workflows

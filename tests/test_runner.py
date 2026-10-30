@@ -406,22 +406,43 @@ def test_runner_persists_completed_cohorts_before_batch_finishes(tmp_path, monke
     assert second.generated == [2]
 
 
-def test_registry_action_reconnects_once_after_stale_connection():
-    from circe.runner.runner import _with_reconnect
+def test_registry_writer_replaces_stale_connection(monkeypatch):
+    import circe.runner.runner as runner_module
 
-    attempts = []
-    reconnects = []
+    connects = []
 
-    class Backend:
-        def reconnect(self):
-            reconnects.append(True)
+    class FakeRegistry:
+        pass
 
-    def action():
-        attempts.append(True)
-        if len(attempts) == 1:
+    class FakeBackend:
+        def disconnect(self):
+            pass
+
+    def fake_connect(config):
+        connects.append(True)
+        return FakeBackend()
+
+    monkeypatch.setattr(runner_module, "connect_backend", fake_connect)
+    monkeypatch.setattr(runner_module, "DefinitionRegistry", lambda backend, **kwargs: FakeRegistry())
+    monkeypatch.setattr(runner_module, "close_backend", lambda backend: None)
+
+    payload = RunnerPayload.model_validate(
+        {
+            "cdm_schema": "main",
+            "target": {"schema": "results", "registry_table": "registry"},
+            "backend": {"type": "duckdb", "duckdb_path": ":memory:"},
+        }
+    )
+    writer = runner_module._RegistryWriter(payload, payload.target)
+
+    writes = []
+
+    def action(registry):
+        writes.append(True)
+        if len(writes) == 1:
             raise RuntimeError("stale connection")
 
-    _with_reconnect(Backend(), action)
+    writer.write(action, attempts=2)
 
-    assert len(attempts) == 2
-    assert reconnects == [True]
+    assert writes == [True, True]
+    assert connects == [True, True]

@@ -98,7 +98,9 @@ accepts the same payload dictionary.
   shard. Reruns reuse a cohort only when the definition checksum matches, the
   previous write completed, and the target row count matches the recorded count.
   An interrupted shard therefore resumes at cohort granularity; only the cohort
-  that was in flight needs to be regenerated.
+  that was in flight needs to be regenerated. Registry writes reconnect before
+  each write and retry with a fresh connection, and the original backend error
+  is chained into `ShardingError`.
 - If an id already exists with a different definition, the runner fails by
   default. Set `on_definition_change="replace"` only when you own that id.
   Identifier mapping across users/definitions is deliberately deferred.
