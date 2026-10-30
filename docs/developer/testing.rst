@@ -120,6 +120,15 @@ Rules
 * parity and regression tests should stay small and named after the bug or
   contract they protect
 
+Database Platform Testing
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The SQL Renderer and the Ibis execution engine are tested against every
+non-Oracle platform in the HADES support matrix.  The dialect tests run with the
+normal suite; live PostgreSQL/SQL Server tests use service containers in CI.
+See :doc:`database-testing` for the platform matrix, environment variables and
+instructions for adding a backend.
+
 Local Gate
 ~~~~~~~~~~
 

@@ -53,6 +53,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stand-alone batch generation on a synthetic DuckDB CDM, and
   `benchmarks/decomposable_cohorts_postgres.py` for an existing PostgreSQL OMOP
   CDM with two-way `EXCEPT ALL` verification.
+- Cross-dialect and live database tests covering the HADES platform matrix
+  (PostgreSQL, SQL Server, Redshift, SQLite, DuckDB, IRIS, Snowflake, Spark,
+  Synapse and BigQuery; Oracle is excluded as a legacy target).  The suite
+  checks rendered and Ibis-compiled cohort SQL for every platform and runs a
+  backend-agnostic execution contract against DuckDB, PostgreSQL and SQL Server
+  in CI.  See `docs/developer/database-testing.rst`.
+- `ibis-mssql`, `ibis-snowflake` and `ibis-bigquery` optional dependency groups.
 
 ### Fixed
 - Pinned `duckdb<2.0.0`; duckdb 2.0 removed `DuckDBPyConnection.fetch_arrow_table`,
@@ -63,6 +70,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   applies to ibis >= 10 (including 12.0.0), recognizes missing-catalog errors
   that omit the SQL text, and the new `connect_databricks()` helper installs it
   before `_post_connect()` runs.
+- SQL Server execution now avoids Ibis' MSSQL `overwrite=True` rename path,
+  which leaves the table outside the target schema because SQL Server's
+  `sp_rename` does not accept a schema-qualified new name.
 
 ## [0.3.0] - 2026-10-06
 
