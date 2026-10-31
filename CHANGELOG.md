@@ -10,6 +10,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Cohorts are now generated into a checksum-keyed cache and copied into the
+  integer-id study cohort table in a final phase. Integer cohort ids no longer
+  define cache identity; repeated ids/definitions reuse one cache entry. Cache,
+  registry and output table names are configurable, keeping persistent table
+  count constant. Cache staging is tracked for independent cleanup.
+- Registry tables now store only a definition checksum and completion marker
+  (`completed`, `row_count`, `completed_at`); full definition JSON and SQL text
+  are no longer written, so registry inserts stay small across data sources.
+- Per-cohort completion persistence. Each cohort is marked complete in the
+  registry immediately after its rows are written, so interrupted/long-running
+  shards resume from the last completed cohort instead of restarting the whole
+  shard. Registry writes use a short-lived reconnected connection per write,
+  retry with backoff, and surface the original backend error in `ShardingError`.
+- Optional cohort `family` tags and family-aware sharding. Families stay on one
+  worker; `--shards`/`--max-workers` split them across processes writing to the
+  same target table. `--plan-shards` emits a manifest for Databricks Workflows
+  or Prefect fan-out. Shards use independent registry tables, pre-create the
+  shared target/session tables, and retry failed shards.
+- Runner writes now preserve unrelated cohorts on non-transactional backends by
+  staging each cohort and applying a cohort-scoped delete/insert; the full cohort
+  table is no longer rewritten. Definition registry entries carry a completion
+  marker and row count, so partial or interrupted generations are regenerated.
+- Writing cohort/session/oracle tables into the CDM schema now emits a warning;
+  runner and oracle APIs document scratch-schema usage.
+- CI now runs on every pull request and includes Prefect compatibility and Docker
+  image smoke jobs.
+- Prefect-compatible cohort-generation runner (`circe.runner`) and Docker image
+  (`docker/prefect/`). The runner accepts a JSON payload with CDM/target
+  schemas, table names, definition paths and backend connection; it uses the
+  shared-checkpoint generator, persists definitions in a registry table, and
+  reuses cohorts whose definition and target rows are unchanged.
+- Legacy CohortGenerator cohort-definition loading from `Cohorts.csv`,
+  `cohorts/*.json` and `sql/sql_server/*.sql` (`load_cohort_definition_set`).
+  JSON is authoritative, SQL is retained in memory, and R's `stringi` /
+  `SqlRender` string handling is mirrored for headers, file stems and
+  transliteration. Legacy SQL can be executed as an oracle and compared with
+  shared or stand-alone cohort generation (`verify_against_legacy_sql`).
+- Decomposable cohort sets: `decompose_cohort_set()` recovers shared bases plus
+  v1-placed refinements (additional criteria, inclusion rules, limits, end
+  strategy, censoring, censor window, collapse, added concept sets) and
+  `Decomposition.flatten()` reconstructs stand-alone definitions.
+- Shared-checkpoint batch generation via `generate_cohort_set(..., shared=True)`.
+  Primary events, qualified events and inclusion-rule matches are keyed by
+  canonicalised content and materialised once, so refinement-heavy definition
+  sets avoid repeating entry-population work. Concept-set ids are canonicalised
+  by content, allowing cohorts with different local ids to share checkpoints.
+  Tail stages reuse the existing engine functions, keeping cohort rows identical
+  to the stand-alone path.
+- `benchmarks/decomposable_cohorts.py` performance harness comparing shared and
+  stand-alone batch generation on a synthetic DuckDB CDM, and
+  `benchmarks/decomposable_cohorts_postgres.py` for an existing PostgreSQL OMOP
+  CDM with two-way `EXCEPT ALL` verification.
 - Cross-dialect and live database tests covering the HADES platform matrix
   (PostgreSQL, SQL Server, Redshift, SQLite, DuckDB, IRIS, Snowflake, Spark,
   Synapse and BigQuery; Oracle is excluded as a legacy target).  The suite
@@ -22,6 +74,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pinned `duckdb<2.0.0`; duckdb 2.0 removed `DuckDBPyConnection.fetch_arrow_table`,
   which ibis-framework 12.0.0 still calls internally and which the dependency
   resolver was picking up in CI.
+- Databricks ibis connections no longer fail on workspaces without a
+  `hive_metastore` catalog (ibis issue #11598). The post-connect workaround now
+  applies to ibis >= 10 (including 12.0.0), recognizes missing-catalog errors
+  that omit the SQL text, and the new `connect_databricks()` helper installs it
+  before `_post_connect()` runs.
 - SQL Server execution now avoids Ibis' MSSQL `overwrite=True` rename path,
   which leaves the table outside the target schema because SQL Server's
   `sp_rename` does not accept a schema-qualified new name.

@@ -16,9 +16,17 @@ from .cohort_definition_set import (  # noqa: F401
     CohortDefinition,
     CohortDefinitionSet,
     CohortGenerationResult,
+    Decomposition,
+    LegacyCohortDefinitionSet,
+    LegacySqlComparison,
+    LoadedCohortDefinition,
     async_generate_cohort_set,
+    decompose_cohort_set,
     generate_cohort_set,
+    load_cohort_definition_set,
+    render_legacy_sql,
     summarise_generation_results,
+    verify_against_legacy_sql,
 )
 from .cohortdefinition import (
     BuildExpressionQueryOptions,
@@ -27,6 +35,7 @@ from .cohortdefinition import (
     MarkdownRender,
 )
 from .cohortdefinition.yaml_utils import snake_case_dict_to_cohort_expression
+from .execution.shared import SharedCohortExecutor  # noqa: F401
 from .vocabulary.concept import ConceptSet
 
 if TYPE_CHECKING:

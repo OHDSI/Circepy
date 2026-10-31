@@ -285,18 +285,15 @@ def test_write_cohort_replace_uses_delete_then_insert(monkeypatch: pytest.Monkey
     assert events == [("replace", "cohort_out", "results", 9)]
 
 
-def test_write_cohort_replace_falls_back_to_safe_rewrite(monkeypatch: pytest.MonkeyPatch):
+def test_write_cohort_replace_falls_back_to_staging_copy(monkeypatch: pytest.MonkeyPatch):
     import circe.execution.api as execution_api
 
     events: list[tuple[str, object]] = []
-    existing = object()
+    staged = object()
 
-    class _Filtered:
-        def union(self, relation, distinct=False):
-            events.append(("union", distinct))
-            return "merged"
-
-    filtered = _Filtered()
+    class _Backend:
+        def drop_table(self, name, *, database=None, force=False):
+            events.append(("drop", name, database))
 
     monkeypatch.setattr(execution_api, "build_cohort", lambda *args, **kwargs: object())
     monkeypatch.setattr(
@@ -304,23 +301,30 @@ def test_write_cohort_replace_falls_back_to_safe_rewrite(monkeypatch: pytest.Mon
     )
     monkeypatch.setattr(execution_api, "table_exists", lambda *args, **kwargs: True)
     monkeypatch.setattr(execution_api, "supports_transactional_replace", lambda *args, **kwargs: False)
-    monkeypatch.setattr(execution_api, "read_table", lambda *args, **kwargs: existing)
-    monkeypatch.setattr(
-        execution_api,
-        "exclude_cohort_rows",
-        lambda relation, *, cohort_id: events.append(("filter", cohort_id)) or filtered,
-    )
     monkeypatch.setattr(
         execution_api,
         "write_relation",
         lambda relation, *, backend, target_table, target_schema=None, if_exists="fail", temporary=False: (
-            events.append(("write", relation, target_table, target_schema, if_exists))
+            events.append(("stage", target_table, target_schema, if_exists))
+        ),
+    )
+    monkeypatch.setattr(execution_api, "read_table", lambda *args, **kwargs: staged)
+    monkeypatch.setattr(
+        execution_api,
+        "delete_cohort_rows",
+        lambda *args, **kwargs: events.append(("delete", kwargs["cohort_table"], kwargs["cohort_id"])),
+    )
+    monkeypatch.setattr(
+        execution_api,
+        "insert_relation",
+        lambda relation, *, backend, target_table, target_schema=None: events.append(
+            ("insert", relation, target_table, target_schema)
         ),
     )
 
     write_cohort(
         _expression(),
-        backend=object(),
+        backend=_Backend(),
         cdm_schema="main",
         results_schema="results",
         cohort_table="cohort_out",
@@ -328,11 +332,11 @@ def test_write_cohort_replace_falls_back_to_safe_rewrite(monkeypatch: pytest.Mon
         if_exists="replace",
     )
 
-    assert events == [
-        ("filter", 9),
-        ("union", False),
-        ("write", "merged", "cohort_out", "results", "replace"),
-    ]
+    assert events[0][0] == "stage"
+    assert events[0][2:] == ("results", "fail")
+    assert events[1] == ("delete", "cohort_out", 9)
+    assert events[2] == ("insert", staged, "cohort_out", "results")
+    assert events[3][0] == "drop"
 
 
 def test_write_relation_type_error_is_reported_as_generic_write_failure():
@@ -346,5 +350,97 @@ def test_write_relation_type_error_is_reported_as_generic_write_failure():
             backend=_Backend(),
             target_table="cohort_out",
             target_schema="main",
+            if_exists="replace",
+        )
+
+
+def test_sqlglot_version_guard(monkeypatch):
+    from circe.execution import _sqlglot_compat
+
+    installed = _sqlglot_compat.sqlglot_version()
+    assert len(installed) == 3
+    assert installed <= _sqlglot_compat.MAX_SUPPORTED_SQLGLOT
+
+    monkeypatch.setattr(_sqlglot_compat, "sqlglot_version", lambda: (30, 17, 0))
+    _sqlglot_compat.require_compatible_sqlglot()
+
+    monkeypatch.setattr(_sqlglot_compat, "sqlglot_version", lambda: (30, 25, 0))
+    with pytest.raises(RuntimeError, match="sqlglot<30.18.0"):
+        _sqlglot_compat.require_compatible_sqlglot()
+
+
+def test_write_cohort_nontransactional_fallback_preserves_other_cohorts(monkeypatch: pytest.MonkeyPatch):
+    import circe.execution.api as execution_api
+
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_tables(conn, ibis)
+    expression = _expression()
+
+    write_cohort(
+        expression,
+        backend=conn,
+        cdm_schema="main",
+        cohort_table="cohort_out",
+        cohort_id=10,
+        if_exists="replace",
+    )
+    write_cohort(
+        expression,
+        backend=conn,
+        cdm_schema="main",
+        cohort_table="cohort_out",
+        cohort_id=20,
+        if_exists="replace",
+    )
+
+    monkeypatch.setattr(execution_api, "supports_transactional_replace", lambda *args, **kwargs: False)
+    conn.create_table(
+        "condition_occurrence",
+        obj=ibis.memtable(
+            {
+                "person_id": [1],
+                "condition_occurrence_id": [100],
+                "condition_concept_id": [111],
+                "condition_start_date": ["2020-01-01"],
+                "condition_end_date": ["2020-01-01"],
+            }
+        ),
+        overwrite=True,
+    )
+    write_cohort(
+        expression,
+        backend=conn,
+        cdm_schema="main",
+        cohort_table="cohort_out",
+        cohort_id=10,
+        if_exists="replace",
+    )
+
+    result = conn.table("cohort_out").execute()
+    cohort_10 = result[result.cohort_definition_id == 10]
+    cohort_20 = result[result.cohort_definition_id == 20]
+    assert set(cohort_10.subject_id) == {1}
+    assert set(cohort_20.subject_id) == {1, 2}
+    assert not any(name.startswith("__circe_stage_") for name in conn.list_tables())
+
+
+def test_write_cohort_warns_when_writing_to_cdm_schema():
+    ibis = pytest.importorskip("ibis")
+    _ = pytest.importorskip("duckdb")
+
+    conn = ibis.duckdb.connect()
+    _seed_tables(conn, ibis)
+
+    with pytest.warns(UserWarning, match="CDM schema"):
+        write_cohort(
+            _expression(),
+            backend=conn,
+            cdm_schema="main",
+            results_schema="main",
+            cohort_table="cohort_out",
+            cohort_id=11,
             if_exists="replace",
         )

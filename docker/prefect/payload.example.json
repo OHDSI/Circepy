@@ -1,0 +1,30 @@
+{
+  "cdm_schema": "demo_cdm",
+  "vocabulary_schema": "demo_cdm",
+  "target": {
+    "schema": "circe_demo_results",
+    "table": "cohort",
+    "registry_table": "cohort_cache_registry",
+    "reuse_existing": true,
+    "on_definition_change": "error",
+    "cache_schema": "circe_demo_results",
+    "cache_table": "cohort_cache"
+  },
+  "definitions": {
+    "settings_file": "/data/Cohorts.csv",
+    "json_folder": "/data/cohorts",
+    "sql_folder": "/data/sql/sql_server",
+    "base_dir": "/data",
+    "include_sql": true,
+    "unsupported": "error"
+  },
+  "backend": {
+    "type": "postgresql",
+    "host": "host.docker.internal",
+    "port": 5432,
+    "database": "postgres",
+    "user": "postgres",
+    "password_env": "PGPASSWORD"
+  },
+  "shared": true
+}
