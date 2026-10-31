@@ -12,7 +12,7 @@ from collections.abc import Callable
 from typing import Any, TypeVar
 
 from .payload import RunnerPayload
-from .runner import run_cohort_generation
+from .runner import run_cached_cohort_generation
 from .sharding import run_sharded_cohort_generation
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ def validate_payload_task(payload: dict[str, Any]) -> dict[str, Any]:
 def generate_cohort_set_task(payload: dict[str, Any]) -> dict[str, Any]:
     """Run the cohort-generation job."""
     validated = RunnerPayload.model_validate(payload)
-    return run_cohort_generation(validated).to_dict()
+    return run_cached_cohort_generation(validated).to_dict()
 
 
 @_prefect_task(name="generate-cohort-definition-set-shards", retries=0)

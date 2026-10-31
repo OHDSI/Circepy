@@ -39,7 +39,9 @@ class TargetConfig(BaseModel):
 
     schema_name: str = Field(alias="schema")
     table: str = "cohort"
-    registry_table: str | None = "cohort_definition_registry"
+    cache_schema: str | None = None
+    cache_table: str = "cohort_cache"
+    registry_table: str | None = "cohort_cache_registry"
     reuse_existing: bool = True
     on_definition_change: Literal["error", "replace"] = "error"
 

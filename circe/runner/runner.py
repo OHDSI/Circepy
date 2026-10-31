@@ -15,6 +15,12 @@ from ..cohort_definition_set import (
     load_cohort_definition_set,
 )
 from .backend import close_backend, connect_backend
+from .cache import (
+    CohortCache,
+    build_cache,
+    copy_cache_to_output,
+    ensure_output_table,
+)
 from .payload import RunnerPayload
 from .registry import DefinitionRegistry
 
@@ -41,10 +47,11 @@ class RunnerResult:
     warnings: list[str] = field(default_factory=list)
     duration_seconds: float = 0.0
     metadata: dict[str, Any] = field(default_factory=dict)
+    failures: list[dict[str, str]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "status": "COMPLETE",
+            "status": "PARTIAL" if self.failures else "COMPLETE",
             "cdm_schema": self.cdm_schema,
             "target_schema": self.target_schema,
             "cohort_table": self.cohort_table,
@@ -57,6 +64,7 @@ class RunnerResult:
             "warnings": list(self.warnings),
             "duration_seconds": round(self.duration_seconds, 3),
             "metadata": dict(self.metadata),
+            "failures": list(self.failures),
         }
 
 
@@ -258,4 +266,120 @@ def run_cohort_generation(payload: RunnerPayload) -> RunnerResult:
         close_backend(backend)
 
 
-__all__ = ["RunnerError", "RunnerResult", "run_cohort_generation"]
+def run_cache_shard(payload: RunnerPayload) -> dict[str, Any]:
+    """Build cache entries for one shard without writing the output table."""
+    loaded = _load_definitions(payload)
+    definitions = list(loaded)
+    if not definitions:
+        return {"generated": [], "reused": [], "failed": [], "warnings": []}
+    target = payload.target
+    cache_schema = target.cache_schema or target.schema_name
+    registry_table = target.registry_table or "cohort_cache_registry"
+    backend = connect_backend(payload.backend)
+    try:
+        cache = CohortCache(
+            backend,
+            schema=cache_schema,
+            table_name=target.cache_table,
+            registry_table=registry_table,
+        )
+        outcome = build_cache(
+            backend,
+            cache,
+            definitions,
+            cdm_schema=payload.cdm_schema,
+            vocabulary_schema=payload.vocabulary_schema,
+            shared=payload.shared,
+            reuse_existing=target.reuse_existing,
+        )
+        return {
+            "generated": list(outcome.generated),
+            "reused": list(outcome.reused),
+            "failed": list(outcome.failed),
+            "warnings": list(loaded.report.warnings),
+        }
+    finally:
+        close_backend(backend)
+
+
+def run_cached_cohort_generation(payload: RunnerPayload) -> RunnerResult:
+    """Build checksum-keyed cache entries, then copy them to the output table."""
+    started = time.perf_counter()
+    loaded = _load_definitions(payload)
+    definitions = list(loaded)
+    if not definitions:
+        raise RunnerError(
+            "The cohort definition set is empty; refusing to report a successful run. "
+            "Check the mounted Cohorts.csv and unsupported/skipped definitions."
+        )
+    target = payload.target
+    if target.schema_name == payload.cdm_schema:
+        warnings.warn(
+            "The target schema is the CDM schema. Cohort, cache and registry tables "
+            "must be written to a scratch/results schema, not the CDM.",
+            UserWarning,
+            stacklevel=2,
+        )
+
+    cache_schema = target.cache_schema or target.schema_name
+    registry_table = target.registry_table or "cohort_cache_registry"
+    backend = connect_backend(payload.backend)
+    try:
+        ensure_output_table(backend, schema=target.schema_name, table=target.table)
+        cache = CohortCache(
+            backend,
+            schema=cache_schema,
+            table_name=target.cache_table,
+            registry_table=registry_table,
+        )
+        build = build_cache(
+            backend,
+            cache,
+            definitions,
+            cdm_schema=payload.cdm_schema,
+            vocabulary_schema=payload.vocabulary_schema,
+            shared=payload.shared,
+            reuse_existing=target.reuse_existing,
+        )
+        copied = copy_cache_to_output(
+            backend,
+            cache,
+            definitions,
+            output_schema=target.schema_name,
+            output_table=target.table,
+        )
+        failures = [*build.failed, *copied.failed]
+        elapsed = time.perf_counter() - started
+        return RunnerResult(
+            cdm_schema=payload.cdm_schema,
+            target_schema=target.schema_name,
+            cohort_table=target.table,
+            registry_table=registry_table,
+            loaded=len(definitions),
+            generated=list(build.generated),
+            reused=list(build.reused),
+            generation_results=[],
+            skipped_definitions=[
+                {
+                    "cohort_id": skipped.cohort_id,
+                    "cohort_name": skipped.cohort_name,
+                    "reason": skipped.reason,
+                }
+                for skipped in loaded.report.skipped
+            ],
+            warnings=list(loaded.report.warnings),
+            duration_seconds=elapsed,
+            metadata=payload.metadata,
+            failures=failures,
+        )
+    finally:
+        close_backend(backend)
+
+
+__all__ = [
+    "RunnerError",
+    "RunnerResult",
+    "run_cache_shard",
+    "run_cached_cohort_generation",
+    "run_cohort_generation",
+]

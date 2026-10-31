@@ -454,3 +454,81 @@ def test_registry_writer_replaces_stale_connection(monkeypatch):
 
     assert writes == [True, True]
     assert connects == [True, True]
+
+
+def test_cached_runner_dedupes_checksum_and_copies_integer_ids(tmp_path):
+    import ibis
+
+    from circe.runner import run_cached_cohort_generation
+
+    db_path = tmp_path / "cache.duckdb"
+    definitions = _write_definitions(tmp_path)
+    (definitions / "cohorts" / "2.json").write_text(
+        _expression().model_dump_json(by_alias=True), encoding="utf-8"
+    )
+    with (definitions / "Cohorts.csv").open("a", encoding="utf-8") as handle:
+        handle.write("2,same expression different id\n")
+    _seed_duckdb(db_path)
+    payload = _payload(tmp_path, duckdb_path=db_path, definitions=definitions)
+
+    first = run_cached_cohort_generation(payload)
+    assert sorted(first.generated) == [1, 2]
+    assert first.reused == []
+
+    conn = ibis.duckdb.connect(str(db_path))
+    cache_rows = conn.table("cohort_cache", database="main").execute()
+    registry = conn.table("cohort_registry", database="main").execute()
+    output = conn.table("cohort", database="main").execute()
+    assert len(cache_rows) == 1
+    assert len(registry) == 1
+    assert "cohort_definition_id" not in registry.columns
+    assert len(output) == 2
+    assert set(output["cohort_definition_id"]) == {1, 2}
+    conn.disconnect()
+
+    second = run_cached_cohort_generation(payload)
+    assert second.generated == []
+    assert sorted(second.reused) == [1, 2]
+
+    conn = ibis.duckdb.connect(str(db_path))
+    assert conn.table("cohort_cache", database="main").count().execute() == 1
+    assert conn.table("cohort", database="main").count().execute() == 2
+    assert not any(name.startswith("__cache_stage_") for name in conn.list_tables())
+    conn.disconnect()
+
+
+def test_cached_runner_isolates_family_failure(tmp_path, monkeypatch):
+    import ibis
+
+    import circe.runner.cache as cache_module
+    from circe.runner import run_cached_cohort_generation
+
+    db_path = tmp_path / "cache_failure.duckdb"
+    definitions = _write_definitions(tmp_path)
+    (definitions / "Cohorts.csv").write_text(
+        "cohort_id,cohort_name,family\n1,demo,good\n2,bad family,bad\n",
+        encoding="utf-8",
+    )
+    (definitions / "cohorts" / "2.json").write_text(
+        _expression(concept_id=999).model_dump_json(by_alias=True), encoding="utf-8"
+    )
+    _seed_duckdb(db_path)
+    payload = _payload(tmp_path, duckdb_path=db_path, definitions=definitions)
+
+    real_generate = cache_module.generate_cohort_set
+
+    def fake_generate(subset, **kwargs):
+        if any(definition.family == "bad" for definition in subset):
+            raise RuntimeError("bad family")
+        return real_generate(subset, **kwargs)
+
+    monkeypatch.setattr(cache_module, "generate_cohort_set", fake_generate)
+    result = run_cached_cohort_generation(payload)
+
+    assert result.generated == [1]
+    assert result.failures
+    assert result.to_dict()["status"] == "PARTIAL"
+
+    conn = ibis.duckdb.connect(str(db_path))
+    assert conn.table("cohort", database="main").count().execute() == 1
+    conn.disconnect()

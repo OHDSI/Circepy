@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Cohorts are now generated into a checksum-keyed cache and copied into the
+  integer-id study cohort table in a final phase. Integer cohort ids no longer
+  define cache identity; repeated ids/definitions reuse one cache entry. Cache,
+  registry and output table names are configurable, keeping persistent table
+  count constant. Cache staging is tracked for independent cleanup.
 - Registry tables now store only a definition checksum and completion marker
   (`completed`, `row_count`, `completed_at`); full definition JSON and SQL text
   are no longer written, so registry inserts stay small across data sources.

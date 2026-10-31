@@ -88,32 +88,25 @@ accepts the same payload dictionary.
 
 ## Persistence model
 
-- Cohort rows are written to `target.schema.target.table`, one cohort id at a
-  time. On backends without cohort-scoped transactions, circepy stages the new
-  rows and then deletes/inserts only the affected cohort ids; it never rewrites
-  the whole cohort table.
-- `target.registry_table` stores the definition checksum and a completion
-  marker (`completed`, `row_count`, `completed_at`). It does not store full
-  definition JSON or SQL, keeping registry writes small and portable. Each
-  cohort is marked complete immediately after its rows are written, not at the
-  end of the shard. Reruns reuse a cohort only when the definition checksum matches, the
-  previous write completed, and the target row count matches the recorded count.
-  An interrupted shard therefore resumes at cohort granularity; only the cohort
-  that was in flight needs to be regenerated. Registry writes reconnect before
-  each write and retry with a fresh connection, and the original backend error
-  is chained into `ShardingError`.
-- If an id already exists with a different definition, the runner fails by
-  default. Set `on_definition_change="replace"` only when you own that id.
-  Identifier mapping across users/definitions is deliberately deferred.
-- `target.schema` must be a scratch/results schema. Circepy warns when the target
-  schema is the CDM schema, or when a lower-level API would create session/cohort
-  tables in the CDM schema.
+- Cohorts are generated into a checksum-keyed cache
+  (`target.cache_schema`, `target.cache_table`). The study-facing
+  `target.schema.target.table` is populated only by a final copy phase using the
+  requested integer cohort ids.
+- `target.registry_table` (the cache registry) stores checksum, completion,
+  row count and timestamps. It does not store full definition JSON/SQL. A cache
+  entry is reused by any integer cohort id with the same canonical checksum.
+- Cache rows, cache registry and the final cohort table are independent
+  parameters; persistent table count does not grow with cohort count.
+- Session/staging tables are cleaned by each process and by the independent
+  `python -m circe.runner.cleanup --payload /payload.json` job.
+- `target.schema`/`cache_schema` must be scratch/results schemas. Circepy warns
+  when they are the CDM schema.
 - Checksums are queryable directly from the registry:
 
   ```sql
-  SELECT cohort_definition_id, definition_checksum, row_count, completed, completed_at
-  FROM results.cohort_definition_registry
-  ORDER BY cohort_definition_id;
+  SELECT cohort_checksum, row_count, completed, completed_at
+  FROM results.cohort_cache_registry
+  ORDER BY cohort_checksum;
   ```
 
 ## Family sharding

@@ -183,7 +183,7 @@ def test_plan_family_shards_keeps_families_together_and_balances():
 
     loads = [len(shard.cohort_ids) for shard in shards]
     assert max(loads) - min(loads) <= 5
-    assert all(shard.registry_table.startswith("cohort_registry_s") for shard in shards)
+    assert all(shard.registry_table == "cohort_registry" for shard in shards)
 
 
 def test_plan_one_shard_per_family_when_fewer_families():
@@ -238,8 +238,13 @@ def test_run_sharded_generation_same_table(tmp_path):
 
     conn = ibis.duckdb.connect(str(db_path))
     assert conn.table("cohort", database="main").count().execute() == 6
-    registry_tables = {name for name in conn.list_tables() if name.startswith("cohort_registry_s")}
-    assert len(registry_tables) == 2
+    assert "cohort_cache" in conn.list_tables()
+    assert "cohort_registry" in conn.list_tables()
+    registry = conn.table("cohort_registry", database="main").execute()
+    # All six cohorts share one expression, so the cache holds one checksum entry
+    # and the final table gets six integer-id projections.
+    assert len(registry) == 1
+    assert set(registry["completed"]) == {True}
     conn.disconnect()
 
 

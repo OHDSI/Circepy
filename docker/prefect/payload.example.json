@@ -4,9 +4,11 @@
   "target": {
     "schema": "circe_demo_results",
     "table": "cohort",
-    "registry_table": "cohort_definition_registry",
+    "registry_table": "cohort_cache_registry",
     "reuse_existing": true,
-    "on_definition_change": "error"
+    "on_definition_change": "error",
+    "cache_schema": "circe_demo_results",
+    "cache_table": "cohort_cache"
   },
   "definitions": {
     "settings_file": "/data/Cohorts.csv",

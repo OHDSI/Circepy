@@ -221,9 +221,10 @@ PGPASSWORD=... python benchmarks/decomposable_cohorts_postgres.py \
 
 A standalone runner and container image are available under `circe.runner` and
 `docker/prefect/`.  The container accepts a JSON payload with the CDM schema,
-target schema/table, definition paths and backend connection; it uses the
-shared-checkpoint generator and persists per-cohort completion state in a registry
-table so reruns can reuse existing cohorts. The target schema should be a
+target schema/table, cache/registry names, definition paths and backend
+connection.  Cohorts are generated once into a checksum-keyed cache and then
+copied into the integer-id study cohort table only when the study requests them.
+Reruns reuse cache entries regardless of their integer cohort ids. The target schema should be a
 scratch/results schema; writing into the CDM schema emits a warning.
 
 ```bash
@@ -257,11 +258,13 @@ same scratch cohort table:
 python -m circe.runner --payload payload.json --shards 10 --max-workers 10
 ```
 
-Each shard gets a unique registry table (`<registry>_s000`, ...), reuses the
-shared target table, and retries failed shards. Use `--plan-shards shards.json`
-to emit payloads for Databricks Workflows or Prefect fan-out without running
-generation. A 564-family plan is balanced across 10 shards by family size; the
-`--shards` and `--max-workers` values can be raised as the warehouse allows.
+Workers populate a shared checksum-keyed cache; the integer-id target table is
+written only in the final copy phase. The cache/registry/final table names are
+configuration parameters, so persistent table count stays constant. Use
+`--plan-shards shards.json` to emit payloads for Databricks Workflows or Prefect
+fan-out without running generation. A 564-family plan is balanced across 10
+shards by family size; the `--shards` and `--max-workers` values can be raised as
+the warehouse allows.
 
 ### Legacy CohortGenerator cohort sets
 

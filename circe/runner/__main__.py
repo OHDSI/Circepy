@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from .payload import RunnerPayload
-from .runner import run_cohort_generation
+from .runner import run_cached_cohort_generation
 from .sharding import run_sharded_cohort_generation, write_shard_manifest
 
 
@@ -105,7 +105,7 @@ def main(argv: list[str] | None = None) -> int:
 
             result = run_cohort_generation_flow(payload_dict)
         else:
-            result = run_cohort_generation(payload).to_dict()
+            result = run_cached_cohort_generation(payload).to_dict()
     except Exception as exc:  # noqa: BLE001 - CLI boundary
         logging.getLogger(__name__).exception("Cohort generation failed")
         print(f"Cohort generation failed: {exc}", file=sys.stderr)

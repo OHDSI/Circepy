@@ -14,17 +14,22 @@ import time
 import traceback
 import warnings
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from ..cohort_definition_set import CohortDefinitionSet, load_cohort_definition_set
+from ..cohort_definition_set import CohortDefinitionSet
 from ..execution.ibis.operations import create_table, table_exists
 from ..execution.ibis_compat import literal_rows_relation
 from ..execution.session import SESSION_TABLE
 from .backend import close_backend, connect_backend
+from .cache import CohortCache, copy_cache_to_output, ensure_output_table
 from .payload import RunnerPayload
-from .runner import RunnerError, run_cohort_generation
+from .runner import (
+    RunnerError,
+    _load_definitions,
+    run_cache_shard,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +43,6 @@ _SESSION_SCHEMA = {
     "session_prefix": "string",
     "created_at": "timestamp",
 }
-_MAX_REGISTRY_TABLE_LENGTH = 60
 
 __all__ = [
     "CohortShard",
@@ -86,21 +90,17 @@ class ShardedResult:
 
     shards: list[CohortShard]
     results: dict[int, dict[str, Any]]
+    failures: list[dict[str, str]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        failures = list(self.failures)
         return {
-            "status": "COMPLETE",
+            "status": "PARTIAL" if failures else "COMPLETE",
             "shard_count": len(self.shards),
             "shards": [shard.to_dict() for shard in self.shards],
             "results": {str(shard_id): result for shard_id, result in self.results.items()},
+            "failures": failures,
         }
-
-
-def _registry_table_for(base: str | None, shard_id: int) -> str | None:
-    if not base:
-        return None
-    suffix = f"_s{shard_id:03d}"
-    return f"{base[: _MAX_REGISTRY_TABLE_LENGTH - len(suffix)]}{suffix}"
 
 
 def plan_family_shards(
@@ -150,28 +150,10 @@ def plan_family_shards(
                 shard_id=shard_id,
                 families=family_tags,
                 cohort_ids=tuple(cohort_ids),
-                registry_table=_registry_table_for(registry_table, shard_id),
+                registry_table=registry_table,
             )
         )
     return shards
-
-
-def _load_payload_definitions(payload: RunnerPayload):
-    source = payload.definitions
-    return load_cohort_definition_set(
-        settings_file=source.settings_file,
-        json_folder=source.json_folder,
-        sql_folder=source.sql_folder,
-        cohort_file_name_format=source.cohort_file_name_format,
-        cohort_file_name_value=tuple(source.cohort_file_name_value),
-        include_sql=source.include_sql,
-        sql_required=source.sql_required,
-        unsupported=source.unsupported,
-        base_dir=source.base_dir,
-        family_column=source.family_column,
-        families=source.families,
-        cohort_ids=source.cohort_ids,
-    )
 
 
 def plan_payload_shards(
@@ -180,7 +162,7 @@ def plan_payload_shards(
     shard_count: int = 10,
 ) -> list[CohortShard]:
     """Load a payload's definitions and produce a family-balanced shard plan."""
-    cohort_set = _load_payload_definitions(payload)
+    cohort_set = _load_definitions(payload)
     if not len(cohort_set):
         raise RunnerError("The cohort definition set is empty; nothing to shard.")
     return plan_family_shards(
@@ -195,7 +177,7 @@ def build_shard_payload(payload: RunnerPayload, shard: CohortShard) -> RunnerPay
     definitions = payload.definitions.model_copy(
         update={"families": None, "cohort_ids": list(shard.cohort_ids)}
     )
-    target = payload.target.model_copy(update={"registry_table": shard.registry_table})
+    target = payload.target
     metadata = {
         **payload.metadata,
         "circe_shard": shard.shard_id,
@@ -260,7 +242,7 @@ def _run_shard_worker(payload: dict[str, Any], retries: int) -> dict[str, Any]:
     last_error: Exception | None = None
     for attempt in range(retries + 1):
         try:
-            return run_cohort_generation(RunnerPayload.model_validate(payload)).to_dict()
+            return run_cache_shard(RunnerPayload.model_validate(payload))
         except Exception as exc:  # noqa: BLE001 - worker boundary retries all failures
             last_error = exc
             if attempt >= retries:
@@ -279,6 +261,29 @@ def _run_shard_worker(payload: dict[str, Any], retries: int) -> dict[str, Any]:
     raise last_error
 
 
+def ensure_output_table_for_payload(payload: RunnerPayload) -> None:
+    target = payload.target
+    backend = connect_backend(payload.backend)
+    try:
+        ensure_output_table(backend, schema=target.schema_name, table=target.table)
+    finally:
+        close_backend(backend)
+
+
+def _ensure_cache_for_payload(payload: RunnerPayload) -> None:
+    target = payload.target
+    backend = connect_backend(payload.backend)
+    try:
+        CohortCache(
+            backend,
+            schema=target.cache_schema or target.schema_name,
+            table_name=target.cache_table,
+            registry_table=target.registry_table or "cohort_cache_registry",
+        )
+    finally:
+        close_backend(backend)
+
+
 def run_sharded_cohort_generation(
     payload: RunnerPayload,
     *,
@@ -286,12 +291,11 @@ def run_sharded_cohort_generation(
     max_workers: int = 10,
     retries: int = 2,
 ) -> ShardedResult:
-    """Generate family-balanced shards in separate processes.
+    """Build family-balanced cache shards, then copy all cached results.
 
-    All workers write to the same target table; each shard has its own registry
-    table.  The target table is created once before workers start, and failed
-    shards are retried as a unit because cohort writes are idempotent per cohort
-    id.
+    Workers only populate the checksum-keyed cache.  The integer-id output table
+    is written by the coordinator after all workers finish.  Failures are
+    collected per shard/family; successful cached cohorts are still copied.
     """
     if max_workers < 1:
         raise ValueError("max_workers must be at least 1")
@@ -301,18 +305,19 @@ def run_sharded_cohort_generation(
     shards = plan_payload_shards(payload, shard_count=shard_count)
     if not shards:
         raise RunnerError("The shard plan is empty; no workers to start.")
-    if len(shards) == 1:
-        result = run_cohort_generation(build_shard_payload(payload, shards[0]))
-        return ShardedResult(shards=shards, results={shards[0].shard_id: result.to_dict()})
 
+    target = payload.target
+    cache_schema = target.cache_schema or target.schema_name
+    registry_table = target.registry_table or "cohort_cache_registry"
     ensure_target_table(payload)
+    _ensure_cache_for_payload(payload)
+
     worker_payloads = {
         shard.shard_id: build_shard_payload(payload, shard).model_dump(mode="json", by_alias=True)
         for shard in shards
     }
-
     results: dict[int, dict[str, Any]] = {}
-    errors: dict[int, str] = {}
+    failures: list[dict[str, str]] = []
     workers = min(max_workers, len(shards))
     with ProcessPoolExecutor(max_workers=workers) as executor:
         futures = {
@@ -322,18 +327,39 @@ def run_sharded_cohort_generation(
         for future in as_completed(futures):
             shard = futures[future]
             try:
-                results[shard.shard_id] = future.result()
-            except Exception as exc:  # noqa: BLE001 - aggregate shard failures
+                shard_result = future.result()
+                results[shard.shard_id] = shard_result
+                failures.extend(shard_result.get("failed", []))
+            except Exception as exc:  # noqa: BLE001 - isolate shard failures
                 logger.exception("Shard %d failed", shard.shard_id)
-                errors[shard.shard_id] = "".join(
-                    traceback.format_exception(type(exc), exc, exc.__traceback__)
+                failures.append(
+                    {
+                        "family": f"shard-{shard.shard_id}",
+                        "error": "".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),
+                    }
                 )
 
-    if errors:
-        detail = ", ".join(f"{shard_id}: {message}" for shard_id, message in sorted(errors.items()))
-        raise ShardingError(f"Shard generation failed for {detail}", errors=errors)
+    backend = connect_backend(payload.backend)
+    try:
+        cache = CohortCache(
+            backend,
+            schema=cache_schema,
+            table_name=target.cache_table,
+            registry_table=registry_table,
+        )
+        definitions = list(_load_definitions(payload))
+        copy_result = copy_cache_to_output(
+            backend,
+            cache,
+            definitions,
+            output_schema=target.schema_name,
+            output_table=target.table,
+        )
+        failures.extend(copy_result.failed)
+    finally:
+        close_backend(backend)
 
-    return ShardedResult(shards=shards, results=results)
+    return ShardedResult(shards=shards, results=results, failures=failures)
 
 
 def shard_manifest(payload: RunnerPayload, shard_count: int = 10) -> dict[str, Any]:
