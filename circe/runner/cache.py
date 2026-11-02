@@ -19,7 +19,6 @@ from ..cohort_definition_set import CohortDefinition, CohortDefinitionSet, gener
 from ..decomposition import semantic_expression_key
 from ..execution.ibis.operations import (
     create_table,
-    delete_rows,
     delete_rows_in,
     insert_relation,
     insert_rows_via_raw_sql,
@@ -203,11 +202,28 @@ class CohortCache:
         table = read_table(self.backend, table_name=self.table_name, schema=self.schema)
         return int(table.filter(table.cohort_checksum == checksum).count().execute())
 
+    def counts(self, checksums: list[str]) -> dict[str, int]:
+        """Count cache rows for several checksums in one query."""
+        if not checksums:
+            return {}
+        table = read_table(self.backend, table_name=self.table_name, schema=self.schema)
+        grouped = (
+            table.filter(table.cohort_checksum.isin(checksums))
+            .group_by("cohort_checksum")
+            .aggregate(row_count=ibis._.count())
+        )
+        return {
+            str(row["cohort_checksum"]): int(row["row_count"]) for row in grouped.to_pyarrow().to_pylist()
+        }
+
     def mark_incomplete(self, checksums: list[str]) -> None:
         self._write_registry(checksums, completed=False, counts={})
 
     def mark_complete(self, checksum: str, row_count: int) -> None:
-        self._write_registry([checksum], completed=True, counts={checksum: row_count})
+        self.mark_complete_many({checksum: row_count})
+
+    def mark_complete_many(self, counts: dict[str, int]) -> None:
+        self._write_registry(list(counts), completed=True, counts=counts)
 
     def _write_registry(
         self,
@@ -219,14 +235,13 @@ class CohortCache:
         if not checksums:
             return
         now = datetime.now()
-        for checksum in checksums:
-            delete_rows(
-                self.backend,
-                table_name=self.registry_table,
-                schema=self.schema,
-                column="cohort_checksum",
-                value=checksum,
-            )
+        delete_rows_in(
+            self.backend,
+            table_name=self.registry_table,
+            schema=self.schema,
+            column="cohort_checksum",
+            values=list(checksums),
+        )
         rows = [
             [
                 checksum,
@@ -245,70 +260,54 @@ class CohortCache:
             rows=rows,
         )
 
-    def copy_from_staging(
+    def copy_family_from_staging(
         self,
         *,
         staging_table: str,
-        internal_id: int,
-        checksum: str,
-    ) -> int:
-        staged = read_table(
-            self.backend,
-            table_name=staging_table,
-            schema=self.schema,
+        internal_checksums: dict[int, str],
+    ) -> dict[str, int]:
+        """Copy one family from staging with one join and grouped counts."""
+        staged = read_table(self.backend, table_name=staging_table, schema=self.schema)
+        grouped = (
+            staged.group_by("cohort_definition_id")
+            .aggregate(row_count=ibis._.count())
+            .to_pyarrow()
+            .to_pylist()
         )
-        selected = staged.filter(staged.cohort_definition_id == int(internal_id)).select(
-            cohort_checksum=ibis.literal(checksum),
+        counts_by_internal = {int(row["cohort_definition_id"]): int(row["row_count"]) for row in grouped}
+        counts = {
+            checksum: counts_by_internal.get(internal_id, 0)
+            for internal_id, checksum in internal_checksums.items()
+        }
+
+        mapping = literal_rows_relation(
+            [
+                {"cohort_definition_id": internal_id, "cohort_checksum": checksum}
+                for internal_id, checksum in internal_checksums.items()
+            ],
+            schema={"cohort_definition_id": "int64", "cohort_checksum": "string"},
+        )
+        relation = mapping.join(staged, mapping.cohort_definition_id == staged.cohort_definition_id).select(
+            cohort_checksum=mapping.cohort_checksum,
             subject_id=staged.subject_id,
             cohort_start_date=staged.cohort_start_date,
             cohort_end_date=staged.cohort_end_date,
         )
-        count = int(selected.count().execute())
-        delete_rows(
+        checksums = list(internal_checksums.values())
+        delete_rows_in(
             self.backend,
             table_name=self.table_name,
             schema=self.schema,
             column="cohort_checksum",
-            value=checksum,
+            values=checksums,
         )
         insert_relation(
-            selected,
+            relation,
             backend=self.backend,
             target_table=self.table_name,
             target_schema=self.schema,
         )
-        return count
-
-    def copy_to_output(
-        self,
-        *,
-        output_table: str,
-        output_schema: str,
-        cohort_id: int,
-        checksum: str,
-    ) -> int:
-        cached = read_table(self.backend, table_name=self.table_name, schema=self.schema)
-        selected = cached.filter(cached.cohort_checksum == checksum).select(
-            cohort_definition_id=ibis.literal(int(cohort_id)),
-            subject_id=cached.subject_id,
-            cohort_start_date=cached.cohort_start_date,
-            cohort_end_date=cached.cohort_end_date,
-        )
-        count = int(selected.count().execute())
-        delete_rows(
-            self.backend,
-            table_name=output_table,
-            schema=output_schema,
-            column="cohort_definition_id",
-            value=int(cohort_id),
-        )
-        insert_relation(
-            selected,
-            backend=self.backend,
-            target_table=output_table,
-            target_schema=output_schema,
-        )
-        return count
+        return counts
 
 
 def ensure_output_table(
@@ -353,15 +352,21 @@ def build_cache(
         representative.setdefault(checksum, definition)
 
     existing = cache.entries()
+    completed_checksums = [
+        checksum
+        for checksum, entry in existing.items()
+        if reuse_existing and entry.completed and entry.row_count is not None
+    ]
+    actual_counts = cache.counts(completed_checksums) if completed_checksums else {}
     missing_checksums: list[str] = []
-    for checksum, _definition in representative.items():
+    for checksum in representative:
         entry = existing.get(checksum)
         reusable = (
             reuse_existing
             and entry is not None
             and entry.completed
             and entry.row_count is not None
-            and cache.count_rows(checksum) == entry.row_count
+            and actual_counts.get(checksum, 0) == entry.row_count
         )
         if reusable:
             outcome.reused.extend(ids_by_checksum[checksum])
@@ -399,21 +404,6 @@ def build_cache(
             session_prefix=staging_table,
         )
 
-        def _on_complete(
-            result: Any,
-            *,
-            internal: dict[int, str] = internal,
-            staging_table: str = staging_table,
-        ) -> None:
-            checksum = internal[int(result.cohort_id)]
-            count = cache.copy_from_staging(
-                staging_table=staging_table,
-                internal_id=int(result.cohort_id),
-                checksum=checksum,
-            )
-            cache.mark_complete(checksum, count)
-            outcome.generated.extend(ids_by_checksum[checksum])
-
         try:
             generate_cohort_set(
                 subset,
@@ -423,8 +413,14 @@ def build_cache(
                 results_schema=cache.schema,
                 cohort_table=staging_table,
                 shared=shared,
-                on_cohort_complete=_on_complete,
             )
+            counts = cache.copy_family_from_staging(
+                staging_table=staging_table,
+                internal_checksums=internal,
+            )
+            cache.mark_complete_many(counts)
+            for checksum in family_checksums:
+                outcome.generated.extend(ids_by_checksum[checksum])
         except Exception as exc:  # noqa: BLE001 - one family must not stop the rest
             outcome.failed.append({"family": family, "error": f"{type(exc).__name__}: {exc}"})
         finally:
@@ -477,6 +473,7 @@ def copy_cache_to_output(
             continue
         to_copy.append((int(definition.cohort_id), checksum, cache_entry.row_count))
 
+    to_copy.sort(key=lambda item: (item[1], item[0]))
     for start_index in range(0, len(to_copy), batch_size):
         batch = to_copy[start_index : start_index + batch_size]
         mapping = literal_rows_relation(

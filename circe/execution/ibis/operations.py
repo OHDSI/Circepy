@@ -186,7 +186,10 @@ def delete_rows_in(
     catalog, database = _catalog_db_tuple(backend, schema)
     quoted = getattr(getattr(backend, "compiler", None), "quoted", False)
     statement = sge.delete(sg.table(table_name, db=database, catalog=catalog, quoted=quoted)).where(
-        sg.column(column, quoted=quoted).isin([sge.convert(value) for value in values])
+        sge.In(
+            this=sg.column(column, quoted=quoted),
+            expressions=[sge.convert(value) for value in values],
+        )
     )
     try:
         raw_sql(statement)
