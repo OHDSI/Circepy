@@ -95,8 +95,10 @@ accepts the same payload dictionary.
 - `target.registry_table` (the cache registry) stores checksum, completion,
   row count and timestamps. It does not store full definition JSON/SQL. A cache
   entry is reused by any integer cohort id with the same canonical checksum.
-- Cache rows, cache registry and the final cohort table are independent
-  parameters; persistent table count does not grow with cohort count.
+- Cache rows, cache registry, output copy map and the final cohort table are
+  independent parameters; persistent table count does not grow with cohort
+  count. The output copy map skips integer ids already copied from the same
+  checksum; copies are batched with one delete/insert per batch.
 - Session/staging tables are cleaned by each process and by the independent
   `python -m circe.runner.cleanup --payload /payload.json` job.
 - `target.schema`/`cache_schema` must be scratch/results schemas. Circepy warns

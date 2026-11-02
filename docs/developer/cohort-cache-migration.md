@@ -84,6 +84,8 @@ VALUES
 - Do not insert duplicate cache rows for repeated integer ids using the same
   checksum.
 - The final study cohort table remains integer-keyed for HADES/CohortGenerator;
-  only the cache is checksum-keyed.
+  only the cache is checksum-keyed. The `cohort_output_map` table records copied
+  integer ids and is safe to leave empty during migration; the first new run will
+  populate the output table from cache.
 - Cache rows are person-level data. Use the same access controls and retention
   policy as the old results schema.

@@ -42,6 +42,7 @@ class TargetConfig(BaseModel):
     cache_schema: str | None = None
     cache_table: str = "cohort_cache"
     registry_table: str | None = "cohort_cache_registry"
+    output_registry_table: str = "cohort_output_map"
     reuse_existing: bool = True
     on_definition_change: Literal["error", "replace"] = "error"
 

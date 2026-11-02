@@ -20,6 +20,7 @@ from ..decomposition import semantic_expression_key
 from ..execution.ibis.operations import (
     create_table,
     delete_rows,
+    delete_rows_in,
     insert_relation,
     insert_rows_via_raw_sql,
     read_table,
@@ -47,6 +48,15 @@ _OUTPUT_SCHEMA = {
     "cohort_start_date": "date",
     "cohort_end_date": "date",
 }
+_OUTPUT_MAP_SCHEMA = {
+    "cohort_definition_id": "int64",
+    "cohort_checksum": "string",
+    "row_count": "int64",
+    "completed": "boolean",
+    "updated_at": "timestamp",
+    "completed_at": "timestamp",
+}
+_OUTPUT_MAP_COLUMNS = list(_OUTPUT_MAP_SCHEMA)
 _CACHE_REGISTRY_COLUMNS = list(_CACHE_REGISTRY_SCHEMA)
 
 
@@ -60,6 +70,77 @@ class CacheEntry:
     cohort_checksum: str
     completed: bool
     row_count: int | None
+
+
+@dataclass(frozen=True)
+class OutputCopyEntry:
+    cohort_definition_id: int
+    cohort_checksum: str
+    row_count: int | None
+    completed: bool
+
+
+class OutputCopyMap:
+    """Tracks which integer-id outputs have already been copied from cache."""
+
+    def __init__(self, backend: Any, *, schema: str, table_name: str) -> None:
+        self.backend = backend
+        self.schema = schema
+        self.table_name = table_name
+        self._ensure()
+
+    def _ensure(self) -> None:
+        if table_exists(self.backend, table_name=self.table_name, schema=self.schema):
+            return
+        create_table(
+            self.backend,
+            table_name=self.table_name,
+            schema=self.schema,
+            obj=literal_rows_relation([], schema=_OUTPUT_MAP_SCHEMA),
+            overwrite=False,
+        )
+
+    def entries(self) -> dict[int, OutputCopyEntry]:
+        table = read_table(self.backend, table_name=self.table_name, schema=self.schema)
+        rows = (
+            table.select(
+                "cohort_definition_id",
+                "cohort_checksum",
+                "row_count",
+                "completed",
+            )
+            .to_pyarrow()
+            .to_pylist()
+        )
+        return {
+            int(row["cohort_definition_id"]): OutputCopyEntry(
+                cohort_definition_id=int(row["cohort_definition_id"]),
+                cohort_checksum=str(row["cohort_checksum"]),
+                row_count=int(row["row_count"]) if row["row_count"] is not None else None,
+                completed=bool(row["completed"]),
+            )
+            for row in rows
+        }
+
+    def mark_complete(self, rows: list[tuple[int, str, int]]) -> None:
+        if not rows:
+            return
+        ids = [row[0] for row in rows]
+        delete_rows_in(
+            self.backend,
+            table_name=self.table_name,
+            schema=self.schema,
+            column="cohort_definition_id",
+            values=ids,
+        )
+        now = datetime.now()
+        insert_rows_via_raw_sql(
+            self.backend,
+            table_name=self.table_name,
+            schema=self.schema,
+            columns=_OUTPUT_MAP_COLUMNS,
+            rows=[[cohort_id, checksum, count, True, now, now] for cohort_id, checksum, count in rows],
+        )
 
 
 @dataclass
@@ -364,27 +445,78 @@ def copy_cache_to_output(
     *,
     output_schema: str,
     output_table: str,
+    output_registry_table: str = "cohort_output_map",
+    batch_size: int = 100,
 ) -> CacheBuildOutcome:
-    """Copy cached checksums into the integer-id output table."""
+    """Batch-copy cached checksums into the integer-id output table.
+
+    Copies are joined through a small (integer id, checksum) mapping, so each
+    cache batch is scanned once rather than once per output cohort.  A small
+    output map skips ids whose checksum and row count were already copied.
+    """
     outcome = CacheBuildOutcome()
-    entries = cache.entries()
+    cache_entries = cache.entries()
+    output_map = OutputCopyMap(backend, schema=output_schema, table_name=output_registry_table)
+    existing_copies = output_map.entries()
+    to_copy: list[tuple[int, str, int]] = []
+
     for definition in definitions:
         checksum = cohort_checksum(definition.expression)
-        entry = entries.get(checksum)
-        if entry is None or not entry.completed:
+        cache_entry = cache_entries.get(checksum)
+        if cache_entry is None or not cache_entry.completed or cache_entry.row_count is None:
             outcome.failed.append({"family": _family_key(definition), "error": f"cache miss for {checksum}"})
             continue
+        copied = existing_copies.get(int(definition.cohort_id))
+        if (
+            copied is not None
+            and copied.completed
+            and copied.cohort_checksum == checksum
+            and copied.row_count == cache_entry.row_count
+        ):
+            outcome.reused.append(int(definition.cohort_id))
+            continue
+        to_copy.append((int(definition.cohort_id), checksum, cache_entry.row_count))
+
+    for start_index in range(0, len(to_copy), batch_size):
+        batch = to_copy[start_index : start_index + batch_size]
+        mapping = literal_rows_relation(
+            [
+                {"cohort_definition_id": cohort_id, "cohort_checksum": checksum}
+                for cohort_id, checksum, _ in batch
+            ],
+            schema={"cohort_definition_id": "int64", "cohort_checksum": "string"},
+        )
+        cached = read_table(backend, table_name=cache.table_name, schema=cache.schema)
+        relation = mapping.join(cached, mapping.cohort_checksum == cached.cohort_checksum).select(
+            cohort_definition_id=mapping.cohort_definition_id,
+            subject_id=cached.subject_id,
+            cohort_start_date=cached.cohort_start_date,
+            cohort_end_date=cached.cohort_end_date,
+        )
+        ids = [cohort_id for cohort_id, _, _ in batch]
         try:
-            cache.copy_to_output(
-                output_table=output_table,
-                output_schema=output_schema,
-                cohort_id=int(definition.cohort_id),
-                checksum=checksum,
+            delete_rows_in(
+                backend,
+                table_name=output_table,
+                schema=output_schema,
+                column="cohort_definition_id",
+                values=ids,
             )
-            outcome.generated.append(definition.cohort_id)
+            insert_relation(
+                relation,
+                backend=backend,
+                target_table=output_table,
+                target_schema=output_schema,
+            )
+            output_map.mark_complete(batch)
+            outcome.generated.extend(ids)
         except Exception as exc:  # noqa: BLE001
-            outcome.failed.append(
-                {"family": _family_key(definition), "error": f"{type(exc).__name__}: {exc}"}
+            outcome.failed.extend(
+                {
+                    "family": f"cohort-{cohort_id}",
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+                for cohort_id in ids
             )
     return outcome
 

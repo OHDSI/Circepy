@@ -8,7 +8,8 @@
     "reuse_existing": true,
     "on_definition_change": "error",
     "cache_schema": "circe_demo_results",
-    "cache_table": "cohort_cache"
+    "cache_table": "cohort_cache",
+    "output_registry_table": "cohort_output_map"
   },
   "definitions": {
     "settings_file": "/data/Cohorts.csv",

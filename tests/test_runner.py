@@ -484,6 +484,9 @@ def test_cached_runner_dedupes_checksum_and_copies_integer_ids(tmp_path):
     assert "cohort_definition_id" not in registry.columns
     assert len(output) == 2
     assert set(output["cohort_definition_id"]) == {1, 2}
+    output_map = conn.table("cohort_output_map", database="main").execute()
+    assert set(output_map["cohort_definition_id"]) == {1, 2}
+    assert set(output_map["completed"]) == {True}
     conn.disconnect()
 
     second = run_cached_cohort_generation(payload)

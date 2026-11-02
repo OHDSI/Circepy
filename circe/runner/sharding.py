@@ -354,6 +354,7 @@ def run_sharded_cohort_generation(
             definitions,
             output_schema=target.schema_name,
             output_table=target.table,
+            output_registry_table=target.output_registry_table,
         )
         failures.extend(copy_result.failed)
     finally:

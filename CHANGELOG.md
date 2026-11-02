@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Output copy is now set-based: requested integer ids are joined to cached
+  checksums and copied in batches with one delete/insert per batch, rather than
+  one count/delete/insert per cohort. A small output map skips ids whose
+  checksum and row count were already copied.
 - Cohorts are now generated into a checksum-keyed cache and copied into the
   integer-id study cohort table in a final phase. Integer cohort ids no longer
   define cache identity; repeated ids/definitions reuse one cache entry. Cache,

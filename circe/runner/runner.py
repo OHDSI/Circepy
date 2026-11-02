@@ -347,6 +347,7 @@ def run_cached_cohort_generation(payload: RunnerPayload) -> RunnerResult:
             definitions,
             output_schema=target.schema_name,
             output_table=target.table,
+            output_registry_table=target.output_registry_table,
         )
         failures = [*build.failed, *copied.failed]
         elapsed = time.perf_counter() - started
