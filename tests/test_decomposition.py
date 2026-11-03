@@ -349,6 +349,27 @@ def test_semantic_key_can_ignore_title():
     )
 
 
+def test_cohort_checksum_is_the_cache_identity():
+    from circe.decomposition import cohort_checksum
+
+    first = _expression(concept_sets=[_concept_set(1, 111)], title="one")
+    renamed = _expression(concept_sets=[_concept_set(7, 111)], title="two")
+
+    # Title and local concept-set ids are both ignored.
+    assert cohort_checksum(first) == cohort_checksum(renamed)
+
+    changed = _expression(concept_sets=[_concept_set(1, 222)], title="one")
+    assert cohort_checksum(first) != cohort_checksum(changed)
+
+
+def test_cohort_checksum_matches_runner_export():
+    from circe.decomposition import cohort_checksum
+    from circe.runner import cohort_checksum as runner_checksum
+
+    expression = _expression()
+    assert runner_checksum(expression) == cohort_checksum(expression)
+
+
 def test_operator_descriptions_cover_every_refinement():
     from circe.decomposition import (
         AddCensoring,

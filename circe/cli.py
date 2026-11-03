@@ -5,12 +5,14 @@ Simple CLI that wraps the library API functions.
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
 from .api import build_cohort_query, cohort_print_friendly
 from .cohortdefinition import BuildExpressionQueryOptions
 from .cohortdefinition.code_generator import to_python_code
+from .decomposition import cohort_checksum
 from .io import load_expression
 
 
@@ -78,6 +80,17 @@ def main():
         help="Cohort ID (default: @target_cohort_id placeholder)",
     )
 
+    # Checksum command
+    checksum_parser = subparsers.add_parser(
+        "checksum", help="Print the canonical checksum of a cohort definition"
+    )
+    checksum_parser.add_argument("input", help="Input JSON or YAML file, or '-' for stdin")
+    checksum_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Print a JSON object instead of the bare hex digest",
+    )
+
     args = parser.parse_args()
 
     if not args.command:
@@ -93,6 +106,8 @@ def main():
             return render_markdown_command(args)
         elif args.command == "process":
             return process_command(args)
+        elif args.command == "checksum":
+            return checksum_command(args)
         elif args.command == "generate-source":
             return generate_source_command(args)
     except Exception as e:
@@ -238,6 +253,20 @@ def generate_source_command(args):
         print(f"Source code written to {args.output}")
     else:
         print(source_code)
+
+    return 0
+
+
+def checksum_command(args):
+    """Print the canonical checksum of a cohort definition."""
+    expression = load_expression(sys.stdin.read() if args.input == "-" else Path(args.input))
+
+    checksum = cohort_checksum(expression)
+
+    if args.json:
+        print(json.dumps({"input": args.input, "checksum": checksum}))
+    else:
+        print(checksum)
 
     return 0
 

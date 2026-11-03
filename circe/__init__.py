@@ -88,7 +88,7 @@ from .api import (
     load_cohort_definition_set,
     write_cohort,
 )
-from .decomposition import Decomposition, decompose_cohort_set
+from .decomposition import Decomposition, cohort_checksum, decompose_cohort_set
 
 # Main exports
 from .io import load_expression
@@ -219,6 +219,7 @@ __all__ = [
     "load_cohort_definition_set",
     "decompose_cohort_set",
     "Decomposition",
+    "cohort_checksum",
     "safe_model_rebuild",
     # I/O helpers
     "load_expression",

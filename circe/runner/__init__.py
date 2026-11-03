@@ -1,5 +1,6 @@
 """Standalone cohort-generation runner for Prefect/Docker deployments."""
 
+from .cache import cohort_checksum
 from .cleanup import cleanup_sessions
 from .flow import (
     PREFECT_AVAILABLE,
@@ -40,6 +41,7 @@ __all__ = [
     "TargetConfig",
     "build_shard_payload",
     "cleanup_sessions",
+    "cohort_checksum",
     "ensure_target_table",
     "plan_family_shards",
     "plan_payload_shards",

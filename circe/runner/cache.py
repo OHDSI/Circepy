@@ -17,7 +17,7 @@ from typing import Any
 import ibis
 
 from ..cohort_definition_set import CohortDefinition, CohortDefinitionSet, generate_cohort_set
-from ..decomposition import semantic_expression_key
+from ..decomposition import cohort_checksum
 from ..execution.ibis.operations import (
     create_table,
     delete_rows_in,
@@ -60,11 +60,6 @@ _OUTPUT_MAP_SCHEMA = {
 }
 _OUTPUT_MAP_COLUMNS = list(_OUTPUT_MAP_SCHEMA)
 _CACHE_REGISTRY_COLUMNS = list(_CACHE_REGISTRY_SCHEMA)
-
-
-def cohort_checksum(expression: Any) -> str:
-    """Return the canonical checksum used as the cache identity."""
-    return semantic_expression_key(expression, include_title=False)
 
 
 def _mapping_relation(rows: list[dict[str, Any]]) -> Any:

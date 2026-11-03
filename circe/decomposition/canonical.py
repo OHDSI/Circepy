@@ -40,6 +40,7 @@ from ..vocabulary.concept import Concept, ConceptSet, ConceptSetExpression, Conc
 
 __all__ = [
     "ConceptSetCanonicalizer",
+    "cohort_checksum",
     "concept_set_content_key",
     "semantic_expression_key",
     "stable_digest",
@@ -264,3 +265,15 @@ def semantic_expression_key(expression: CohortExpression, *, include_title: bool
         data.pop("Title", None)
         data.pop("title", None)
     return stable_digest(data)
+
+
+def cohort_checksum(expression: CohortExpression) -> str:
+    """Return the canonical checksum used as the cohort cache identity.
+
+    SHA-256 over the canonical JSON form of the expression: concept sets are
+    deduplicated and ordered by content, their ids are reassigned, concept
+    display metadata is stripped and the title is ignored.  The result is
+    therefore invariant under concept-set id renumbering and cohort renaming,
+    and is the key used by the checksum cache and the output map.
+    """
+    return semantic_expression_key(expression, include_title=False)
