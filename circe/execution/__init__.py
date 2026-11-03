@@ -5,7 +5,10 @@ not modify cohortdefinition model semantics.
 """
 
 from .api import build_cohort, write_cohort
-from .databricks_compat import apply_databricks_post_connect_workaround
+from .databricks_compat import (
+    apply_databricks_post_connect_workaround,
+    connect_databricks,
+)
 from .errors import (
     CompilationError,
     ExecutionError,
@@ -24,6 +27,7 @@ __all__ = [
     "build_cohort",
     "write_cohort",
     "apply_databricks_post_connect_workaround",
+    "connect_databricks",
     "ExecutionError",
     "ExecutionNormalizationError",
     "UnsupportedCriterionError",

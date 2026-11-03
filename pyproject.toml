@@ -69,9 +69,13 @@ docs = [
 ]
 ibis-postgres = [
     "ibis-framework[postgres]>=11.0.0; python_version >= '3.10'",
+    "psycopg[binary]>=3.1",
 ]
 ibis-databricks = [
     "ibis-framework[databricks]>=11.0.0; python_version >= '3.10'",
+]
+prefect = [
+    "prefect>=3.0.0",
 ]
 ibis-mssql = [
     "ibis-framework[mssql]>=11.0.0; python_version >= '3.10'",

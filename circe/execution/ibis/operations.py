@@ -168,6 +168,39 @@ def delete_rows(
         ) from exc
 
 
+def delete_rows_in(
+    backend: IbisBackendLike,
+    *,
+    table_name: str,
+    schema: str | None,
+    column: str,
+    values: list[object],
+) -> None:
+    """Delete rows whose column is in *values* in one statement."""
+    if not values:
+        return
+    raw_sql = getattr(backend, "raw_sql", None)
+    if not callable(raw_sql):
+        raise ExecutionError("Ibis executor write error: backend does not support raw_sql for row deletes.")
+
+    catalog, database = _catalog_db_tuple(backend, schema)
+    quoted = getattr(getattr(backend, "compiler", None), "quoted", False)
+    statement = sge.delete(sg.table(table_name, db=database, catalog=catalog, quoted=quoted)).where(
+        sge.In(
+            this=sg.column(column, quoted=quoted),
+            expressions=[sge.convert(value) for value in values],
+        )
+    )
+    try:
+        raw_sql(statement)
+    except Exception as exc:
+        detail = f"{type(exc).__name__}: {exc}"
+        raise ExecutionError(
+            "Ibis executor write error: failed batch deleting rows from "
+            f"table '{table_name}' in schema '{schema}' ({detail})."
+        ) from exc
+
+
 def insert_rows_via_raw_sql(
     backend: IbisBackendLike,
     *,
@@ -214,9 +247,10 @@ def insert_rows_via_raw_sql(
     try:
         raw_sql(statement)
     except Exception as exc:
+        detail = f"{type(exc).__name__}: {exc}"
         raise ExecutionError(
             "Ibis executor write error: failed inserting rows into "
-            f"table '{table_name}' in schema '{schema}'."
+            f"table '{table_name}' in schema '{schema}' ({detail})."
         ) from exc
 
 
@@ -297,9 +331,10 @@ def insert_relation(
         )
     except Exception as exc:
         schema_label = target_schema if target_schema is not None else "<default>"
+        detail = f"{type(exc).__name__}: {exc}"
         raise ExecutionError(
             "Ibis executor write error: failed inserting relation into "
-            f"table '{target_table}' in schema '{schema_label}'."
+            f"table '{target_table}' in schema '{schema_label}' ({detail})."
         ) from exc
 
 

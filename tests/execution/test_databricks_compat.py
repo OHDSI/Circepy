@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import sys
+import types
+
 import pytest
 
+from circe.execution import databricks_compat
 from circe.execution.databricks_compat import (
     _backend_looks_like_databricks,
     _is_memtable_volume_error,
     _post_connect_needs_workaround,
     apply_databricks_post_connect_workaround,
+    connect_databricks,
     maybe_apply_databricks_post_connect_workaround,
 )
 
@@ -83,3 +88,73 @@ def test_apply_databricks_workaround_is_idempotent():
     # Second call is idempotent — no warning because the patch flag is already set
     assert apply_databricks_post_connect_workaround(backend_cls=FakeDatabricksBackend) is True
     assert maybe_apply_databricks_post_connect_workaround(FakeDatabricksBackend()) is True
+
+
+def test_missing_catalog_error_is_recognised_without_sql_text():
+    # Databricks omits the statement from this server error.
+    exc = RuntimeError("[NO_SUCH_CATALOG_EXCEPTION] Catalog 'hive_metastore' was not found. SQLSTATE: 42704")
+    assert _is_memtable_volume_error(exc) is True
+
+
+def test_workaround_applies_to_current_ibis_versions(monkeypatch):
+    class FakeDatabricksBackend:
+        def _post_connect(self):
+            _ = "CREATE VOLUME IF NOT EXISTS `hive_metastore`.`default`.`ibis_memtable`"
+            raise RuntimeError("[NO_SUCH_CATALOG_EXCEPTION] Catalog 'hive_metastore' was not found.")
+
+    monkeypatch.setattr(databricks_compat, "_databricks_backend_class", lambda: FakeDatabricksBackend)
+
+    with pytest.warns(DeprecationWarning):
+        assert apply_databricks_post_connect_workaround(backend_cls=None) is True
+    assert FakeDatabricksBackend()._post_connect() is None
+
+
+def test_connect_databricks_patches_backend_before_connecting(monkeypatch):
+    class FakeDatabricksBackend:
+        def _post_connect(self):
+            _ = "CREATE VOLUME IF NOT EXISTS `hive_metastore`.`default`.`ibis_memtable`"
+            raise RuntimeError("[NO_SUCH_CATALOG_EXCEPTION] Catalog 'hive_metastore' was not found.")
+
+    calls = []
+
+    def fake_connect(*args, **kwargs):
+        backend = FakeDatabricksBackend()
+        # This mirrors ibis: do_connect() calls _post_connect() while connecting.
+        backend._post_connect()
+        calls.append((args, kwargs))
+        return "connected-backend"
+
+    monkeypatch.setattr(databricks_compat, "_databricks_backend_class", lambda: FakeDatabricksBackend)
+    monkeypatch.setattr(databricks_compat, "_databricks_connect_fn", lambda: fake_connect)
+
+    with pytest.warns(DeprecationWarning):
+        result = connect_databricks(server_hostname="host", http_path="path")
+
+    assert result == "connected-backend"
+    assert calls == [((), {"server_hostname": "host", "http_path": "path"})]
+
+
+def test_connect_databricks_requires_installed_backend(monkeypatch):
+    monkeypatch.setattr(databricks_compat, "_databricks_backend_class", lambda: None)
+
+    with pytest.raises(ImportError, match="ibis Databricks backend"):
+        connect_databricks(server_hostname="host")
+
+
+def test_databricks_backend_class_handles_missing_and_present_modules(monkeypatch):
+    monkeypatch.setitem(sys.modules, "ibis.backends.databricks", None)
+    assert databricks_compat._databricks_backend_class() is None
+
+    fake_module = types.SimpleNamespace(Backend=object)
+    monkeypatch.setitem(sys.modules, "ibis.backends.databricks", fake_module)
+    assert databricks_compat._databricks_backend_class() is fake_module.Backend
+
+
+def test_databricks_connect_fn_reads_ibis_module(monkeypatch):
+    fake_connect = lambda *args, **kwargs: "connected"  # noqa: E731
+    fake_ibis = types.SimpleNamespace(
+        databricks=types.SimpleNamespace(connect=fake_connect),
+    )
+    monkeypatch.setitem(sys.modules, "ibis", fake_ibis)
+
+    assert databricks_compat._databricks_connect_fn() is fake_connect

@@ -6,6 +6,7 @@ and compare the generated SQL and Markdown outputs.
 """
 
 import functools
+import json
 import shutil
 import sys
 import tempfile
@@ -207,3 +208,73 @@ def test_generate_source_command():
         exit_code, stdout, stderr = run_python_cli_in_process(["generate-source", str(cohort_file)])
 
         assert "cohort =" in stdout
+
+
+def test_checksum_command_matches_api():
+    """The CLI prints exactly the checksum the cache uses as identity."""
+    from circe.decomposition import cohort_checksum
+    from circe.io import load_expression
+
+    cohort_file = COHORTS_DIR / "isolated_immune_thrombocytopenia.json"
+
+    exit_code, stdout, stderr = run_python_cli_in_process(["checksum", str(cohort_file)])
+
+    assert exit_code == 0, stderr
+    assert stdout.strip() == cohort_checksum(load_expression(cohort_file))
+
+
+def test_checksum_command_json_output():
+    cohort_file = COHORTS_DIR / "isolated_immune_thrombocytopenia.json"
+
+    exit_code, stdout, stderr = run_python_cli_in_process(["checksum", str(cohort_file), "--json"])
+
+    assert exit_code == 0, stderr
+    payload = json.loads(stdout)
+    assert payload["input"] == str(cohort_file)
+    assert len(payload["checksum"]) == 64
+
+
+def test_checksum_command_reads_stdin():
+    cohort_file = COHORTS_DIR / "isolated_immune_thrombocytopenia.json"
+    document = cohort_file.read_text(encoding="utf-8")
+
+    stdout = StringIO()
+    stderr = StringIO()
+    with (
+        patch("sys.argv", ["circe", "checksum", "-"]),
+        patch("sys.stdin", StringIO(document)),
+        redirect_stdout(stdout),
+        redirect_stderr(stderr),
+    ):
+        exit_code = main() or 0
+
+    assert exit_code == 0, stderr.getvalue()
+    assert len(stdout.getvalue().strip()) == 64
+
+
+def test_checksum_command_concept_sets():
+    from circe.decomposition import concept_set_checksums
+    from circe.io import load_expression
+
+    cohort_file = COHORTS_DIR / "isolated_immune_thrombocytopenia.json"
+    expected = concept_set_checksums(load_expression(cohort_file))
+
+    exit_code, stdout, stderr = run_python_cli_in_process(["checksum", str(cohort_file), "--concept-sets"])
+
+    assert exit_code == 0, stderr
+    rows = [line.split("\t") for line in stdout.splitlines() if line.strip()]
+    assert {int(row[0]): row[1] for row in rows} == expected
+
+
+def test_checksum_command_concept_sets_json():
+    cohort_file = COHORTS_DIR / "isolated_immune_thrombocytopenia.json"
+
+    exit_code, stdout, stderr = run_python_cli_in_process(
+        ["checksum", str(cohort_file), "--concept-sets", "--json"]
+    )
+
+    assert exit_code == 0, stderr
+    payload = json.loads(stdout)
+    assert payload["input"] == str(cohort_file)
+    assert payload["concept_sets"]
+    assert all(len(row["checksum"]) == 64 for row in payload["concept_sets"])

@@ -152,6 +152,187 @@ from circe.execution import build_cohort
 events = build_cohort(cohort, backend=conn, cdm_schema="main")  # lazy ibis relation
 ```
 
+### Decomposable Cohort Sets (shared execution)
+
+Large cohort families usually contain one entry population plus many narrowing
+variants (extra inclusion rules, additional criteria, limits, end strategies,
+censoring). Rebuilding the entry population for every definition repeats the
+most expensive part of the pipeline. `generate_cohort_set(..., shared=True)`
+plans the set as a content-addressed checkpoint DAG and materialises each shared
+stage once.
+
+```python
+from circe.cohort_definition_set import CohortDefinitionSet, generate_cohort_set
+
+results = generate_cohort_set(
+    cds,
+    backend=conn,
+    cdm_schema="main",
+    cohort_table="cohort",
+    shared=True,  # reuse primary/qualified/rule checkpoints across definitions
+)
+```
+
+Checkpoint keys are computed on canonicalised definitions: concept-set ids are
+rewritten by content, so two cohorts that use different local ids for the same
+concept set still share. The tail stages (inclusion, limits, end strategy,
+censoring, collapse) run through the same engine functions as a stand-alone
+build, so `shared=True` produces byte-identical cohort rows — it is only faster.
+
+Sharing is opt-in (`shared=False` by default) and applies to the Ibis execution
+path; the SQL builder still emits one self-contained script per definition.
+
+The definition algebra is also available directly. `decompose_cohort_set()`
+recovers shared bases and v1-placed refinements, and `flatten()` reconstructs a
+stand-alone expression:
+
+```python
+from circe.decomposition import decompose_cohort_set
+
+decomposition = decompose_cohort_set(cds)
+print(decomposition.describe())  # bases, derived cohorts, operators
+standalone = decomposition.flatten(42)  # parent + refinements as a CohortExpression
+assert decomposition.verify() == []  # every derived cohort round-trips
+```
+
+Supported refinements are narrowing or tail-modifying only: `RequireAtEntry`,
+`AddInclusionRule`, `SetQualifiedLimit`, `SetExpressionLimit`, `SetEndStrategy`,
+`AddCensoring`, `SetCensorWindow`, `SetCollapse` and added concept sets.
+Definitions that cannot be reproduced exactly stay bases, so the flatten
+invariant always holds.
+
+The performance gate lives in
+`tests/execution/test_shared_execution.py`; `benchmarks/decomposable_cohorts.py`
+reports the speedup and checkpoint reuse for a configurable family:
+
+```bash
+python benchmarks/decomposable_cohorts.py --persons 20000 --cohorts 64
+```
+
+To run the same shared-vs-stand-alone comparison against an existing
+PostgreSQL OMOP CDM (temporary schema, two-way `EXCEPT ALL` verification):
+
+```bash
+PGPASSWORD=... python benchmarks/decomposable_cohorts_postgres.py \
+    --cdm-schema cdm --vocab-schema vocab --cohorts 32 --repeats 2
+```
+
+### Prefect/Docker cohort runner
+
+A standalone runner and container image are available under `circe.runner` and
+`docker/prefect/`.  The container accepts a JSON payload with the CDM schema,
+target schema/table, cache/registry names, definition paths and backend
+connection.  Cohorts are generated once into a checksum-keyed cache and then
+copied into the integer-id study cohort table only when the study requests them.
+Reruns reuse cache entries regardless of their integer cohort ids. The target schema should be a
+scratch/results schema; writing into the CDM schema emits a warning.
+
+```bash
+docker build -f docker/prefect/Dockerfile -t circe-cohort-runner .
+docker run --rm -e PGPASSWORD="$PGPASSWORD" \
+  -v "$PWD/definitions:/data:ro" \
+  -v "$PWD/payload.json:/payload.json:ro" \
+  circe-cohort-runner
+```
+
+See `docker/prefect/README.md` for the payload format and Prefect deployment
+options.
+
+#### Family tags and sharding
+
+Add an optional `family` column to `Cohorts.csv` (or pass `family=` when building
+a `CohortDefinitionSet` in Python). Cohorts sharing a family are kept on the same
+worker, so related templates retain shared-checkpoint reuse.
+
+```csv
+cohort_id,cohort_name,family
+1,celecoxib,fam-celecoxib
+2,celecoxib-age40,fam-celecoxib
+3,ibuprofen,fam-ibuprofen
+```
+
+For a large set of families, split them across processes while writing to the
+same scratch cohort table:
+
+```bash
+python -m circe.runner --payload payload.json --shards 10 --max-workers 10
+```
+
+Workers populate a shared checksum-keyed cache; the integer-id target table is
+written only in the final copy phase. The cache/registry/final table names are
+configuration parameters, so persistent table count stays constant. Use
+`--plan-shards shards.json` to emit payloads for Databricks Workflows or Prefect
+fan-out without running generation. A 564-family plan is balanced across 10
+shards by family size; the `--shards` and `--max-workers` values can be raised as
+the warehouse allows.
+
+### Legacy CohortGenerator cohort sets
+
+Legacy `Cohorts.csv` + `cohorts/*.json` + `sql/sql_server/*.sql` layouts can be
+loaded directly. JSON is the definition source; SQL is loaded into memory for
+provenance and optional oracle comparison.
+
+```python
+from circe.cohort_definition_set import (
+    load_cohort_definition_set,
+    verify_against_legacy_sql,
+)
+
+cohort_set = load_cohort_definition_set(
+    settings_file="inst/Cohorts.csv",
+    json_folder="inst/cohorts",
+    sql_folder="inst/sql/sql_server",
+)
+
+# Optional: execute the legacy SQL and compare its rows with circepy.
+results = verify_against_legacy_sql(
+    cohort_set,
+    backend=conn,
+    cdm_schema="cdm",
+    vocabulary_schema="vocab",
+    results_schema="results",
+    target_table="cohort_legacy",
+    generated_table="cohort_circe",
+    target_dialect="duckdb",
+)
+assert all(result.matching_rows for result in results)
+```
+
+Subsets, template cohorts and custom-SQL-only cohorts are rejected by default;
+pass `unsupported="skip"` to omit them while loading.
+
+### Databricks and the memtable volume
+
+Ibis 12's Databricks backend creates a memtable storage volume during
+`_post_connect()`, using the current catalog. On workspaces without a
+`hive_metastore` catalog this fails with `NO_SUCH_CATALOG_EXCEPTION` before the
+connection is usable (ibis issue #11598). Circepy patches that optional setup
+step; because it runs *while connecting*, the patch has to be installed first:
+
+```python
+from circe.execution import connect_databricks
+
+conn = connect_databricks(
+    server_hostname="...",
+    http_path="...",
+    personal_access_token="...",
+    # memtable_volume="my_catalog.my_schema.ibis_memtable",  # optional
+)
+```
+
+If you connect with `ibis.databricks.connect()` directly, call
+`apply_databricks_post_connect_workaround()` before connecting. The workaround
+only suppresses the memtable-volume/catalog failure; other connection errors
+still propagate.
+
+If execution fails with `DROP TABLE IF EXISTS` / `PARSE_SYNTAX_ERROR`, check
+your sqlglot version. sqlglot 30.18+ renders `DROP TABLE` statements without
+the table name; circepy requires `sqlglot<30.18.0`:
+
+```bash
+pip install "sqlglot<30.18.0"
+```
+
 ## What's Included
 
 This package provides a complete Python implementation of CIRCE-BE with:

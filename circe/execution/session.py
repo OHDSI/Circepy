@@ -160,11 +160,20 @@ def list_stale_sessions(
 
     table = read_table(backend, table_name=SESSION_TABLE, schema=schema)
     cutoff = datetime.now() - threshold
-    stale_rows = table.filter(table.created_at < ibis.literal(cutoff, type="timestamp")).execute()
+    # Read through Arrow rather than pandas. On Python 3.14 + pandas 3.1 the
+    # Arrow timestamp -> pandas datetime conversion can segfault inside
+    # pandas._libs.tslibs (observed in Databricks environments). The registry
+    # is tiny, so a pyarrow table is cheap and avoids the pandas path entirely.
+    stale_rows = (
+        table.filter(table.created_at < ibis.literal(cutoff, type="timestamp"))
+        .select("session_prefix", "created_at")
+        .to_pyarrow()
+        .to_pylist()
+    )
 
     tables_in_schema = _list_tables(backend, schema)
     results: list[StaleSession] = []
-    for record in stale_rows.to_dict(orient="records"):
+    for record in stale_rows:
         prefix = str(record["session_prefix"])
         remaining = tuple(sorted(t for t in tables_in_schema if t.startswith(prefix)))
         if remaining:

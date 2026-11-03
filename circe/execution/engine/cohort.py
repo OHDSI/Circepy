@@ -71,6 +71,24 @@ def _drop_staging_tables(
             backend.drop_table(codeset_name, database=schema, force=True)
 
 
+def cohort_plan_from_normalized(normalized: NormalizedCohort) -> CohortPlan:
+    """Build the executable primary-event plan for a normalized cohort."""
+    primary_plans = tuple(
+        PrimaryEventInput(
+            event_plan=lower_criterion(criterion, criterion_index=index),
+            correlated_criteria=criterion.correlated_criteria,
+        )
+        for index, criterion in enumerate(normalized.primary.criteria)
+    )
+    return CohortPlan(
+        primary_event_plans=primary_plans,
+        observation_window=normalized.primary.observation_window,
+        primary_limit_type=normalized.primary.primary_limit_type,
+        qualified_limit_type=normalized.result_limits.qualified_limit_type,
+        expression_limit_type=normalized.result_limits.expression_limit_type,
+    )
+
+
 def build_cohort_table(
     normalized: NormalizedCohort,
     ctx: ExecutionContext,
@@ -80,20 +98,7 @@ def build_cohort_table(
     cohort_table: str = "cohort",
     session_prefix: str = "",
 ) -> Table:
-    primary_plans = tuple(
-        PrimaryEventInput(
-            event_plan=lower_criterion(criterion, criterion_index=index),
-            correlated_criteria=criterion.correlated_criteria,
-        )
-        for index, criterion in enumerate(normalized.primary.criteria)
-    )
-    cohort_plan = CohortPlan(
-        primary_event_plans=primary_plans,
-        observation_window=normalized.primary.observation_window,
-        primary_limit_type=normalized.primary.primary_limit_type,
-        qualified_limit_type=normalized.result_limits.qualified_limit_type,
-        expression_limit_type=normalized.result_limits.expression_limit_type,
-    )
+    cohort_plan = cohort_plan_from_normalized(normalized)
 
     schema = ctx.results_schema or ctx.cdm_schema
 

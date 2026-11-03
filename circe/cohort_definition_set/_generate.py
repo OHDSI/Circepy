@@ -7,6 +7,8 @@ import contextlib
 import logging
 import threading
 import uuid
+import warnings
+from collections.abc import Callable
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
@@ -106,6 +108,8 @@ async def async_generate_cohort_set(
     checksum_table: str | None = None,
     stop_on_error: bool = True,
     compile_timeout: float | None = None,
+    shared: bool = False,
+    on_cohort_complete: Callable[[CohortGenerationResult], None] | None = None,
 ) -> list[CohortGenerationResult]:
     """Generate all cohorts in a CohortDefinitionSet and write them to a shared table.
 
@@ -114,6 +118,12 @@ async def async_generate_cohort_set(
     ``_circe_codeset_cache`` keyed by SHA-256 checksum so that identical
     concept set definitions across cohorts are resolved only once per
     batch.
+
+    When *shared* is True, cohorts are planned as a content-addressed
+    checkpoint DAG and shared stages (primary events, qualified events,
+    inclusion-rule matches) are materialised once and reused.  The tail stages
+    are the same engine functions used by the stand-alone path, so the written
+    cohort rows are identical.
 
     All exception types are caught and recorded as ``FAILED``.
 
@@ -131,11 +141,31 @@ async def async_generate_cohort_set(
             history for incremental runs.
         stop_on_error: If True, raise on the first failure.
         compile_timeout: Maximum seconds per-cohort before timeout.
+        shared: If True, reuse checkpoints shared by cohorts with the same
+            primary/qualified/rule content (default: False).
+        on_cohort_complete: Optional synchronous callback invoked immediately
+            after each cohort is successfully written. Use this to persist
+            per-cohort completion state before the rest of the batch finishes.
+            Callback exceptions abort the batch.
 
     Returns:
         A list of :class:`CohortGenerationResult`.
     """
     total = len(cohort_definition_set)
+    if results_schema is None:
+        warnings.warn(
+            "generate_cohort_set: results_schema is not set. The cohort/session tables may be "
+            f"created in the CDM schema ({cdm_schema!r}); use a scratch/results schema.",
+            UserWarning,
+            stacklevel=2,
+        )
+    elif results_schema == cdm_schema:
+        warnings.warn(
+            f"generate_cohort_set: results_schema equals the CDM schema ({cdm_schema!r}). "
+            "Cohort and session tables must be written to a scratch/results schema.",
+            UserWarning,
+            stacklevel=2,
+        )
 
     from ..execution.engine.group_operators import _COMPILED_CORRELATED_EVENTS
 
@@ -161,9 +191,31 @@ async def async_generate_cohort_set(
 
     results: list[CohortGenerationResult] = []
 
-    logger.info("Generating %d cohort(s) (incremental=%s)", total, incremental)
+    logger.info(
+        "Generating %d cohort(s) (incremental=%s, shared=%s)",
+        total,
+        incremental,
+        shared,
+    )
 
+    shared_executor = None
     try:
+        if shared:
+            from ..execution.shared import SharedCohortExecutor
+
+            shared_executor = SharedCohortExecutor(
+                backend=backend,
+                cdm_schema=cdm_schema,
+                results_schema=results_schema,
+                vocabulary_schema=vocabulary_schema,
+                cohort_table=cohort_table,
+                session_prefix=session_prefix,
+            )
+            shared_executor.plan(
+                (cohort.cohort_id, cohort.cohort_name, cohort.expression) for cohort in cohort_definition_set
+            )
+            logger.info(shared_executor.describe())
+
         for i, cohort in enumerate(cohort_definition_set, start=1):
             current_checksum = cohort.expression.checksum()
 
@@ -198,19 +250,27 @@ async def async_generate_cohort_set(
             start_time: datetime | None = None
             end_time: datetime | None = None
             try:
-                start_time, end_time = await asyncio.wait_for(
-                    asyncio.to_thread(
-                        _process_single_cohort,
-                        cohort,
-                        backend=backend,
-                        cdm_schema=cdm_schema,
-                        results_schema=results_schema,
-                        vocabulary_schema=vocabulary_schema,
-                        cohort_table=cohort_table,
-                        session_prefix=session_prefix,
-                    ),
-                    timeout=compile_timeout,
-                )
+                if shared_executor is not None:
+                    start_time = datetime.now()
+                    await asyncio.wait_for(
+                        asyncio.to_thread(shared_executor.write, cohort.cohort_id),
+                        timeout=compile_timeout,
+                    )
+                    end_time = datetime.now()
+                else:
+                    start_time, end_time = await asyncio.wait_for(
+                        asyncio.to_thread(
+                            _process_single_cohort,
+                            cohort,
+                            backend=backend,
+                            cdm_schema=cdm_schema,
+                            results_schema=results_schema,
+                            vocabulary_schema=vocabulary_schema,
+                            cohort_table=cohort_table,
+                            session_prefix=session_prefix,
+                        ),
+                        timeout=compile_timeout,
+                    )
 
                 duration = (end_time - start_time).total_seconds()
                 logger.info(
@@ -323,6 +383,8 @@ async def async_generate_cohort_set(
                     start_time=start_time or datetime.now(),
                     end_time=end_time or datetime.now(),
                 )
+            if on_cohort_complete is not None:
+                on_cohort_complete(results[-1])
 
         summary = summarise_generation_results(results)
         logger.info(
@@ -360,12 +422,14 @@ def generate_cohort_set(
     incremental: bool = False,
     checksum_table: str | None = None,
     stop_on_error: bool = True,
+    shared: bool = False,
+    on_cohort_complete: Callable[[CohortGenerationResult], None] | None = None,
 ) -> list[CohortGenerationResult]:
     """Generate all cohorts in a CohortDefinitionSet and write them to a shared table.
 
     This synchronous wrapper delegates to :func:`async_generate_cohort_set`
     via :func:`asyncio.run`.  See that function for full parameter
-    documentation.
+    documentation, including *shared* for checkpoint-reusing batch generation.
 
     Raises:
         RuntimeError: If called from within a running asyncio event loop.
@@ -382,6 +446,8 @@ def generate_cohort_set(
             incremental=incremental,
             checksum_table=checksum_table,
             stop_on_error=stop_on_error,
+            shared=shared,
+            on_cohort_complete=on_cohort_complete,
         )
     )
 
