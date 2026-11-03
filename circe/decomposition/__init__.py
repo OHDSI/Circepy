@@ -20,6 +20,7 @@ from .algebra import Decomposition, DerivedCohort, decompose_cohort_set
 from .canonical import (
     ConceptSetCanonicalizer,
     cohort_checksum,
+    concept_set_checksums,
     concept_set_content_key,
     semantic_expression_key,
     stable_digest,
@@ -44,6 +45,7 @@ __all__ = [
     "decompose_cohort_set",
     "ConceptSetCanonicalizer",
     "cohort_checksum",
+    "concept_set_checksums",
     "concept_set_content_key",
     "semantic_expression_key",
     "stable_digest",

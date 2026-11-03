@@ -250,3 +250,31 @@ def test_checksum_command_reads_stdin():
 
     assert exit_code == 0, stderr.getvalue()
     assert len(stdout.getvalue().strip()) == 64
+
+
+def test_checksum_command_concept_sets():
+    from circe.decomposition import concept_set_checksums
+    from circe.io import load_expression
+
+    cohort_file = COHORTS_DIR / "isolated_immune_thrombocytopenia.json"
+    expected = concept_set_checksums(load_expression(cohort_file))
+
+    exit_code, stdout, stderr = run_python_cli_in_process(["checksum", str(cohort_file), "--concept-sets"])
+
+    assert exit_code == 0, stderr
+    rows = [line.split("\t") for line in stdout.splitlines() if line.strip()]
+    assert {int(row[0]): row[1] for row in rows} == expected
+
+
+def test_checksum_command_concept_sets_json():
+    cohort_file = COHORTS_DIR / "isolated_immune_thrombocytopenia.json"
+
+    exit_code, stdout, stderr = run_python_cli_in_process(
+        ["checksum", str(cohort_file), "--concept-sets", "--json"]
+    )
+
+    assert exit_code == 0, stderr
+    payload = json.loads(stdout)
+    assert payload["input"] == str(cohort_file)
+    assert payload["concept_sets"]
+    assert all(len(row["checksum"]) == 64 for row in payload["concept_sets"])

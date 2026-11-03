@@ -370,6 +370,31 @@ def test_cohort_checksum_matches_runner_export():
     assert runner_checksum(expression) == cohort_checksum(expression)
 
 
+def test_concept_set_checksums_are_content_addressed():
+    from circe.decomposition import concept_set_checksums
+
+    expression = _expression(concept_sets=[_concept_set(1, 111, "first"), _concept_set(2, 222, "second")])
+    checksums = concept_set_checksums(expression)
+
+    assert set(checksums) == {1, 2}
+    assert checksums[1] != checksums[2]
+
+    # Same content under different ids and names -> same per-set checksums.
+    renamed = _expression(concept_sets=[_concept_set(9, 111, "renamed"), _concept_set(4, 222, "other")])
+    assert set(concept_set_checksums(renamed).values()) == set(checksums.values())
+
+
+def test_concept_set_checksums_match_content_key_and_handle_empty():
+    from circe.decomposition import concept_set_checksums, concept_set_content_key
+
+    expression = _expression(concept_sets=[_concept_set(1, 111, "one")])
+    assert concept_set_checksums(expression)[1] == concept_set_content_key(
+        expression.concept_sets[0].expression
+    )
+
+    assert concept_set_checksums(_expression(concept_sets=[])) == {}
+
+
 def test_operator_descriptions_cover_every_refinement():
     from circe.decomposition import (
         AddCensoring,

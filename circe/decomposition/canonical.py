@@ -41,6 +41,7 @@ from ..vocabulary.concept import Concept, ConceptSet, ConceptSetExpression, Conc
 __all__ = [
     "ConceptSetCanonicalizer",
     "cohort_checksum",
+    "concept_set_checksums",
     "concept_set_content_key",
     "semantic_expression_key",
     "stable_digest",
@@ -277,3 +278,19 @@ def cohort_checksum(expression: CohortExpression) -> str:
     and is the key used by the checksum cache and the output map.
     """
     return semantic_expression_key(expression, include_title=False)
+
+
+def concept_set_checksums(expression: CohortExpression) -> dict[int, str]:
+    """Return the content checksum of every concept set in *expression*.
+
+    The checksum is the same content key used for concept-set deduplication and
+    codeset caching: it covers the SQL-relevant items (concept id, excluded,
+    descendants and mapped flags) and ignores the local concept-set id, the
+    name and any other display metadata.  Two concept sets with identical
+    content therefore share a checksum even when their ids differ.
+    """
+    return {
+        int(concept_set.id): concept_set_content_key(concept_set.expression)
+        for concept_set in expression.concept_sets or []
+        if concept_set is not None
+    }
