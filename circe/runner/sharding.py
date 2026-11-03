@@ -61,9 +61,16 @@ __all__ = [
 class ShardingError(RuntimeError):
     """Raised when one or more shards fail."""
 
-    def __init__(self, message: str, *, errors: dict[int, str] | None = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        errors: dict[int, str] | None = None,
+        failures: list[dict[str, str]] | None = None,
+    ) -> None:
         super().__init__(message)
         self.errors = errors or {}
+        self.failures = failures or []
 
 
 @dataclass(frozen=True)
@@ -271,14 +278,13 @@ def ensure_output_table_for_payload(payload: RunnerPayload) -> None:
 
 
 def _ensure_cache_for_payload(payload: RunnerPayload) -> None:
-    target = payload.target
     backend = connect_backend(payload.backend)
     try:
         CohortCache(
             backend,
-            schema=target.cache_schema or target.schema_name,
-            table_name=target.cache_table,
-            registry_table=target.registry_table or "cohort_cache_registry",
+            schema=payload.cache_schema_name,
+            table_name=payload.cache_table_name,
+            registry_table=payload.cache_registry_name,
         )
     finally:
         close_backend(backend)
@@ -290,6 +296,7 @@ def run_sharded_cohort_generation(
     shard_count: int = 10,
     max_workers: int = 10,
     retries: int = 2,
+    raise_on_failure: bool = True,
 ) -> ShardedResult:
     """Build family-balanced cache shards, then copy all cached results.
 
@@ -307,8 +314,6 @@ def run_sharded_cohort_generation(
         raise RunnerError("The shard plan is empty; no workers to start.")
 
     target = payload.target
-    cache_schema = target.cache_schema or target.schema_name
-    registry_table = target.registry_table or "cohort_cache_registry"
     ensure_target_table(payload)
     _ensure_cache_for_payload(payload)
 
@@ -343,9 +348,9 @@ def run_sharded_cohort_generation(
     try:
         cache = CohortCache(
             backend,
-            schema=cache_schema,
-            table_name=target.cache_table,
-            registry_table=registry_table,
+            schema=payload.cache_schema_name,
+            table_name=payload.cache_table_name,
+            registry_table=payload.cache_registry_name,
         )
         definitions = list(_load_definitions(payload))
         copy_result = copy_cache_to_output(
@@ -354,11 +359,21 @@ def run_sharded_cohort_generation(
             definitions,
             output_schema=target.schema_name,
             output_table=target.table,
-            output_registry_table=target.output_registry_table,
+            output_registry_table=payload.output_registry_name,
         )
         failures.extend(copy_result.failed)
     finally:
         close_backend(backend)
+
+    if failures:
+        for failure in failures:
+            logger.error("Shard/cache/output failure: %s", failure)
+        if raise_on_failure:
+            detail = "; ".join(
+                f"{failure.get('family', 'unknown')}: {failure.get('error', 'unknown')}"
+                for failure in failures
+            )
+            raise ShardingError(f"Shard generation failed: {detail}", failures=failures)
 
     return ShardedResult(shards=shards, results=results, failures=failures)
 

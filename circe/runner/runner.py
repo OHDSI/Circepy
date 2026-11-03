@@ -272,16 +272,13 @@ def run_cache_shard(payload: RunnerPayload) -> dict[str, Any]:
     definitions = list(loaded)
     if not definitions:
         return {"generated": [], "reused": [], "failed": [], "warnings": []}
-    target = payload.target
-    cache_schema = target.cache_schema or target.schema_name
-    registry_table = target.registry_table or "cohort_cache_registry"
     backend = connect_backend(payload.backend)
     try:
         cache = CohortCache(
             backend,
-            schema=cache_schema,
-            table_name=target.cache_table,
-            registry_table=registry_table,
+            schema=payload.cache_schema_name,
+            table_name=payload.cache_table_name,
+            registry_table=payload.cache_registry_name,
         )
         outcome = build_cache(
             backend,
@@ -290,7 +287,7 @@ def run_cache_shard(payload: RunnerPayload) -> dict[str, Any]:
             cdm_schema=payload.cdm_schema,
             vocabulary_schema=payload.vocabulary_schema,
             shared=payload.shared,
-            reuse_existing=target.reuse_existing,
+            reuse_existing=payload.target.reuse_existing,
         )
         return {
             "generated": list(outcome.generated),
@@ -302,7 +299,11 @@ def run_cache_shard(payload: RunnerPayload) -> dict[str, Any]:
         close_backend(backend)
 
 
-def run_cached_cohort_generation(payload: RunnerPayload) -> RunnerResult:
+def run_cached_cohort_generation(
+    payload: RunnerPayload,
+    *,
+    raise_on_failure: bool = True,
+) -> RunnerResult:
     """Build checksum-keyed cache entries, then copy them to the output table."""
     started = time.perf_counter()
     loaded = _load_definitions(payload)
@@ -321,16 +322,14 @@ def run_cached_cohort_generation(payload: RunnerPayload) -> RunnerResult:
             stacklevel=2,
         )
 
-    cache_schema = target.cache_schema or target.schema_name
-    registry_table = target.registry_table or "cohort_cache_registry"
     backend = connect_backend(payload.backend)
     try:
         ensure_output_table(backend, schema=target.schema_name, table=target.table)
         cache = CohortCache(
             backend,
-            schema=cache_schema,
-            table_name=target.cache_table,
-            registry_table=registry_table,
+            schema=payload.cache_schema_name,
+            table_name=payload.cache_table_name,
+            registry_table=payload.cache_registry_name,
         )
         build = build_cache(
             backend,
@@ -347,15 +346,25 @@ def run_cached_cohort_generation(payload: RunnerPayload) -> RunnerResult:
             definitions,
             output_schema=target.schema_name,
             output_table=target.table,
-            output_registry_table=target.output_registry_table,
+            output_registry_table=payload.output_registry_name,
         )
         failures = [*build.failed, *copied.failed]
+        if failures and raise_on_failure:
+            for failure in failures:
+                logger.error("Cohort cache/output failure: %s", failure)
+            raise RunnerError(
+                "Cohort generation completed with failures: "
+                + "; ".join(
+                    f"{failure.get('family', 'unknown')}: {failure.get('error', 'unknown')}"
+                    for failure in failures
+                )
+            )
         elapsed = time.perf_counter() - started
         return RunnerResult(
             cdm_schema=payload.cdm_schema,
             target_schema=target.schema_name,
             cohort_table=target.table,
-            registry_table=registry_table,
+            registry_table=payload.cache_registry_name,
             loaded=len(definitions),
             generated=list(build.generated),
             reused=list(build.reused),

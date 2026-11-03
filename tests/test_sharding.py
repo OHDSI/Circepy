@@ -296,3 +296,15 @@ def test_cli_plan_shards(tmp_path, capsys):
     assert manifest["shard_count"] == 2
     assert len(manifest["shards"]) == 2
     assert all(shard["payload"]["definitions"]["cohort_ids"] for shard in manifest["shards"])
+
+
+def test_large_output_mapping_does_not_recurse():
+    import ibis
+
+    from circe.runner.cache import _mapping_relation
+
+    relation = _mapping_relation(
+        [{"cohort_definition_id": index, "cohort_checksum": f"{index:064x}"} for index in range(120)]
+    )
+    sql = str(ibis.to_sql(relation, dialect="duckdb"))
+    assert "SELECT" in sql.upper()

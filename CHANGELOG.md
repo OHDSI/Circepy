@@ -12,10 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Cache build now batches family staging copies and registry writes, and checks
   cache row counts with one grouped query instead of one count per checksum.
-- Output copy is now set-based: requested integer ids are joined to cached
-  checksums and copied in batches with one delete/insert per batch, rather than
-  one count/delete/insert per cohort. A small output map skips ids whose
-  checksum and row count were already copied.
+- Output copy is now a single set-based pass: requested integer ids are joined
+  to cached checksums via a VALUES mapping (no recursive union chain) and
+  written with one delete/insert. A small output map skips ids whose checksum
+  and row count were already copied. Cache/registry/output-map names default
+  per cohort table, and partial failures are raised (with per-failure error
+  logging) instead of returning a successful-looking PARTIAL result.
 - Cohorts are now generated into a checksum-keyed cache and copied into the
   integer-id study cohort table in a final phase. Integer cohort ids no longer
   define cache identity; repeated ids/definitions reuse one cache entry. Cache,

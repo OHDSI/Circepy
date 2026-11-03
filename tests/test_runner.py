@@ -526,7 +526,7 @@ def test_cached_runner_isolates_family_failure(tmp_path, monkeypatch):
         return real_generate(subset, **kwargs)
 
     monkeypatch.setattr(cache_module, "generate_cohort_set", fake_generate)
-    result = run_cached_cohort_generation(payload)
+    result = run_cached_cohort_generation(payload, raise_on_failure=False)
 
     assert result.generated == [1]
     assert result.failures

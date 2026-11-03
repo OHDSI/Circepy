@@ -8,6 +8,7 @@ second, copy-only phase using the integer cohort ids from the request.
 from __future__ import annotations
 
 import contextlib
+import logging
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -27,6 +28,8 @@ from ..execution.ibis.operations import (
 )
 from ..execution.ibis_compat import literal_rows_relation
 from ..execution.session import register_session, unregister_session
+
+logger = logging.getLogger(__name__)
 
 _CACHE_ROWS_SCHEMA = {
     "cohort_checksum": "string",
@@ -62,6 +65,18 @@ _CACHE_REGISTRY_COLUMNS = list(_CACHE_REGISTRY_SCHEMA)
 def cohort_checksum(expression: Any) -> str:
     """Return the canonical checksum used as the cache identity."""
     return semantic_expression_key(expression, include_title=False)
+
+
+def _mapping_relation(rows: list[dict[str, Any]]) -> Any:
+    """Build a small mapping relation without a recursive union chain."""
+    schema = ibis.schema({"cohort_definition_id": "int64", "cohort_checksum": "string"})
+    return ibis.memtable(
+        {
+            "cohort_definition_id": [int(row["cohort_definition_id"]) for row in rows],
+            "cohort_checksum": [str(row["cohort_checksum"]) for row in rows],
+        },
+        schema=schema,
+    )
 
 
 @dataclass(frozen=True)
@@ -280,12 +295,11 @@ class CohortCache:
             for internal_id, checksum in internal_checksums.items()
         }
 
-        mapping = literal_rows_relation(
+        mapping = _mapping_relation(
             [
                 {"cohort_definition_id": internal_id, "cohort_checksum": checksum}
                 for internal_id, checksum in internal_checksums.items()
-            ],
-            schema={"cohort_definition_id": "int64", "cohort_checksum": "string"},
+            ]
         )
         relation = mapping.join(staged, mapping.cohort_definition_id == staged.cohort_definition_id).select(
             cohort_checksum=mapping.cohort_checksum,
@@ -442,14 +456,8 @@ def copy_cache_to_output(
     output_schema: str,
     output_table: str,
     output_registry_table: str = "cohort_output_map",
-    batch_size: int = 100,
 ) -> CacheBuildOutcome:
-    """Batch-copy cached checksums into the integer-id output table.
-
-    Copies are joined through a small (integer id, checksum) mapping, so each
-    cache batch is scanned once rather than once per output cohort.  A small
-    output map skips ids whose checksum and row count were already copied.
-    """
+    """Copy cached checksums into the integer-id output table in one pass."""
     outcome = CacheBuildOutcome()
     cache_entries = cache.entries()
     output_map = OutputCopyMap(backend, schema=output_schema, table_name=output_registry_table)
@@ -473,48 +481,46 @@ def copy_cache_to_output(
             continue
         to_copy.append((int(definition.cohort_id), checksum, cache_entry.row_count))
 
-    to_copy.sort(key=lambda item: (item[1], item[0]))
-    for start_index in range(0, len(to_copy), batch_size):
-        batch = to_copy[start_index : start_index + batch_size]
-        mapping = literal_rows_relation(
-            [
-                {"cohort_definition_id": cohort_id, "cohort_checksum": checksum}
-                for cohort_id, checksum, _ in batch
-            ],
-            schema={"cohort_definition_id": "int64", "cohort_checksum": "string"},
+    if not to_copy:
+        return outcome
+
+    logger.info("Copying %d cohort(s) from cache to %s.%s", len(to_copy), output_schema, output_table)
+    mapping = _mapping_relation(
+        [
+            {"cohort_definition_id": cohort_id, "cohort_checksum": checksum}
+            for cohort_id, checksum, _ in to_copy
+        ]
+    )
+    cached = read_table(backend, table_name=cache.table_name, schema=cache.schema)
+    relation = mapping.join(cached, mapping.cohort_checksum == cached.cohort_checksum).select(
+        cohort_definition_id=mapping.cohort_definition_id,
+        subject_id=cached.subject_id,
+        cohort_start_date=cached.cohort_start_date,
+        cohort_end_date=cached.cohort_end_date,
+    )
+    ids = [cohort_id for cohort_id, _, _ in to_copy]
+    try:
+        delete_rows_in(
+            backend,
+            table_name=output_table,
+            schema=output_schema,
+            column="cohort_definition_id",
+            values=ids,
         )
-        cached = read_table(backend, table_name=cache.table_name, schema=cache.schema)
-        relation = mapping.join(cached, mapping.cohort_checksum == cached.cohort_checksum).select(
-            cohort_definition_id=mapping.cohort_definition_id,
-            subject_id=cached.subject_id,
-            cohort_start_date=cached.cohort_start_date,
-            cohort_end_date=cached.cohort_end_date,
+        insert_relation(
+            relation,
+            backend=backend,
+            target_table=output_table,
+            target_schema=output_schema,
         )
-        ids = [cohort_id for cohort_id, _, _ in batch]
-        try:
-            delete_rows_in(
-                backend,
-                table_name=output_table,
-                schema=output_schema,
-                column="cohort_definition_id",
-                values=ids,
-            )
-            insert_relation(
-                relation,
-                backend=backend,
-                target_table=output_table,
-                target_schema=output_schema,
-            )
-            output_map.mark_complete(batch)
-            outcome.generated.extend(ids)
-        except Exception as exc:  # noqa: BLE001
-            outcome.failed.extend(
-                {
-                    "family": f"cohort-{cohort_id}",
-                    "error": f"{type(exc).__name__}: {exc}",
-                }
-                for cohort_id in ids
-            )
+        output_map.mark_complete(to_copy)
+        outcome.generated.extend(ids)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Cache-to-output copy failed for %d cohort(s)", len(ids))
+        outcome.failed.extend(
+            {"family": f"cohort-{cohort_id}", "error": f"{type(exc).__name__}: {exc}"} for cohort_id in ids
+        )
+    logger.info("Copied %d cohort(s) to %s.%s", len(ids), output_schema, output_table)
     return outcome
 
 

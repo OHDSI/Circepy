@@ -98,7 +98,8 @@ accepts the same payload dictionary.
 - Cache rows, cache registry, output copy map and the final cohort table are
   independent parameters; persistent table count does not grow with cohort
   count. The output copy map skips integer ids already copied from the same
-  checksum; copies are batched with one delete/insert per batch.
+  checksum, and the copy runs in a single set-based pass. Table names default
+  from the cohort table name when not specified.
 - Session/staging tables are cleaned by each process and by the independent
   `python -m circe.runner.cleanup --payload /payload.json` job.
 - `target.schema`/`cache_schema` must be scratch/results schemas. Circepy warns

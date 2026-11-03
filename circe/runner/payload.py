@@ -40,9 +40,9 @@ class TargetConfig(BaseModel):
     schema_name: str = Field(alias="schema")
     table: str = "cohort"
     cache_schema: str | None = None
-    cache_table: str = "cohort_cache"
-    registry_table: str | None = "cohort_cache_registry"
-    output_registry_table: str = "cohort_output_map"
+    cache_table: str | None = None
+    registry_table: str | None = None
+    output_registry_table: str | None = None
     reuse_existing: bool = True
     on_definition_change: Literal["error", "replace"] = "error"
 
@@ -95,3 +95,19 @@ class RunnerPayload(BaseModel):
     @property
     def results_schema(self) -> str:
         return self.target.schema_name
+
+    @property
+    def cache_schema_name(self) -> str:
+        return self.target.cache_schema or self.target.schema_name
+
+    @property
+    def cache_table_name(self) -> str:
+        return self.target.cache_table or f"{self.target.table}_cache"
+
+    @property
+    def cache_registry_name(self) -> str:
+        return self.target.registry_table or f"{self.target.table}_cache_registry"
+
+    @property
+    def output_registry_name(self) -> str:
+        return self.target.output_registry_table or f"{self.target.table}_output_map"
