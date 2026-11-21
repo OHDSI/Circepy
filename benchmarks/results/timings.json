@@ -1,0 +1,23 @@
+[
+  {
+    "repeat": 0,
+    "warm_build_seconds": 1.72,
+    "cached_read_seconds": 10.28,
+    "direct_read_seconds": 17.22,
+    "speedup": 1.67
+  },
+  {
+    "repeat": 1,
+    "warm_build_seconds": 0.32,
+    "cached_read_seconds": 9.03,
+    "direct_read_seconds": 17.07,
+    "speedup": 1.89
+  },
+  {
+    "repeat": 2,
+    "warm_build_seconds": 0.31,
+    "cached_read_seconds": 8.44,
+    "direct_read_seconds": 16.27,
+    "speedup": 1.93
+  }
+]

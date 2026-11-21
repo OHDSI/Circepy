@@ -10,6 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Era-level feature cache (`circe.era_cache`): stores feature *events* as eras
+  keyed by a window-independent `feature_key`, so one build serves many
+  time-at-risk windows and overlapping cohorts. Three storage classes
+  (presence, categorical value concept, continuous value with reference range);
+  windows and aggregations are applied at read time. Builds are staged,
+  per-feature and resumable, with a completion registry and CDM/vocabulary
+  fingerprints. Includes a Spark Thrift adapter (`ThriftBackend`) with
+  reconnect, `INSERT INTO ... SELECT` and broadcast-join control.
+- FeatureExtraction parity harness: `benchmarks/feature_extraction_parity.R`
+  runs FeatureExtraction against the same CDM over Hive JDBC, and
+  `benchmarks/fe_parity_compare.py` compares the resulting numerators. On the
+  local Synthea CDM (465,428 persons) 42 of 42 comparisons matched exactly
+  across 4 cohorts x 2 windows x 6 chronic conditions.
+- Cohort-first feature extraction (`circe.cohort_features`): any cohort can be a
+  feature and any feature can be turned back into a cohort, with decomposable
+  templates and a basic feature matrix.
 - Legacy CohortGenerator cohort-definition loading from `Cohorts.csv`,
   `cohorts/*.json` and `sql/sql_server/*.sql` (`load_cohort_definition_set`).
   JSON is authoritative, SQL is retained in memory, and R's `stringi` /

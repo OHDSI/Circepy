@@ -1,0 +1,370 @@
+[
+  {
+    "cohort": "first T2DM",
+    "cohort_size": 285338,
+    "window": "1 year prior",
+    "start": -365,
+    "end": 0,
+    "all_equal": true,
+    "features": [
+      {
+        "feature": "Type 2 diabetes",
+        "cached": 285338,
+        "direct": 285338,
+        "equal": true
+      },
+      {
+        "feature": "Heart failure",
+        "cached": 514,
+        "direct": 514,
+        "equal": true
+      },
+      {
+        "feature": "Obesity",
+        "cached": 10799,
+        "direct": 10799,
+        "equal": true
+      },
+      {
+        "feature": "Asthma",
+        "cached": 20102,
+        "direct": 20102,
+        "equal": true
+      },
+      {
+        "feature": "Chronic kidney disease",
+        "cached": 19527,
+        "direct": 19527,
+        "equal": true
+      },
+      {
+        "feature": "COPD",
+        "cached": 3824,
+        "direct": 3824,
+        "equal": true
+      }
+    ]
+  },
+  {
+    "cohort": "first T2DM",
+    "cohort_size": 285338,
+    "window": "90 days prior",
+    "start": -90,
+    "end": 0,
+    "all_equal": true,
+    "features": [
+      {
+        "feature": "Type 2 diabetes",
+        "cached": 285338,
+        "direct": 285338,
+        "equal": true
+      },
+      {
+        "feature": "Heart failure",
+        "cached": 275,
+        "direct": 275,
+        "equal": true
+      },
+      {
+        "feature": "Obesity",
+        "cached": 6443,
+        "direct": 6443,
+        "equal": true
+      },
+      {
+        "feature": "Asthma",
+        "cached": 11606,
+        "direct": 11606,
+        "equal": true
+      },
+      {
+        "feature": "Chronic kidney disease",
+        "cached": 12242,
+        "direct": 12242,
+        "equal": true
+      },
+      {
+        "feature": "COPD",
+        "cached": 2174,
+        "direct": 2174,
+        "equal": true
+      }
+    ]
+  },
+  {
+    "cohort": "first obesity",
+    "cohort_size": 48673,
+    "window": "1 year prior",
+    "start": -365,
+    "end": 0,
+    "all_equal": true,
+    "features": [
+      {
+        "feature": "Type 2 diabetes",
+        "cached": 34724,
+        "direct": 34724,
+        "equal": true
+      },
+      {
+        "feature": "Heart failure",
+        "cached": 211,
+        "direct": 211,
+        "equal": true
+      },
+      {
+        "feature": "Obesity",
+        "cached": 48673,
+        "direct": 48673,
+        "equal": true
+      },
+      {
+        "feature": "Asthma",
+        "cached": 7673,
+        "direct": 7673,
+        "equal": true
+      },
+      {
+        "feature": "Chronic kidney disease",
+        "cached": 8191,
+        "direct": 8191,
+        "equal": true
+      },
+      {
+        "feature": "COPD",
+        "cached": 1654,
+        "direct": 1654,
+        "equal": true
+      }
+    ]
+  },
+  {
+    "cohort": "first obesity",
+    "cohort_size": 48673,
+    "window": "90 days prior",
+    "start": -90,
+    "end": 0,
+    "all_equal": true,
+    "features": [
+      {
+        "feature": "Type 2 diabetes",
+        "cached": 23376,
+        "direct": 23376,
+        "equal": true
+      },
+      {
+        "feature": "Heart failure",
+        "cached": 74,
+        "direct": 74,
+        "equal": true
+      },
+      {
+        "feature": "Obesity",
+        "cached": 48673,
+        "direct": 48673,
+        "equal": true
+      },
+      {
+        "feature": "Asthma",
+        "cached": 3423,
+        "direct": 3423,
+        "equal": true
+      },
+      {
+        "feature": "Chronic kidney disease",
+        "cached": 3847,
+        "direct": 3847,
+        "equal": true
+      },
+      {
+        "feature": "COPD",
+        "cached": 697,
+        "direct": 697,
+        "equal": true
+      }
+    ]
+  },
+  {
+    "cohort": "first CKD",
+    "cohort_size": 82138,
+    "window": "1 year prior",
+    "start": -365,
+    "end": 0,
+    "all_equal": true,
+    "features": [
+      {
+        "feature": "Type 2 diabetes",
+        "cached": 57967,
+        "direct": 57967,
+        "equal": true
+      },
+      {
+        "feature": "Heart failure",
+        "cached": 364,
+        "direct": 364,
+        "equal": true
+      },
+      {
+        "feature": "Obesity",
+        "cached": 6711,
+        "direct": 6711,
+        "equal": true
+      },
+      {
+        "feature": "Asthma",
+        "cached": 11796,
+        "direct": 11796,
+        "equal": true
+      },
+      {
+        "feature": "Chronic kidney disease",
+        "cached": 82138,
+        "direct": 82138,
+        "equal": true
+      },
+      {
+        "feature": "COPD",
+        "cached": 2546,
+        "direct": 2546,
+        "equal": true
+      }
+    ]
+  },
+  {
+    "cohort": "first CKD",
+    "cohort_size": 82138,
+    "window": "90 days prior",
+    "start": -90,
+    "end": 0,
+    "all_equal": true,
+    "features": [
+      {
+        "feature": "Type 2 diabetes",
+        "cached": 38571,
+        "direct": 38571,
+        "equal": true
+      },
+      {
+        "feature": "Heart failure",
+        "cached": 179,
+        "direct": 179,
+        "equal": true
+      },
+      {
+        "feature": "Obesity",
+        "cached": 2808,
+        "direct": 2808,
+        "equal": true
+      },
+      {
+        "feature": "Asthma",
+        "cached": 4931,
+        "direct": 4931,
+        "equal": true
+      },
+      {
+        "feature": "Chronic kidney disease",
+        "cached": 82138,
+        "direct": 82138,
+        "equal": true
+      },
+      {
+        "feature": "COPD",
+        "cached": 1047,
+        "direct": 1047,
+        "equal": true
+      }
+    ]
+  },
+  {
+    "cohort": "first asthma",
+    "cohort_size": 83639,
+    "window": "1 year prior",
+    "start": -365,
+    "end": 0,
+    "all_equal": true,
+    "features": [
+      {
+        "feature": "Type 2 diabetes",
+        "cached": 56050,
+        "direct": 56050,
+        "equal": true
+      },
+      {
+        "feature": "Heart failure",
+        "cached": 315,
+        "direct": 315,
+        "equal": true
+      },
+      {
+        "feature": "Obesity",
+        "cached": 6734,
+        "direct": 6734,
+        "equal": true
+      },
+      {
+        "feature": "Asthma",
+        "cached": 83639,
+        "direct": 83639,
+        "equal": true
+      },
+      {
+        "feature": "Chronic kidney disease",
+        "cached": 12435,
+        "direct": 12435,
+        "equal": true
+      },
+      {
+        "feature": "COPD",
+        "cached": 15379,
+        "direct": 15379,
+        "equal": true
+      }
+    ]
+  },
+  {
+    "cohort": "first asthma",
+    "cohort_size": 83639,
+    "window": "90 days prior",
+    "start": -90,
+    "end": 0,
+    "all_equal": true,
+    "features": [
+      {
+        "feature": "Type 2 diabetes",
+        "cached": 35970,
+        "direct": 35970,
+        "equal": true
+      },
+      {
+        "feature": "Heart failure",
+        "cached": 133,
+        "direct": 133,
+        "equal": true
+      },
+      {
+        "feature": "Obesity",
+        "cached": 3036,
+        "direct": 3036,
+        "equal": true
+      },
+      {
+        "feature": "Asthma",
+        "cached": 83639,
+        "direct": 83639,
+        "equal": true
+      },
+      {
+        "feature": "Chronic kidney disease",
+        "cached": 5634,
+        "direct": 5634,
+        "equal": true
+      },
+      {
+        "feature": "COPD",
+        "cached": 15379,
+        "direct": 15379,
+        "equal": true
+      }
+    ]
+  }
+]

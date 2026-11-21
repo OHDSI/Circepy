@@ -217,6 +217,56 @@ PGPASSWORD=... python benchmarks/decomposable_cohorts_postgres.py \
     --cdm-schema cdm --vocab-schema vocab --cohorts 32 --repeats 2
 ```
 
+### Era cache (`circe.era_cache`)
+
+Feature construction normally realises a covariate per (cohort entry,
+time-at-risk window), so every new window or overlapping cohort re-scans the CDM.
+The era cache stores the underlying **events** instead, and applies windows when
+reading.
+
+```python
+from circe.era_cache import (
+    CohortEraSpec,
+    EraFeatureSpec,
+    build_era_cache,
+    load_cohort,
+    prevalence,
+)
+
+build_era_cache(
+    [EraFeatureSpec(name="T2DM", source_table="condition_occurrence", concept_ids=(201826,))],
+    backend=conn,
+    cache_schema="feature_cache",
+    cdm_schema="cdm",
+    vocabulary_schema="vocab",
+)
+
+cohort = load_cohort(conn.table("cohort", database="results"), cohort_id=1)
+prevalence(
+    cohort,
+    windows=[CohortEraSpec(-365, 0), CohortEraSpec(-90, 0)],
+    backend=conn,
+    cache_schema="feature_cache",
+    observation_period=conn.table("observation_period", database="cdm"),
+)
+```
+
+Key properties:
+
+- **Era grain, window-independent identity.** `feature_key` covers the event
+  selection only; windows, time-at-risk settings and cohorts are read-time
+  predicates.
+- **Three value classes.** Presence, categorical (`value_as_concept_id`, an
+  observed OMOP concept) and continuous (`value_as_number` with unit and
+  reference range). "Above normal range" is derived at read time, never stored.
+- **Resumable builds.** Features are staged, published and marked complete
+  individually; a failure costs one feature, not the run.
+- **Parity checked against FeatureExtraction.** 42 of 42 comparisons matched
+  exactly on a 465,428-person Synthea CDM (4 cohorts x 2 windows x 6
+  conditions): see `benchmarks/results/fe_parity.md`.
+
+See [docs/design/era-cache.md](docs/design/era-cache.md).
+
 ### Legacy CohortGenerator cohort sets
 
 Legacy `Cohorts.csv` + `cohorts/*.json` + `sql/sql_server/*.sql` layouts can be

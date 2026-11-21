@@ -1,0 +1,26 @@
+[
+  {
+    "repeat": 0,
+    "features": 20,
+    "windows": 2,
+    "combinations": 40,
+    "build_generated": 0,
+    "cached_seconds": 11.55,
+    "direct_seconds": 125.2,
+    "speedup": 10.8,
+    "mismatches": 0,
+    "mismatch_sample": []
+  },
+  {
+    "repeat": 1,
+    "features": 20,
+    "windows": 2,
+    "combinations": 40,
+    "build_generated": 0,
+    "cached_seconds": 14.3,
+    "direct_seconds": 55.33,
+    "speedup": 3.9,
+    "mismatches": 0,
+    "mismatch_sample": []
+  }
+]
