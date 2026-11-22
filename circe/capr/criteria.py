@@ -4,7 +4,7 @@ Mirrors R's Capr 3.0.0 API, but produces
 :class:`~circe.cohortdefinition.cohort.CohortExpression` instances so a cohort
 built here flows straight into the existing SQL builders and execution pipeline.
 
-Deliberate differences from R Capr are documented in ``circe/capr/README.md``.
+Deliberate differences from R Capr are documented in ``docs/user_guide/capr.rst``.
 """
 
 from __future__ import annotations

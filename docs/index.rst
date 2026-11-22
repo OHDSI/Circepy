@@ -31,6 +31,7 @@ A Python implementation of the OHDSI CIRCE-BE (Cohort Inclusion and Restriction 
 
    user_guide/concepts
    user_guide/cohort_definitions
+   user_guide/capr
    user_guide/sql_generation
    user_guide/validation
    user_guide/examples
