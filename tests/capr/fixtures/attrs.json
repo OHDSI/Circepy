@@ -1,0 +1,82 @@
+{
+  "ConceptSets": [
+    {
+      "id": 0,
+      "name": "T2DM",
+      "expression": {
+        "items": [
+          {
+            "concept": {
+              "CONCEPT_ID": 201826,
+              "CONCEPT_NAME": "",
+              "STANDARD_CONCEPT": "",
+              "STANDARD_CONCEPT_CAPTION": "",
+              "INVALID_REASON": "",
+              "INVALID_REASON_CAPTION": "",
+              "CONCEPT_CODE": "",
+              "DOMAIN_ID": "",
+              "VOCABULARY_ID": "",
+              "CONCEPT_CLASS_ID": ""
+            },
+            "isExcluded": false,
+            "includeDescendants": true,
+            "includeMapped": false
+          }
+        ]
+      }
+    }
+  ],
+  "PrimaryCriteria": {
+    "CriteriaList": [
+      {
+        "ConditionOccurrence": {
+          "CodesetId": 0,
+          "Age": {
+            "Op": "gte",
+            "Value": 18
+          },
+          "Gender": [
+            {
+              "CONCEPT_ID": 8507,
+              "CONCEPT_NAME": "MALE",
+              "STANDARD_CONCEPT": "",
+              "STANDARD_CONCEPT_CAPTION": "",
+              "INVALID_REASON": "",
+              "INVALID_REASON_CAPTION": "",
+              "CONCEPT_CODE": "M",
+              "DOMAIN_ID": "Gender",
+              "VOCABULARY_ID": "Gender",
+              "CONCEPT_CLASS_ID": "Gender"
+            }
+          ],
+          "First": true,
+          "OccurrenceStartDate": {
+            "Op": "gt",
+            "Value": "2010-01-01"
+          }
+        }
+      }
+    ],
+    "ObservationWindow": {
+      "PriorDays": 0,
+      "PostDays": 0
+    },
+    "PrimaryCriteriaLimit": {
+      "Type": "First"
+    }
+  },
+  "QualifiedLimit": {
+    "Type": "First"
+  },
+  "ExpressionLimit": {
+    "Type": "First"
+  },
+  "InclusionRules": [],
+  "CensoringCriteria": [],
+  "CollapseSettings": {
+    "CollapseType": "ERA",
+    "EraPad": 0
+  },
+  "CensorWindow": {},
+  "cdmVersionRange": ">=5.0.0"
+}
