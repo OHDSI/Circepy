@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   strategies, eras) that builds native `CohortExpression` models. Concept-set
   identity matches Capr's md5 scheme, and output is verified for semantic
   parity against R Capr fixtures.
+- `circe.capr.json_to_capr()`: circe.capr's counterpart to Capr's `jsonToCapr()`.
+  Decompiles Circe cohort JSON into executable `circe.capr` Python source, with
+  `strict`/`skip` modes. Round-tripping is verified against all Capr fixtures.
 
 ## [0.3.0] - 2026-10-06
 

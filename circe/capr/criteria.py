@@ -56,6 +56,12 @@ __all__ = [
     "eq",
     "bt",
     "nbt",
+    "contains",
+    "starts_with",
+    "ends_with",
+    "exact",
+    "startsWith",
+    "endsWith",
     # windows
     "event_starts",
     "event_ends",
@@ -95,7 +101,13 @@ __all__ = [
     "condition_type_exclude",
     "condition_source_concept",
     "visit_type",
+    "visit_type_set",
     "provider_specialty_concepts",
+    "occurrence_count",
+    "era_length",
+    "dose_value",
+    "range_high_ratio",
+    "lot_number",
     # exit and era
     "observation_exit",
     "fixed_exit",
@@ -184,6 +196,31 @@ def bt(x: Any, y: Any) -> _Op:
 def nbt(x: Any, y: Any) -> _Op:
     """Not between."""
     return _Op("nbt", x, y)
+
+
+def contains(text: str) -> _Op:
+    """Substring match, for ``value_as_string()``."""
+    return _Op("contains", text)
+
+
+def starts_with(text: str) -> _Op:
+    """Prefix match, for ``value_as_string()``."""
+    return _Op("startsWith", text)
+
+
+def ends_with(text: str) -> _Op:
+    """Suffix match, for ``value_as_string()``."""
+    return _Op("endsWith", text)
+
+
+def exact(text: str) -> _Op:
+    """Exact-match, for ``value_as_string()``."""
+    return _Op("exact", text)
+
+
+# R-exact aliases, so generated code can mirror Capr's naming.
+startsWith = starts_with
+endsWith = ends_with
 
 
 def _numeric_range(op: _Op) -> NumericRange:
@@ -393,8 +430,17 @@ def value_as_number(op: _Op) -> _NumericAttribute:
     return _NumericAttribute("ValueAsNumber", op)
 
 
-def value_as_string(text: str, op: str = "contains") -> _TextAttribute:
-    """Filter on ``value_as_string``; ``op`` is contains/starts/ends/equals."""
+def value_as_string(text: str | _Op, op: str = "contains") -> _TextAttribute:
+    """Filter on ``value_as_string``.
+
+    ``text`` may be a plain string with ``op`` naming the match type
+    (``"contains"``, ``"startsWith"``, ``"endsWith"``, ``"exact"``), or one of
+    the string operators (``contains("x")``, ``starts_with("x")``, ...).
+    """
+    if isinstance(text, _Op):
+        return _TextAttribute("ValueAsString", str(text.value), text.op)
+    if text == "equals":
+        op = "exact"
     return _TextAttribute("ValueAsString", text, op)
 
 
@@ -447,6 +493,125 @@ def condition_source_concept(concept_set: CaprConceptSet) -> _ConceptSetRefAttri
     if not isinstance(concept_set, CaprConceptSet):
         raise CaprError("condition_source_concept() expects a concept set from cs()")
     return _ConceptSetRefAttribute("ConditionSourceConcept", concept_set)
+
+
+_SOURCE_CONCEPT_KEYS = {
+    "drug_source_concept": "DrugSourceConcept",
+    "procedure_source_concept": "ProcedureSourceConcept",
+    "observation_source_concept": "ObservationSourceConcept",
+    "visit_source_concept": "VisitSourceConcept",
+    "measurement_source_concept": "MeasurementSourceConcept",
+    "visit_detail_source_concept": "VisitDetailSourceConcept",
+    "value_as_concept_set": "ValueAsConcept",
+}
+
+
+def _make_source_concept_attribute(name: str):
+    key = _SOURCE_CONCEPT_KEYS[name]
+
+    def factory(concept_set: CaprConceptSet) -> _ConceptSetRefAttribute:
+        if not isinstance(concept_set, CaprConceptSet):
+            raise CaprError(f"{name}() expects a concept set from cs()")
+        return _ConceptSetRefAttribute(key, concept_set)
+
+    factory.__name__ = name
+    factory.__doc__ = f"Filter on the {key} source concept using an inline concept list."
+    return factory
+
+
+for _source_name in _SOURCE_CONCEPT_KEYS:
+    globals()[_source_name] = _make_source_concept_attribute(_source_name)
+    __all__.append(_source_name)
+
+
+_TYPE_CONCEPT_KEYS = {
+    "condition_status": "ConditionStatus",
+    "drug_type": "DrugType",
+    "measurement_type": "MeasurementType",
+    "observation_type": "ObservationType",
+    "procedure_type": "ProcedureType",
+    "death_type": "DeathType",
+    "device_type": "DeviceType",
+    "specimen_type": "SpecimenType",
+    "observation_period_type": "PeriodType",
+}
+
+
+def _make_type_filter(name: str):
+    key = _TYPE_CONCEPT_KEYS[name]
+
+    def factory(ids) -> _ConceptAttribute:
+        if isinstance(ids, int):
+            ids = (ids,)
+        return _ConceptAttribute(key, tuple(int(i) for i in ids))
+
+    factory.__name__ = name
+    factory.__doc__ = f"Filter on ``{key}`` (record provenance)."
+    return factory
+
+
+for _type_name in _TYPE_CONCEPT_KEYS:
+    globals()[_type_name] = _make_type_filter(_type_name)
+    __all__.append(_type_name)
+
+
+_TYPE_EXCLUDE_KEYS = {
+    "drug_type_exclude": "DrugTypeExclude",
+    "measurement_type_exclude": "MeasurementTypeExclude",
+    "death_type_exclude": "DeathTypeExclude",
+    "specimen_type_exclude": "SpecimenTypeExclude",
+    "observation_type_exclude": "ObservationTypeExclude",
+    "procedure_type_exclude": "ProcedureTypeExclude",
+    "device_type_exclude": "DeviceTypeExclude",
+}
+
+
+def _make_type_exclude(name: str):
+    key = _TYPE_EXCLUDE_KEYS[name]
+
+    def factory(exclude: bool = False) -> _FlagAttribute:
+        return _FlagAttribute(key, bool(exclude))
+
+    factory.__name__ = name
+    factory.__doc__ = f"Invert the ``{key[:-6]}`` filter."
+    return factory
+
+
+for _excl_name in _TYPE_EXCLUDE_KEYS:
+    globals()[_excl_name] = _make_type_exclude(_excl_name)
+    __all__.append(_excl_name)
+
+
+def occurrence_count(op: _Op) -> _NumericAttribute:
+    """Filter on the number of rows rolled up into an era."""
+    return _NumericAttribute("OccurrenceCount", op)
+
+
+def era_length(op: _Op) -> _NumericAttribute:
+    """Filter on era length in days."""
+    return _NumericAttribute("EraLength", op)
+
+
+def dose_value(op: _Op) -> _NumericAttribute:
+    """Filter on the dose value of a dose era."""
+    return _NumericAttribute("DoseValue", op)
+
+
+def range_high_ratio(op: _Op) -> _NumericAttribute:
+    """Filter on ``value_as_number / range_high``."""
+    return _NumericAttribute("RangeHighRatio", op)
+
+
+def lot_number(op: _Op) -> _NumericAttribute:
+    """Filter on ``lot_number``."""
+    return _NumericAttribute("LotNumber", op)
+
+
+def visit_type_set(concept_set: CaprConceptSet) -> _ConceptSetRefAttribute:
+    """Filter on the ``visit_concept_id`` of the linked visit using a concept set."""
+    if not isinstance(concept_set, CaprConceptSet):
+        raise CaprError("visit_type_set() expects a concept set from cs()")
+    return _ConceptSetRefAttribute("VisitType", concept_set)
 
 
 def visit_type(ids: int | tuple[int, ...]) -> _ConceptAttribute:

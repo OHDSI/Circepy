@@ -19,5 +19,18 @@ Example:
 from .concept_set import CaprConceptSet, ConceptSpec, cs, descendants, exclude, mapped
 from .criteria import *  # noqa: F403
 from .criteria import __all__ as _criteria_all
+from .json_to_capr import DecompiledCohort, JsonToCaprError, json_to_capr, json_to_capr_file
 
-__all__ = ["CaprConceptSet", "ConceptSpec", "cs", "descendants", "exclude", "mapped", *_criteria_all]
+__all__ = [
+    "CaprConceptSet",
+    "ConceptSpec",
+    "cs",
+    "descendants",
+    "exclude",
+    "mapped",
+    "DecompiledCohort",
+    "JsonToCaprError",
+    "json_to_capr",
+    "json_to_capr_file",
+    *_criteria_all,
+]
