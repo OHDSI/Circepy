@@ -48,6 +48,7 @@ from .schema import (
     REGISTRY_COLUMNS,
     REGISTRY_TABLE,
 )
+from .scope import CohortScope
 from .specs import EraFeatureSpec
 
 __all__ = ["BuildOutcome", "EraCache", "build_era_cache"]
@@ -365,10 +366,30 @@ def build_era_cache(
     vocab_fingerprint: str | None = None,
     force: bool = False,
     session_prefix: str | None = None,
+    scope: CohortScope | None = None,
 ) -> BuildOutcome:
-    """Build or extend the era cache for *specs*."""
+    """Build or extend the era cache for *specs*.
+
+    Args:
+        scope: Which subjects to cache. Defaults to a cohort scope and **must**
+            be given as a :func:`~circe.era_cache.scope.cohort_scope` or
+            :func:`~circe.era_cache.scope.scope_from_cohort_table`; pass
+            :func:`~circe.era_cache.scope.whole_cdm` explicitly to cache the
+            entire CDM. The whole-CDM pipeline is a separate, much larger
+            product and is never the default.
+
+    Raises:
+        ValueError: If no scope is supplied. Caching every person in the CDM by
+            accident is expensive and hard to undo, so it has to be asked for.
+    """
     if not specs:
         raise ValueError("build_era_cache requires at least one spec.")
+    if scope is None:
+        raise ValueError(
+            "build_era_cache requires an explicit scope. Pass "
+            "cohort_scope(cohort_ids, cohort_table=...) to cache a study "
+            "population, or whole_cdm() if you really want the entire CDM."
+        )
 
     features = {era_feature_key(spec): spec for spec in specs}
     cache_key_value = cache_key(
@@ -376,6 +397,7 @@ def build_era_cache(
         vocabulary_schema=vocabulary_schema or cdm_schema,
         cdm_fingerprint=cdm_fingerprint,
         vocab_fingerprint=vocab_fingerprint,
+        scope_fingerprint=scope.fingerprint(),
     )
 
     cache = EraCache(backend, schema=cache_schema)
@@ -395,6 +417,10 @@ def build_era_cache(
         return outcome
 
     prefix = session_prefix or f"__era_{uuid.uuid4().hex[:8]}_"
+
+    # Resolve the subject population once; every feature joins against it in the
+    # database, so a cohort-scoped build never scans the whole CDM.
+    subjects = None if scope.is_whole_cdm else scope.subjects(backend)
 
     coding_parts = {}
     for feature_key, spec in pending:
@@ -428,6 +454,7 @@ def build_era_cache(
                 cdm_schema=cdm_schema,
                 coding=coding,
                 prefix=prefix,
+                subjects=subjects,
                 outcome=outcome,
             )
     finally:
@@ -447,6 +474,7 @@ def _build_family(
     cdm_schema: str,
     coding: Table,
     prefix: str,
+    subjects: Table | None,
     outcome: BuildOutcome,
 ) -> None:
     table_name = _TABLE_FOR_CLASS[feature_class]
@@ -463,6 +491,7 @@ def _build_family(
                 cdm_schema=cdm_schema,
                 feature_key=feature_key,
                 coding=coding,
+                subjects=subjects,
             )
             projection = era.select(
                 ibis.literal(cache_key_value).name("cache_key"),

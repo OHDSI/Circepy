@@ -17,6 +17,7 @@ from circe.era_cache import (
     feature_values,
     load_cohort,
 )
+from circe.era_cache.scope import cohort_scope
 
 HBA1C = 3004410
 GLUCOSE = 3004411
@@ -64,6 +65,7 @@ def _built(backend):
         cache_schema="feature_cache",
         cdm_schema="main",
         force=True,
+        scope=cohort_scope(1, cohort_table="cohort"),
     )
     return specs, {era_feature_key(spec): name for name, spec in specs.items()}
 
@@ -113,7 +115,12 @@ def test_value_concept_missing_means_no_categorical_rows(backend):
         value_concept_ids=(999999,),
     )
     outcome = build_era_cache(
-        [spec], backend=backend, cache_schema="feature_cache", cdm_schema="main", force=True
+        [spec],
+        backend=backend,
+        cache_schema="feature_cache",
+        cdm_schema="main",
+        force=True,
+        scope=cohort_scope(1, cohort_table="cohort"),
     )
     assert outcome.failed
     assert outcome.failed[0]["error"] == "feature produced no rows"

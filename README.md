@@ -229,12 +229,16 @@ from circe.era_cache import (
     CohortEraSpec,
     EraFeatureSpec,
     build_era_cache,
+    cohort_scope,
     load_cohort,
     prevalence,
 )
 
 build_era_cache(
     [EraFeatureSpec(name="T2DM", source_table="condition_occurrence", concept_ids=(201826,))],
+    # Default pipeline: cache only this study population. Pass whole_cdm() to
+    # cache every person in the CDM instead.
+    scope=cohort_scope([1], cohort_table="cohort", schema="results"),
     backend=conn,
     cache_schema="feature_cache",
     cdm_schema="cdm",

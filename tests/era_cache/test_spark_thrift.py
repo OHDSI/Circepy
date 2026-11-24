@@ -24,6 +24,7 @@ from circe.era_cache import (
     load_cohort,
     prevalence,
 )
+from circe.era_cache.scope import cohort_scope
 from circe.era_cache.spark_backend import ThriftBackend
 
 SPARK_HOST = os.environ.get("CIRCE_SPARK_HOST", "127.0.0.1")
@@ -85,6 +86,7 @@ def test_build_and_read_condition_features(spark_backend, cdm_schema, vocab_sche
         cdm_schema=cdm_schema,
         vocabulary_schema=vocab_schema,
         force=True,
+        scope=cohort_scope(1, cohort_table="cohort"),
     )
     assert outcome.failed == []
     assert set(outcome.generated) == {era_feature_key(spec) for spec in specs}
@@ -105,6 +107,7 @@ def test_prevalence_is_reproducible_across_windows(spark_backend, cdm_schema, vo
         cache_schema=CACHE_SCHEMA,
         cdm_schema=cdm_schema,
         vocabulary_schema=vocab_schema,
+        scope=cohort_scope(1, cohort_table="cohort"),
     )
     key_to_name = {era_feature_key(spec): spec.name for spec in specs}
 

@@ -97,6 +97,7 @@ def specs() -> list[EraFeatureSpec]:
 
 def ensure_cache(backend: ThriftBackend, *, cache_schema: str, cdm_schema: str, vocab_schema: str):
     from circe.era_cache import build_era_cache
+    from circe.era_cache.scope import whole_cdm
 
     started = time.perf_counter()
     outcome = build_era_cache(
@@ -105,6 +106,8 @@ def ensure_cache(backend: ThriftBackend, *, cache_schema: str, cdm_schema: str, 
         cache_schema=cache_schema,
         cdm_schema=cdm_schema,
         vocabulary_schema=vocab_schema,
+        # This benchmark measures the whole-CDM pipeline explicitly.
+        scope=whole_cdm(),
     )
     elapsed = time.perf_counter() - started
     return outcome, elapsed
@@ -313,6 +316,7 @@ def main(argv: list[str] | None = None) -> int:
     scale_specs = scale_features(backend, cdm_schema=args.cdm_schema, count=args.scale_features)
     from circe.era_cache import build_era_cache
     from circe.era_cache import era_feature_key as _key
+    from circe.era_cache.scope import whole_cdm
 
     scale_started = time.perf_counter()
     scale_outcome = build_era_cache(
@@ -321,6 +325,7 @@ def main(argv: list[str] | None = None) -> int:
         cache_schema=args.cache_schema,
         cdm_schema=args.cdm_schema,
         vocabulary_schema=args.vocab_schema,
+        scope=whole_cdm(),
     )
     scale_build_seconds = time.perf_counter() - scale_started
 

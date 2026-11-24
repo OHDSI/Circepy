@@ -6,6 +6,7 @@ from circe.era_cache import (
     build_era_cache,
     era_feature_key,
 )
+from circe.era_cache.scope import cohort_scope
 
 
 def _features():
@@ -35,6 +36,7 @@ def _build(backend, specs, **kwargs):
         cache_schema="feature_cache",
         cdm_schema="main",
         **kwargs,
+        scope=cohort_scope(1, cohort_table="cohort"),
     )
 
 

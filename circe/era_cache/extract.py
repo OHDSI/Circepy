@@ -173,8 +173,14 @@ def feature_era_relation(
     cdm_schema: str,
     feature_key: str,
     coding: Table,
+    subjects: Table | None = None,
 ) -> Table:
-    """Return the era rows selected by *spec* for one feature key."""
+    """Return the era rows selected by *spec* for one feature key.
+
+    ``subjects`` optionally restricts the result to a lazy relation of
+    ``subject_id`` — this is how a cohort-scoped build avoids scanning the whole
+    CDM.  The join happens in the database; nothing is materialised here.
+    """
     source = backend.table(spec.source_table, database=cdm_schema)
     columns = set(source.columns)
 
@@ -186,6 +192,9 @@ def feature_era_relation(
         coding.concept_id.cast("int64").name("concept_id")
     )
     joined = source.join(accepted, source[concept_column] == accepted.concept_id)
+
+    if subjects is not None:
+        joined = joined.join(subjects, joined.person_id.cast("int64") == subjects.subject_id)
 
     type_column = _type_column(spec)
     if spec.type_concept_ids and type_column in columns:

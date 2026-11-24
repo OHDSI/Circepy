@@ -18,12 +18,50 @@ era_feature_registry     (feature_key, cache_key, completed, row_count, subject_
 Windows, time-at-risk settings and cohort membership are applied when reading.
 That is what makes one build serve many studies.
 
+## Scope: which people get cached
+
+Two pipelines differ only in the population they cache.
+
+**Cohort scope — the default.** Cache eras for the people in a named cohort or
+set of cohort ids:
+
+```python
+from circe.era_cache import cohort_scope, scope_from_cohort_table
+
+scope = cohort_scope([1, 2], cohort_table="cohort", schema="results")
+# or, every cohort in a table:
+scope = scope_from_cohort_table("cohort", schema="results")
+
+build_era_cache(specs, scope=scope, backend=backend, cache_schema="feature_cache", cdm_schema="cdm")
+```
+
+The subject population is resolved once as a lazy relation and joined into every
+feature extraction, so the filter happens in the database and the scan is
+proportional to the study population rather than the CDM.
+
+**Whole-CDM scope — explicit opt-in.** Cache every person in the CDM. This is a
+much larger product (hundreds of thousands of people, tens of millions of era
+rows) and exists for the case where one cache must serve many unrelated studies:
+
+```python
+from circe.era_cache import whole_cdm
+
+build_era_cache(specs, scope=whole_cdm(), backend=backend, cache_schema="feature_cache", cdm_schema="cdm")
+```
+
+`build_era_cache` **requires** an explicit `scope` and raises if none is given.
+Caching an entire CDM has to be asked for.
+
+The scope fingerprint is part of the `cache_key`, so a cohort-scoped build is
+never silently reused for a different cohort set, and a whole-CDM build never
+mixes with a cohort build. Old generations stay on disk until explicitly purged.
+
 ## Identity
 
 | Key | Contains | Excludes |
 |---|---|---|
 | `feature_key` | source table, concept set, value class, record filters | window, TAR, cohort, analysis id, display name |
-| `cache_key` | CDM + vocabulary + engine fingerprints | feature identity |
+| `cache_key` | CDM + vocabulary + engine + scope fingerprints | feature identity |
 
 A feature means the same thing after a vocabulary refresh, so `feature_key` does
 not change; the rows that answer it belong to a generation, so `cache_key` does.

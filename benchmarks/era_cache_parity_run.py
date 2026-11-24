@@ -30,6 +30,7 @@ from circe.era_cache import (  # noqa: E402
     prevalence,
 )
 from circe.era_cache.schema import LARGE_TABLES  # noqa: E402
+from circe.era_cache.scope import whole_cdm  # noqa: E402
 from circe.era_cache.spark_backend import ThriftBackend  # noqa: E402
 
 OUT = Path("/tmp/era_bench")
@@ -71,6 +72,8 @@ def ensure_cache(b: ThriftBackend):
         cache_schema=CACHE,
         cdm_schema=CDM,
         vocabulary_schema=VOCAB,
+        # This benchmark measures the whole-CDM pipeline explicitly.
+        scope=whole_cdm(),
     )
 
 
@@ -227,7 +230,14 @@ def section_scale(n_features: int = 20, repeats: int = 2) -> None:
         spec(f"c{int(row['condition_concept_id'])}", int(row["condition_concept_id"]))
         for _, row in frame.iterrows()
     ]
-    built = build_era_cache(specs, backend=b, cache_schema=CACHE, cdm_schema=CDM, vocabulary_schema=VOCAB)
+    built = build_era_cache(
+        specs,
+        backend=b,
+        cache_schema=CACHE,
+        cdm_schema=CDM,
+        vocabulary_schema=VOCAB,
+        scope=whole_cdm(),
+    )
     keys = {era_feature_key(s): s.concept_ids[0] for s in specs}
     table = ensure_cohort(b, COHORTS["first T2DM"])
     relation = load_cohort(b.table(table, CACHE), cohort_id=1)

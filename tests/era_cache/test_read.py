@@ -13,6 +13,7 @@ from circe.era_cache import (
     load_cohort,
     prevalence,
 )
+from circe.era_cache.scope import cohort_scope
 
 
 def _specs():
@@ -42,6 +43,7 @@ def _built(backend, specs):
         cache_schema="feature_cache",
         cdm_schema="main",
         force=True,
+        scope=cohort_scope(1, cohort_table="cohort"),
     )
     return {era_feature_key(spec): name for name, spec in specs.items()}
 

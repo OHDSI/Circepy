@@ -33,6 +33,12 @@ from .schema import (
     PRESENCE_TABLE,
     REGISTRY_TABLE,
 )
+from .scope import (
+    CohortScope,
+    cohort_scope,
+    scope_from_cohort_table,
+    whole_cdm,
+)
 from .specs import ContinuousPredicate, EraFeatureSpec
 
 __all__ = [
@@ -40,6 +46,7 @@ __all__ = [
     "CONTINUOUS_TABLE",
     "BuildOutcome",
     "CohortEraSpec",
+    "CohortScope",
     "ContinuousPredicate",
     "ENGINE_FINGERPRINT",
     "ENGINE_VERSION",
@@ -51,9 +58,12 @@ __all__ = [
     "build_cohort_eras",
     "build_era_cache",
     "cache_key",
+    "cohort_scope",
     "era_feature_key",
     "feature_membership",
     "feature_values",
     "load_cohort",
     "prevalence",
+    "scope_from_cohort_table",
+    "whole_cdm",
 ]
