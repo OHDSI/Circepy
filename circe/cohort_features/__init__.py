@@ -12,6 +12,13 @@ and assembles a basic ``(row_id, feature_id, value)`` matrix for a target
 population.
 """
 
+from .cohort_as_feature import (
+    CohortPair,
+    cohort_overlap_features,
+    cohort_overlap_from_set,
+    cohort_overlap_pairs,
+    pairs_by_target,
+)
 from .duality import (
     cohort_set_from_features,
     cohort_to_feature,
@@ -40,6 +47,7 @@ from .templates import (
 
 __all__ = [
     "CohortFeature",
+    "CohortPair",
     "CohortTemplate",
     "CriteriaFeature",
     "Feature",
@@ -49,7 +57,11 @@ __all__ = [
     "FeatureTemplate",
     "FeatureWindow",
     "NotExpressibleAsCriteriaError",
+    "cohort_overlap_features",
+    "cohort_overlap_from_set",
+    "cohort_overlap_pairs",
     "cohort_set_from_features",
+    "pairs_by_target",
     "cohort_to_feature",
     "criteria_feature",
     "expand_templates",

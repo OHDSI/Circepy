@@ -142,9 +142,13 @@ def _feature_values(
             else None
         )
         if window.overlap:
+            # FeatureExtraction's CohortBasedBinaryCovariates semantics: the
+            # feature cohort interval intersects the window, with a null end
+            # date treated as the start date.
+            feature_end = joined.feature_end.fill_null(joined.feature_start)
             predicate = joined.feature_start <= upper
             if lower is not None:
-                predicate = predicate & (joined.feature_end >= lower)
+                predicate = predicate & (feature_end >= lower)
         else:
             date = joined.feature_start if window.basis == "start" else joined.feature_end
             predicate = date <= upper
